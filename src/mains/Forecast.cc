@@ -5,13 +5,13 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "mymodel/Traits.h"
+#include "socaroms/Traits.h"
 
 #include "oops/runs/Forecast.h"
 #include "oops/runs/Run.h"
 
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);
-  oops::Forecast<mymodel::Traits> fc;
+  oops::Forecast<socaroms::Traits> fc;
   return run.execute(fc);
 }

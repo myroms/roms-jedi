@@ -1,6 +1,4 @@
-[![Build Status](https://travis-ci.org/travissluka/JEDI-modeltemplate.svg?branch=develop)](https://travis-ci.org/travissluka/JEDI-modeltemplate)
-
-# Example JEDI interface project
+# ROMS interface to JEDI
 
 The following instructions should have the steps needed to implement an interface capable of
 running some of the basic JEDI applications, as well as the LETKF data assimilation application.
@@ -12,18 +10,7 @@ To get started:
    ```
    git clone https://github.com/travissluka/JEDI-modeltemplate.git <source_dir>
    ```
-2. From the source directory run the script to rename all instances
-   of `mymodel` and `MYMODEL` in the source code and file structure to whatever name you want.
-   ```
-   cd <source_dir>
-   ./rename_project.sh <proj_name>
-   ```
-3. Now is probably a good time to save your changes to the repo
-   ```
-   git add .
-   git commit -m "initial commit for new project"
-   ```
-4. setup the build directory. For simplicity, and unlike other current JEDI projects, the bundle
+2. setup the build directory. For simplicity, and unlike other current JEDI projects, the bundle
    `CMakeLists.txt` is actually present in this repository at `bundle/` instead of in a separate
    repository (Feel free to make the bundle a separate repository for your project if you wish).
    ```
@@ -32,7 +19,7 @@ To get started:
    cd <build_dir>
    ecbuild ../<source_dir>/bundle
    ```
-5. Compile, and run the unit tests. At this point, only the `Geometry` test is enabled, and it
+3. Compile, and run the unit tests. At this point, only the `Geometry` test is enabled, and it
    will fail until you start implementing the interface.
    ```
    cd <proj_name>

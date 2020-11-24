@@ -2,7 +2,7 @@ geometry:
   # insert other model specific things here
 
 model:
-  name: MYMODEL
+  name: SOCAROMS
   model variables: [var1, var2]
   tstep: PT6H
   # insert other model specific things here

@@ -5,13 +5,13 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "mymodel/Traits.h"
+#include "socaroms/Traits.h"
 #include "oops/runs/Run.h"
 #include "test/interface/ErrorCovariance.h"
 
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);
-  test::ErrorCovariance<mymodel::Traits> tests;
+  test::ErrorCovariance<socaroms::Traits> tests;
   return run.execute(tests);
 }
 

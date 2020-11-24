@@ -4,12 +4,12 @@
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
 ################################################################################
-# MYMODEL
+# SOCAROMS
 ################################################################################
 
 cmake_minimum_required( VERSION 3.8 FATAL_ERROR )
 
-project( mymodel C CXX Fortran)
+project( socaroms C CXX Fortran)
 
 set( CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH})
 
@@ -31,7 +31,7 @@ ecbuild_declare_project()
 ecbuild_enable_fortran( REQUIRED )
 ecbuild_add_cxx11_flags()
 
-set( MYMODEL_LINKER_LANGUAGE CXX )
+set( SOCAROMS_LINKER_LANGUAGE CXX )
 
 
 ################################################################################
@@ -84,28 +84,28 @@ link_libraries(${MPI_CXX_LIBRARIES} ${MPI_Fortran_LIBRARIES})
 ################################################################################
 # Export package info
 ################################################################################
-list( APPEND MYMODEL_TPLS atlas atlas_f LAPACK MPI NetCDF )
+list( APPEND SOCAROMS_TPLS atlas atlas_f LAPACK MPI NetCDF )
 
-set( MYMODEL_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/src
+set( SOCAROMS_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/src
                        ${CMAKE_CURRENT_BINARY_DIR}/src
                        ${CMAKE_Fortran_MODULE_DIRECTORY} )
-set( MYMODEL_LIBRARIES mymodel )
+set( SOCAROMS_LIBRARIES socaroms )
 
-get_directory_property( MYMODEL_DEFINITIONS COMPILE_DEFINITIONS )
+get_directory_property( SOCAROMS_DEFINITIONS COMPILE_DEFINITIONS )
 
-foreach( _tpl ${MYMODEL_TPLS} )
+foreach( _tpl ${SOCAROMS_TPLS} )
 string( TOUPPER ${_tpl} TPL )
-list( APPEND MYMODEL_EXTRA_DEFINITIONS   ${${TPL}_DEFINITIONS}  ${${TPL}_TPL_DEFINITIONS}  )
-list( APPEND MYMODEL_EXTRA_INCLUDE_DIRS  ${${TPL}_INCLUDE_DIRS} ${${TPL}_TPL_INCLUDE_DIRS} )
-list( APPEND MYMODEL_EXTRA_LIBRARIES     ${${TPL}_LIBRARIES}    ${${TPL}_TPL_LIBRARIES}    )
+list( APPEND SOCAROMS_EXTRA_DEFINITIONS   ${${TPL}_DEFINITIONS}  ${${TPL}_TPL_DEFINITIONS}  )
+list( APPEND SOCAROMS_EXTRA_INCLUDE_DIRS  ${${TPL}_INCLUDE_DIRS} ${${TPL}_TPL_INCLUDE_DIRS} )
+list( APPEND SOCAROMS_EXTRA_LIBRARIES     ${${TPL}_LIBRARIES}    ${${TPL}_TPL_LIBRARIES}    )
 endforeach()
 
 
 ################################################################################
 # Sources
 ################################################################################
-include( mymodel_compiler_flags )
-include_directories( ${MYMODEL_INCLUDE_DIRS} ${MYMODEL_EXTRA_INCLUDE_DIRS} )
+include( socaroms_compiler_flags )
+include_directories( ${SOCAROMS_INCLUDE_DIRS} ${SOCAROMS_EXTRA_INCLUDE_DIRS} )
 
 add_subdirectory( src )
 add_subdirectory( test )
@@ -119,7 +119,7 @@ endif()
 ################################################################################
 
 # prepares a tar.gz of the sources and/or binaries
-ecbuild_install_project( NAME mymodel )
+ecbuild_install_project( NAME socaroms )
 
 # print the summary of the configuration
 ecbuild_print_summary()

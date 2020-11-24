@@ -5,7 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "mymodel/Traits.h"
+#include "socaroms/Traits.h"
 #include "oops/runs/HofX.h"
 #include "oops/runs/Run.h"
 #include "oops/generic/instantiateModelFactory.h"
@@ -14,8 +14,8 @@
 
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);
-  oops::instantiateModelFactory<mymodel::Traits>();
+  oops::instantiateModelFactory<socaroms::Traits>();
   ufo::instantiateObsFilterFactory<ufo::ObsTraits>();
-  oops::HofX<mymodel::Traits, ufo::ObsTraits> hofx;
+  oops::HofX<socaroms::Traits, ufo::ObsTraits> hofx;
   return run.execute(hofx);
 }

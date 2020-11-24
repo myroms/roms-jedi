@@ -5,7 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "mymodel/Traits.h"
+#include "socaroms/Traits.h"
 
 #include "oops/runs/Dirac.h"
 #include "oops/runs/Run.h"
@@ -13,7 +13,7 @@
 
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);
-  //  saber::instantiateLocalizationFactory<mymodel::Traits>();
-  oops::Dirac<mymodel::Traits> dir;
+  //  saber::instantiateLocalizationFactory<socaroms::Traits>();
+  oops::Dirac<socaroms::Traits> dir;
   return run.execute(dir);
 }

@@ -12,4 +12,4 @@ background:
   date: 2018-04-15T00:00:00Z
 
 background error:
-  covariance model: mymodelCovar
+  covariance model: socaromsCovar
