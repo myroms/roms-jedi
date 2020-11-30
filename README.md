@@ -8,7 +8,7 @@ To get started:
 
 1. Checkout this repository
    ```
-   git clone https://github.com/JCSDA-internal/soca-roms <source_dir>
+   git clone https://github.com/JCSDA-internal/roms-jedi <source_dir>
    ```
 2. setup the build directory. For simplicity, and unlike other current JEDI projects, the bundle
    `CMakeLists.txt` is actually present in this repository at `bundle/` instead of in a separate

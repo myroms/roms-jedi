@@ -1,4 +1,4 @@
-add_subdirectory( socaroms )
+add_subdirectory( roms )
 add_subdirectory( mains )
 
 # Add the CPP coding norms test
@@ -9,7 +9,7 @@ if(NOT CPPLINT_PY)
   set(CPPLINT_PY ${CMAKE_BINARY_DIR}/bin/cpplint.py)
 endif()
 
-ecbuild_add_test( TARGET socaroms_coding_norms
+ecbuild_add_test( TARGET roms_coding_norms
                   TYPE SCRIPT
                   COMMAND ${CPPLINT_PY}
                   ARGS --quiet --recursive ${CMAKE_CURRENT_SOURCE_DIR}

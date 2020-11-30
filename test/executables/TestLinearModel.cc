@@ -8,13 +8,13 @@
  * does it submit to any jurisdiction.
  */
 
-#include "socaroms/Traits.h"
+#include "roms/Traits.h"
 #include "oops/runs/Run.h"
 #include "test/interface/LinearModel.h"
 
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);
-  test::LinearModel<socaroms::Traits> tests;
+  test::LinearModel<roms::Traits> tests;
   return run.execute(tests);
 }
 

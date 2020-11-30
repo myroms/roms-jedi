@@ -5,12 +5,12 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "socaroms/Traits.h"
+#include "roms/Traits.h"
 #include "oops/runs/Run.h"
 #include "oops/runs/StaticBInit.h"
 
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);
-  oops::StaticBInit<socaroms::Traits> bmat;
+  oops::StaticBInit<roms::Traits> bmat;
   return run.execute(bmat);
 }

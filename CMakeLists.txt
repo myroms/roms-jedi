@@ -4,12 +4,12 @@
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
 ################################################################################
-# SOCAROMS
+# ROMS
 ################################################################################
 
 cmake_minimum_required( VERSION 3.8 FATAL_ERROR )
 
-project( socaroms C CXX Fortran)
+project( roms C CXX Fortran)
 
 set( CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH})
 
@@ -31,7 +31,7 @@ ecbuild_declare_project()
 ecbuild_enable_fortran( REQUIRED )
 ecbuild_add_cxx11_flags()
 
-set( SOCAROMS_LINKER_LANGUAGE CXX )
+set( ROMS_LINKER_LANGUAGE CXX )
 
 
 ################################################################################
@@ -84,28 +84,28 @@ link_libraries(${MPI_CXX_LIBRARIES} ${MPI_Fortran_LIBRARIES})
 ################################################################################
 # Export package info
 ################################################################################
-list( APPEND SOCAROMS_TPLS atlas atlas_f LAPACK MPI NetCDF )
+list( APPEND ROMS_TPLS atlas atlas_f LAPACK MPI NetCDF )
 
-set( SOCAROMS_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/src
+set( ROMS_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/src
                        ${CMAKE_CURRENT_BINARY_DIR}/src
                        ${CMAKE_Fortran_MODULE_DIRECTORY} )
-set( SOCAROMS_LIBRARIES socaroms )
+set( ROMS_LIBRARIES roms )
 
-get_directory_property( SOCAROMS_DEFINITIONS COMPILE_DEFINITIONS )
+get_directory_property( ROMS_DEFINITIONS COMPILE_DEFINITIONS )
 
-foreach( _tpl ${SOCAROMS_TPLS} )
+foreach( _tpl ${ROMS_TPLS} )
 string( TOUPPER ${_tpl} TPL )
-list( APPEND SOCAROMS_EXTRA_DEFINITIONS   ${${TPL}_DEFINITIONS}  ${${TPL}_TPL_DEFINITIONS}  )
-list( APPEND SOCAROMS_EXTRA_INCLUDE_DIRS  ${${TPL}_INCLUDE_DIRS} ${${TPL}_TPL_INCLUDE_DIRS} )
-list( APPEND SOCAROMS_EXTRA_LIBRARIES     ${${TPL}_LIBRARIES}    ${${TPL}_TPL_LIBRARIES}    )
+list( APPEND ROMS_EXTRA_DEFINITIONS   ${${TPL}_DEFINITIONS}  ${${TPL}_TPL_DEFINITIONS}  )
+list( APPEND ROMS_EXTRA_INCLUDE_DIRS  ${${TPL}_INCLUDE_DIRS} ${${TPL}_TPL_INCLUDE_DIRS} )
+list( APPEND ROMS_EXTRA_LIBRARIES     ${${TPL}_LIBRARIES}    ${${TPL}_TPL_LIBRARIES}    )
 endforeach()
 
 
 ################################################################################
 # Sources
 ################################################################################
-include( socaroms_compiler_flags )
-include_directories( ${SOCAROMS_INCLUDE_DIRS} ${SOCAROMS_EXTRA_INCLUDE_DIRS} )
+include( roms_compiler_flags )
+include_directories( ${ROMS_INCLUDE_DIRS} ${ROMS_EXTRA_INCLUDE_DIRS} )
 
 add_subdirectory( src )
 add_subdirectory( test )
@@ -119,7 +119,7 @@ endif()
 ################################################################################
 
 # prepares a tar.gz of the sources and/or binaries
-ecbuild_install_project( NAME socaroms )
+ecbuild_install_project( NAME roms )
 
 # print the summary of the configuration
 ecbuild_print_summary()

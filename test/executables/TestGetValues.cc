@@ -5,13 +5,13 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "socaroms/Traits.h"
+#include "roms/Traits.h"
 #include "oops/runs/Run.h"
 #include "test/interface/GetValues.h"
 #include "ufo/ObsTraits.h"
 
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);
-  test::GetValues<socaroms::Traits, ufo::ObsTraits> tests;
+  test::GetValues<roms::Traits, ufo::ObsTraits> tests;
   return run.execute(tests);
 }

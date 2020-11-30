@@ -5,7 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "socaroms/Traits.h"
+#include "roms/Traits.h"
 #include "oops/runs/Run.h"
 #include "oops/runs/Variational.h"
 #include "ufo/instantiateObsFilterFactory.h"
@@ -14,6 +14,6 @@
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);
   ufo::instantiateObsFilterFactory<ufo::ObsTraits>();
-  oops::Variational<socaroms::Traits, ufo::ObsTraits> var;
+  oops::Variational<roms::Traits, ufo::ObsTraits> var;
   return run.execute(var);
 }

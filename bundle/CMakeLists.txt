@@ -4,10 +4,10 @@
 # WHICH CAN BE OBTAINED AT HTTP://WWW.APACHE.ORG/LICENSES/LICENSE-2.0.
 
 #
-# SOCAROMS-BUNDLE
+# ROMS-BUNDLE
 #
 
-project( SOCAROMS-bundle C CXX Fortran )
+project( ROMS-bundle C CXX Fortran )
 
 cmake_minimum_required( VERSION 3.8 FATAL_ERROR )
 include( ecbuild_bundle )
@@ -32,6 +32,6 @@ ecbuild_bundle( PROJECT saber           GIT "https://github.com/jcsda-internal/s
 ecbuild_bundle( PROJECT ioda            GIT "https://github.com/jcsda-internal/ioda.git"            UPDATE BRANCH develop )
 ecbuild_bundle( PROJECT ioda-converters GIT "https://github.com/jcsda-internal/ioda-converters.git" UPDATE BRANCH develop )
 ecbuild_bundle( PROJECT ufo             GIT "https://github.com/jcsda-internal/ufo.git"             UPDATE BRANCH develop )
-ecbuild_bundle( PROJECT socaroms         SOURCE ../)
+ecbuild_bundle( PROJECT roms         SOURCE ../)
 
 ecbuild_bundle_finalize()

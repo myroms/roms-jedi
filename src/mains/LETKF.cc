@@ -5,7 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "socaroms/Traits.h"
+#include "roms/Traits.h"
 #include "oops/runs/Run.h"
 #include "ioda/instantiateObsLocFactory.h"
 #include "oops/runs/LocalEnsembleDA.h"
@@ -16,6 +16,6 @@ int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);
   ioda::instantiateObsLocFactory<ufo::ObsTraits>();
   ufo::instantiateObsFilterFactory<ufo::ObsTraits>();
-  oops::LocalEnsembleDA<socaroms::Traits, ufo::ObsTraits> letkf;
+  oops::LocalEnsembleDA<roms::Traits, ufo::ObsTraits> letkf;
   return run.execute(letkf);
 }

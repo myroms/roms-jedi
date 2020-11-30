@@ -5,13 +5,13 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "socaroms/Traits.h"
+#include "roms/Traits.h"
 #include "oops/runs/Run.h"
 #include "test/interface/ModelAuxIncrement.h"
 
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);
-  test::ModelAuxIncrement<socaroms::Traits> tests;
+  test::ModelAuxIncrement<roms::Traits> tests;
   return run.execute(tests);
 }
 
