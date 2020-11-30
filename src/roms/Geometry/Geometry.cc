@@ -19,8 +19,8 @@ namespace roms {
   Geometry::Geometry(const eckit::Configuration & conf,
                      const eckit::mpi::Comm & comm)
     : comm_(comm) {
-    util::abor1_cpp("Geometry::Geometry() needs to be implemented.",
-                    __FILE__, __LINE__);
+    const eckit::Configuration * configc = &conf;
+    roms_geo_setup_f90(keyGeom_, &configc, &comm);
   }
 
 // ----------------------------------------------------------------------------
@@ -34,8 +34,7 @@ namespace roms {
 // ----------------------------------------------------------------------------
 
   Geometry::~Geometry() {
-    util::abor1_cpp("Geometry::~Geometry() needs to be implemented.",
-                     __FILE__, __LINE__);
+    roms_geo_delete_f90(keyGeom_);
   }
 
 // ----------------------------------------------------------------------------

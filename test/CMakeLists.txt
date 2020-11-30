@@ -25,11 +25,11 @@ endforeach()
 # Tests of class interfaces
 #================================================================================
 
-#ecbuild_add_test(
-#  TARGET  test_roms_geometry
-#  SOURCES executables/TestGeometry.cc
-#  ARGS    testinput/geometry.yml
-#  LIBS    roms )
+ecbuild_add_test(
+  TARGET  test_roms_geometry
+  SOURCES executables/TestGeometry.cc
+  ARGS    testinput/geometry.yml
+  LIBS    roms )
 
 # TODO(template_impl) ecbuild_add_test(
 # TODO(template_impl)   TARGET  test_roms_state

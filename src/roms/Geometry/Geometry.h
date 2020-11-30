@@ -17,6 +17,8 @@
 #include "oops/util/ObjectCounter.h"
 #include "oops/util/Printable.h"
 
+#include "roms/Geometry/GeometryFortran.h"
+
 // forward declarations
 namespace eckit {
   class Configuration;
@@ -52,7 +54,7 @@ namespace roms {
 
    private:
     void print(std::ostream &) const;
-
+    int keyGeom_;
     const eckit::mpi::Comm & comm_;
   };
 }  // namespace roms

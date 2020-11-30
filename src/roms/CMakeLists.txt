@@ -4,10 +4,12 @@
 # all other files are handled through the subdirectory's respective CMakeLists.txt
 list( APPEND roms_src_files
   Traits.h
+  Fortran.h
 )
 
 # a convenience frunction to make adding source files from subdirectories easier
 # (To keep from having to use the full path every time)
+
 function(roms_target_sources)
   foreach( src IN LISTS ARGN)
     target_sources(roms PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/${src})
@@ -15,6 +17,7 @@ function(roms_target_sources)
 endfunction()
 
 # the main library for this interface
+
 ecbuild_add_library( TARGET   roms
                      SOURCES  ${roms_src_files}
                      LIBS     ${NETCDF_LIBRARIES}
