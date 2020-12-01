@@ -27,8 +27,7 @@ namespace roms {
 
   Geometry::Geometry(const Geometry & other)
     : comm_(other.comm_) {
-    util::abor1_cpp("Geometry::Geometry() needs to be implemented.",
-                     __FILE__, __LINE__);
+    roms_geo_clone_f90(keyGeom_, other.keyGeom_);
   }
 
 // ----------------------------------------------------------------------------

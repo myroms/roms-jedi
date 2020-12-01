@@ -57,13 +57,14 @@ end subroutine c_roms_geo_setup
 
 subroutine c_roms_geo_clone(c_key_self, c_key_other) bind(c,name='roms_geo_clone_f90')
 
-  integer(c_int), intent(in   ) :: c_key_self
-  integer(c_int), intent(inout) :: c_key_other
+  integer(c_int), intent(inout) :: c_key_self
+  integer(c_int), intent(in)    :: c_key_other
 
   type(roms_geom), pointer :: self, other
 
-  call roms_geom_registry%add(c_key_other)
   call roms_geom_registry%get(c_key_other, other)
+  call roms_geom_registry%init()
+  call roms_geom_registry%add(c_key_self)
   call roms_geom_registry%get(c_key_self , self )
 
   call self%clone(other)
