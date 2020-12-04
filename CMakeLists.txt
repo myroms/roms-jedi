@@ -4,12 +4,12 @@
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
 ################################################################################
-# ROMS
+# ROMS-JEDI interface
 ################################################################################
 
 cmake_minimum_required( VERSION 3.8 FATAL_ERROR )
 
-project( roms C CXX Fortran)
+project( roms-jedi C CXX Fortran)
 
 set( CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH})
 
@@ -37,6 +37,7 @@ set( ROMS_LINKER_LANGUAGE CXX )
 ################################################################################
 # Dependencies
 ################################################################################
+
 # Boost Headers
 set( Boost_MINIMUM_VERSION "1.47" )
 include_directories( ${Boost_INCLUDE_DIR} )
@@ -75,11 +76,38 @@ include_directories( ${IODA_INCLUDE_DIRS} )
 ecbuild_use_package( PROJECT ufo VERSION 0.1.0 REQUIRED )
 include_directories( ${UFO_INCLUDE_DIRS} )
 
+# ROMS                                                                                                                         
+find_library( ROMS_LIBRARY
+              NAMES "libROMS.so"
+              DOC "ROMS library"
+              HINTS ${roms_DIR}
+              PATH_SUFFIXES lib )
+
+mark_as_advanced( ROMS_LIBRARY )
+
+find_file( ROMS_INCLUDE_FILE
+           NAMES "ocean_control_mod.mod"
+           DOC "ROMS include directory"
+           HINTS ${roms_DIR}
+           PATH_SUFFIXES include module )
+
+mark_as_advanced( ROMS_INCLUDE_FILE )
+
+if( ROMS_INCLUDE_FILE )
+    get_filename_component(ROMS_INCLUDE_FILE ${ROMS_INCLUDE_FILE} ABSOLUTE)
+    get_filename_component(ROMS_INCLUDE_DIR  ${ROMS_INCLUDE_FILE} DIRECTORY)
+endif()
+
+include_directories( ${ROMS_INCLUDE_DIR} )
+link_libraries( ${ROMS_LIBRARY} )
+
+message( STATUS "ROMS_INCLUDE_DIR = ${ROMS_INCLUDE_DIR}" )
+message( STATUS "ROMS_LIBRARY = ${ROMS_LIBRARY}" )
+
 # MPI
 ecbuild_find_mpi( COMPONENTS CXX Fortran REQUIRED )
 ecbuild_include_mpi()
-link_libraries(${MPI_CXX_LIBRARIES} ${MPI_Fortran_LIBRARIES})
-
+link_libraries( ${MPI_CXX_LIBRARIES} ${MPI_Fortran_LIBRARIES} )
 
 ################################################################################
 # Export package info
@@ -89,7 +117,7 @@ list( APPEND ROMS_TPLS atlas atlas_f LAPACK MPI NetCDF )
 set( ROMS_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/src
                        ${CMAKE_CURRENT_BINARY_DIR}/src
                        ${CMAKE_Fortran_MODULE_DIRECTORY} )
-set( ROMS_LIBRARIES roms )
+set( ROMS_LIBRARIES roms-jedi )
 
 get_directory_property( ROMS_DEFINITIONS COMPILE_DEFINITIONS )
 
@@ -119,7 +147,7 @@ endif()
 ################################################################################
 
 # prepares a tar.gz of the sources and/or binaries
-ecbuild_install_project( NAME roms )
+ecbuild_install_project( NAME roms-jedi )
 
 # print the summary of the configuration
 ecbuild_print_summary()

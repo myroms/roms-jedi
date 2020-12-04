@@ -27,6 +27,7 @@ endforeach()
 
 ecbuild_add_test(
   TARGET  test_roms_geometry
+  MPI     2
   SOURCES executables/TestGeometry.cc
   ARGS    testinput/geometry.yml
   LIBS    roms )

@@ -32,6 +32,6 @@ ecbuild_bundle( PROJECT saber           GIT "https://github.com/jcsda-internal/s
 ecbuild_bundle( PROJECT ioda            GIT "https://github.com/jcsda-internal/ioda.git"            UPDATE BRANCH develop )
 ecbuild_bundle( PROJECT ioda-converters GIT "https://github.com/jcsda-internal/ioda-converters.git" UPDATE BRANCH develop )
 ecbuild_bundle( PROJECT ufo             GIT "https://github.com/jcsda-internal/ufo.git"             UPDATE BRANCH develop )
-ecbuild_bundle( PROJECT roms         SOURCE ../)
+ecbuild_bundle( PROJECT roms-jedi       SOURCE ../)
 
 ecbuild_bundle_finalize()

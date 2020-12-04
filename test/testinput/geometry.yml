@@ -1,2 +1,5 @@
 geometry:
-  roms stuff: "goes here"
+  roms_stdinp: "/home/arango/ocean/repository/git/WC13/RBL4DVAR/roms_wc13_2hours.in"
+
+  ng: 1            # ROMS nested grid number
+
