@@ -4,6 +4,7 @@ The following instructions should have the steps needed to implement an interfac
 running some of the basic JEDI applications, as well as the LETKF data assimilation application.
 (Instructions for the variational DA applications are still in the works).
 
+
 To get started:
 
 1. Checkout this repository
@@ -26,6 +27,11 @@ To get started:
    make -j4
    ctest
    ```
+
+The lastest version of ROMS can be checkout from the following repository:
+```
+git clone https://github.com/JCSDA-internal/roms_src <source_dir>
+```
 
 ## JEDI Applications
 
