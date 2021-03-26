@@ -1,4 +1,8 @@
 roms_target_sources(
-    State.cc
-    State.h
+  roms_state_mod.F90
+  roms_state.interface.F90
+  roms_state.reg.F90
+  State.cc
+  State.h
+  StateFortran.h
 )

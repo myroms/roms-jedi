@@ -1,5 +1,5 @@
 geometry:
-  roms_stdinp: "/home/arango/ocean/repository/git/WC13/RBL4DVAR/roms_wc13_2hours.in"
+  roms_stdinp: "/work/noaa/marine/Hernan.Arango/repository/Projects/WC13/RBL4DVAR/roms_wc13_2hours.in"
 
   ng: 1            # ROMS nested grid number
 
