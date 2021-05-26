@@ -5,26 +5,32 @@ running some of the basic JEDI applications, as well as the LETKF data assimilat
 (Instructions for the variational DA applications are still in the works).
 
 
-To get started:
+To get started (Orion specific):
 
 1. Checkout this repository
    ```
    git clone https://github.com/JCSDA-internal/roms-jedi <source_dir>
    ```
-2. setup the build directory. For simplicity, and unlike other current JEDI projects, the bundle
-   `CMakeLists.txt` is actually present in this repository at `bundle/` instead of in a separate
-   repository (Feel free to make the bundle a separate repository for your project if you wish).
+3. Load the modules
+   ```
+   export JEDI_OPT=/work/noaa/da/grubin/opt/modules
+   module use $JEDI_OPT/modulefiles/core
+   module purge
+   module load jedi/intel-impi/ecbuild35
+   ```
+2. setup the build directory
    ```
    cd ../
    mkdir <build_dir>
    cd <build_dir>
-   ecbuild ../<source_dir>/bundle
+   ecbuild -DMPIEXEC_EXECUTABLE="/opt/slurm/bin/srun" -DMPIEXEC_NUMPROC_FLAG="-n" -DROMS_INCLUDE_DIR=<path_to>/jediroms_wc13/JEDI/CBuild_roms/modules -DROMS_LIBRARY=<path_to>/jediroms_wc13/JEDI/CBuild_roms/lib/libROMS.so <path_to>/roms-jedi/bundle/
    ```
-3. Compile, and run the unit tests. At this point, only the `Geometry` test is enabled, and it
-   will fail until you start implementing the interface.
+   TODO Re-implement "find_library" and "find_files" for ROMS
+3. Compile, and run the unit tests.
    ```
    cd <proj_name>
    make -j4
+   salloc --ntasks 2 --qos=debug --time=00:30:00 --account=<your_account>
    ctest
    ```
 

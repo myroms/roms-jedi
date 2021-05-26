@@ -7,30 +7,19 @@
 # ROMS-BUNDLE
 #
 
-project( ROMS-bundle C CXX Fortran )
+cmake_minimum_required( VERSION 3.12)
+project( roms-jedi VERSION 0.0.0 LANGUAGES C CXX Fortran )
 
-cmake_minimum_required( VERSION 3.8 FATAL_ERROR )
+find_package( ecbuild 3.3.2 QUIET)
 include( ecbuild_bundle )
-
-set( ECBUILD_DEFAULT_BUILD_TYPE RelWithDebInfo )
-set( ENABLE_MPI ON CACHE BOOL "Compile with MPI" )
-
 ecbuild_bundle_initialize()
-ecbuild_requires_macro_version( 2.7 )
 
-# Optional repositories
-option( BUILD_ECKIT "download and build eckit (not needed if in a jedi container)" )
-if ( BUILD_ECKIT )
-  ecbuild_bundle( PROJECT eckit         GIT "https://github.com/jcsda-internal/eckit.git"           UPDATE BRANCH release-stable )
-endif ()
 
 # required repositories
-ecbuild_bundle( PROJECT fckit           GIT "https://github.com/jcsda-internal/fckit.git"           UPDATE BRANCH release-stable )
-ecbuild_bundle( PROJECT atlas           GIT "https://github.com/jcsda-internal/atlas.git"           UPDATE BRANCH release-stable )
 ecbuild_bundle( PROJECT oops            GIT "https://github.com/jcsda-internal/oops.git"            UPDATE BRANCH develop )
 ecbuild_bundle( PROJECT saber           GIT "https://github.com/jcsda-internal/saber.git"           UPDATE BRANCH develop )
 ecbuild_bundle( PROJECT ioda            GIT "https://github.com/jcsda-internal/ioda.git"            UPDATE BRANCH develop )
-#ecbuild_bundle( PROJECT ioda-converters GIT "https://github.com/jcsda-internal/ioda-converters.git" UPDATE BRANCH develop )
+ecbuild_bundle( PROJECT gsw             GIT "https://github.com/jcsda-internal/GSW-Fortran.git"     UPDATE BRANCH develop )
 ecbuild_bundle( PROJECT ufo             GIT "https://github.com/jcsda-internal/ufo.git"             UPDATE BRANCH develop )
 ecbuild_bundle( PROJECT roms-jedi       SOURCE ../)
 

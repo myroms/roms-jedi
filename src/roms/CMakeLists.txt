@@ -20,11 +20,25 @@ endfunction()
 
 ecbuild_add_library( TARGET   roms
                      SOURCES  ${roms_src_files}
-                     LIBS     ${NETCDF_LIBRARIES}
-                              eckit eckit_mpi fckit oops ioda ufo
                      INSTALL_HEADERS LISTED
                      LINKER_LANGUAGE ${ROMS_LINKER_LANGUAGE}
                     )
+
+target_include_directories(roms PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
+  $<INSTALL_INTERFACE:include/roms>)
+
+target_compile_features( roms PUBLIC cxx_std_11 )
+
+target_link_libraries( roms PUBLIC NetCDF::NetCDF_Fortran )
+target_link_libraries( roms PUBLIC fckit )
+target_link_libraries( roms PUBLIC atlas )
+target_link_libraries( roms PUBLIC atlas_f )
+target_link_libraries( roms PUBLIC gsw )
+target_link_libraries( roms PUBLIC oops )
+target_link_libraries( roms PUBLIC saber )
+target_link_libraries( roms PUBLIC ioda )
+target_link_libraries( roms PUBLIC ufo )
 
 # add source code in the subdirectories
 # TODO(template_impl) add_subdirectory(Covariance)
