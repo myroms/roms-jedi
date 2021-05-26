@@ -97,7 +97,7 @@ SUBROUTINE geom_init (self, f_conf, f_comm)
   self%f_comm = f_comm
   self%tile = tile
 
-  ! Get ROMS standard input filename and nested grid number from YAML file 
+  ! Get ROMS standard input filename and nested grid number from YAML file
 
   IF (.not.f_conf%get("roms_stdinp", roms_stdinp)) THEN
     CALL abor1_ftn ("geom_init: Cannot find ROMS standard input file")
@@ -217,69 +217,69 @@ END SUBROUTINE geom_end
 
 SUBROUTINE geom_clone (self, other)
 
-  CLASS (roms_geom), intent( in) :: self
-  CLASS (roms_geom), intent(out) :: other
+  CLASS (roms_geom), intent(inout) :: self
+  CLASS (roms_geom), intent(in) :: other
 
   ! Clone communicator
 
-  other%f_comm = self%f_comm
+  self%f_comm = other%f_comm
 
   ! clone tiled domain bounds and range indices
 
-  other%ng   = self%ng
-  other%tile = self%tile
-  other%NghostPoints = self%NghostPoints
+  self%ng   = other%ng
+  self%tile = other%tile
+  self%NghostPoints = other%NghostPoints
 
-  other%roms_stdinp = self%roms_stdinp
+  self%roms_stdinp = other%roms_stdinp
 
-  other%model = self%model
+  self%model = other%model
 
-  other%EWperiodic = self%EWperiodic
-  other%NSperiodic = self%NSperiodic
+  self%EWperiodic = other%EWperiodic
+  self%NSperiodic = other%NSperiodic
 
-  other%LBi = self%LBi
-  other%UBi = self%UBi
-  other%LBj = self%LBj
-  other%UBj = self%UBj
+  self%LBi = other%LBi
+  self%UBi = other%UBi
+  self%LBj = other%LBj
+  self%UBj = other%UBj
 
-  other%N   = self%N
-  other%LBk = self%LBk
-  other%UBk = self%UBk
+  self%N   = other%N
+  self%LBk = other%LBk
+  self%UBk = other%UBk
 
-  other%IstrR = self%IstrR
-  other%IendR = self%IendR
-  other%JstrR = self%JstrR
-  other%JendR = self%JendR
+  self%IstrR = other%IstrR
+  self%IendR = other%IendR
+  self%JstrR = other%JstrR
+  self%JendR = other%JendR
 
-  other%Istr  = self%Istr
-  other%Iend  = self%Iend
-  other%Jstr  = self%Jstr
-  other%Jend  = self%Jend
+  self%Istr  = other%Istr
+  self%Iend  = other%Iend
+  self%Jstr  = other%Jstr
+  self%Jend  = other%Jend
 
-  other%IstrU = self%IstrU
-  other%JstrV = self%JstrV
+  self%IstrU = other%IstrU
+  self%JstrV = other%JstrV
 
   ! Clone geometry arrays
 
-  CALL geom_allocate (other)
+  CALL geom_allocate (self)
 
-  other%lonr = self%lonr
-  other%latr = self%latr
-  other%lonu = self%lonu
-  other%latu = self%latu
-  other%lonv = self%lonv
-  other%latv = self%latv
+  self%lonr = other%lonr
+  self%latr = other%latr
+  self%lonu = other%lonu
+  self%latu = other%latu
+  self%lonv = other%lonv
+  self%latv = other%latv
 
-  other%angler = self%angler
+  self%angler = other%angler
 
-  other%rmask = self%rmask
-  other%umask = self%umask
-  other%vmask = self%vmask
+  self%rmask = other%rmask
+  self%umask = other%umask
+  self%vmask = other%vmask
 
-  other%z_r = self%z_r
-  other%z_u = self%z_u
-  other%z_v = self%z_v
-  other%z_w = self%z_w
+  self%z_r = other%z_r
+  self%z_u = other%z_u
+  self%z_v = other%z_v
+  self%z_w = other%z_w
 
 END SUBROUTINE geom_clone
 

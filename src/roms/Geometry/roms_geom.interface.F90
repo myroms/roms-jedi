@@ -62,10 +62,9 @@ subroutine c_roms_geo_clone(c_key_self, c_key_other) bind(c,name='roms_geo_clone
 
   type(roms_geom), pointer :: self, other
 
-  call roms_geom_registry%get(c_key_other, other)
-  call roms_geom_registry%init()
   call roms_geom_registry%add(c_key_self)
-  call roms_geom_registry%get(c_key_self , self )
+  call roms_geom_registry%get(c_key_self, self)
+  call roms_geom_registry%get(c_key_other, other )
 
   call self%clone(other)
 
