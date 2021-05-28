@@ -2,6 +2,8 @@
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+!
+! Hernan G. Arango, Rutgers University, Apr 2021
 
 MODULE roms_fieldsutils_mod
 
@@ -33,8 +35,8 @@ CONTAINS
 
 SUBROUTINE fldinfo3d (fld, mask, info)
 
-  real(kind=kind_real),  intent(in) :: fld(:,:,:)
-  logical,               intent(in) :: mask(:,:)
+  real(kind=kind_real), intent( in) :: fld(:,:,:)
+  logical,              intent( in) :: mask(:,:)
   real(kind=kind_real), intent(out) :: info(3)
 
   integer                           :: k
@@ -43,9 +45,9 @@ SUBROUTINE fldinfo3d (fld, mask, info)
   ! Calculate the min/max/sum separately for each masked level
 
   DO k = 1, SIZE(buffer, dim=2)
-     buffer(1,z) = MINVAL(fld(:,:,k), mask=mask)
-     buffer(2,z) = MAXVAL(fld(:,:,k), mask=mask)
-     buffer(3,z) = SUM   (fld(:,:,k), mask=mask) / SIZE(fld, dim=3)
+     buffer(1,k) = MINVAL(fld(:,:,k), mask=mask)
+     buffer(2,k) = MAXVAL(fld(:,:,k), mask=mask)
+     buffer(3,k) = SUM   (fld(:,:,k), mask=mask) / SIZE(fld, dim=3)
   end do
 
   ! Then, combine the min/max/sum over all levels
@@ -60,8 +62,8 @@ END SUBROUTINE fldinfo3d
 
 SUBROUTINE fldinfo2d (fld, mask, info)
 
-  real(kind=kind_real),  intent(in) :: fld(:,:)
-  logical,               intent(in) :: mask(:,:)
+  real(kind=kind_real), intent( in) :: fld(:,:)
+  logical,              intent( in) :: mask(:,:)
   real(kind=kind_real), intent(out) :: info(3)
 
   info(1) = minval(fld, mask=mask)

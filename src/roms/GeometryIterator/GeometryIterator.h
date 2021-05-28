@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2019-2020 UCAR
+ * (C) Copyright 2019-2021 UCAR
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -8,44 +8,59 @@
 #ifndef ROMS_GEOMETRYITERATOR_GEOMETRYITERATOR_H_
 #define ROMS_GEOMETRYITERATOR_GEOMETRYITERATOR_H_
 
-#include <ostream>
+#include <iterator>
 #include <string>
+
+#include "roms/Fortran.h"
 
 #include "oops/util/ObjectCounter.h"
 #include "oops/util/Printable.h"
 
-// forward declarations
+// Forward declarations
+
 namespace eckit {
-  class Configuration;
   namespace geometry {
     class Point2;
   }
 }
+namespace roms {
+  class Geometry;
+}
 
-// ----------------------------------------------------------------------------
 
 namespace roms {
 
-  // Geometry class
-  class GeometryIterator : public util::Printable,
-                           private util::ObjectCounter<GeometryIterator> {
+// -----------------------------------------------------------------------------
+
+  class GeometryIterator: public std::iterator<std::forward_iterator_tag,
+                                               eckit::geometry::Point2>,
+                          public util::Printable,
+                          private util::ObjectCounter<GeometryIterator> {
    public:
     static const std::string classname() {return "roms::GeometryIterator";}
 
-    // constructors / destructor
-    explicit GeometryIterator(const Geometry &, const int &, const int &);
-    GeometryIterator(const GeometryIterator&);
+    // constructor / destructor
+
+    GeometryIterator(const GeometryIterator &);
+    explicit GeometryIterator(const Geometry & geom,
+                              const int & iindex = 1, const int & jindex = 1);
     ~GeometryIterator();
 
     // other operators
+
     bool operator==(const GeometryIterator &) const;
     bool operator!=(const GeometryIterator &) const;
-    GeometryIterator& operator++();
     eckit::geometry::Point2 operator*() const;
+    GeometryIterator& operator++();
+
+    F90iter & toFortran() {return keyIter_;}
+    const F90iter & toFortran() const {return keyIter_;}
 
    private:
     void print(std::ostream &) const;
+    F90iter keyIter_;
   };
+
 }  // namespace roms
 
 #endif  // ROMS_GEOMETRYITERATOR_GEOMETRYITERATOR_H_

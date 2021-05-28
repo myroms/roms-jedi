@@ -20,6 +20,7 @@ include( roms-jedi_compiler_flags )
 ################################################################################
 # Dependencies
 ################################################################################
+
 find_package( NetCDF REQUIRED COMPONENTS Fortran)
 find_package( gsl-lite REQUIRED HINTS $ENV{gsl_list_DIR})
 find_package( eckit  1.11.6   REQUIRED)
@@ -32,26 +33,48 @@ find_package( ufo    1.0.0    REQUIRED)
 include_directories( ${NETCDF_INCLUDE_DIRS} )
 
 # ROMS
+
+message( STATUS "here_DIR=${CMAKE_CURRENT_LIST_DIR}" )
+message( STATUS "ROMS_BUILD_DIR=${ROMS_BUILD_DIR}" )
+
+find_library( ROMS_LIBRARY
+              NAMES "libROMS.so"
+              DOC "ROMS library"
+              HINTS ${ROMS_BUILD_DIR}
+              PATH_SUFFIXES lib )
+
+mark_as_advanced( ROMS_LIBRARY )
+
+find_file( ROMS_INCLUDE_FILE
+           NAMES "roms_kernel_mod.mod"
+           DOC "ROMS include directory"
+           HINTS ${ROMS_BUILD_DIR}
+           PATH_SUFFIXES include modules )
+
+mark_as_advanced( ROMS_INCLUDE_FILE )
+
+if( ROMS_INCLUDE_FILE )
+    get_filename_component(ROMS_INCLUDE_FILE ${ROMS_INCLUDE_FILE} ABSOLUTE)
+    get_filename_component(ROMS_INCLUDE_DIR  ${ROMS_INCLUDE_FILE} DIRECTORY)
+endif()
+
 include_directories( ${ROMS_INCLUDE_DIR} )
 link_libraries( ${ROMS_LIBRARY} )
 
-message( STATUS "################################################################################" )
-#message( STATUS "ROMS_INCLUDE_DIR = ${ROMS_INCLUDE_DIR}" )
-#message( STATUS "ROMS_LIBRARY = ${ROMS_LIBRARY}" )
-message( STATUS "################################################################################" )
-
-
+message( STATUS "ROMS_INCLUDE_DIR = ${ROMS_INCLUDE_DIR}" )
+message( STATUS "ROMS_LIBRARY = ${ROMS_LIBRARY}" )
 
 ################################################################################
 # Sources
 ################################################################################
+
 set( ROMS-JEDI_LINKER_LANGUAGE CXX)
 
 add_subdirectory( src )
 add_subdirectory( test )
 
-
 # print the summary of the configuration
+
 ecbuild_print_summary()
 
 

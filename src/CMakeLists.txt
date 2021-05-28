@@ -3,7 +3,9 @@ add_subdirectory( mains )
 
 # Add the CPP coding norms test
 ##############################################################################
+
 # find cpplint.py, if not found assume it will be built by oops in this bundle
+
 find_file(CPPLINT_PY cpplint.py HINTS ${OOPS_PATH}/bin)
 if(NOT CPPLINT_PY)
   set(CPPLINT_PY ${CMAKE_BINARY_DIR}/bin/cpplint.py)

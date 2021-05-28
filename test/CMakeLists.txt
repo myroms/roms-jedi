@@ -11,15 +11,14 @@ list( APPEND roms_test_input
   testinput/state.yml
   )
 
-
 # link the input files for the tests
+
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testinput)
 foreach(FILENAME ${roms_test_input})
   execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
     ${CMAKE_CURRENT_SOURCE_DIR}/${FILENAME}
     ${CMAKE_CURRENT_BINARY_DIR}/${FILENAME} )
 endforeach()
-
 
 #================================================================================
 # Tests of class interfaces
@@ -32,11 +31,17 @@ ecbuild_add_test(
   ARGS    testinput/geometry.yml
   LIBS    roms )
 
-# TODO(template_impl) ecbuild_add_test(
-# TODO(template_impl)   TARGET  test_roms_state
-# TODO(template_impl)   SOURCES executables/TestState.cc
-# TODO(template_impl)   ARGS    testinput/state.yml
-# TODO(template_impl)   LIBS    roms )
+# ecbuild_add_test(
+#  TARGET  test_roms_geometryiterator
+#  SOURCES executables/TestGeometryIterator.cc
+#  ARGS    testinput/geometryiterator.yml
+#  LIBS    roms )
+
+ecbuild_add_test(
+  TARGET  test_roms_state
+  SOURCES executables/TestState.cc
+  ARGS    testinput/state.yml
+  LIBS    roms )
 
 # TODO(template_impl) ecbuild_add_test(
 # TODO(template_impl)   TARGET  test_roms_increment
@@ -90,10 +95,4 @@ ecbuild_add_test(
 # TODO(template_impl)   TARGET  test_roms_linearmodel
 # TODO(template_impl)   SOURCES executables/TestLinearModel.cc
 # TODO(template_impl)   ARGS    testinput/linearmodel.yml
-# TODO(template_impl)   LIBS    roms )
-
-# TODO(template_impl) ecbuild_add_test(
-# TODO(template_impl)   TARGET  test_roms_geometryiterator
-# TODO(template_impl)   SOURCES executables/TestGeometryIterator.cc
-# TODO(template_impl)   ARGS    testinput/geometryiterator.yml
 # TODO(template_impl)   LIBS    roms )

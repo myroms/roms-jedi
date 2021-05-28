@@ -17,12 +17,17 @@
 #include "oops/util/ObjectCounter.h"
 #include "oops/util/Printable.h"
 
+#include "roms/Fortran.h"
 #include "roms/Geometry/GeometryFortran.h"
+#include "roms/GeometryIterator/GeometryIterator.h"
+#include "roms/GeometryIterator/GeometryIteratorFortran.h"
 
-// forward declarations
+// Forward declarations
+
 namespace eckit {
   class Configuration;
 }
+
 namespace roms {
   class GeometryIterator;
 }
@@ -32,27 +37,30 @@ namespace roms {
 namespace roms {
 
   // Geometry class
+
   class Geometry : public util::Printable,
                    private util::ObjectCounter<Geometry> {
    public:
     static const std::string classname() {return "roms::Geometry";}
 
     // constructors and destructor
+
     explicit Geometry(const eckit::Configuration &, const eckit::mpi::Comm &);
     Geometry(const Geometry &);
     ~Geometry();
 
     // accessors
-    const eckit::mpi::Comm & getComm() const {return comm_;}
 
-    // These are needed for the GeometryIterator Interface
-    // TODO(template_impl) GeometryIterator begin() const;
-    // TODO(template_impl) GeometryIterator end() const;
-
-    // vertical coordinate (only needed for GETKF?)
+    GeometryIterator begin() const;
+    GeometryIterator end() const;
     std::vector<double> verticalCoord(std::string &) const;
 
+    int& toFortran() {return keyGeom_;}
+    const int& toFortran() const {return keyGeom_;}
+    const eckit::mpi::Comm & getComm() const {return comm_;}
+
    private:
+    Geometry & operator=(const Geometry &);
     void print(std::ostream &) const;
     int keyGeom_;
     const eckit::mpi::Comm & comm_;

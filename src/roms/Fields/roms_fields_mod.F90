@@ -2,32 +2,28 @@
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+!
+! Hernan G. Arango, Rutgers University, Apr 2021
 
-!> Handle fields for the model
+!> ROMS fields object
 
 MODULE roms_fields_mod
 
 USE fckit_configuration_module, ONLY : fckit_configuration
 USE fckit_log_module,           ONLY : log, fckit_log
 USE fckit_mpi_module,           ONLY : fckit_mpi_comm, &
-                                       fckit_mpi_min, &
-                                       fckit_mpi_max, &
+                                       fckit_mpi_min,  &
+                                       fckit_mpi_max,  &
                                        fckit_mpi_sum
 USE datetime_mod,               ONLY : datetime, datetime_set
 USE duration_mod,               ONLY : duration
 USE kinds,                      ONLY : kind_real
 USE oops_variables_mod
-USE mpp_domains_mod,            ONLY : mpp_update_domains
-USE roms_geom_mod,              ONLY : roms_geom
-USE roms_fieldsutils_mod,       ONLY : roms_genfilename, &
-                                       fldinfo
-USE roms_utils,                 ONLY : roms_mld
 
-USE horiz_interp_mod,           ONLY : horiz_interp_type
-USE horiz_interp_spherical_mod, ONLY : horiz_interp_spherical, &
-                                       horiz_interp_spherical_new, &
-                                       horiz_interp_spherical_del
-USE tools_const,                ONLY : deg2rad
+USE interpolate_mod
+USE roms_geom_mod,              ONLY : roms_geom
+USE roms_fieldsutils_mod,       ONLY : roms_genfilename, fldinfo
+USE mod_scalars,                ONLY : NoError, exit_flag
 
 implicit none
 
@@ -37,22 +33,22 @@ PUBLIC  :: roms_field
 PUBLIC  :: roms_fields
 
 ! ------------------------------------------------------------------------------
-! ROMS FIELD Subroutines:
-! ------------------------------------------------------------------------------
-
-! ------------------------------------------------------------------------------
 !> Structure holds all data and metadata related to a single field variable
+! ------------------------------------------------------------------------------
 
 TYPE :: roms_field
 
+  integer                            :: Istr, Iend           !< tile I-range
+  integer                            :: Jstr, Jend           !< tile J-range
   integer                            :: N                    !< the number of levels
   integer                            :: InpNCid, OutNCid     !< input/output NetCDF file IDs
   integer                            :: InpRec, OutRec       !< input/output NetCDF records
 
+  real (kind=kind_real),     pointer :: angle(:,:) => null() !< field grid angle
+  real (kind=kind_real),     pointer :: lon(:,:)   => null() !< field lon
+  real (kind=kind_real),     pointer :: lat(:,:)   => null() !< field lat
+  real (kind=kind_real),     pointer :: mask(:,:)  => null() !< field mask
   real (kind=kind_real), allocatable :: val(:,:,:)           !< field data
-  real (kind=kind_real),     pointer :: mask(:,:) => null()  !< field mask
-  real (kind=kind_real),     pointer :: lon(:,:)  => null()  !< field lon
-  real (kind=kind_real),     pointer :: lat(:,:)  => null()  !< field lat
 
   character (len=1)                  :: gtype                !< C-grid location: 'r', 'u' or 'v'
 
@@ -75,10 +71,9 @@ TYPE :: roms_field
 END TYPE roms_field
 
 ! ------------------------------------------------------------------------------
-! ------------------------------------------------------------------------------
-
-!> Structure to holds a collection of roms_field types, and the public suroutines
+!> Structure to holds a collection of roms_field types, and the public routines
 !> to manipulate them. Represents all the fields of a given state or increment
+! ------------------------------------------------------------------------------
 
 TYPE :: roms_fields
 
@@ -134,6 +129,10 @@ CONTAINS
 ! ------------------------------------------------------------------------------
 
 ! ------------------------------------------------------------------------------
+! ROMS routines for a single field:
+! ------------------------------------------------------------------------------
+
+! ------------------------------------------------------------------------------
 !> Copy a field from RHS to SELF. SELF must be allocated first. The pointers
 !> (mask, lat, lon) will be different, but should NOT be changed to point to
 !> RHS pointers. Bad things will happen.
@@ -141,11 +140,16 @@ CONTAINS
 SUBROUTINE roms_field_copy (self, rhs)
 
   CLASS (roms_field), intent(inout) :: self
-  TYPE (roms_field),  intent(in)    :: rhs
+  TYPE (roms_field),  intent(   in) :: rhs
 
   CALL self%check_congruent (rhs)
 
   ! The only variable that should be different is %val
+
+  print '(a, 6(a,i0))', 'Entered roms_field::copy:', &
+                        '  LBi = ', LBOUND(rhs%val,DIM=1), ', UBi = ', UBOUND(rhs%val,DIM=1), &
+                        ', LBj = ', LBOUND(rhs%val,DIM=2), ', UBj = ', UBOUND(rhs%val,DIM=2), &
+                        ', N = ',   UBOUND(rhs%val,DIM=3), ', name = ', rhs%name
 
   self%val = rhs%val
 
@@ -158,12 +162,17 @@ SUBROUTINE roms_field_delete (self)
 
   CLASS (roms_field), intent(inout) :: self
 
+  print '(a, 6(a,i0))', 'Entered roms_field::copy:', &
+                        '  LBi = ', LBOUND(self%val,DIM=1), ', UBi = ', UBOUND(self%val,DIM=1), &
+                        ', LBj = ', LBOUND(self%val,DIM=2), ', UBj = ', UBOUND(self%val,DIM=2), &
+                        ', N = ',   UBOUND(self%val,DIM=3), ', name = ', self%name
+
   deallocate (self%val)
 
 END SUBROUTINE roms_field_delete
 
 ! ------------------------------------------------------------------------------
-! Make sure the two fields are the same in terms of name, size, and shape.
+!> Make sure the two fields are the same in terms of name, size, and shape.
 
 SUBROUTINE roms_field_check_congruent (self, rhs)
 
@@ -199,12 +208,12 @@ SUBROUTINE roms_field_update_halo (self, geom)
 
   USE mp_exchange_mod, ONLY : mp_exchange2d, mp_exchange3d
 
-  CLASS (roms_field),     intent(inout) :: self
-  TYPE (roms_geom), pointer, intent(in) :: geom
+  CLASS (roms_field),        intent(inout) :: self
+  TYPE (roms_geom), pointer, intent(   in) :: geom
 
-  logical                               :: EWperiodic, NSperiodic
-  integer                               :: ng, tile, NghostPoints
-  integer                               :: LBi, UBi, LBj, UBj, LBk, UBk
+  logical                                  :: EWperiodic, NSperiodic
+  integer                                  :: model, ng, tile, NghostPoints
+  integer                                  :: LBi, UBi, LBj, UBj, LBk, UBk
 
   model = geom%model                    ! numerical kernel
   ng    = geom%ng                       ! nested grid number
@@ -225,10 +234,10 @@ SUBROUTINE roms_field_update_halo (self, geom)
   SELECT CASE (self%name)
     CASE ('ssh')
       CALL mp_exchange2d (ng, tile, 1, 1, LBi, UBi, LBj, UBj, &
-                        & NghostPoints, EWperiodic, NWperiodic, self%val)
+                          NghostPoints, EWperiodic, NSperiodic, self%val(:,:,1))
     CASE ('uocn', 'vocn', 'tocn', 'socn')
       CALL mp_exchange3d (ng, tile, 1, 1, LBi, UBi, LBj, UBj, LBk, UBk, &
-                        & NghostPoints, EWperiodic, NSperiodic, self%val)
+                          NghostPoints, EWperiodic, NSperiodic, self%val)
     CASE DEFAULT
       CALL abor1_ftn ('roms_field::update_halo: wrong SIZE(SHAPE(field))')
   END SELECT
@@ -236,43 +245,117 @@ SUBROUTINE roms_field_update_halo (self, geom)
 END SUBROUTINE roms_field_update_halo
 
 ! ------------------------------------------------------------------------------
-! Interpolate field
+!> Interpolate 2D or 3D field to different grid stencil location
 
-SUBROUTINE roms_field_stencil_interp (self, geom, interp2d)
+SUBROUTINE roms_field_stencil_interp (self, geom, interp, method)
 
-  CLASS (roms_field),     intent(inout) :: self
-  TYPE (roms_geom), pointer, intent(in) :: geom
-  TYPE (horiz_interp_type),  intent(in) :: interp2d
+  CLASS (roms_field),        intent(inout) :: self
+  TYPE (roms_geom), pointer, intent(   in) :: geom
+  TYPE (roms_interp_type),   intent(inout) :: interp
+  integer,                   intent(   in) :: method                           
 
-  integer                              :: Isc, Iec, Jsc, Jec
-  integer                              :: Isd, Ied, Jsd, Jed
-  integer                              :: k
-  real(kind=kind_real),    allocatable :: val(:,:,:)
+  real(kind=kind_real),        allocatable :: val_src(:,:,:)
 
-  allocate (val, mold=self%val)
+  ! Make a temporary copy of source field
 
-  Isc = geom%isc
-  Iec = geom%iec
-  Jsc = geom%jsc
-  Jec = geom%jec
+  allocate (val_src, MOLD=self%val)
+  val_src = self%val
 
-  Isd = geom%isd
-  Ied = geom%ied
-  Jsd = geom%jsd
-  Jed = geom%jed
+  ! Interpolate field level-by-level
 
-  val = self%val
+  CALL roms_horiz_interp (interp, val_src, self%val, method)
+  IF (exit_flag .ne. NoError) THEN
+    CALL abor1_ftn ("roms_field::stencil_interp: Error while calling roms_horiz_interp")
+  END IF
 
-  DO k = 1, self%nz
-    CALL horiz_interp_spherical (interp2d, val(Is:Ie,Js:Je,k), self%val(Isc:Iec,Jsc:Jec,k))
-  END DO
+  ! Update halo
 
   CALL self%update_halo (geom)
+
+  ! Deallocate temporary array
+
+  IF (allocated(val_src)) deallocate (val_src)
 
 END SUBROUTINE roms_field_stencil_interp
 
 ! ------------------------------------------------------------------------------
-! ROMS FIELDS Subroutines:
+!> Initializes ROMS field interpolation structure
+
+SUBROUTINE roms_field_interp_initialize (geom, field, interp, gtype)
+
+  TYPE (roms_geom),        intent(   in) :: geom    !< geometry object
+  TYPE (roms_field),       intent(inout) :: field   !< field object
+  TYPE (roms_interp_type), intent(inout) :: interp  !< interpolation object
+  character (len=*),       intent(   in) :: gtype   !< C-grid location
+
+  integer                                :: ng
+
+  ! If applicable, deallocate interpolation structure
+
+  IF (associated(interp%lon_src)) THEN
+    CALL roms_interp_delete (interp)
+  END IF
+
+  ! Associate source (lon,lat) coordinates
+
+  interp%angle_src = field%angle
+  interp%lon_src   = field%lon
+  interp%lat_src   = field%lat
+
+  interp%LBi_src = LBOUND(interp%lon_src, DIM=1)
+  interp%UBi_src = UBOUND(interp%lon_src, DIM=1)
+  interp%LBj_src = LBOUND(interp%lat_src, DIM=2)
+  interp%UBj_src = UBOUND(interp%lat_src, DIM=2)
+
+  interp%Istr_src = field%Istr
+  interp%Iend_src = field%Iend
+  interp%Jstr_src = field%Jstr
+  interp%Jend_src = field%Jend
+
+  ng = geom%ng
+
+  ! Associate destination (lon,lat) coordinates according to C-grid locations
+
+  interp%LBi_dst = geom%LBi
+  interp%UBi_dst = geom%UBi
+  interp%LBj_dst = geom%LBj
+  interp%UBj_dst = geom%UBj
+
+  SELECT CASE (gtype)
+    CASE ('r', 'R')                      !< RHO-points
+      interp%Istr_dst = geom%IstrR
+      interp%Iend_dst = geom%IendR
+      interp%Jstr_dst = geom%JstrR
+      interp%Jend_dst = geom%JendR
+      interp%lon_dst  = geom%lonr
+      interp%lat_dst  = geom%latr
+    CASE ('u', 'U')                      !< U-points
+      interp%Istr_dst = geom%Istr
+      interp%Iend_dst = geom%IendR
+      interp%Jstr_dst = geom%JstrR
+      interp%Jend_dst = geom%JendR
+      interp%lon_dst  = geom%lonu
+      interp%lat_dst  = geom%latu
+    CASE ('v', 'V')                      !< V-points
+      interp%Istr_dst = geom%IstrR
+      interp%Iend_dst = geom%IendR
+      interp%Jstr_dst = geom%Jstr
+      interp%Jend_dst = geom%JendR
+      interp%lon_dst  = geom%lonv
+      interp%lat_dst  = geom%latv
+    CASE DEFAULT
+      CALL abor1_ftn ('roms_field::hindices unknown C-grid location = '// gtype)
+  END SELECT
+
+  ! Compute the horizontal fractional coordinates (x_dst, y_dst) of the source
+  ! cells containing the destination values.
+
+  CALL roms_interp_fractional (interp)
+
+END SUBROUTINE roms_field_interp_initialize
+
+! ------------------------------------------------------------------------------
+! ROMS routines for a set of fields:
 ! ------------------------------------------------------------------------------
 
 ! ------------------------------------------------------------------------------
@@ -296,6 +379,13 @@ SUBROUTINE roms_fields_create (self, geom, vars)
   ! Associate geometry
 
   self%geom => geom
+
+  print '(a, 6(a,i0))', 'roms_fields::create: ', &
+                        ' tile = ', geom%f_comm%rank(), &
+                        ', LBi = ', geom%LBi, ', UBi = ', geom%UBi, &
+                        ', LBj = ', geom%LBj, ', UBj = ', geom%UBj, &
+                        ', N = ', geom%N
+  CALL geom%f_comm%barrier()
 
   ! Initialize the variable parameters
 
@@ -327,6 +417,11 @@ SUBROUTINE roms_fields_copy (self, rhs)
   TYPE (roms_field),         pointer :: rhs_fld
 
   ! Initialize the variables based on the names in RHS
+
+  print '(a, 6(a,i0))', 'Entered roms_fields::copy:', &
+                        '  LBi = ', rhs%geom%LBi, ', UBi = ', rhs%geom%UBi, &
+                        ', LBj = ', rhs%geom%LBj, ', UBj = ', rhs%geom%UBj, ', N = ', rhs%geom%N, &
+                        ', tile = ', rhs%geom%f_comm%rank()
 
   IF (.not. ASSOCIATED(self%fields)) THEN
     self%geom => rhs%geom
@@ -379,8 +474,8 @@ END SUBROUTINE roms_fields_delete
 
 SUBROUTINE roms_fields_get (self, name, field)
 
-  CLASS (roms_fields),         intent(in) :: self
-  character (len=*),           intent(in) :: name   !< name of field to find
+  CLASS (roms_fields),        intent( in) :: self
+  character (len=*),          intent( in) :: name   !< name of field to find
   TYPE (roms_field), pointer, intent(out) :: field  !< resulting field pointer
 
   integer                                 :: i
@@ -423,8 +518,8 @@ END FUNCTION roms_fields_has
 
 ! ------------------------------------------------------------------------------
 !> Make sure two sets of fields have the same name, size, and shape
-!>
-!> TODO: make this more robust (allow for different number of fields?)
+
+!  TODO: make this more robust (allow for different number of fields?)
 
 SUBROUTINE roms_fields_check_congruent (f1, f2)
 
@@ -457,8 +552,8 @@ END SUBROUTINE roms_fields_check_congruent
 ! ------------------------------------------------------------------------------
 !> Make sure two sets of fields have same shape for fields they have in common
 !> f1 must be a subset of f2
-!>
-!> TODO: make this more robust (allow for different number of fields?)
+
+!  TODO: make this more robust (allow for different number of fields?)
 
 SUBROUTINE roms_fields_check_subset (f1, f2)
 
@@ -487,16 +582,17 @@ END SUBROUTINE roms_fields_check_subset
 
 ! ------------------------------------------------------------------------------
 !> for a given list of field names, initialize the properties of those fields
-! NOTE: this information should be moved into a yaml file
-! TODO, allocate space for derived variables
+
+!  NOTE: this information should be moved into a yaml file
+!  TODO, allocate space for derived variables
 
 SUBROUTINE roms_fields_init_vars (self, vars)
 
-  CLASS (roms_fields),        intent(inout) :: self
-  character(len=:), allocatable, intent(in) :: vars(:)
+  CLASS (roms_fields),           intent(inout) :: self
+  character(len=:), allocatable, intent(   in) :: vars(:)
 
-  integer                                   :: LBi, UBi, LBj, UBj, N
-  integer                                   :: i
+  integer                                       :: LBi, UBi, LBj, UBj, N
+  integer                                       :: i
 
   LBi = self%geom%LBi
   UBi = self%geom%UBi
@@ -506,32 +602,56 @@ SUBROUTINE roms_fields_init_vars (self, vars)
   allocate ( self%fields(SIZE(vars)) )
 
   DO i = 1, SIZE(vars)
-    self%fields(i)%name = trim(vars(i))
 
-    ! Default stencil grid location is at cell center (RHO-points)
-
-    self%fields(i)%lon => self%geom%lonr
-    self%fields(i)%lat => self%geom%latr
+    self%fields(i)%name = TRIM(vars(i))
 
     ! determine number of levels, and if masked
 
     SELECT CASE (self%fields(i)%name)
       CASE ('tocn', 'socn')
         N = self%geom%N
-        self%fields(i)%mask => self%geom%rmask
+        self%fields(i)%gtype =  "r"
+        self%fields(i)%Istr  =  self%geom%IstrR
+        self%fields(i)%Iend  =  self%geom%IendR
+        self%fields(i)%Jstr  =  self%geom%JstrR
+        self%fields(i)%Jend  =  self%geom%JendR
+        self%fields(i)%angle => self%geom%angler
+        self%fields(i)%lon   => self%geom%lonr
+        self%fields(i)%lat   => self%geom%latr
+        self%fields(i)%mask  => self%geom%rmask
       CASE ('uocn')
         N = self%geom%N
-        self%fields(i)%mask => self%geom%umask
-        self%fields(i)%lon  => self%geom%lonu
-        self%fields(i)%lat  => self%geom%latu
+        self%fields(i)%gtype =  "u"
+        self%fields(i)%Istr  =  self%geom%IstrU
+        self%fields(i)%Iend  =  self%geom%IendR
+        self%fields(i)%Jstr  =  self%geom%JstrR
+        self%fields(i)%Jend  =  self%geom%JendR
+        self%fields(i)%angle => self%geom%angleu
+        self%fields(i)%lon   => self%geom%lonu
+        self%fields(i)%lat   => self%geom%latu
+        self%fields(i)%mask  => self%geom%umask
       CASE ('vocn')
         N = self%geom%N
-        self%fields(i)%mask => self%geom%vmask
-        self%fields(i)%lon  => self%geom%lonv
-        self%fields(i)%lat  => self%geom%latv
+        self%fields(i)%gtype =  "v"
+        self%fields(i)%Istr  =  self%geom%IstrR
+        self%fields(i)%Iend  =  self%geom%IendR
+        self%fields(i)%Jstr  =  self%geom%JstrV
+        self%fields(i)%Jend  =  self%geom%JendR
+        self%fields(i)%angle => self%geom%anglev
+        self%fields(i)%lon   => self%geom%lonv
+        self%fields(i)%lat   => self%geom%latv
+        self%fields(i)%mask  => self%geom%vmask
       CASE ('ssh')
         N = 1
-        self%fields(i)%mask => self%geom%rmask
+        self%fields(i)%gtype =  "r"
+        self%fields(i)%Istr  =  self%geom%IstrR
+        self%fields(i)%Iend  =  self%geom%IendR
+        self%fields(i)%Jstr  =  self%geom%JstrR
+        self%fields(i)%Jend  =  self%geom%JendR
+        self%fields(i)%angle => self%geom%angler
+        self%fields(i)%lon   => self%geom%lonr
+        self%fields(i)%lat   => self%geom%latr
+        self%fields(i)%mask  => self%geom%rmask
       CASE DEFAULT
         CALL abor1_ftn ('roms_fields::create(): unknown field '// self%fields(i)%name)
     END SELECT
@@ -540,23 +660,21 @@ SUBROUTINE roms_fields_init_vars (self, vars)
     
     self%fields(i)%N = N
     
-    allocate ( self%fields(i)%val(LBi:UBi, LBj:UBi, N) )
+    allocate ( self%fields(i)%val(LBi:UBi, LBj:UBj, N) )
 
     ! Set other variables associated with each field
-
-    self%fields(i)%cf_name = ""
-    self%fields(i)%io_name = ""
-    self%fields(i)%gtype   = "r"
 
     SELECT CASE (self%fields(i)%name)
       CASE ('tocn')
         self%fields(i)%cf_name = "sea_water_potential_temperature"
         self%fields(i)%io_file = "ocn"
         self%fields(i)%io_name = "temp"
+        self%fields(i)%gtype   = "r"
       CASE ('socn')
         self%fields(i)%cf_name = "sea_water_practical_salinity"
         self%fields(i)%io_file = "ocn"
         self%fields(i)%io_name = "salt"
+        self%fields(i)%gtype   = "r"
       CASE ('ssh')
         self%fields(i)%cf_name = "sea_surface_height"
         self%fields(i)%io_file = "ocn"
@@ -570,8 +688,17 @@ SUBROUTINE roms_fields_init_vars (self, vars)
         self%fields(i)%cf_name = "sea_water_meridional_current"
         self%fields(i)%io_file = "ocn"
         self%fields(i)%io_name = "v"
-        self%fields(i)%gtype   = "v"
+      CASE DEFAULT
+        self%fields(i)%cf_name = ""
+        self%fields(i)%io_name = ""
+        self%fields(i)%gtype   = "r"
     END SELECT
+
+    IF (self%geom%f_comm%rank() .eq. 0) THEN
+      print '(a,a4,a,3(i0,1x))', 'roms_fields::init_vars: allocated ', &
+                                 TRIM(self%fields(i)%io_name), &
+                                 ', SHAPE = ', SHAPE(self%fields(i)%val)
+    END IF
 
   END DO
 
@@ -628,7 +755,7 @@ END SUBROUTINE roms_fields_zeros
 SUBROUTINE roms_fields_add (self, rhs)
 
   CLASS (roms_fields), intent(inout) :: self
-  CLASS (roms_fields),    intent(in) :: rhs
+  CLASS (roms_fields), intent(   in) :: rhs
 
   integer                            :: i
 
@@ -650,7 +777,7 @@ END SUBROUTINE roms_fields_add
 SUBROUTINE roms_fields_sub (self, rhs)
 
   CLASS (roms_fields), intent(inout) :: self
-  CLASS (roms_fields),    intent(in) :: rhs
+  CLASS (roms_fields), intent(   in) :: rhs
 
   integer                            :: i
 
@@ -687,12 +814,12 @@ END SUBROUTINE roms_fields_mul
 
 SUBROUTINE roms_fields_axpy (self, c, rhs)
 
-  CLASS (roms_fields), intent(inout) :: self
-  real (kind=kind_real),  intent(in) :: c
-  CLASS (roms_fields),    intent(in) :: rhs
+  CLASS (roms_fields),   intent(inout) :: self
+  real (kind=kind_real), intent(   in) :: c
+  CLASS (roms_fields),   intent(   in) :: rhs
 
-  integer                            :: i
-  TYPE (roms_field),         pointer :: f_rhs, f_lhs
+  integer                              :: i
+  TYPE (roms_field),           pointer :: f_rhs, f_lhs
 
   ! Make sure fields are correct shape
 
@@ -712,8 +839,8 @@ END SUBROUTINE roms_fields_axpy
 
 SUBROUTINE roms_fields_dotprod (fld1, fld2, zprod)
 
-  CLASS (roms_fields),     intent(in) :: fld1
-  CLASS (roms_fields),     intent(in) :: fld2
+  CLASS (roms_fields),    intent( in) :: fld1
+  CLASS (roms_fields),    intent( in) :: fld2
   real (kind=kind_real),  intent(out) :: zprod
 
   integer                             :: i, j, k, n
@@ -722,13 +849,13 @@ SUBROUTINE roms_fields_dotprod (fld1, fld2, zprod)
 
   ! Make sure fields have same name, size, and shape
 
-  CALL F1%check_congruent (F2)
+  CALL fld1%check_congruent (fld2)
 
   ! Loop over (almost) all fields
 
   my_zprod = 0.0_kind_real
 
-  DO n = 1, SIZE(F1%fields)
+  DO n = 1, SIZE(fld1%fields)
 
     field1 => fld1%fields(n)
     field2 => fld2%fields(n)
@@ -761,12 +888,12 @@ END SUBROUTINE roms_fields_dotprod
 
 SUBROUTINE roms_fields_gpnorm (fld, nf, pstat)
 
-  CLASS (roms_fields),      intent(in) :: fld              !> Fields set
-  integer,                  intent(in) :: nf
+  CLASS (roms_fields),   intent(   in) :: fld              !> Fields set
+  integer,               intent(   in) :: nf
   real (kind=kind_real), intent(inout) :: pstat(3, nf)     !> [min, max, average]
 
   logical                              :: mask(fld%geom%Istr:fld%geom%Iend, &
-                                             & fld%geom%Jstr:fld%geom%Jend)
+                                               fld%geom%Jstr:fld%geom%Jend)
   integer                              :: Istr, Iend, Jstr, Jend, n
   real (kind=kind_real)                :: my_water_cells, water_cells
   real (kind=kind_real)                :: buffer(3)
@@ -800,84 +927,60 @@ SUBROUTINE roms_fields_gpnorm (fld, nf, pstat)
 
     CALL fldinfo (field%val(Istr:Iend,Jstr:Jend,:), mask, buffer)
 
-    CALL fld%geom%f_comm%allreduce (buffer(1), pstat(1,m), fckit_mpi_min())
-    CALL fld%geom%f_comm%allreduce (buffer(2), pstat(2,m), fckit_mpi_max())
-    CALL fld%geom%f_comm%allreduce (buffer(3), pstat(3,m), fckit_mpi_sum())
+    CALL fld%geom%f_comm%allreduce (buffer(1), pstat(1,n), fckit_mpi_min())
+    CALL fld%geom%f_comm%allreduce (buffer(2), pstat(2,n), fckit_mpi_max())
+    CALL fld%geom%f_comm%allreduce (buffer(3), pstat(3,n), fckit_mpi_sum())
     pstat(3,n) = pstat(3,n) / water_cells
 
   END DO
 
 END SUBROUTINE roms_fields_gpnorm
 
-
 ! ------------------------------------------------------------------------------
-! Interpolate from U- and V-points to RHO-points.
+!> Interpolate from U- and V-points to RHO-points.
 
 SUBROUTINE roms_fields_colocate (self, gtype)
 
   CLASS (roms_fields),    intent(inout) :: self
-  character (len=1),         intent(in) :: gtype  !< C-grid location (r, u, or v)
+  character (len=1),      intent(   in) :: gtype   !< C-grid; 'r', 'u', or 'v'
 
+  TYPE (roms_field),            pointer :: field
+  TYPE (roms_interp_type)               :: interp
+  real(kind=kind_real),     allocatable :: val(:,:,:)
   integer                               :: i, k
-  real (kind=kind_real),    allocatable :: val(:,:,:)
-  real (kind=kind_real),        pointer :: lon_out(:,:) => null()
-  real (kind=kind_real),        pointer :: lat_out(:,:) => null()
-  TYPE (roms_geom),             pointer :: g => null()
-  TYPE (horiz_interp_type)              :: interp2d
-
-  ! Associate lon_out and lat_out according to cgridlocout
-
-  SELECT CASE (gtype)
-    CASE ('r')                           !< RHO-points
-      lon_out => self%geom%lon
-      lat_out => self%geom%lat
-    CASE ('u')                           !< U-points
-      lon_out => self%geom%lonu
-      lat_out => self%geom%latu
-    CASE ('v')                           !< V-points
-      lon_out => self%geom%lonv
-      lat_out => self%geom%latv
-    CASE DEFAULT
-      CALL abor1_ftn ('roms_fields::colocate: unknown C-grid location '// gtype)
-  END SELECT
 
   ! Apply interpolation to all fields, when necessary
 
   DO i = 1, SIZE(self%fields)
 
-    ! Check if already colocated
+    ! Avoid interpolation if the field is already colocateda at "gtype"
 
     IF (self%fields(i)%gtype == gtype) CYCLE
 
-    ! Initialize fms spherical idw interpolation
+    field => self%fields(i)
 
-     g => self%geom
-     CALL horiz_interp_spherical_new(interp2d, &
-       & REAL(deg2rad*self%fields(i)%lon(g%isd:g%ied,g%jsd:g%jed), 8), &
-       & REAL(deg2rad*self%fields(i)%lat(g%isd:g%ied,g%jsd:g%jed), 8), &
-       & REAL(deg2rad*lon_out(g%isc:g%iec,g%jsc:g%jec), 8), &
-       & REAL(deg2rad*lat_out(g%isc:g%iec,g%jsc:g%jec), 8))
+    ! Initialize horizontal interpolation structure
+
+    CALL roms_field_interp_initialize (self%geom, field, interp, gtype)
 
     ! Make a temporary copy of field
 
-    IF (ALLOCATED(val)) deallocate (val)
-    allocate (val, MOLD=self%fields(i)%val)
-    val = self%fields(i)%val
+    IF (allocated(val)) deallocate (val)
+    allocate ( val, MOLD=field%val )
+    val = field%val
 
-    ! Interpolate all levels
+    ! Horizontally interpolate field level-by-level
 
-    DO k = 1, self%fields(i)%nz
-      CALL self%fields(i)%stencil_interp (self%geom, interp2d)
-    END DO
+    CALL self%fields(i)%stencil_interp (self%geom, interp, BilinearMethod)
 
-    ! Update c-grid location
+    ! Update fields structure
 
     self%fields(i)%gtype = gtype
  
     SELECT CASE (gtype)
       CASE ('r')
-        self%fields(i)%lon => self%geom%lon
-        self%fields(i)%lat => self%geom%lat
+        self%fields(i)%lon => self%geom%lonr
+        self%fields(i)%lat => self%geom%latr
       CASE ('u')
         self%fields(i)%lon => self%geom%lonu
         self%fields(i)%lat => self%geom%latu
@@ -886,19 +989,21 @@ SUBROUTINE roms_fields_colocate (self, gtype)
         self%fields(i)%lat => self%geom%latv
     END SELECT
 
-  END DO
+    ! Dellocate ROMS interpolation structure
 
-  CALL horiz_interp_spherical_del (interp2d)
+    CALL roms_interp_delete (interp)
+
+  END DO
 
 END SUBROUTINE roms_fields_colocate
 
 ! ------------------------------------------------------------------------------
-! Compute the number of elements of in the state vector including packed fields
+!> Compute the number of elements of in the state vector including packed fields
 
 SUBROUTINE roms_fields_serial_size (self, geom, vec_size)
 
-  CLASS (roms_fields),    intent(in) :: self
-  TYPE (roms_geom),       intent(in) :: geom
+  CLASS (roms_fields),   intent( in) :: self
+  TYPE (roms_geom),      intent( in) :: geom
   integer,               intent(out) :: vec_size
 
   integer                            :: i
@@ -913,13 +1018,13 @@ SUBROUTINE roms_fields_serial_size (self, geom, vec_size)
 END SUBROUTINE roms_fields_serial_size
 
 ! ------------------------------------------------------------------------------
-! Pack all fields into state vector
+!> Pack all fields into state vector
 
 SUBROUTINE roms_fields_serialize (self, geom, vec_size, vec)
 
-  CLASS (roms_fields),     intent(in) :: self
-  TYPE (roms_geom),        intent(in) :: geom
-  integer,                 intent(in) :: vec_size      ! state vector length
+  CLASS (roms_fields),    intent( in) :: self
+  TYPE (roms_geom),       intent( in) :: geom
+  integer,                intent( in) :: vec_size      ! state vector length
   real (kind=kind_real),  intent(out) :: vec(vec_size) ! state vector
 
   integer                             :: i, ic, np
@@ -936,17 +1041,17 @@ SUBROUTINE roms_fields_serialize (self, geom, vec_size, vec)
 END SUBROUTINE roms_fields_serialize
 
 ! ------------------------------------------------------------------------------
-! Unpack all fields from state vector
+!> Unpack all fields from state vector
 
 SUBROUTINE roms_fields_deserialize (self, geom, vec_size, vec, ic)
 
-  CLASS (roms_fields),  intent(inout) :: self
-  TYPE (roms_geom),        intent(in) :: geom
-  integer,                 intent(in) :: vec_size      !< state vector length
-  real (kind=kind_real),   intent(in) :: vec(vec_size) !< state vector
-  integer,              intent(inout) :: ic            !< vector element counter        
+  CLASS (roms_fields),   intent(inout) :: self
+  TYPE (roms_geom),      intent(   in) :: geom
+  integer,               intent(   in) :: vec_size      !< state vector length
+  real (kind=kind_real), intent(   in) :: vec(vec_size) !< state vector
+  integer,               intent(inout) :: ic            !< vector element counter        
 
-  integer                             :: i, np
+  integer                              :: i, np
 
   ! Loop over fields, levels and horizontal points
 
@@ -959,92 +1064,277 @@ SUBROUTINE roms_fields_deserialize (self, geom, vec_size, vec, ic)
 END SUBROUTINE roms_fields_deserialize
 
 ! ------------------------------------------------------------------------------
+!> Analytical initialization of fields
+
+SUBROUTINE roms_fields_analytic (fld, f_conf, vdate)
+
+  CLASS (roms_fields),        intent(inout) :: fld     !< Fields set
+  TYPE (fckit_configuration), intent(   in) :: f_conf  !< FCKIT configuration
+  TYPE (datetime),            intent(inout) :: vdate   !< Date and Time
+
+  character (len=20)                        :: sdate
+  character (len=30)                        :: ana_config
+  character (len=: ), allocatable           :: string
+
+  ! Report configuration
+
+  IF (f_conf%has("analytic_init")) THEN
+    CALL f_conf%get_or_die ("analytic_init",string)
+    ana_config = string
+  ELSE
+    ana_config = 'uniform_field'
+  END IF
+  CALL fckit_log%warning ('roms_fields_analytic: '//TRIM(ana_config))
+
+  ! Set date and time
+
+    CALL f_conf%get_or_die ("date", string)
+    sdate = string
+    CALL fckit_log%info ('roms_fields_analytic: validity date is '//sdate)
+    CALL datetime_set (sdate, vdate)
+
+  ! Define state fields
+
+  SELECT CASE (TRIM(ana_config))
+    CASE ('uniform_field')
+      CALL fld%zeros ()
+    CASE DEFAULT
+      CALL abor1_ftn ('roms_fields_analytic: unknown analytical initialization')
+  END SELECT
+
+END SUBROUTINE roms_fields_analytic
+
+! ------------------------------------------------------------------------------
+!> Reads fields from NetCDF file
 
 SUBROUTINE roms_fields_read (fld, f_conf, vdate)
 
   USE mod_ncparam,    ONLY : r2dvar, r3dvar, u3dvar, v3dvar
-  USE mod_netcdf,     ONLY : netcdf_inq_varid
+  USE mod_netcdf,     ONLY : netcdf_open, netcdf_close, netcdf_inq_var, var_Dsize
   USE mod_scalars,    ONLY : NoError, exit_flag
   USE netcdf,         ONLY : nf90_noerr
   USE nf_fread2d_mod, ONLY : nf_fread2d
   USE nf_fread3d_mod, ONLY : nf_fread3d
 
   CLASS (roms_fields),        intent(inout) :: fld     !< Fields set
-  TYPE (fckit_configuration), intent(in)    :: f_conf  !< Configuration
-  TYPE (datetime),            intent(inout) :: vdate   !< DateTime
+  TYPE (fckit_configuration), intent(   in) :: f_conf  !< FCKIT configuration
+  TYPE (datetime),            intent(inout) :: vdate   !< Date and Time
 
-  integer                                   :: i, model, ng, varid
-  integer                                   :: InpNCid, InpRec
+  integer                                   :: i, model, ng, nvdims
+  integer                                   :: fields_record, ncid, varid, status
   integer                                   :: LBi, UBi, LBj, UBj, LBk, UBk
+  integer                                   :: Im, Jm, Km, nx, ny, nz
+  integer                                   :: iread
+  integer, dimension(4)                     :: Vsize
   real (kind=kind_real)                     :: Fmin, Fmax, scale
-  character (len=256)                       :: InpNCname
+  character (len=:), allocatable            :: fields_dir, fields_filename, string
+  character (len=256)                       :: ncname, text
 
-  ! Initialize
+  ! Get flag to read fields from NetCDF file or get values from analytical expressions.
 
-  model = fld%geom%model        ! numerical kernel
-  ng    = fld%geom%ng           ! nested grid number
+  iread = 1                     !< read from file (default)
 
-  LBi = fld%geom%LBi
-  UBi = fld%geom%UBi
-  LBj = fld%geom%LBj
-  UBj = fld%geom%UBj
-  LBk = fld%geom%LBk
-  UBk = fld%geom%UBk
+  IF (f_conf%has("read_from_file")) THEN
+    CALL f_conf%get_or_die ("read_from_file", iread)
+  END IF
 
-  scale = 1.0_kind_real
+  ! Get fields directory and filename from YAML file
 
-  ! Read in all fields
+  IF (.not.f_conf%get("fields_dir", fields_dir)) THEN
+    CALL abor1_ftn ("roms_fields::read: Cannot find fields directory")
+  END IF
 
-  DO i = 1, SIZE(fld%fields)
+  IF (.not.f_conf%get("fields_filename", fields_filename)) THEN
+    CALL abor1_ftn ("roms_fields::read: Cannot find fields input filename")
+  END IF
 
-    InpNCname = fld%fields(i)%InpNCname
-    InpNCid   = fld%fields(i)%InpNCid
-    InpRec    = fld%fields(i)%InpRec
+  ncname = TRIM(fields_dir)//TRIM(fields_filename)
 
-    CALL netcdf_inq_varid (ng, model, InpNCname, fld%fields(i)%io_name, &
-                         & InpNCid, varid)
+  ! Get fields time record to process in input NetCDF file
+
+  IF (.not.f_conf%get("fields_record", fields_record)) THEN
+    CALL abor1_ftn ("roms_fields::read: Cannot find fields time record to process")
+  END IF
+
+  ! Process required fields
+
+  IF (iread .eq. 0) THEN
+
+    ! Fields from analytical expressions
+
+    CALL fckit_log%warning ('roms_fields_read: inventing fields')
+    CALL roms_fields_analytic (fld, f_conf, vdate)
+
+  ELSE
+
+    ! Fields from NetCDF file
+
+    IF (fld%geom%f_comm%rank() .eq. 0) THEN
+      CALL fckit_log%warning ('roms_fields::read: reading fields from '//TRIM(ncname))
+    END IF
+
+    model = fld%geom%model        ! numerical kernel
+    ng    = MAX(1,fld%geom%ng)    ! nested grid number
+    Im    = fld%geom%Lm           ! number of global interior I-points
+    Jm    = fld%geom%Mm           ! number of global interior J-points
+    Km    = fld%geom%N            ! number of vertical levels
+    scale = 1.0_kind_real
+    Vsize = 0
+
+    ! Open fields NetCDF file for reading
+
+    CALL netcdf_open (ng, model, ncname, 0, ncid)
     IF (exit_flag.ne.NoError) THEN
-      CALL abor1_ftn ("roms_fields::read: error while inquiring '"//fld%fields(i)%io_name"' variable ID")
+      CALL abor1_ftn ("roms_fields::read: Cannot open fields NetCDF file "//TRIM(ncname))
     END IF
 
-    SELECT CASE (fld%fields(i)%name)
-      CASE ('ssh')
-        status=nf_read2d(ng, model, InpNCname, InpNCid, fld%fields(i)%io_name, &
-                       & varid, InpRec, r2dvar, Vsize, &
-                       & LBi, UBi, LBj, UBj, &
-                       & scale, Fmin, Fmax, &
-                       & fld%fields(i)%mask, fld%fields(i)%val(:,:,1))
-      CASE ('uocn')
-        status=nf_read3d(ng, model, InpNCname, InpNCid, fld%fields(i)%io_name, &
-                       & varid, InpRec, u3dvar, Vsize, &
-                       & LBi, UBi, LBj, UBj, LBk, UBk, &
-                       % scale, Fmin, Fmax, &
-                       & fld%fields(i)%mask, fld%fields(i)%val)
-      CASE ('vocn')
-        status=nf_read3d(ng, model, InpNCname, InpNCid, fld%fields(i)%io_name, &
-                       & varid, InpRec, v3dvar, Vsize, &
-                       & LBi, UBi, LBj, UBj, LBk, UBk, &
-                       % scale, Fmin, Fmax, &
-                       & fld%fields(i)%mask, fld%fields(i)%val)
-      CASE ('tocn', 'socn')
-        status=nf_read3d(ng, model, InpNCname, InpNCid, fld%fields(i)%io_name, &
-                       & varid, InpRec, r3dvar, Vsize, &
-                       & LBi, UBi, LBj, UBj, LBk, UBk, &
-                       % scale, Fmin, Fmax, &
-                       & fld%fields(i)%mask, fld%fields(i)%val)
-    END SELECT
-    IF (status.ne.nf90_noerr) THEN
-      CALL abor1_ftn ("roms_fields::read: error while readin '"//fld%fields(i)%io_name"'")
+    ! Read in all fields. ROMS needs to be compiled with MASKING to use the NetCDF functions below.
+
+    DO i = 1, SIZE(fld%fields)
+
+      LBi = LBOUND(fld%fields(i)%val, DIM=1)
+      UBi = UBOUND(fld%fields(i)%val, DIM=1)
+      LBj = LBOUND(fld%fields(i)%val, DIM=2)
+      UBj = UBOUND(fld%fields(i)%val, DIM=2)
+      LBk = LBOUND(fld%fields(i)%val, DIM=3)
+      UBk = UBOUND(fld%fields(i)%val, DIM=3)
+
+      fld%fields(i)%InpNCname = TRIM(ncname)
+      fld%fields(i)%InpRec    = fields_record
+      fld%fields(i)%InpNCid   = ncid
+
+      ! Inquire variable about dimensions
+
+      CALL netcdf_inq_var (ng, model, ncname, &
+                           ncid = ncid, &
+                           myVarName = fld%fields(i)%io_name, &
+                           VarID = varid, &
+                           nVarDim = nvdims)
+      IF (exit_flag.ne.NoError) THEN
+        CALL abor1_ftn ("roms_fields::read: error while inquiring '"//fld%fields(i)%io_name//"' variable ID")
+      END IF
+      nx = var_Dsize(1)
+      ny = var_Dsize(2)
+      nz = var_Dsize(3)
+
+      SELECT CASE (fld%fields(i)%name)
+        CASE ('ssh')
+
+          IF ((nx.ne.Im+2).or.(ny.ne.Jm+2)) THEN
+            IF (fld%geom%f_comm%rank() .eq. 0) THEN
+              WRITE (text,'(a,2(1x,i0))') 'roms_fields::read: inconsitent dimensions for '// &
+                                          TRIM(fld%fields(i)%io_name)//':', Im+2, Jm+2
+              CALL fckit_log%error (TRIM(text))
+              WRITE (text,'(a,2(1x,i0))') 'roms_fields::read: expected    dimensions for '// &
+                                          TRIM(fld%fields(i)%io_name)//':', nx, ny 
+              CALL fckit_log%error (TRIM(text))
+            END IF
+          END IF
+
+          status=nf_fread2d(ng, model, ncname, ncid, fld%fields(i)%io_name, &
+                            varid, fields_record, r2dvar, Vsize, &
+                            LBi, UBi, LBj, UBj, &
+                            scale, Fmin, Fmax, &
+                            fld%fields(i)%mask, &
+                            fld%fields(i)%val(:,:,1))
+        CASE ('uocn')
+
+          IF ((nx.ne.Im+1).or.(ny.ne.Jm+2).or.(nz.ne.Km)) THEN
+            IF (fld%geom%f_comm%rank() .eq. 0) THEN
+              WRITE (text,'(a,3(1x,i0))') 'roms_fields::read: inconsitent dimensions for '// &
+                                          TRIM(fld%fields(i)%io_name)//':', Im+1, Jm+2, Km
+              CALL fckit_log%error (TRIM(text))
+              WRITE (text,'(a,2(1x,i0))') 'roms_fields::read: expected    dimensions for '// &
+                                          TRIM(fld%fields(i)%io_name)//':', nx, ny, nz
+              CALL fckit_log%error (TRIM(text))
+            END IF
+          END IF
+
+          status=nf_fread3d(ng, model, ncname, ncid, fld%fields(i)%io_name, &
+                            varid, fields_record, u3dvar, Vsize, &
+                            LBi, UBi, LBj, UBj, LBk, UBk, &
+                            scale, Fmin, Fmax, &
+                            fld%fields(i)%mask, &
+                            fld%fields(i)%val)
+        CASE ('vocn')
+
+          IF ((nx.ne.Im+2).or.(ny.ne.Jm+1).or.(nz.ne.Km)) THEN
+            IF (fld%geom%f_comm%rank() .eq. 0) THEN
+              WRITE (text,'(a,3(1x,i0))') 'roms_fields::read: inconsitent dimensions for '// &
+                                          TRIM(fld%fields(i)%io_name)//':', Im+2, Jm+1, Km
+              CALL fckit_log%error (TRIM(text))
+              WRITE (text,'(a,2(1x,i0))') 'roms_fields::read: expected    dimensions for '// &
+                                          TRIM(fld%fields(i)%io_name)//':', nx, ny, nz
+              CALL fckit_log%error (TRIM(text))
+            END IF
+          END IF
+
+          status=nf_fread3d(ng, model, ncname, ncid, fld%fields(i)%io_name, &
+                            varid, fields_record, v3dvar, Vsize, &
+                            LBi, UBi, LBj, UBj, LBk, UBk, &
+                            scale, Fmin, Fmax, &
+                            fld%fields(i)%mask, &
+                            fld%fields(i)%val)
+        CASE ('tocn', 'socn')
+
+          IF ((nx.ne.Im+2).or.(ny.ne.Jm+2).or.(nz.ne.Km)) THEN
+            IF (fld%geom%f_comm%rank() .eq. 0) THEN
+              WRITE (text,'(a,3(1x,i0))') 'roms_fields::read: inconsitent dimensions for '// &
+                                          TRIM(fld%fields(i)%io_name)//':', Im+2, Jm+2, Km
+              CALL fckit_log%error (TRIM(text))
+              WRITE (text,'(a,2(1x,i0))') 'roms_fields::read: expected    dimensions for '// &
+                                          TRIM(fld%fields(i)%io_name)//':', nx, ny, nz
+              CALL fckit_log%error (TRIM(text))
+            END IF
+          END IF
+
+          status=nf_fread3d(ng, model, ncname, ncid, fld%fields(i)%io_name, &
+                            varid, fields_record, r3dvar, Vsize, &
+                            LBi, UBi, LBj, UBj, LBk, UBk, &
+                            scale, Fmin, Fmax, &
+                            fld%fields(i)%mask, &
+                            fld%fields(i)%val)
+      END SELECT
+
+      IF (fld%geom%f_comm%rank() .eq. 0) THEN
+        print '(a,i0)',       'ng     = ', ng
+        print '(a,a)',        'ncname = ', TRIM(ncname)
+        print '(a,i0)',       'ncid   = ', ncid
+        print '(a,a)',        'vname  = ', TRIM(fld%fields(i)%io_name)
+        print '(a,a)',        'cfname = ', TRIM(fld%fields(i)%cf_name)
+        print '(a,a)',        'fname  = ', TRIM(fld%fields(i)%name)
+        print '(a,i0)',       'varid  = ', varid
+        print '(a,3(i0,1x))', 'shape  = ', SHAPE(fld%fields(i)%val)
+        print '(a,6(i0,1x))', 'bounds = ', LBi, UBi, LBj, UBj, LBk, UBk
+        print '(a,i0)',       'status = ', status
+      END IF
+
+      IF (status.ne.nf90_noerr) THEN
+        CALL abor1_ftn ("roms_fields::read: error while reading '"//fld%fields(i)%io_name//"'")
+      END IF
+
+      CALL fld%fields(i)%update_halo (fld%geom)
+
+    END DO
+
+    ! Set fields date and time
+
+    CALL f_conf%get_or_die ("date", string)
+    CALL datetime_set (string, vdate)    
+
+    ! Close NetCDF file
+
+    CALL netcdf_close (ng, model, ncid, ncname, .FALSE.)
+    IF (exit_flag.ne.NoError) THEN
+      CALL abor1_ftn ("roms_fields::read: Error while closing fields NetCDF file "//TRIM(ncname))
     END IF
 
-    CALL self%update_halo (fld%geom)
-
-  END DO
+  END IF
 
 END SUBROUTINE roms_fields_read
 
 ! ------------------------------------------------------------------------------
-!> Write out ROMS fields into output NetCDF file
+!> Writes fields into output NetCDF file
 
 SUBROUTINE roms_fields_write (fld, f_conf, vdate)
 
@@ -1057,13 +1347,14 @@ SUBROUTINE roms_fields_write (fld, f_conf, vdate)
 
 
   CLASS (roms_fields),        intent(inout) :: fld     !< Fields set
-  TYPE (fckit_configuration), intent(in)    :: f_conf  !< Configuration
+  TYPE (fckit_configuration), intent(   in) :: f_conf  !< Configuration
   TYPE (datetime),            intent(inout) :: vdate   !< DateTime
 
-  integer                         :: i, model, ng, varid
-  integer                         :: OutNCid, OutRec
-  integer                         :: LBi, UBi, LBj, UBj, LBk, UBk
-  real (kind=kind_real)           :: scale
+  integer                                   :: i, model, ng, varid
+  integer                                   :: OutNCid, OutRec, status
+  integer                                   :: LBi, UBi, LBj, UBj, LBk, UBk
+  real (kind=kind_real)                     :: scale
+  character(len=256)                        :: OutNCname
 
   ! Initialize
 
@@ -1077,42 +1368,45 @@ SUBROUTINE roms_fields_write (fld, f_conf, vdate)
   LBk = fld%geom%LBk
   UBk = fld%geom%UBk
 
-  scale = 1.0_kind_real
+  ! Write out all fields. ROMS needs to be compiled with MASKING to use the NetCDF functions below.
 
-  ! Write out all fields
+  scale = 1.0_kind_real
 
   DO i = 1, SIZE(fld%fields)
 
-    OutNCname = fld%fields(i)%InpNCname
+    OutNCname = fld%fields(i)%OutNCname
     OutNCid   = fld%fields(i)%OutNCid
     OutRec    = fld%fields(i)%OutRec + 1
 
-    CALL netcdf_inq_varid (ng, model, OutNCname, fld%fields(i)%io_name, &
-                         & OutNCid, varid)
+    CALL netcdf_inq_varid (ng, model, OutNCname, fld%fields(i)%io_name, OutNCid, varid)
     IF (exit_flag.ne.NoError) THEN
-      CALL abor1_ftn ("roms_fields::write: error while inquiring '"//fld%fields(i)%io_name"' variable ID")
+      CALL abor1_ftn ("roms_fields::write: error while inquiring '"//fld%fields(i)%io_name//"' variable ID")
     END IF
 
     SELECT CASE (fld%fields(i)%name)
       CASE ('ssh')
         status=nf_fwrite2d(ng, model, OutNCid, varid, OutRec, r2dvar, &
-                         & LBi, UBi, LBj, UBj, scale, &
-                         & fld%fields(i)%mask, fld%fields(i)%val(:,:,1))
+                           LBi, UBi, LBj, UBj, scale, &
+                           fld%fields(i)%mask, &
+                           fld%fields(i)%val(:,:,1))
       CASE ('uocn')
         status=nf_fwrite3d(ng, model, OutNCid, varid, OutRec, u3dvar, &
-                         & LBi, UBi, LBj, UBj, LBk, UBk, &
-                         & fld%fields(i)%mask, fld%fields(i)%val)
+                           LBi, UBi, LBj, UBj, LBk, UBk, scale, &
+                           fld%fields(i)%mask, &
+                           fld%fields(i)%val)
       CASE ('vocn')
         status=nf_fwrite3d(ng, model, OutNCid, varid, OutRec, v3dvar, &
-                         & LBi, UBi, LBj, UBj, LBk, UBk, &
-                         & fld%fields(i)%mask, fld%fields(i)%val)
+                           LBi, UBi, LBj, UBj, LBk, UBk, scale, &
+                           fld%fields(i)%mask, &
+                           fld%fields(i)%val)
       CASE ('tocn', 'socn')
         status=nf_fwrite3d(ng, model, OutNCid, varid, OutRec, r3dvar, &
-                         & LBi, UBi, LBj, UBj, LBk, UBk,
-                         & fld%fields(i)%mask, fld%fields(i)%val)
+                           LBi, UBi, LBj, UBj, LBk, UBk, scale, &
+                           fld%fields(i)%mask, &
+                           fld%fields(i)%val)
     END SELECT
     IF (status.ne.nf90_noerr) THEN
-      CALL abor1_ftn ("roms_fields::write: error while writing '"//fld%fields(i)%io_name"'")
+      CALL abor1_ftn ("roms_fields::write: error while writing '"//fld%fields(i)%io_name//"'")
     END IF
     
     fld%fields(i)%OutRec = OutRec

@@ -1,265 +1,278 @@
-! (C) Copyright 2020-2020 UCAR
+! (C) Copyright 2020-2021 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+!
+! Hernan G. Arango, Rutgers University, Apr 2021
 
-module roms_state_mod
+MODULE roms_state_mod
 
-use roms_geom_mod
-use roms_fields_mod
-use roms_increment_mod
-use roms_convert_state_mod
-use oops_variables_mod
-use kinds,                  only: kind_real
-use fckit_log_module,       only: fckit_log
+USE kinds,                  ONLY : kind_real
+USE fckit_log_module,       ONLY : fckit_log
+USE oops_variables_mod
+
+USE roms_geom_mod
+USE roms_fields_mod
+USE roms_increment_mod
+!USE roms_convert_state_mod
 
 implicit none
 
-private
+PRIVATE
 
-type, public, extends(roms_fields) :: roms_state
+TYPE, PUBLIC, EXTENDS(roms_fields) :: roms_state
 
-contains
+CONTAINS
 
   ! Constructors / Destructors
  
-  procedure :: create    => roms_state_create
+  PROCEDURE :: create    => roms_state_create
 
   ! Increment operations
 
-  procedure :: diff_incr => roms_state_diff_incr
-  procedure :: add_incr  => roms_state_add_incr
+  PROCEDURE :: diff_incr => roms_state_diff_incr
+  PROCEDURE :: add_incr  => roms_state_add_incr
 
   ! Misc
 
-  procedure :: rotate    => roms_state_rotate
-  procedure :: convert   => roms_state_convert
-  procedure :: logexpon  => roms_state_logexpon
+  PROCEDURE :: rotate    => roms_state_rotate
+  PROCEDURE :: convert   => roms_state_convert
+  PROCEDURE :: logexpon  => roms_state_logexpon
 
-end type
-
-!------------------------------------------------------------------------------
-contains
-!------------------------------------------------------------------------------
+END TYPE roms_state
 
 !------------------------------------------------------------------------------
-!> Create state object
+CONTAINS
+!------------------------------------------------------------------------------
 
-subroutine roms_state_create(self, geom, vars)
+!------------------------------------------------------------------------------
+!> Create State object
 
-  class(roms_state),         intent(inout) :: self
-  type(roms_geom),  pointer, intent(inout) :: geom
-  type(oops_variables),      intent(inout) :: vars
+SUBROUTINE roms_state_create (self, geom, vars)
+
+  CLASS (roms_state),         intent(inout) :: self
+  TYPE (roms_geom),  pointer, intent(inout) :: geom
+  TYPE (oops_variables),      intent(inout) :: vars
 
   ! Initialization fields by base class
 
-  call self%roms_fields%create(geom, vars)
+  CALL self%roms_fields%create (geom, vars)
 
-end subroutine roms_state_create
+END SUBROUTINE roms_state_create
 
 ! ------------------------------------------------------------------------------
-!> Rotate horizontal vector
+!> Rotate horizontal vector components to geographical or curvilinear 
+!> coordinates
 
-subroutine roms_state_rotate(self, coordinate, uvars, vvars)
+SUBROUTINE roms_state_rotate (self, coordinate, uvars, vvars)
 
-  class(roms_state),  intent(inout) :: self
-  character(len=*),      intent(in) :: coordinate ! "north" or "grid"
-  type(oops_variables),  intent(in) :: uvars
-  type(oops_variables),  intent(in) :: vvars
+  CLASS (roms_state),    intent(inout) :: self
+  character (len=*),     intent(   in) :: coordinate  !> "north" or "grid"
+  TYPE (oops_variables), intent(   in) :: uvars
+  TYPE (oops_variables), intent(   in) :: vvars
 
-  integer :: z, i
-  type(roms_field),         pointer :: uocn, vocn
-  real(kind=kind_real), allocatable :: un(:,:,:), vn(:,:,:)
-  character(len=64)                 :: u_names, v_names
+  integer                              :: i, k
+  TYPE (roms_field),           pointer :: uocn, vocn
+  real(kind=kind_real),    allocatable :: un(:,:,:), vn(:,:,:)
+  character (len=64)                   :: u_names, v_names
 
-  do i=1, uvars%nvars()
+  DO i=1, uvars%nvars()
 
-    ! Get (u, v) pair and make a copy
+    ! Get (u, v) vector components and make a copy
 
-    u_names = trim(uvars%variable(i))
-    v_names = trim(vvars%variable(i))
+    u_names = TRIM(uvars%variable(i))
+    v_names = TRIM(vvars%variable(i))
 
-    if (self%has(u_names).and.self%has(v_names)) then
-      call fckit_log%info("rotating "//trim(u_names)//" "//trim(v_names))
-      call self%get(u_names, uocn)
-      call self%get(v_names, vocn)
-    else   ! skip if no pair found
-      call fckit_log%info("not rotating "//trim(u_names)//" "//trim(v_names))
-      cycle
-    end if
+    IF (self%has(u_names).and.self%has(v_names)) THEN
+      CALL fckit_log%info ("rotating "//TRIM(u_names)//" "//TRIM(v_names))
+      CALL self%get (u_names, uocn)
+      CALL self%get (v_names, vocn)
+    ELSE                             ! skip if no pair found
+      CALL fckit_log%info ("not rotating "//TRIM(u_names)//" "//TRIM(v_names))
+      CYCLE
+    END IF
 
-    allocate(un(size(uocn%val,1),size(uocn%val,2),size(uocn%val,3)))
-    allocate(vn(size(uocn%val,1),size(uocn%val,2),size(uocn%val,3)))
+    allocate (un(SIZE(uocn%val,1), SIZE(uocn%val,2), SIZE(uocn%val,3)))
+    allocate (vn(SIZE(uocn%val,1), SIZE(uocn%val,2), SIZE(uocn%val,3)))
     un = uocn%val
     vn = vocn%val
 
-    select case(trim(coordinate))
-    case("north")   ! rotate (uocn, vocn) to geo north
-      do z=1,uocn%nz
-        uocn%val(:,:,z) = &
-        (self%geom%cos_rot(:,:)*un(:,:,z) + self%geom%sin_rot(:,:)*vn(:,:,z)) * uocn%mask(:,:)
-        vocn%val(:,:,z) = &
-        (- self%geom%sin_rot(:,:)*un(:,:,z) + self%geom%cos_rot(:,:)*vn(:,:,z)) * vocn%mask(:,:)
-      end do
-    case("grid")
-      do z=1,uocn%nz
-        uocn%val(:,:,z) = &
-        (self%geom%cos_rot(:,:)*un(:,:,z) - self%geom%sin_rot(:,:)*vn(:,:,z)) * uocn%mask(:,:)
-        vocn%val(:,:,z) = &
-        (self%geom%sin_rot(:,:)*un(:,:,z) + self%geom%cos_rot(:,:)*vn(:,:,z)) * vocn%mask(:,:)
-      end do
-    end select
+    ! Rotate (uocn, vocn) vector components to geographical NORTH and EAST
+    ! coordinates or numerical curvilinear (XI,ETA) coordinates.
+    ! The ROMS rotation angle is an azimuth that is counterclockwise from
+    ! true EAST, and defined at RHO-points.
+    ! TODO: Do we to average to U- and V-points?
 
-    deallocate(un, vn)
+    SELECT CASE (TRIM(coordinate))
+      CASE ("north")         ! rotate from (XI,ETA) to geographical coordinates
+        DO k=1,uocn%N
+          uocn%val(:,:,k) = (un(:,:,k) * self%geom%CosAngler(:,:)- &
+                             vn(:,:,k) * self%geom%SinAngler(:,:)) * &
+                            uocn%mask(:,:)
 
-    ! update halos
+          vocn%val(:,:,k) = (vn(:,:,k) * self%geom%CosAngler(:,:)+ &
+                             un(:,:,k) * self%geom%SinAngler(:,:)) * &
+                            vocn%mask(:,:)
+        END DO
+      CASE ("grid")          ! rotate from geographical to (XI,ETA) coordinates
+        DO k=1,uocn%N
+          uocn%val(:,:,k) = (un(:,:,k) * self%geom%CosAngler(:,:)+ &
+                             vn(:,:,k) * self%geom%SinAngler(:,:)) * &
+                            uocn%mask(:,:)
 
-    call uocn%update_halo(self%geom)
-    call vocn%update_halo(self%geom)
+          vocn%val(:,:,k) = (vn(:,:,k) * self%geom%CosAngler(:,:)- &
+                             un(:,:,k) * self%geom%SinAngler(:,:)) * &
+                            vocn%mask(:,:)
+        END DO
+    END SELECT
 
-  end do
+    deallocate (un, vn)
 
-end subroutine roms_state_rotate
+    ! Update halos
 
+    CALL uocn%update_halo (self%geom)
+    CALL vocn%update_halo (self%geom)
+
+  END DO
+
+END SUBROUTINE roms_state_rotate
 
 ! ------------------------------------------------------------------------------
 !> Add a set of increments to the set of fields
 
-subroutine roms_state_add_incr(self, rhs)
+SUBROUTINE roms_state_add_incr (self, rhs)
 
-  class(roms_state),  intent(inout) :: self
-  class(roms_increment), intent(in) :: rhs
+  CLASS (roms_state),     intent(inout) :: self
+  CLASS (roms_increment), intent(   in) :: rhs
 
-  type(roms_field), pointer         :: fld, fld_r
-  integer                           :: i, k
+  TYPE (roms_field),            pointer :: fld, fld_r
+  TYPE (roms_fields)                    :: incr
+  integer                               :: i
 
-  real(kind=kind_real)              :: min_ice = 1e-6_kind_real
-  real(kind=kind_real)              :: amin = 1e-6_kind_real
-  real(kind=kind_real)              :: amax = 10.0_kind_real
-  real(kind=kind_real), allocatable :: alpha(:,:), aice_bkg(:,:), aice_ana(:,:)
-  type(roms_fields)                 :: incr
+  ! Make sure "rhs" is a subset of "self"
 
-  ! Make sure rhs is a subset of self
-
-  call rhs%check_subset(self)
+  CALL rhs%check_subset (self)
 
   ! Make a copy of the increment
 
-  call incr%copy(rhs)
+  CALL incr%copy (rhs)
 
-  ! For each field that exists in incr, add to self
+  ! For each field that exists in "incr", add to "self"
 
-  do i=1,size(incr%fields)
+  DO i = 1, SIZE(incr%fields)
     fld_r => incr%fields(i)
-    call self%get(fld_r%name, fld)
+    CALL self%get (fld_r%name, fld)
     fld%val = fld%val + fld_r%val
-  end do
+  END DO
 
-end subroutine roms_state_add_incr
+END SUBROUTINE roms_state_add_incr
 
 ! ------------------------------------------------------------------------------
-!> subtract two sets of fields, saving the results separately
+!> Subtract two sets of fields, saving the results separately
 
-subroutine roms_state_diff_incr(x1, x2, inc)
+SUBROUTINE roms_state_diff_incr (x1, x2, inc)
 
-  class(roms_state),        intent(in) :: x1
-  class(roms_state),        intent(in) :: x2
-  class(roms_increment), intent(inout) :: inc
+  CLASS (roms_state),     intent(   in) :: x1
+  CLASS (roms_state),     intent(   in) :: x2
+  CLASS (roms_increment), intent(inout) :: inc
 
-  integer                              :: i
-  type(roms_field),            pointer :: f1, f2
+  TYPE (roms_field),            pointer :: f1, f2
+  integer                               :: i
 
   ! Make sure fields correct shapes
 
-  call inc%check_subset(x2)
-  call x2%check_subset(x1)
+  CALL inc%check_subset (x2)
+  CALL x2%check_subset (x1)
 
   ! Subtract
 
-  do i=1,size(inc%fields)
-    call x1%get(inc%fields(i)%name, f1)
-    call x2%get(inc%fields(i)%name, f2)
+  DO i = 1, SIZE(inc%fields)
+    CALL x1%get (inc%fields(i)%name, f1)
+    CALL x2%get (inc%fields(i)%name, f2)
     inc%fields(i)%val = f1%val - f2%val
-  end do
+  END DO
 
-end subroutine roms_state_diff_incr
+END SUBROUTINE roms_state_diff_incr
 
 ! ------------------------------------------------------------------------------
-!> ConvertState app:  Interpolate between geometries
+!> Convert State Application:  Interpolate between geometries
 
-subroutine roms_state_convert(self, rhs)
+SUBROUTINE roms_state_convert (self, rhs)
 
-  class(roms_state), intent(inout) :: self  ! target
-  class(roms_state),    intent(in) :: rhs   ! source
+  CLASS (roms_state), intent(inout) :: self  !> target
+  CLASS (roms_state), intent(   in) :: rhs   !> source
 
-  integer                          :: n
-  type(roms_convertstate_type)     :: convert_state
-  type(roms_field), pointer        :: field1, field2, hocn1, hocn2
+  integer                           :: n
+! TYPE (roms_convertstate_type)     :: convert_state
+  TYPE (roms_field),        pointer :: field1, field2
 
-  call rhs%get("hocn", hocn1)
-  call self%get("hocn", hocn2)
-  call convert_state%setup(rhs%geom, self%geom, hocn1, hocn2)
+! CALL rhs%get ("hocn", hocn1)
+! CALL self%get ("hocn", hocn2)
+! CALL convert_state%setup (rhs%geom, self%geom, hocn1, hocn2)
 
-  do n = 1, size(rhs%fields)
+  DO n = 1, SIZE(rhs%fields)
     field1 => rhs%fields(n)
-    call self%get(trim(field1%name),field2)
-    if (field1%io_file=="ocn" .or. field1%io_file=="sfc" .or. field1%io_file=="ice")  &
-    call convert_state%change_resol(field1, field2, rhs%geom, self%geom)
-  end do
+    CALL self%get (TRIM(field1%name), field2)
+    IF (field1%io_file=="ocn") THEN
+!     call convert_state%change_resol (field1, field2, rhs%geom, self%geom)
+    END IF
+  END DO
 
-  call convert_state%clean()
+! CALL convert_state%clean ()
 
-end subroutine roms_state_convert
+END SUBROUTINE roms_state_convert
 
 ! ------------------------------------------------------------------------------
-!> Apply logarithmic and exponential transformations
+!> Apply logarithmic or exponential transformations
 
-subroutine roms_state_logexpon(self, transfunc, trvars)
+SUBROUTINE roms_state_logexpon (self, transfunc, trvars)
 
-  class(roms_state),  intent(inout) :: self
-  character(len=*),      intent(in) :: transfunc ! "log" or "expon"
-  type(oops_variables),  intent(in) :: trvars
+  CLASS (roms_state),    intent(inout) :: self
+  character (len=*),     intent(   in) :: transfunc   !> "log" or "expon"
+  TYPE (oops_variables), intent(   in) :: trvars
 
-  integer                           :: z, i
-  type(roms_field),         pointer :: trocn
-  real(kind=kind_real), allocatable :: trn(:,:,:)
-  real(kind=kind_real)              :: min_val = 1e-6_kind_real
-  character(len=64)                 :: tr_names
+  TYPE (roms_field),           pointer :: trocn
+  integer                              :: z, i
+  real(kind=kind_real)                 :: min_val = 1e-6_kind_real
+  real(kind=kind_real),   allocatable :: trn(:,:,:)
+  character(len=64)                   :: tr_names
 
-  do i=1, trvars%nvars()
+  DO i=1, trvars%nvars()
 
     ! Get a list variables to be transformed and make a copy
 
-    tr_names = trim(trvars%variable(i))
-    if (self%has(tr_names)) then
-      call fckit_log%info("transforming "//trim(tr_names))
-      call self%get(tr_names, trocn)
-    else   ! skip if no variable found
-      call fckit_log%info("not transforming "//trim(tr_names))
-      cycle
-    end if
+    tr_names = TRIM(trvars%variable(i))
 
-    allocate(trn(size(trocn%val,1),size(trocn%val,2),size(trocn%val,3)))
+    IF (self%has(tr_names)) THEN
+      CALL fckit_log%info ("transforming "//TRIM(tr_names))
+      CALL self%get (tr_names, trocn)
+    ELSE                                 ! skip if no variable found
+      CALL fckit_log%info ("not transforming "//TRIM(tr_names))
+      CYCLE
+    END IF
+
+    allocate (trn(SIZE(trocn%val,1), SIZE(trocn%val,2), SIZE(trocn%val,3)))
     trn = trocn%val
 
-    select case(trim(transfunc))
-    case("log")   ! apply logarithmic transformation
-      trocn%val = log(trn + min_val)
-    case("expon") ! Apply exponential transformation
-      trocn%val = exp(trn) - min_val
-    end select
+    SELECT CASE(TRIM(transfunc))
+      CASE ("log")                       ! apply logarithmic transformation
+        trocn%val = LOG(trn + min_val)
+      CASE ("expon")                     ! Apply exponential transformation
+        trocn%val = EXP(trn) - min_val
+    END SELECT
 
     ! Update halos
 
-    call trocn%update_halo(self%geom)
+    CALL trocn%update_halo (self%geom)
 
-    ! Deallocate trn for next variable
+    ! Deallocate "trn" for next variable
 
-    deallocate(trn)
-  end do
+    deallocate (trn)
 
-end subroutine roms_state_logexpon
+  END DO
+
+END SUBROUTINE roms_state_logexpon
 
 ! ------------------------------------------------------------------------------
 
-end module
+END MODULE roms_state_mod

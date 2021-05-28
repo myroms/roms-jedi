@@ -2,6 +2,7 @@
 
 # the source code in this directory,
 # all other files are handled through the subdirectory's respective CMakeLists.txt
+
 list( APPEND roms_src_files
   Traits.h
   Fortran.h
@@ -41,11 +42,14 @@ target_link_libraries( roms PUBLIC ioda )
 target_link_libraries( roms PUBLIC ufo )
 
 # add source code in the subdirectories
-# TODO(template_impl) add_subdirectory(Covariance)
+
 add_subdirectory(Geometry)
-# TODO(template_impl) add_subdirectory(GeometryIterator)
+add_subdirectory(GeometryIterator)
+add_subdirectory(Fields)
+add_subdirectory(Increment)
+add_subdirectory(State)
+
+# TODO(template_impl) add_subdirectory(Covariance)
 # TODO(template_impl) add_subdirectory(GetValues)
-# TODO(template_impl) add_subdirectory(Increment)
 # TODO(template_impl) add_subdirectory(Model)
 # TODO(template_impl) add_subdirectory(ModelAux)
-# TODO(template_impl) add_subdirectory(State)

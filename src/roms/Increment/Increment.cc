@@ -1,240 +1,334 @@
 /*
- * (C) Copyright 2019-2020 UCAR
+ * (C) Copyright 2017-2020 UCAR
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
+#include <iomanip>
+#include <numeric>
 #include <vector>
 
-#include "roms/Geometry/Geometry.h"
-#include "roms/Increment/Increment.h"
+#include "eckit/exception/Exceptions.h"
 
 #include "oops/base/LocalIncrement.h"
-#include "oops/util/abor1_cpp.h"
+#include "oops/base/Variables.h"
+#include "oops/util/DateTime.h"
+#include "oops/util/Duration.h"
+#include "oops/util/Logger.h"
 
 #include "ufo/GeoVaLs.h"
 #include "ufo/Locations.h"
 
+#include "roms/Geometry/Geometry.h"
+#include "roms/GeometryIterator/GeometryIterator.h"
+#include "roms/Increment/Increment.h"
+#include "roms/Increment/IncrementFortran.h"
+#include "roms/State/State.h"
+
+using oops::Log;
+
 namespace roms {
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
-  Increment::Increment(const Geometry & geom,
-                       const oops::Variables & vars,
-                       const util::DateTime & vt)
-    : geom_(new Geometry(geom)), time_(vt), vars_(vars) {
-    util::abor1_cpp("Increment::Increment() needs to be implemented.",
-                    __FILE__, __LINE__);
+Increment::Increment(const Geometry & geom,
+                     const oops::Variables & vars,
+                     const util::DateTime & vt)
+  : time_(vt), vars_(vars), geom_(new Geometry(geom))
+{
+  roms_increment_create_f90(keyFlds_, geom_->toFortran(), vars_);
+  roms_increment_zero_f90(toFortran());
+  Log::trace() << "Increment constructed." << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+Increment::Increment(const Geometry & geom,
+                     const Increment & other)
+  : time_(other.time_), vars_(other.vars_), geom_(new Geometry(geom))
+{
+  roms_increment_create_f90(keyFlds_, geom_->toFortran(), vars_);
+  roms_increment_change_resol_f90(toFortran(), other.keyFlds_);
+  Log::trace() << "Increment constructed from other." << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+Increment::Increment(const Increment & other,
+                     const bool copy)
+  : time_(other.time_), vars_(other.vars_), geom_(new Geometry(*other.geom_))
+{
+  roms_increment_create_f90(keyFlds_, geom_->toFortran(), vars_);
+  if (copy) {
+    roms_increment_copy_f90(toFortran(), other.toFortran());
+  } else {
+    roms_increment_zero_f90(toFortran());
+  }
+  Log::trace() << "Increment copy-created." << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+Increment::Increment(const Increment & other)
+  : time_(other.time_), vars_(other.vars_), geom_(new Geometry(*other.geom_))
+{
+  roms_increment_create_f90(keyFlds_, geom_->toFortran(), vars_);
+  roms_increment_copy_f90(toFortran(), other.toFortran());
+  Log::trace() << "Increment copy-created." << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+Increment::~Increment() {
+  roms_increment_delete_f90(toFortran());
+  Log::trace() << "Increment destructed" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+/// Basic operators
+// -----------------------------------------------------------------------------
+
+void Increment::diff(const State & x1, const State & x2) {
+  ASSERT(this->validTime() == x1.validTime());
+  ASSERT(this->validTime() == x2.validTime());
+  State x1_at_geomres(*geom_, x1);
+  State x2_at_geomres(*geom_, x2);
+  roms_increment_diff_incr_f90(toFortran(), x1_at_geomres.toFortran(),
+                                            x2_at_geomres.toFortran());
+}
+
+// -----------------------------------------------------------------------------
+
+Increment & Increment::operator=(const Increment & rhs) {
+  time_ = rhs.time_;
+  roms_increment_copy_f90(toFortran(), rhs.toFortran());
+  return *this;
+}
+
+// -----------------------------------------------------------------------------
+
+Increment & Increment::operator+=(const Increment & dx) {
+  ASSERT(this->validTime() == dx.validTime());
+  roms_increment_self_add_f90(toFortran(), dx.toFortran());
+  return *this;
+}
+
+// -----------------------------------------------------------------------------
+
+Increment & Increment::operator-=(const Increment & dx) {
+  ASSERT(this->validTime() == dx.validTime());
+  roms_increment_self_sub_f90(toFortran(), dx.toFortran());
+  return *this;
+}
+
+// -----------------------------------------------------------------------------
+
+Increment & Increment::operator*=(const double & zz) {
+  roms_increment_self_mul_f90(toFortran(), zz);
+  return *this;
+}
+
+// -----------------------------------------------------------------------------
+
+void Increment::ones() {
+  roms_increment_ones_f90(toFortran());
+}
+
+// -----------------------------------------------------------------------------
+
+void Increment::zero() {
+  roms_increment_zero_f90(toFortran());
+}
+
+// -----------------------------------------------------------------------------
+
+void Increment::dirac(const eckit::Configuration & config) {
+  roms_increment_dirac_f90(toFortran(), &config);
+  Log::trace() << "Increment dirac initialized" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void Increment::zero(const util::DateTime & vt) {
+  zero();
+  time_ = vt;
+}
+
+// -----------------------------------------------------------------------------
+
+void Increment::axpy(const double & zz, const Increment & dx,
+                     const bool check) {
+  ASSERT(!check || validTime() == dx.validTime());
+  roms_increment_axpy_f90(toFortran(), zz, dx.toFortran());
+}
+
+// -----------------------------------------------------------------------------
+
+void Increment::accumul(const double & zz, const State & xx) {
+  roms_increment_accumul_f90(toFortran(), zz, xx.toFortran());
+}
+
+// -----------------------------------------------------------------------------
+
+void Increment::schur_product_with(const Increment & dx) {
+  roms_increment_self_schur_f90(toFortran(), dx.toFortran());
+}
+
+// -----------------------------------------------------------------------------
+
+double Increment::dot_product_with(const Increment & other) const {
+  double zz;
+  roms_increment_dot_prod_f90(toFortran(), other.toFortran(), zz);
+  return zz;
+}
+
+// -----------------------------------------------------------------------------
+
+void Increment::random() {
+  roms_increment_random_f90(toFortran());
+}
+
+// -----------------------------------------------------------------------------
+
+oops::LocalIncrement Increment::getLocal(
+                      const GeometryIterator & iter) const {
+  int nx, ny, nz, nf;
+  roms_increment_sizes_f90(toFortran(), nx, ny, nz, nf);
+
+  std::vector<int> varlens(vars_.size());
+
+  // Needs to be modified for non-nz variable names
+  for (int ii = 0; ii < vars_.size(); ii++) {
+    if (vars_[ii] == "ssh") varlens[ii] = 1;
+    else
+        varlens[ii] = nz;
   }
 
-// ----------------------------------------------------------------------------
+  int lenvalues = std::accumulate(varlens.begin(), varlens.end(), 0);
+  std::vector<double> values(lenvalues);
 
-  Increment::Increment(const Geometry & geom, const Increment & other)
-    : geom_(new Geometry(geom)), time_(other.time_), vars_(other.vars_) {
-    util::abor1_cpp("Increment::Increment() needs to be implemented.",
-                     __FILE__, __LINE__);
+  roms_increment_getpoint_f90(keyFlds_, iter.toFortran(), values[0],
+                              values.size());
+
+  return oops::LocalIncrement(vars_, values, varlens);
+}
+
+// -----------------------------------------------------------------------------
+
+void Increment::setLocal(const oops::LocalIncrement & values,
+                         const GeometryIterator & iter) {
+  const std::vector<double> vals = values.getVals();
+  roms_increment_setpoint_f90(toFortran(), iter.toFortran(), vals[0],
+                              vals.size());
+}
+
+// -----------------------------------------------------------------------------
+/// I/O and diagnostics
+// -----------------------------------------------------------------------------
+
+void Increment::read(const eckit::Configuration & files) {
+  util::DateTime * dtp = &time_;
+  roms_increment_read_file_f90(toFortran(), &files, &dtp);
+}
+
+// -----------------------------------------------------------------------------
+
+void Increment::write(const eckit::Configuration & files) const {
+  const util::DateTime * dtp = &time_;
+  roms_increment_write_file_f90(toFortran(), &files, &dtp);
+}
+
+// -----------------------------------------------------------------------------
+
+void Increment::print(std::ostream & os) const {
+  os << std::endl << "  Valid time: " << validTime();
+  int n0, nf;
+  roms_increment_sizes_f90(keyFlds_, n0, n0, n0, nf);
+  std::vector<double> zstat(3*nf);
+  roms_increment_gpnorm_f90(keyFlds_, nf, zstat[0]);
+  for (int jj = 0; jj < nf; ++jj) {
+    os << std::endl << std::right << std::setw(7) << vars_[jj]
+       << "   min="  <<  std::fixed << std::setw(12) <<
+                         std::right << zstat[3*jj]
+       << "   max="  <<  std::fixed << std::setw(12) <<
+                         std::right << zstat[3*jj+1]
+       << "   mean=" <<  std::fixed << std::setw(12) <<
+                         std::right << zstat[3*jj+2];
   }
+}
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
-  Increment::Increment(const Increment & other, const bool copy)
-    : geom_(new Geometry(*other.geom_)), time_(other.time_),
-      vars_(other.vars_) {
-    util::abor1_cpp("Increment::Increment() needs to be implemented.",
-                      __FILE__, __LINE__);
-  }
+double Increment::norm() const {
+  double zz = 0.0;
+  roms_increment_rms_f90(toFortran(), zz);
+  return zz;
+}
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
-  Increment::Increment(const Increment & other)
-    : geom_(new Geometry(*other.geom_)), time_(other.time_),
-      vars_(other.vars_) {
-    util::abor1_cpp("Increment::Increment() needs to be implemented.",
-                      __FILE__, __LINE__);
-  }
-// ----------------------------------------------------------------------------
+const util::DateTime & Increment::validTime() const {return time_;}
 
-  Increment::~Increment() {
-    util::abor1_cpp("Increment::~Increment() needs to be implemented.",
-                     __FILE__, __LINE__);
-  }
+// -----------------------------------------------------------------------------
 
-// ----------------------------------------------------------------------------
+util::DateTime & Increment::validTime() {return time_;}
 
-  Increment & Increment::operator =(const Increment &) {
-    util::abor1_cpp("Increment::operator= needs to be implemented.",
-                    __FILE__, __LINE__);
-    return *this;
-  }
+// -----------------------------------------------------------------------------
 
-// ----------------------------------------------------------------------------
+void Increment::updateTime(const util::Duration & dt) {time_ += dt;}
 
-  Increment & Increment::operator -=(const Increment &) {
-    util::abor1_cpp("Increment::operator-= needs to be implemented.",
-                    __FILE__, __LINE__);
-    return *this;
-  }
+// -----------------------------------------------------------------------------
 
-// ----------------------------------------------------------------------------
+size_t Increment::serialSize() const {
+  // Field
+  size_t nn;
+  roms_increment_serial_size_f90(toFortran(), geom_->toFortran(), nn);
+  // Magic factor
+  nn += 1;
+  // Date and time
+  nn += time_.serialSize();
+  return nn;
+}
 
-  Increment & Increment::operator +=(const Increment &) {
-    util::abor1_cpp("Increment::operator+= needs to be implemented.",
-                    __FILE__, __LINE__);
-    return *this;
-  }
+// -----------------------------------------------------------------------------
 
-// ----------------------------------------------------------------------------
+constexpr double SerializeCheckValue = -54321.98765;
+void Increment::serialize(std::vector<double> & vect) const {
+  // Serialize the field
+  size_t nn;
+  roms_increment_serial_size_f90(toFortran(), geom_->toFortran(), nn);
+  std::vector<double> vect_field(nn, 0);
+  vect.reserve(vect.size() + nn + 1 + time_.serialSize());
+  roms_increment_serialize_f90(toFortran(), geom_->toFortran(), nn,
+                               vect_field.data());
+  vect.insert(vect.end(), vect_field.begin(), vect_field.end());
+  // Magic value placed in serialization; used to validate deserialization
+  vect.push_back(SerializeCheckValue);
+  // Serialize the date and time
+  time_.serialize(vect);
+}
 
-  Increment & Increment::operator *=(const double &) {
-    util::abor1_cpp("Increment::operator*= needs to be implemented.",
-                    __FILE__, __LINE__);
-    return *this;
-  }
+// -----------------------------------------------------------------------------
 
-// ----------------------------------------------------------------------------
+void Increment::deserialize(const std::vector<double> & vect,
+                            size_t & index) {
+  // Deserialize the field
+  roms_increment_deserialize_f90(toFortran(), geom_->toFortran(), vect.size(),
+                                 vect.data(), index);
+  // Use magic value to validate deserialization
+  ASSERT(vect.at(index) == SerializeCheckValue);
+  ++index;
+  // Deserialize the date and time
+  time_.deserialize(vect, index);
+}
 
-  void Increment::accumul(const double & zz, const State & xx) {
-    util::abor1_cpp("Increment::accuml() needs to be implemented.",
-                     __FILE__, __LINE__);
-  }
+// -----------------------------------------------------------------------------
 
-// ----------------------------------------------------------------------------
+std::shared_ptr<const Geometry> Increment::geometry() const {
+  return geom_;
+}
 
-  void Increment::axpy(const double &, const Increment &, const bool check) {
-    util::abor1_cpp("Increment::axpy() needs to be implemented.",
-                    __FILE__, __LINE__);
-  }
+// -----------------------------------------------------------------------------
 
-// ----------------------------------------------------------------------------
-
-  void Increment::diff(const State & x1, const State & x2) {
-    util::abor1_cpp("Increment::diff() needs to be implemented.",
-                     __FILE__, __LINE__);
-  }
-
-// ----------------------------------------------------------------------------
-
-  double Increment::dot_product_with(const Increment &) const {
-    util::abor1_cpp("Increment::dot_product_with() needs to be implemented.",
-                    __FILE__, __LINE__);
-    return 0.0;
-  }
-
-// ----------------------------------------------------------------------------
-
-  double Increment::norm() const {
-    util::abor1_cpp("Increment::norm() needs to be implemented.",
-                     __FILE__, __LINE__);
-    return 0.0;
-  }
-
-// ----------------------------------------------------------------------------
-
-  void Increment::random() {
-    util::abor1_cpp("Increment::random() needs to be implemented.",
-                    __FILE__, __LINE__);
-  }
-
-// ----------------------------------------------------------------------------
-
-  void Increment::schur_product_with(const Increment & ) {
-    util::abor1_cpp("Increment::schur_product_with() needs to be implemented.",
-                    __FILE__, __LINE__);
-  }
-
-// ----------------------------------------------------------------------------
-
-  void Increment::zero() {
-    util::abor1_cpp("Increment::zero() needs to be implemented.",
-                    __FILE__, __LINE__);
-  }
-
-// ----------------------------------------------------------------------------
-
-  void Increment::zero(const util::DateTime & time) {
-    zero();
-    time_ = time;
-  }
-
-// ----------------------------------------------------------------------------
-
-  void Increment::ones() {
-    util::abor1_cpp("Increment::ones() needs to be implemented.",
-                    __FILE__, __LINE__);
-  }
-
-// ----------------------------------------------------------------------------
-
-  void Increment::dirac(const eckit::Configuration & conf) {
-    util::abor1_cpp("Increment::dirac() needs to be implemented.",
-                    __FILE__, __LINE__);
-  }
-
-// ----------------------------------------------------------------------------
-
-  oops::LocalIncrement Increment::getLocal(const GeometryIterator & iter) const
-  {
-    util::abor1_cpp("Increment::getLocal() needs to be implemented.",
-                    __FILE__, __LINE__);
-    std::vector<double> vals;
-    std::vector<int> varlens;
-    return oops::LocalIncrement(vars_, vals, varlens);
-  }
-
-// ----------------------------------------------------------------------------
-
-  void Increment::setLocal(const oops::LocalIncrement & values,
-                           const GeometryIterator & iter) {
-    util::abor1_cpp("Increment::setLocal() needs to be implemented.",
-                    __FILE__, __LINE__);
-  }
-
-// ----------------------------------------------------------------------------
-
-  size_t Increment::serialSize() const {
-    util::abor1_cpp("Increment::serialSize() needs to be implemented.",
-                     __FILE__, __LINE__);
-    return 0;
-  }
-
-// ----------------------------------------------------------------------------
-
-  void Increment::serialize(std::vector<double> & vec) const {
-    util::abor1_cpp("Increment::serialize() needs to be implemented.",
-                     __FILE__, __LINE__);
-  }
-
-// ----------------------------------------------------------------------------
-
-  void Increment::deserialize(const std::vector<double> & vec, size_t & s) {
-    util::abor1_cpp("Increment::deserialize() needs to be implemented.",
-                     __FILE__, __LINE__);
-  }
-
-// ----------------------------------------------------------------------------
-
-  void Increment::print(std::ostream & os) const {
-    os << "Increment: "
-       << "(TODO, print diagnostic info about the increment here)"
-       << std::endl;
-    util::abor1_cpp("Increment::print() needs to be implemented.",
-                    __FILE__, __LINE__);
-  }
-
-// ----------------------------------------------------------------------------
-
-  void Increment::read(const eckit::Configuration & conf) {
-    util::abor1_cpp("Increment::read() needs to be implemented.",
-                    __FILE__, __LINE__);
-  }
-
-// ----------------------------------------------------------------------------
-
-  void Increment::write(const eckit::Configuration & conf) const {
-    util::abor1_cpp("Increment::write() needs to be implemented.",
-                    __FILE__, __LINE__);
-  }
-
-// ----------------------------------------------------------------------------
 }  // namespace roms

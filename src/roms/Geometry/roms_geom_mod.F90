@@ -3,6 +3,7 @@
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 !
+! Hernan G. Arango, Rutgers University, Apr 2021
 
 MODULE roms_geom_mod
 
@@ -20,13 +21,14 @@ PUBLIC  :: roms_geom
 
 TYPE :: roms_geom
 
-  type(fckit_mpi_comm) :: f_comm
+  TYPE (fckit_mpi_comm) :: f_comm
 
   logical :: EWperiodic                       ! East-West periodicity switch
   logical :: NSperiodic                       ! North-South periodicity switch
 
   integer :: model                            ! numerical kernel (iNLM, iTLM, iADM)
   integer :: ng                               ! nested grid number
+  integer :: Lm, Mm                           ! grid global number of I- and J-points
   integer :: tile                             ! domain parallel partition tile
 
   integer :: NghostPoints                     ! number of tile partition ghost points
@@ -41,7 +43,12 @@ TYPE :: roms_geom
   real(kind=kind_real), allocatable, dimension(:,:) :: lonu, latu ! U-longitude, U-latitude
   real(kind=kind_real), allocatable, dimension(:,:) :: lonv, latv ! V-longitude, V-latitude
 
-  real(kind=kind_real), allocatable, dimension(:,:) :: angler ! angle between XI-axis and EAST (radians)
+  real(kind=kind_real), allocatable, dimension(:,:) :: angler     ! RHO-angle between XI-axis and EAST (radians)
+  real(kind=kind_real), allocatable, dimension(:,:) :: angleu     ! U-angle between XI-axis and EAST (radians)
+  real(kind=kind_real), allocatable, dimension(:,:) :: anglev     ! V-angle between XI-axis and EAST (radians)
+
+  real(kind=kind_real), allocatable, dimension(:,:) :: CosAngler  ! cosine of curvilinear angle, cos(angler)
+  real(kind=kind_real), allocatable, dimension(:,:) :: SinAngler  ! sine of curvilinear angle, sin(angler)
 
   real(kind=kind_real), allocatable, dimension(:,:,:) :: z_r  ! depths at RHO-points (m, negative)
   real(kind=kind_real), allocatable, dimension(:,:,:) :: z_u  ! depths at U-points (m, negative)
@@ -52,13 +59,14 @@ TYPE :: roms_geom
   real(kind=kind_real), allocatable, dimension(:,:) :: umask  ! U-points mask,   0=land 1=ocean
   real(kind=kind_real), allocatable, dimension(:,:) :: vmask  ! V-points mask,   0=land 1=ocean
 
+  character (len=:), allocatable :: project_dir               ! ROMS project directory
   character (len=:), allocatable :: roms_stdinp               ! ROMS standard input filename
 
   CONTAINS
 
-  PROCEDURE :: init  => geom_init
-  PROCEDURE :: end   => geom_end
-  PROCEDURE :: clone => geom_clone
+  PROCEDURE :: init  => roms_geom_init
+  PROCEDURE :: end   => roms_geom_end
+  PROCEDURE :: clone => roms_geom_clone
 
 END TYPE roms_geom
 
@@ -69,25 +77,25 @@ CONTAINS
 ! ------------------------------------------------------------------------------
 !> Setup geometry object
 
-SUBROUTINE geom_init (self, f_conf, f_comm)
+SUBROUTINE roms_geom_init (self, f_conf, f_comm)
 
   USE mod_param
   USE mod_grid
-  USE mod_iounits,       ONLY : Iname
-  USE mod_scalars,       ONLY : EWperiodic, NSperiodic, NoError, exit_flag
+  USE mod_iounits,     ONLY : Iname
+  USE mod_scalars,     ONLY : EWperiodic, NSperiodic, NoError, exit_flag
 
-  USE ocean_control_mod, ONLY : ROMS_initialize
+  USE roms_kernel_mod, ONLY : ROMS_initialize
 
   CLASS (roms_geom),          intent(out) :: self
   TYPE (fckit_configuration), intent(in)  :: f_conf
   TYPE (fckit_mpi_comm),      intent(in)  :: f_comm
 
   logical, save :: first
-
+  logical :: Ldebug = .TRUE.
   integer :: i, j, k, ng, tile
   integer :: MyComm, MyRank, MyError
 
-  character (len=:), allocatable :: roms_stdinp
+  character (len=:), allocatable :: project_dir, roms_stdinp
 
   ! MPI communicator
 
@@ -97,19 +105,26 @@ SUBROUTINE geom_init (self, f_conf, f_comm)
   self%f_comm = f_comm
   self%tile = tile
 
-  ! Get ROMS standard input filename and nested grid number from YAML file
+  ! Get ROMS project directory and standard input filename from YAML file
+
+  IF (.not.f_conf%get("project_dir", project_dir)) THEN
+    CALL abor1_ftn ("geom_init: Cannot find ROMS project directory")
+  END IF
+  self%project_dir = project_dir
 
   IF (.not.f_conf%get("roms_stdinp", roms_stdinp)) THEN
     CALL abor1_ftn ("geom_init: Cannot find ROMS standard input file")
   END IF
-
   self%roms_stdinp = roms_stdinp
-  Iname = roms_stdinp
+
+  ! Get nested grid number from YAML file
 
   CALL f_conf%get_or_die("ng", ng)
   self%ng = ng
 
   ! ROMS initialization: read input script, allocate, initialize, and set grid.
+
+  Iname = TRIM(project_dir)//TRIM(roms_stdinp)
 
   IF (.not.allocated(BOUNDS)) THEN       ! it is only called once
     first = .TRUE.
@@ -127,6 +142,9 @@ SUBROUTINE geom_init (self, f_conf, f_comm)
   self%NSperiodic = NSperiodic(ng)       ! North-South periodicity switch
 
   self%NghostPoints = NghostPoints       ! number of ghost points
+
+  self%Lm = Lm(ng)                       ! global interior I-points
+  self%Mm = Mm(ng)                       ! global interior J-points
 
   self%LBi = BOUNDS(ng)%LBi(tile)        ! lower bound I-dimension
   self%UBi = BOUNDS(ng)%UBi(tile)        ! upper bound I-dimension
@@ -152,7 +170,7 @@ SUBROUTINE geom_init (self, f_conf, f_comm)
 
   ! Allocate geometry arrays and initialize from ROMS GRID structure
 
-  CALL geom_allocate (self)
+  CALL roms_geom_allocate (self)
 
   self%lonr = GRID(ng)%lonr
   self%latr = GRID(ng)%latr
@@ -161,11 +179,29 @@ SUBROUTINE geom_init (self, f_conf, f_comm)
   self%lonv = GRID(ng)%lonv
   self%latv = GRID(ng)%latv
 
-  self%angler = GRID(ng)%angler
+  self%CosAngler = GRID(ng)%CosAngler
+  self%SinAngler = GRID(ng)%SinAngler
 
   self%rmask = GRID(ng)%rmask
   self%umask = GRID(ng)%umask
   self%vmask = GRID(ng)%vmask
+
+  ! Curvilinear rotation angle between XI-axis and EAST (radians)
+
+  self%angler = GRID(ng)%angler
+
+  DO j=self%Jstr-1,self%Jend+1
+    DO i=self%IstrU-1,self%Iend+1
+      self%angleu(i,j) = 0.5_kind_real*(self%angler(i-1,j)+self%angler(i,j))
+    END DO
+  END DO
+  DO j=self%JstrV-1,self%Jend+1
+    DO i=self%Istr-1,self%Iend+1
+      self%anglev(i,j) = 0.5_kind_real*(self%angler(i,j-1)+self%angler(i,j))
+    END DO
+  END DO
+
+  ! Depths (m)
 
   self%z_r = GRID(ng)%z_r
   self%z_w = GRID(ng)%z_w
@@ -183,42 +219,61 @@ SUBROUTINE geom_init (self, f_conf, f_comm)
     END DO
   END DO
 
-END SUBROUTINE geom_init
+  ! Report
+
+  IF (Ldebug) THEN
+    PRINT '(a,12(a,i0),a,3(i0,1x))', 'roms_geom::init: ', &
+                                      ' tile = ', self%tile, ', ng = ', self%ng, &
+                                      ', LBi = ', self%LBi, ', UBi = ', self%UBi, &
+                                      ', LBj = ', self%LBj, ', UBj = ', self%UBj, &
+                                      ', LBk = ', self%LBk, ', UBk = ', self%UBk, &
+                                      ', Istr = ', self%Istr, ', Iend = ', self%Iend, &
+                                      ', Jstr = ', self%Jstr, ', Jend = ', self%Jend, &
+                                      ', SHAPE = ', SHAPE(self%z_r)
+    CALL self%f_comm%barrier()
+  END IF
+
+END SUBROUTINE roms_geom_init
 
 ! ------------------------------------------------------------------------------
 !> Geometry destructor
 
-SUBROUTINE geom_end (self)
+SUBROUTINE roms_geom_end (self)
 
   CLASS (roms_geom), intent(out)  :: self
 
-  IF (allocated(self%lonr))    deallocate (self%lonr)
-  IF (allocated(self%latr))    deallocate (self%latr)
-  IF (allocated(self%lonu))    deallocate (self%lonu)
-  IF (allocated(self%latu))    deallocate (self%latu)
-  IF (allocated(self%lonv))    deallocate (self%lonv)
-  IF (allocated(self%latv))    deallocate (self%latv)
+  IF (allocated(self%lonr))       deallocate (self%lonr)
+  IF (allocated(self%latr))       deallocate (self%latr)
+  IF (allocated(self%lonu))       deallocate (self%lonu)
+  IF (allocated(self%latu))       deallocate (self%latu)
+  IF (allocated(self%lonv))       deallocate (self%lonv)
+  IF (allocated(self%latv))       deallocate (self%latv)
 
-  IF (allocated(self%angler))  deallocate (self%angler)
+  IF (allocated(self%angler))     deallocate (self%angler)
+  IF (allocated(self%angleu))     deallocate (self%angleu)
+  IF (allocated(self%anglev))     deallocate (self%anglev)
 
-  IF (allocated(self%rmask))   deallocate (self%rmask)
-  IF (allocated(self%umask))   deallocate (self%umask)
-  IF (allocated(self%vmask))   deallocate (self%vmask)
+  IF (allocated(self%CosAngler))  deallocate (self%CosAngler)
+  IF (allocated(self%SinAngler))  deallocate (self%SinAngler)
 
-  IF (allocated(self%z_r))     deallocate (self%z_r)
-  IF (allocated(self%z_u))     deallocate (self%z_u)
-  IF (allocated(self%z_v))     deallocate (self%z_v)
-  IF (allocated(self%z_w))     deallocate (self%z_w)
+  IF (allocated(self%rmask))      deallocate (self%rmask)
+  IF (allocated(self%umask))      deallocate (self%umask)
+  IF (allocated(self%vmask))      deallocate (self%vmask)
 
-END SUBROUTINE geom_end
+  IF (allocated(self%z_r))        deallocate (self%z_r)
+  IF (allocated(self%z_u))        deallocate (self%z_u)
+  IF (allocated(self%z_v))        deallocate (self%z_v)
+  IF (allocated(self%z_w))        deallocate (self%z_w)
+
+END SUBROUTINE roms_geom_end
 
 ! ------------------------------------------------------------------------------
 !> Clone, self = other
 
-SUBROUTINE geom_clone (self, other)
+SUBROUTINE roms_geom_clone (self, other)
 
   CLASS (roms_geom), intent(inout) :: self
-  CLASS (roms_geom), intent(in) :: other
+  CLASS (roms_geom), intent(in   ) :: other
 
   ! Clone communicator
 
@@ -230,12 +285,16 @@ SUBROUTINE geom_clone (self, other)
   self%tile = other%tile
   self%NghostPoints = other%NghostPoints
 
+  self%project_dir = other%project_dir
   self%roms_stdinp = other%roms_stdinp
 
   self%model = other%model
 
   self%EWperiodic = other%EWperiodic
   self%NSperiodic = other%NSperiodic
+
+  self%Lm = other%Lm
+  self%Mm = other%Mm
 
   self%LBi = other%LBi
   self%UBi = other%UBi
@@ -261,7 +320,7 @@ SUBROUTINE geom_clone (self, other)
 
   ! Clone geometry arrays
 
-  CALL geom_allocate (self)
+  CALL roms_geom_allocate (self)
 
   self%lonr = other%lonr
   self%latr = other%latr
@@ -271,6 +330,11 @@ SUBROUTINE geom_clone (self, other)
   self%latv = other%latv
 
   self%angler = other%angler
+  self%angleu = other%angleu
+  self%anglev = other%anglev
+
+  self%CosAngler = other%CosAngler
+  self%SinAngler = other%SinAngler
 
   self%rmask = other%rmask
   self%umask = other%umask
@@ -281,12 +345,22 @@ SUBROUTINE geom_clone (self, other)
   self%z_v = other%z_v
   self%z_w = other%z_w
 
-END SUBROUTINE geom_clone
+  PRINT '(a,12(a,i0),a,3(i0,1x))', 'roms_geom::clone: ', &
+                                    ' tile = ', self%tile, ', ng = ', self%ng, &
+                                    ', LBi = ', self%LBi, ', UBi = ', self%UBi, &
+                                    ', LBj = ', self%LBj, ', UBj = ', self%UBj, &
+                                    ', LBk = ', self%LBk, ', UBk = ', self%UBk, &
+                                    ', Istr = ', self%Istr, ', Iend = ', self%Iend, &
+                                    ', Jstr = ', self%Jstr, ', Jend = ', self%Jend, &
+                                    ', SHAPE = ', SHAPE(self%z_r)
+  CALL self%f_comm%barrier() 
+
+END SUBROUTINE roms_geom_clone
 
 ! ------------------------------------------------------------------------------
 !> Allocate geometry arrays
 
-SUBROUTINE geom_allocate (self)
+SUBROUTINE roms_geom_allocate (self)
 
   CLASS (roms_geom), intent(inout) :: self
 
@@ -309,6 +383,11 @@ SUBROUTINE geom_allocate (self)
   allocate (self%latv(LBi:UBi, LBj:UBj));           self%latv = 0.0_kind_real
 
   allocate (self%angler(LBi:UBi, LBj:UBj));         self%angler = 0.0_kind_real
+  allocate (self%angleu(LBi:UBi, LBj:UBj));         self%angleu = 0.0_kind_real
+  allocate (self%anglev(LBi:UBi, LBj:UBj));         self%anglev = 0.0_kind_real
+
+  allocate (self%CosAngler(LBi:UBi, LBj:UBj));      self%CosAngler = 0.0_kind_real
+  allocate (self%SinAngler(LBi:UBi, LBj:UBj));      self%SinAngler = 0.0_kind_real
 
   allocate (self%rmask(LBi:UBi, LBj:UBj));          self%rmask = 0.0_kind_real
   allocate (self%umask(LBi:UBi, LBj:UBj));          self%umask = 0.0_kind_real
@@ -319,7 +398,7 @@ SUBROUTINE geom_allocate (self)
   allocate (self%z_v(LBi:UBi, LBj:UBj, LBk:UBk));   self%z_v = 0.0_kind_real
   allocate (self%z_w(LBi:UBi, LBj:UBj,   0:UBk));   self%z_w = 0.0_kind_real
 
-END SUBROUTINE geom_allocate
+END SUBROUTINE roms_geom_allocate
 
 ! ------------------------------------------------------------------------------
 

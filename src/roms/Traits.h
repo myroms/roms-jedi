@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2019-2020 UCAR
+ * (C) Copyright 2019-2021 UCAR
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -10,36 +10,39 @@
 
 #include <string>
 
-// TODO(template_impl) #include "roms/Covariance/Covariance.h"
 #include "roms/Geometry/Geometry.h"
-// TODO(template_impl) #include "roms/GeometryIterator/GeometryIterator.h"
-// TODO(template_impl) #include "roms/GetValues/GetValues.h"
-// TODO(template_impl) #include "roms/GetValues/LinearGetValues.h"
-// TODO(template_impl) #include "roms/Increment/Increment.h"
-// TODO(template_impl) #include "roms/ModelAux/ModelAuxControl.h"
-// TODO(template_impl) #include "roms/ModelAux/ModelAuxCovariance.h"
-// TODO(template_impl) #include "roms/ModelAux/ModelAuxIncrement.h"
-// TODO(template_impl) #include "roms/State/State.h"
+#include "roms/GeometryIterator/GeometryIterator.h"
+#include "roms/Increment/Increment.h"
+#include "roms/State/State.h"
+
+// #include "roms/Covariance/Covariance.h"
+// #include "roms/GetValues/GetValues.h"
+// #include "roms/GetValues/LinearGetValues.h"
+// #include "roms/ModelAux/ModelAuxControl.h"
+// #include "roms/ModelAux/ModelAuxCovariance.h"
+// #include "roms/ModelAux/ModelAuxIncrement.h"
 
 namespace roms {
 
   struct Traits{
-    static std::string name() {return "roms";}
+    static std::string name() {return "ROMS";}
     static std::string nameCovar() {return "romsCovar";}
     static std::string nameCovar4D() {return "romsCovar";}
 
     // Interfaces that roms has to implement
     // ---------------------------------------------------
-// TODO(template_impl) typedef roms::Covariance          Covariance;
+
     typedef roms::Geometry            Geometry;
-// TODO(template_impl) typedef roms::GeometryIterator    GeometryIterator;
-// TODO(template_impl) typedef roms::GetValues           GetValues;
-// TODO(template_impl) typedef roms::Increment           Increment;
-// TODO(template_impl) typedef roms::LinearGetValues     LinearGetValues;
-// TODO(template_impl) typedef roms::ModelAuxControl     ModelAuxControl;
-// TODO(template_impl) typedef roms::ModelAuxCovariance  ModelAuxCovariance;
-// TODO(template_impl) typedef roms::ModelAuxIncrement   ModelAuxIncrement;
-// TODO(template_impl) typedef roms::State               State;
+    typedef roms::GeometryIterator    GeometryIterator;
+    typedef roms::State               State;
+    typedef roms::Increment           Increment;
+
+//  typedef roms::Covariance          Covariance;
+//  typedef roms::GetValues           GetValues;
+//  typedef roms::LinearGetValues     LinearGetValues;
+//  typedef roms::ModelAuxControl     ModelAuxControl;
+//  typedef roms::ModelAuxCovariance  ModelAuxCovariance;
+//  typedef roms::ModelAuxIncrement   ModelAuxIncrement;
   };
 }  // namespace roms
 

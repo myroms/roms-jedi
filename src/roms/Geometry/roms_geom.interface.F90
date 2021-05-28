@@ -2,18 +2,21 @@
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+!
+! Hernan G. Arango, Rutgers University, Apr 2021
 
-module roms_geom_mod_c
+MODULE roms_geom_mod_c
 
-use iso_c_binding
-use fckit_configuration_module, only: fckit_configuration
-use fckit_mpi_module,           only: fckit_mpi_comm
-use roms_geom_mod,              only: roms_geom
+USE iso_c_binding
+USE fckit_configuration_module, ONLY : fckit_configuration
+USE fckit_mpi_module,           ONLY : fckit_mpi_comm
+USE roms_geom_mod,              ONLY : roms_geom
 
 implicit none
 
-private
-public :: roms_geom_registry
+PRIVATE
+
+PUBLIC :: roms_geom_registry
 
 #define LISTED_TYPE roms_geom
 
@@ -23,10 +26,10 @@ public :: roms_geom_registry
 
 !> Global registry
 
-type(registry_t) :: roms_geom_registry
+TYPE (registry_t) :: roms_geom_registry
 
 ! ------------------------------------------------------------------------------
-contains
+CONTAINS
 ! ------------------------------------------------------------------------------
 
 !> Linked list implementation
@@ -36,55 +39,111 @@ contains
 ! ------------------------------------------------------------------------------
 !> Setup geometry object
 
-subroutine c_roms_geo_setup(c_key_self, c_conf, c_comm) bind(c,name='roms_geo_setup_f90')
+SUBROUTINE c_roms_geo_setup (c_key_self, c_conf, c_comm) &
+                       BIND (c, name='roms_geo_setup_f90')
 
-  integer(c_int),  intent(inout) :: c_key_self
-  type(c_ptr),        intent(in) :: c_conf
-  type(c_ptr), value, intent(in) :: c_comm
+  integer(c_int),      intent(inout) :: c_key_self
+  TYPE (c_ptr),        intent(   in) :: c_conf
+  TYPE (c_ptr), value, intent(   in) :: c_comm
 
-  type(roms_geom), pointer :: self
+  TYPE (roms_geom),       pointer :: self
 
-  call roms_geom_registry%init()
-  call roms_geom_registry%add(c_key_self)
-  call roms_geom_registry%get(c_key_self,self)
+  CALL roms_geom_registry%init ()
+  CALL roms_geom_registry%add (c_key_self)
+  CALL roms_geom_registry%get (c_key_self, self)
 
-  call self%init(fckit_configuration(c_conf), fckit_mpi_comm(c_comm) )
+  CALL self%init (fckit_configuration(c_conf), fckit_mpi_comm(c_comm))
 
-end subroutine c_roms_geo_setup
+END SUBROUTINE c_roms_geo_setup
 
 ! ------------------------------------------------------------------------------
 !> Clone geometry object
 
-subroutine c_roms_geo_clone(c_key_self, c_key_other) bind(c,name='roms_geo_clone_f90')
+SUBROUTINE c_roms_geo_clone (c_key_self, c_key_other) &
+                       BIND (c, name='roms_geo_clone_f90')
 
   integer(c_int), intent(inout) :: c_key_self
-  integer(c_int), intent(in)    :: c_key_other
+  integer(c_int), intent(   in) :: c_key_other
 
-  type(roms_geom), pointer :: self, other
+  TYPE (roms_geom),     pointer :: self, other
 
-  call roms_geom_registry%add(c_key_self)
-  call roms_geom_registry%get(c_key_self, self)
-  call roms_geom_registry%get(c_key_other, other )
+  CALL roms_geom_registry%add (c_key_self)
+  CALL roms_geom_registry%get (c_key_self, self)
+  CALL roms_geom_registry%get (c_key_other, other )
 
-  call self%clone(other)
+  CALL self%clone (other)
 
-end subroutine c_roms_geo_clone
+END SUBROUTINE c_roms_geo_clone
 
 ! ------------------------------------------------------------------------------
 !> Geometry destructor
 
-subroutine c_roms_geo_delete(c_key_self) bind(c,name='roms_geo_delete_f90')
+SUBROUTINE c_roms_geo_delete (c_key_self) &
+                        BIND (c, name='roms_geo_delete_f90')
 
   integer(c_int), intent(inout) :: c_key_self
 
-  type(roms_geom), pointer :: self
+  TYPE (roms_geom),     pointer :: self
 
-  call roms_geom_registry%get(c_key_self, self)
-  call self%end()
-  call roms_geom_registry%remove(c_key_self)
+  CALL roms_geom_registry%get (c_key_self, self)
+  CALL self%end ()
+  CALL roms_geom_registry%remove (c_key_self)
 
-end subroutine c_roms_geo_delete
+END SUBROUTINE c_roms_geo_delete
+
+! ------------------------------------------------------------------------------
+!> Get begin and end of local tile geometry
+
+SUBROUTINE c_roms_geo_start_end (c_key_self, Istr, Iend, Jstr, Jend) &
+                           BIND (c, name='roms_geo_start_end_f90')
+
+  integer(c_int), intent( in) :: c_key_self
+  integer(c_int), intent(out) :: Istr, Iend, Jstr, Jend
+
+  TYPE (roms_geom),   pointer :: self
+
+  CALL roms_geom_registry%get (c_key_self, self)
+
+  Istr = self%Istr
+  Iend = self%Iend
+  Jstr = self%Jstr
+  Jend = self%Jend
+
+END SUBROUTINE c_roms_geo_start_end
+
+! --------------------------------------------------------------------------------------------------
+!> Get geometry information
+
+SUBROUTINE c_roms_geo_info (c_key_self, nx, ny, nz, tile, LBi, UBi, LBj, UBj, Istr, Iend, Jstr, Jend) &
+                      BIND (c, name='roms_geo_info_f90')
+
+  integer(c_int), intent( in) :: c_key_self
+  integer(c_int), intent(out) :: nx, ny, nz, tile, LBi, UBi, LBj, UBj, Istr, Iend, Jstr, Jend
+
+  TYPE (roms_geom), pointer   :: self
+
+  CALL roms_geom_registry%get (c_key_self, self)
+
+  ! Load grid geometry information
+
+  nx = self%Lm
+  ny = self%Mm
+  nz = self%N
+
+  tile = self%tile
+
+  LBi = self%LBi
+  UBi = self%UBi
+  LBj = self%LBj
+  UBj = self%UBj
+
+  Istr = self%Istr
+  Iend = self%Iend
+  Jstr = self%Jstr
+  Jend = self%Jend
+
+END SUBROUTINE c_roms_geo_info
 
 ! ------------------------------------------------------------------------------
 
-end module roms_geom_mod_c
+END MODULE roms_geom_mod_c

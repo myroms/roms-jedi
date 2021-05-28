@@ -1,5 +1,4 @@
 geometry:
-  roms_stdinp: "/work/noaa/marine/Hernan.Arango/repository/Projects/WC13/RBL4DVAR/roms_wc13_2hours.in"
-
-  ng: 1            # ROMS nested grid number
-
+  project_dir: ../../../../jediroms_wc13/JEDI/
+  roms_stdinp: roms_wc13_20040103.in
+  ng: 1                                       # ROMS nested grid number
