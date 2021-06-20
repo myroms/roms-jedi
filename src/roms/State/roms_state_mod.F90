@@ -232,7 +232,7 @@ SUBROUTINE roms_state_logexpon (self, transfunc, trvars)
   TYPE (oops_variables), intent(   in) :: trvars
 
   TYPE (roms_field),           pointer :: trocn
-  integer                              :: z, i
+  integer                              :: i
   real(kind=kind_real)                 :: min_val = 1e-6_kind_real
   real(kind=kind_real),   allocatable :: trn(:,:,:)
   character(len=64)                   :: tr_names

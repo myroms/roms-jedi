@@ -1,5 +1,5 @@
 geometry:
-  project_dir: /work/noaa/marine/Hernan.Arango/repository/Projects/WC13/RBL4DVAR/
+  project_dir: jediroms_wc13/JEDI/
   roms_stdinp: roms_wc13_2hours.in
   ng: 1                                       # ROMS nested grid number
 

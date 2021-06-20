@@ -53,15 +53,15 @@ export HDF5_USE_FILE_LOCKING=FALSE
 
 # Run all avialable or specific tests
 
-#ALL_TEST=0         # Run specific tests. Then, check ./log.tests
- ALL_TEST=1         # Run all tests. Then, check ./Testing/Temporary/LastTest.log or
+ ALL_TEST=0         # Run specific tests. Then, check ./log.tests
+#ALL_TEST=1         # Run all tests. Then, check ./Testing/Temporary/LastTest.log or
                     #                            ./Testing/Temporary/LastTestsFailed.log
 
 if [ ${ALL_TEST} -eq 1 ]; then
   ctest -E get_
 else
   cd test
-# srun --ntasks=2 --cpu_bind=core --distribution=block:block test_roms_geometry testinput/geometry.yml
+  srun --ntasks=2 --cpu_bind=core --distribution=block:block test_roms_geometry testinput/geometry.yml
   srun --ntasks=2 --cpu_bind=core --distribution=block:block test_roms_state testinput/state.yml
 fi
 

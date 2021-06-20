@@ -20,6 +20,12 @@ foreach(FILENAME ${roms_test_input})
     ${CMAKE_CURRENT_BINARY_DIR}/${FILENAME} )
 endforeach()
 
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testoutput)
+
+execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
+  ${ROMS_BUILD_DIR}/../../../jediroms_wc13
+  ${CMAKE_CURRENT_BINARY_DIR}/jediroms_wc13 )
+
 #================================================================================
 # Tests of class interfaces
 #================================================================================

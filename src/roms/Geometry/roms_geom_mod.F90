@@ -17,6 +17,10 @@ implicit none
 PRIVATE
 PUBLIC  :: roms_geom
 
+!> Switch for printing fields information during debugging
+
+logical :: LdebugGeometry = .TRUE.
+
 !> Geometry data structure
 
 TYPE :: roms_geom
@@ -38,6 +42,14 @@ TYPE :: roms_geom
   integer :: IstrR, IendR, JstrR, JendR       ! tiled RHO-cell full indices range
   integer :: Istr,  Iend,  Jstr,  Jend        ! computational I- and J-indices range at RHO-points
   integer :: IstrU, JstrV                     ! computational starting U- and V-indices
+
+  real(kind=kind_real), allocatable, dimension(:,:) :: f_r        ! Coriolis parameter (1/s), RHO-points
+  real(kind=kind_real), allocatable, dimension(:,:) :: f_u        ! Coriolis parameter (1/s), U-points
+  real(kind=kind_real), allocatable, dimension(:,:) :: f_v        ! Coriolis parameter (1/s), V-points
+
+  real(kind=kind_real), allocatable, dimension(:,:) :: h_r        ! bathymetry (m; positive), RHO-points
+  real(kind=kind_real), allocatable, dimension(:,:) :: h_u        ! bathymetry (m; positive), U-points
+  real(kind=kind_real), allocatable, dimension(:,:) :: h_v        ! bathymetry (m; positive), V-points
 
   real(kind=kind_real), allocatable, dimension(:,:) :: lonr, latr ! RHO-longitude, RHO-latitude
   real(kind=kind_real), allocatable, dimension(:,:) :: lonu, latu ! U-longitude, U-latitude
@@ -75,7 +87,7 @@ CONTAINS
 ! ------------------------------------------------------------------------------
 
 ! ------------------------------------------------------------------------------
-!> Setup geometry object
+!> Setup geometry object by calling "ROMS_initialize"
 
 SUBROUTINE roms_geom_init (self, f_conf, f_comm)
 
@@ -91,9 +103,8 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
   TYPE (fckit_mpi_comm),      intent(in)  :: f_comm
 
   logical, save :: first
-  logical :: Ldebug = .TRUE.
   integer :: i, j, k, ng, tile
-  integer :: MyComm, MyRank, MyError
+  integer :: MyComm, MyRank
 
   character (len=:), allocatable :: project_dir, roms_stdinp
 
@@ -201,7 +212,37 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
     END DO
   END DO
 
-  ! Depths (m)
+  ! Coriolis parameter (1/s)
+
+  self%f_r = GRID(ng)%f
+
+  DO j=self%Jstr-1,self%Jend+1
+    DO i=self%IstrU-1,self%Iend+1
+      self%f_u(i,j) = 0.5_kind_real*(self%f_r(i-1,j)+self%f_r(i,j))
+    END DO
+  END DO
+  DO j=self%JstrV-1,self%Jend+1
+    DO i=self%Istr-1,self%Iend+1
+      self%f_v(i,j) = 0.5_kind_real*(self%f_r(i,j-1)+self%f_r(i,j))
+    END DO
+  END DO
+
+  ! Bathymetry (m; positive)
+
+  self%h_r = GRID(ng)%h
+
+  DO j=self%Jstr-1,self%Jend+1
+    DO i=self%IstrU-1,self%Iend+1
+      self%h_u(i,j) = 0.5_kind_real*(self%h_r(i-1,j)+self%H_r(i,j))
+    END DO
+  END DO
+  DO j=self%JstrV-1,self%Jend+1
+    DO i=self%Istr-1,self%Iend+1
+      self%h_v(i,j) = 0.5_kind_real*(self%h_r(i,j-1)+self%h_r(i,j))
+    END DO
+  END DO
+
+  ! Depths (m; negative)
 
   self%z_r = GRID(ng)%z_r
   self%z_w = GRID(ng)%z_w
@@ -221,7 +262,7 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
 
   ! Report
 
-  IF (Ldebug) THEN
+  IF (LdebugGeometry) THEN
     PRINT '(a,12(a,i0),a,3(i0,1x))', 'roms_geom::init: ', &
                                       ' tile = ', self%tile, ', ng = ', self%ng, &
                                       ', LBi = ', self%LBi, ', UBi = ', self%UBi, &
@@ -241,6 +282,14 @@ END SUBROUTINE roms_geom_init
 SUBROUTINE roms_geom_end (self)
 
   CLASS (roms_geom), intent(out)  :: self
+
+  IF (allocated(self%f_r))        deallocate (self%f_r)
+  IF (allocated(self%f_u))        deallocate (self%f_u)
+  IF (allocated(self%f_v))        deallocate (self%f_v)
+
+  IF (allocated(self%h_r))        deallocate (self%h_r)
+  IF (allocated(self%h_u))        deallocate (self%h_u)
+  IF (allocated(self%h_v))        deallocate (self%h_v)
 
   IF (allocated(self%lonr))       deallocate (self%lonr)
   IF (allocated(self%latr))       deallocate (self%latr)
@@ -322,6 +371,14 @@ SUBROUTINE roms_geom_clone (self, other)
 
   CALL roms_geom_allocate (self)
 
+  self%f_r = other%f_r
+  self%f_u = other%f_u
+  self%f_v = other%f_v
+
+  self%h_r = other%h_r
+  self%h_u = other%h_u
+  self%h_v = other%h_v
+
   self%lonr = other%lonr
   self%latr = other%latr
   self%lonu = other%lonu
@@ -345,15 +402,23 @@ SUBROUTINE roms_geom_clone (self, other)
   self%z_v = other%z_v
   self%z_w = other%z_w
 
-  PRINT '(a,12(a,i0),a,3(i0,1x))', 'roms_geom::clone: ', &
-                                    ' tile = ', self%tile, ', ng = ', self%ng, &
-                                    ', LBi = ', self%LBi, ', UBi = ', self%UBi, &
-                                    ', LBj = ', self%LBj, ', UBj = ', self%UBj, &
-                                    ', LBk = ', self%LBk, ', UBk = ', self%UBk, &
-                                    ', Istr = ', self%Istr, ', Iend = ', self%Iend, &
-                                    ', Jstr = ', self%Jstr, ', Jend = ', self%Jend, &
+  IF (LdebugGeometry) THEN
+    PRINT '(a,12(a,i0),a,3(i0,1x))', 'roms_geom::clone: ',  &
+                                    ' tile = ', self%tile,  &
+                                    ', ng = ', self%ng,     &
+                                    ', LBi = ', self%LBi,   &
+                                    ', UBi = ', self%UBi,   &
+                                    ', LBj = ', self%LBj,   &
+                                    ', UBj = ', self%UBj,   &
+                                    ', LBk = ', self%LBk,   &
+                                    ', UBk = ', self%UBk,   &
+                                    ', Istr = ', self%Istr, &
+                                    ', Iend = ', self%Iend, &
+                                    ', Jstr = ', self%Jstr, &
+                                    ', Jend = ', self%Jend, &
                                     ', SHAPE = ', SHAPE(self%z_r)
-  CALL self%f_comm%barrier() 
+    CALL self%f_comm%barrier() 
+  END IF
 
 END SUBROUTINE roms_geom_clone
 
@@ -374,6 +439,14 @@ SUBROUTINE roms_geom_allocate (self)
   UBj = self%UBj
   LBk = self%LBk
   UBk = self%UBk
+
+  allocate (self%f_r(LBi:UBi, LBj:UBj));            self%f_r = 0.0_kind_real
+  allocate (self%f_u(LBi:UBi, LBj:UBj));            self%f_u = 0.0_kind_real
+  allocate (self%f_v(LBi:UBi, LBj:UBj));            self%f_v = 0.0_kind_real
+
+  allocate (self%h_r(LBi:UBi, LBj:UBj));            self%h_r = 0.0_kind_real
+  allocate (self%h_u(LBi:UBi, LBj:UBj));            self%h_u = 0.0_kind_real
+  allocate (self%h_v(LBi:UBi, LBj:UBj));            self%h_v = 0.0_kind_real
 
   allocate (self%lonr(LBi:UBi, LBj:UBj));           self%lonr = 0.0_kind_real
   allocate (self%latr(LBi:UBi, LBj:UBj));           self%latr = 0.0_kind_real

@@ -40,8 +40,8 @@ To get started:
    module load jedi/intel-impi
    ```
 
-5. Set environmental variables for the ROMS root directory `ROMS_HOME` where roms_src was
-   was installed and it build directory `ROMS_BUILD_DIR` at the command line or loggin script.
+5. Set environmental variables for the ROMS root directory `ROMS_HOME` (where `roms_src` was
+   installed) and its build directory `ROMS_BUILD_DIR` at the command line or in your loggin script.
    Also, ROMS needs `NF_CONFIG` for the location of the NetCDF Fortran utility for compiling
    and linking:
 

@@ -1,4 +1,4 @@
 geometry:
-  project_dir: ../../../../jediroms_wc13/JEDI/
+  project_dir: jediroms_wc13/JEDI/
   roms_stdinp: roms_wc13_20040103.in
   ng: 1                                       # ROMS nested grid number
