@@ -1,0 +1,75 @@
+# --------------------------------------------------------------------------------------------------
+# Field metadata for SOCA. Each field can contain the following information:
+#
+# name:                 Internal name used by ROMS code and config files
+# gtype:                C-grid location: 'r', 'u', or 'v' (Default: 'r')
+# masked:               use land/sea mask if true (Default: true)
+# levels:               'surface' or 'full_ocn' (Default: 'surface')
+# getval_name:          UFO variable name expected by GetValues (Default: <name>)
+# getval_name_surface:  UFO GetValues variable name for 2D surface of a 3D field (Default: <unused>)
+# io_file:              Component file domain 'ocn' (Default: <unused>)
+# io_name:              I/O NetCDF file variable name (Default: <unused>)
+# --------------------------------------------------------------------------------------------------
+
+
+# --------------------------------------------------------------------------------------------------
+# Ocean state variables
+# --------------------------------------------------------------------------------------------------
+
+- name: tocn
+  gtype: r
+  levels: full_ocn
+  getval name: sea_water_potential_temperature
+  getval name surface: sea_surface_temperature
+  io file: ocn
+  io name: temp
+
+- name: socn
+  gtype: r
+  levels: full_ocn
+  getval name: sea_water_practical_salinity
+  getval name surface: sea_surface_salinity
+  io file: ocn
+  io name: salt
+  property: positive_definite
+
+- name: uocn
+  gtype: u
+  levels: full_ocn
+  getval name: sea_water_zonal_velocity
+  getval name surface: surface_sea_water_zonal_velocity
+  io file: ocn
+  io name: u
+
+- name: vocn
+  gtype: v
+  levels: full_ocn
+  getval name: sea_water_meridional_velocity
+  getval name surface: surface_sea_water_meridional_velocity
+  io file: ocn
+  io name: v
+
+- name: ssh
+  gtype: r
+  getval name: sea_surface_height
+  io file: ocn
+  io name: zeta
+
+# --------------------------------------------------------------------------------------------------
+# Built-in derived variables.
+# --------------------------------------------------------------------------------------------------
+
+- name: zocn
+  gtype: r
+  masked: false
+  levels: full_ocn
+  getval name: level_depth
+  io file: ocn
+  io name: z_rho
+
+- name: hocn
+  gtype: r
+  masked: false
+  getval name: sea_floor_depth_below_sea_surface
+  io file: ocn
+  io name: h

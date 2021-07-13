@@ -8,17 +8,18 @@
 #include <iomanip>
 #include <vector>
 
-#include "roms/Geometry/Geometry.h"
-#include "roms/Increment/Increment.h"
-#include "roms/State/State.h"
-#include "roms/State/StateFortran.h"
-
 #include "eckit/config/LocalConfiguration.h"
 #include "eckit/exception/Exceptions.h"
 
 #include "oops/base/Variables.h"
 #include "oops/util/DateTime.h"
+#include "oops/util/Duration.h"
 #include "oops/util/Logger.h"
+
+#include "roms/Geometry/Geometry.h"
+#include "roms/Increment/Increment.h"
+#include "roms/State/State.h"
+#include "roms/State/StateFortran.h"
 
 #include "ufo/GeoVaLs.h"
 #include "ufo/Locations.h"
@@ -41,15 +42,15 @@ State::State(const Geometry & geom, const oops::Variables & vars,
 
 // -----------------------------------------------------------------------------
 
-State::State(const Geometry & geom, const eckit::Configuration & file)
+State::State(const Geometry & geom, const eckit::Configuration & config)
   : time_(),
-    vars_(file, "state variables"),
+    vars_(config, "state variables"),
     geom_(new Geometry(geom))
 {
   util::DateTime * dtp = &time_;
   oops::Variables vars(vars_);
   roms_state_create_f90(keyFlds_, geom_->toFortran(), vars);
-  roms_state_read_file_f90(toFortran(), &file, &dtp);
+  roms_state_read_file_f90(toFortran(), &config, &dtp);
   Log::trace() << "State::State created and read in." << std::endl;
 }
 
@@ -132,6 +133,15 @@ void State::read(const eckit::Configuration & files) {
   util::DateTime * dtp = &time_;
   roms_state_read_file_f90(toFortran(), &files, &dtp);
   Log::trace() << "State::State read done." << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void State::analytic_init(const eckit::Configuration & config) {
+  util::DateTime * dtp = &time_;
+  Log::trace() << "State::Analytical initialization started." << std::endl;
+  roms_state_analytic_init_f90(toFortran(), &config, &dtp);
+  Log::trace() << "State::Analytical initialization done." << std::endl;
 }
 
 // -----------------------------------------------------------------------------

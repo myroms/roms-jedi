@@ -28,6 +28,10 @@ namespace eckit {
   class Configuration;
 }
 
+namespace oops {
+  class Variables;
+}
+
 namespace roms {
   class GeometryIterator;
 }
@@ -53,6 +57,7 @@ namespace roms {
 
     GeometryIterator begin() const;
     GeometryIterator end() const;
+    std::vector<size_t> variableSizes(const oops::Variables & vars) const;
     std::vector<double> verticalCoord(std::string &) const;
 
     int& toFortran() {return keyGeom_;}

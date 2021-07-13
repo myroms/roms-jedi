@@ -1,0 +1,44 @@
+# ROMS is configured with the standard dual formulation 4D-Var test for the US West Coast WC13
+# application
+
+geometry:
+  project_dir: jediroms_wc13/JEDI/
+  roms_stdinp: roms_wc13_20040103.in
+  fields metadata: Data/fields_metadata.yaml
+  ng: 1                                        # ROMS nested grid number
+
+state variables: &geovals [sea_surface_height,
+                           sea_water_zonal_velocity,
+                           sea_water_meridional_velocity,
+                           sea_water_potential_temperature,
+                           sea_water_practical_salinity,
+                           sea_floor_depth_below_sea_surface,
+                           level_depth]
+
+getvalues test:
+  state generate:
+    read_from_file: 0
+    analytic_init: analytic_fields
+    date: &date 2004-01-03T00:00:00Z
+    state variables: [ssh, uocn, vocn, tocn, socn, hocn, zocn]
+  interpolation tolerance: 0.02
+  state variables: *geovals 
+
+geovals:
+  state variables: *geovals
+
+locations:
+  window begin: 2004-01-03T00:00:00Z
+  window end: 2004-01-04T00:00:00Z
+  obs space:
+    name: Random Locations
+    simulated variables: *geovals
+    generate:
+      random:
+        nobs: 10
+        lat1: 30.0
+        lat2: 48.0
+        lon1: -134.0
+        lon2: -116.0
+        random seed: 452938
+      obs errors: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]

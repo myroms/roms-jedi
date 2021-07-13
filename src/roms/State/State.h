@@ -13,25 +13,31 @@
 #include <string>
 #include <vector>
 
-#include "roms/Fortran.h"
-
 #include "oops/base/Variables.h"
 #include "oops/util/DateTime.h"
 #include "oops/util/ObjectCounter.h"
 #include "oops/util/Printable.h"
 #include "oops/util/Serializable.h"
 
+#include "roms/Fortran.h"
+#include "roms/Geometry/Geometry.h"
+#include "roms/Increment/Increment.h"
+#include "roms/State/StateFortran.h"
+
 // Forward declarations
+
 namespace eckit {
   class Configuration;
 }
-namespace ufo {
-  class GeoVaLs;
-  class Locations;
-}
+
 namespace roms {
   class Geometry;
   class Increment;
+}
+
+namespace ufo {
+  class GeoVaLs;
+  class Locations;
 }
 
 //-----------------------------------------------------------------------------
@@ -45,7 +51,7 @@ namespace roms {
    */
   class State : public util::Printable,
                 public util::Serializable,
-    private util::ObjectCounter<State> {
+                private util::ObjectCounter<State> {
    public:
       static const std::string classname() {return "roms::State";}
 
@@ -56,6 +62,7 @@ namespace roms {
       State(const Geometry &, const State &);
       State(const State &);
       virtual ~State();
+
       State & operator=(const State &);
 
       /// Needed by PseudoModel
@@ -74,8 +81,10 @@ namespace roms {
 
       /// I/O and diagnostics
       void read(const eckit::Configuration &);
+      void analytic_init(const eckit::Configuration &);
       void write(const eckit::Configuration &) const;
       double norm() const;
+
       const util::DateTime & validTime() const;
       util::DateTime & validTime();
 
@@ -84,24 +93,24 @@ namespace roms {
       void serialize(std::vector<double> &) const override;
       void deserialize(const std::vector<double> &, size_t &) override;
 
+      /// Utilities
+      std::shared_ptr<const Geometry> geometry() const;
+      const oops::Variables & variables() const {return vars_;}
 
       int & toFortran() {return keyFlds_;}
       const int & toFortran() const {return keyFlds_;}
-      std::shared_ptr<const Geometry> geometry() const;
-      const oops::Variables & variables() const {return vars_;}
 
       /// Other
       void zero();
       void accumul(const double &, const State &);
 
+  // Private methods and variables
    private:
-      void print(std::ostream &) const override;
-
-      F90flds keyFlds_;
-
-      std::shared_ptr<const Geometry> geom_;
-      oops::Variables vars_;
-      util::DateTime time_;
+    void print(std::ostream &) const override;
+    F90flds keyFlds_;
+    std::shared_ptr<const Geometry> geom_;
+    oops::Variables vars_;
+    util::DateTime time_;
   };
 // -----------------------------------------------------------------------------
 

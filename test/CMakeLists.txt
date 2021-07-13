@@ -1,26 +1,83 @@
+# (C) Copyright 2017-2021 UCAR
+#
+# This software is licensed under the terms of the Apache Licence Version 2.0
+# which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+
+# Unit tests configuration files
+
 list( APPEND roms_test_input
-  testinput/geometry.yml
-  testinput/errorcovariance.yml
-  testinput/geometryiterator.yml
-  testinput/getvalues.yml
-  testinput/lineargetvalues.yml
-  testinput/linearmodel.yml
-  testinput/increment.yml
-  testinput/model.yml
-  testinput/modelaux.yml
-  testinput/state.yml
+  testinput/geometry.yaml
+  testinput/errorcovariance.yaml
+  testinput/geometryiterator.yaml
+  testinput/getvalues.yaml
+  testinput/lineargetvalues.yaml
+  testinput/linearmodel.yaml
+  testinput/increment.yaml
+  testinput/model.yaml
+  testinput/modelaux.yaml
+  testinput/state.yaml
   )
 
-# link the input files for the tests
+# Unit tests reference files
 
+set( roms_test_ref
+  testref/3dhyb.test
+  testref/3dhybfgat.test
+  testref/3dvarbump.test
+  testref/3dvar_godas.test
+  testref/3dvar_roms.test
+  testref/3dvarlowres_roms.test
+  testref/3dvarfgat.test
+  testref/3dvarfgat_pseudo.test
+  testref/addincrement.test
+  testref/balance_mask.test
+  testref/checkpointmodel.test
+  testref/convertstate.test
+  testref/convertstate_changevar.test
+  testref/diffstates.test
+  testref/dirac_bump_cov.test
+  testref/dirac_horizfilt.test
+  testref/dirac_roms_cov.test
+  testref/dirac_romshyb_cov.test
+  testref/enshofx.test
+  testref/enspert.test
+  testref/ensrecenter.test
+  testref/ensvariance.test
+  testref/forecast_identity.test
+  testref/forecast_mom6.test
+  testref/forecast_mom6_bgc.test
+  testref/forecast_pseudo.test
+  testref/hofx_3d.test
+  testref/hofx_3dcrtm.test
+  testref/hofx_4d.test
+  testref/hofx_4d_pseudo.test
+  testref/hybridgain.test
+  testref/letkf_observer.test
+  testref/letkf_solver.test
+  testref/makeobs.test
+  testref/parameters_bump_cor_nicas.test
+  testref/parameters_bump_cov_lct.test
+)
+
+# Tests data files
+
+set( roms_data_files
+  Data/fields_metadata.yaml
+)
+
+# Create input/output directories for the tests and symlinks for all files
+
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testinput)
-foreach(FILENAME ${roms_test_input})
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testoutput)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testref)
+foreach(FILENAME ${roms_data_files} ${roms_test_input} ${roms_test_ref})
   execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
     ${CMAKE_CURRENT_SOURCE_DIR}/${FILENAME}
     ${CMAKE_CURRENT_BINARY_DIR}/${FILENAME} )
 endforeach()
 
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testoutput)
+# Create symlink to jediroms_wc13 repository application
 
 execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
   ${ROMS_BUILD_DIR}/../../../jediroms_wc13
@@ -44,10 +101,23 @@ ecbuild_add_test(
 #  LIBS    roms )
 
 ecbuild_add_test(
+  TARGET  test_roms_getvalues
+  SOURCES executables/TestGetValues.cc
+  ARGS    testinput/getvalues.yml
+  LIBS    roms )
+
+# ecbuild_add_test(
+#  TARGET  test_roms_lineargetvalues
+#  SOURCES executables/TestLinearGetValues.cc
+#  ARGS    testinput/lineargetvalues.yml
+#  LIBS    roms )
+
+ecbuild_add_test(
   TARGET  test_roms_state
   SOURCES executables/TestState.cc
   ARGS    testinput/state.yml
   LIBS    roms )
+
 
 # TODO(template_impl) ecbuild_add_test(
 # TODO(template_impl)   TARGET  test_roms_increment
@@ -65,18 +135,6 @@ ecbuild_add_test(
 # TODO(template_impl)   TARGET  test_roms_modelauxcontrol
 # TODO(template_impl)   SOURCES executables/TestModelAuxControl.cc
 # TODO(template_impl)   ARGS    testinput/modelaux.yml
-# TODO(template_impl)   LIBS    roms )
-
-# TODO(template_impl) ecbuild_add_test(
-# TODO(template_impl)   TARGET  test_roms_getvalues
-# TODO(template_impl)   SOURCES executables/TestGetValues.cc
-# TODO(template_impl)   ARGS    testinput/getvalues.yml
-# TODO(template_impl)   LIBS    roms )
-
-# TODO(template_impl) ecbuild_add_test(
-# TODO(template_impl)   TARGET  test_roms_lineargetvalues
-# TODO(template_impl)   SOURCES executables/TestLinearGetValues.cc
-# TODO(template_impl)   ARGS    testinput/lineargetvalues.yml
 # TODO(template_impl)   LIBS    roms )
 
 # TODO(template_impl) ecbuild_add_test(

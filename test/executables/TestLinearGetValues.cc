@@ -12,6 +12,6 @@
 
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);
-  test::LinearGetValues<roms::Traits, ufo::ObsTraits> tests;
+  test::LinearGetValues<roms::Traits, roms::ObsTraits> tests;
   return run.execute(tests);
 }

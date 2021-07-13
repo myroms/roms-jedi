@@ -7,8 +7,11 @@
 
 MODULE roms_state_mod
 
-USE kinds,                  ONLY : kind_real
-USE fckit_log_module,       ONLY : fckit_log
+USE kinds,                      ONLY : kind_real
+
+USE datetime_mod
+USE fckit_configuration_module, ONLY : fckit_configuration
+USE fckit_log_module,           ONLY : fckit_log
 USE oops_variables_mod
 
 USE roms_geom_mod
@@ -22,22 +25,22 @@ PRIVATE
 
 TYPE, PUBLIC, EXTENDS(roms_fields) :: roms_state
 
-CONTAINS
+  CONTAINS
 
   ! Constructors / Destructors
  
-  PROCEDURE :: create    => roms_state_create
+  PROCEDURE :: create          => roms_state_create
 
   ! Increment operations
 
-  PROCEDURE :: diff_incr => roms_state_diff_incr
-  PROCEDURE :: add_incr  => roms_state_add_incr
+  PROCEDURE :: diff_incr       => roms_state_diff_incr
+  PROCEDURE :: add_incr        => roms_state_add_incr
 
   ! Misc
 
-  PROCEDURE :: rotate    => roms_state_rotate
-  PROCEDURE :: convert   => roms_state_convert
-  PROCEDURE :: logexpon  => roms_state_logexpon
+  PROCEDURE :: rotate          => roms_state_rotate
+  PROCEDURE :: convert         => roms_state_convert
+  PROCEDURE :: logexpon        => roms_state_logexpon
 
 END TYPE roms_state
 
@@ -50,9 +53,9 @@ CONTAINS
 
 SUBROUTINE roms_state_create (self, geom, vars)
 
-  CLASS (roms_state),         intent(inout) :: self
-  TYPE (roms_geom),  pointer, intent(inout) :: geom
-  TYPE (oops_variables),      intent(inout) :: vars
+  CLASS (roms_state),         intent(inout) :: self    !< State
+  TYPE (roms_geom),  pointer, intent(inout) :: geom    !< Geometry
+  TYPE (oops_variables),      intent(inout) :: vars    !< State variables
 
   ! Initialization fields by base class
 
@@ -61,8 +64,53 @@ SUBROUTINE roms_state_create (self, geom, vars)
 END SUBROUTINE roms_state_create
 
 ! ------------------------------------------------------------------------------
+!> Initialize state with analytical expressions.
+
+SUBROUTINE roms_state_analytic_init (self, geom, f_conf, vdate)
+
+  CLASS (roms_state),         intent(inout) :: self    !< State
+  TYPE (roms_geom),           intent(in   ) :: geom    !< Geometry
+  TYPE (fckit_configuration), intent(in   ) :: f_conf  !< Configuration
+  TYPE (datetime),            intent(inout) :: vdate   !< DateTime
+
+  character (len=20)                        :: sdate
+  character (len=30)                        :: ana_config
+  character (len=: ), allocatable           :: string
+
+  ! Get type of analytical field from configuration YAML.
+
+  IF (f_conf%has("analytic_init")) THEN
+    CALL f_conf%get_or_die ("analytic_init",string)
+    ana_config = string
+  ELSE
+    ana_config = 'uniform_fields'
+  END IF
+  CALL fckit_log%warning ('roms_state_analytic_init: '//TRIM(ana_config))
+
+  ! Set date and time
+
+  CALL f_conf%get_or_die ("date", string)
+  sdate = string
+  CALL fckit_log%info ('roms_state_analytic_init: validity date is '//sdate)
+  CALL datetime_set (sdate, vdate)
+
+  ! Define state fields
+
+  SELECT CASE (TRIM(ana_config))
+    CASE ('analytic_fields')
+      CALL self%analytic ()
+    CASE ('uniform_fields')
+      CALL self%zeros ()
+    CASE DEFAULT
+      CALL abor1_ftn ('roms_state_analytic_init: unknown analytical ' //     &
+                      'initialization: ' // TRIM(ana_config))
+  END SELECT
+
+END SUBROUTINE roms_state_analytic_init
+
+! ------------------------------------------------------------------------------
 !> Rotate horizontal vector components to geographical or curvilinear 
-!> coordinates
+!! coordinates
 
 SUBROUTINE roms_state_rotate (self, coordinate, uvars, vvars)
 
@@ -213,7 +261,7 @@ SUBROUTINE roms_state_convert (self, rhs)
   DO n = 1, SIZE(rhs%fields)
     field1 => rhs%fields(n)
     CALL self%get (TRIM(field1%name), field2)
-    IF (field1%io_file=="ocn") THEN
+    IF (field1%metadata%io_file=="ocn") THEN
 !     call convert_state%change_resol (field1, field2, rhs%geom, self%geom)
     END IF
   END DO

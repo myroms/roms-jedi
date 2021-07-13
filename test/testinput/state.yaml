@@ -1,0 +1,42 @@
+# ROMS is configured with the standard dual formulation 4D-Var test for the US West Coast WC13
+# application
+
+geometry:
+  project_dir: jediroms_wc13/JEDI/
+  roms_stdinp: roms_wc13_20040103.in
+  fields metadata: Data/fields_metadata.yaml
+  ng: 1                                        # ROMS nested grid number
+
+state test:
+  statefile:                                   # Reads an existing state NetCDF file
+    read_from_file: 1
+    fields_dir: jediroms_wc13/Data/
+    fields_filename: wc13_roms_ini_20040103.nc
+    fields_record: 1
+    date: 2004-01-03T00:00:00Z
+    state variables: [ssh, uocn, vocn, tocn, socn]
+
+  statefileout2:                               # Creates a state NetCDF file
+    datadir: testoutput/   
+    prefix: wc13_roms
+    exp: ini
+    type: state
+    date: 2004-01-03T00:00:00Z
+    state variables: [ssh, uocn, vocn, tocn, socn]
+
+  state generate:                              # Generates an analytical state
+    read_from_file: 0
+    analytic_init: analytic_fields
+    date: 2004-01-03T00:00:00Z
+    state variables: [ssh, uocn, vocn, tocn, socn]
+
+  norm file: 8609.0895530693979
+  norm generated state: 9463.4685549140231
+  date: 2004-01-03T00:00:00Z
+  tolerance: 1.0e-12
+
+# NOTES:
+#
+# * The entry "statefileout" was renamed to "statefileout2" because it failed.
+#   See PR 24: https://github.com/JCSDA-internal/roms-jedi/pull/24
+#   

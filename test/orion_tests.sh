@@ -58,11 +58,17 @@ export HDF5_USE_FILE_LOCKING=FALSE
                     #                            ./Testing/Temporary/LastTestsFailed.log
 
 if [ ${ALL_TEST} -eq 1 ]; then
-  ctest -E get_
+  cd ../                            # go back to <root_dir>/roms-jedi/build/roms-jedi
+# ctest -E -V get_
+# ctest -V -R roms_coding_norms
+# ctest -VV -R test_roms_geometry
+# ctest -VV -R test_roms_state
+  ctest -VV -R test_roms_getvalues
 else
   cd test
-  srun --ntasks=2 --cpu_bind=core --distribution=block:block test_roms_geometry testinput/geometry.yml
-  srun --ntasks=2 --cpu_bind=core --distribution=block:block test_roms_state testinput/state.yml
+  srun --ntasks=2 --cpu_bind=core --distribution=block:block test_roms_geometry testinput/geometry.yaml
+  srun --ntasks=2 --cpu_bind=core --distribution=block:block test_roms_state testinput/state.yaml
+  srun --ntasks=2 --cpu_bind=core --distribution=block:block test_roms_getvalues testinput/getvalues.yaml
 fi
 
 exit 0

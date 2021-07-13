@@ -1,8 +1,18 @@
 /*
- * (C) Copyright 2019-2020 UCAR
+ * (C) Copyright 2019-2021 UCAR
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+ *
+ *!
+ * \brief   **GetValues**  C++ class for interpolating state at observation
+ *          locations
+ *
+ * \details These C++ functions interpolates nonlinear, increment, or derived
+ *          state vector at the **GeoVaLs** locations.
+ *
+ * \author  Hernan G. Arango (Rutgers University)
+ * \date    June 2021
  */
 
 #ifndef ROMS_GETVALUES_GETVALUES_H_
@@ -12,22 +22,31 @@
 #include <ostream>
 #include <string>
 
+#include "roms/Fortran.h"
+
+#include "oops/util/DateTime.h"
 #include "oops/util/ObjectCounter.h"
 #include "oops/util/Printable.h"
 
 #include "ufo/Locations.h"
 
-// forward declarations
-namespace ufo {
-  class GeoVaLs;
-  class Locations;
+// Forward declarations
+
+namespace oops {
+  class Variables;
 }
+
 namespace roms {
   class Geometry;
+  class Model2GeoVaLs;
   class State;
 }
 
-// ----------------------------------------------------------------------------
+namespace ufo {
+  class GeoVaLs;
+}
+
+// -----------------------------------------------------------------------------
 
 namespace roms {
 
@@ -37,21 +56,29 @@ namespace roms {
    public:
     static const std::string classname() {return "roms::GetValues";}
 
-    // constructors, destructors
-    GetValues(const Geometry &, const ufo::Locations & locs);
+    // Constructors and Destructors.
+    GetValues(const Geometry &,
+              const ufo::Locations & locs,
+              const eckit::Configuration & config);
     virtual ~GetValues();
 
-    // fills in geovals for all observations in the timeframe (t1, t2],
+    // Fills in GeoVaLs for all observations in the timeframe (t1, t2].
     void fillGeoVaLs(const State &,
                      const util::DateTime & t1,
                      const util::DateTime & t2,
                      ufo::GeoVaLs &) const;
 
+    // Read interpolated GeoVaLs at observation location.
+    void getValuesFromFile(const ufo::Locations &,
+                           const oops::Variables &,
+                           ufo::GeoVaLs &) const;
+
    private:
     void print(std::ostream &) const;
-
-    std::shared_ptr<const Geometry> geom_;
+    F90getval keyGetValues_;
     ufo::Locations locs_;
+    std::shared_ptr<const Geometry> geom_;
+    std::unique_ptr<Model2GeoVaLs> model2geovals_;
   };
 }  // namespace roms
 

@@ -1,0 +1,8 @@
+# ROMS is configured with the standard dual formulation 4D-Var test for the US West Coast WC13
+# application
+
+geometry:
+  project_dir: jediroms_wc13/JEDI/
+  roms_stdinp: roms_wc13_20040103.in
+  fields metadata: Data/fields_metadata.yaml
+  ng: 1                                       # ROMS nested grid number

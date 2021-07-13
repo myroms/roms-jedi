@@ -3,11 +3,15 @@
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 !
-! Hernan G. Arango, Rutgers University, Apr 2021
-
-!> Interfaces to be called from C++ for Fortran handling of model fields
-
-! ------------------------------------------------------------------------------
+!>
+!! \brief    Fortran and C++ binding interface for ROMS-JEDI State class
+!!
+!! \details  Interoperability mechanism for the State class that allows
+!!           Fortran to invoke C++ functions and vice versa C++ to invoke
+!!           Fortran procedures.
+!!
+!! \author   Hernan G. Arango (Rutgers University)
+!! \date     April 2021
 
 MODULE roms_state_mod_c
 
@@ -33,17 +37,18 @@ PRIVATE
 ! ------------------------------------------------------------------------------
 CONTAINS
 ! ------------------------------------------------------------------------------
+!> Create state fields object.
 
-SUBROUTINE roms_state_create_c (c_key_self, c_key_geom, c_vars) &
+SUBROUTINE roms_state_create_c (c_key_self, c_key_geom, c_vars)              &
                           BIND (c, name='roms_state_create_f90')
 
-  integer(c_int),  intent(inout) :: c_key_self  !< Handle to field
-  integer(c_int),     intent(in) :: c_key_geom  !< Geometry
-  TYPE (c_ptr),value, intent(in) :: c_vars      !< List of variables
+  integer (c_int),     intent(inout) :: c_key_self  !< State fields pointer
+  integer (c_int),     intent(in   ) :: c_key_geom  !< Geometry pointer
+  TYPE (c_ptr), value, intent(in   ) :: c_vars      !< Variables list pointer
 
-  TYPE (roms_state),     pointer :: self
-  TYPE (roms_geom),      pointer :: geom
-  TYPE (oops_variables)          :: vars
+  TYPE (roms_state), pointer         :: self
+  TYPE (roms_geom),  pointer         :: geom
+  TYPE (oops_variables)              :: vars
 
   CALL roms_geom_registry%get (c_key_geom, geom)
   CALL roms_state_registry%init ()
@@ -56,13 +61,14 @@ SUBROUTINE roms_state_create_c (c_key_self, c_key_geom, c_vars) &
 END SUBROUTINE roms_state_create_c
 
 ! ------------------------------------------------------------------------------
+!> Deallocate state fields.
 
-SUBROUTINE roms_state_delete_c (c_key_self) &
+SUBROUTINE roms_state_delete_c (c_key_self)                                  &
                           BIND (c, name='roms_state_delete_f90')
 
-  integer(c_int),  intent(inout) :: c_key_self
+  integer (c_int), intent(inout) :: c_key_self   !< State fields pointer
 
-  TYPE (roms_state),     pointer :: self
+  TYPE (roms_state), pointer     :: self
 
   CALL roms_state_registry%get (c_key_self, self)
   CALL self%delete ()
@@ -71,11 +77,12 @@ SUBROUTINE roms_state_delete_c (c_key_self) &
 END SUBROUTINE roms_state_delete_c
 
 ! ------------------------------------------------------------------------------
+!> Set state fields to zero.
 
-SUBROUTINE roms_state_zero_c (c_key_self) &
+SUBROUTINE roms_state_zero_c (c_key_self)                                    &
                         BIND (c, name='roms_state_zero_f90')
 
-  integer(c_int),  intent(in) :: c_key_self
+  integer (c_int), intent(in) :: c_key_self   !< State fields pointer
 
   TYPE (roms_state),  pointer :: self
 
@@ -85,12 +92,13 @@ SUBROUTINE roms_state_zero_c (c_key_self) &
 END SUBROUTINE roms_state_zero_c
 
 ! ------------------------------------------------------------------------------
+!> Copy state fields: LHS = RHS
 
-SUBROUTINE roms_state_copy_c (c_key_self, c_key_rhs) &
+SUBROUTINE roms_state_copy_c (c_key_self, c_key_rhs)                         &
                         BIND (c, name='roms_state_copy_f90')
 
-  integer(c_int),  intent(in) :: c_key_self
-  integer(c_int),  intent(in) :: c_key_rhs
+  integer (c_int), intent(in) :: c_key_self   !< output state fields pointer
+  integer (c_int), intent(in) :: c_key_rhs    !< input  state fields pointer
 
   TYPE (roms_state),  pointer :: self
   TYPE (roms_state),  pointer :: rhs
@@ -98,22 +106,23 @@ SUBROUTINE roms_state_copy_c (c_key_self, c_key_rhs) &
   CALL roms_state_registry%get (c_key_self, self)
   CALL roms_state_registry%get (c_key_rhs, rhs)
 
-  CALL self%copy(rhs)
+  CALL self%copy (rhs)
 
 END SUBROUTINE roms_state_copy_c
 
 ! ------------------------------------------------------------------------------
+!> Compute LHS = LHS + zz * RHS
 
-SUBROUTINE roms_state_axpy_c (c_key_self, c_zz, c_key_rhs) &
+SUBROUTINE roms_state_axpy_c (c_key_self, c_zz, c_key_rhs)                   &
                         BIND (c, name='roms_state_axpy_f90')
 
-  integer(c_int),  intent(in) :: c_key_self
-  real(c_double),  intent(in) :: c_zz
-  integer(c_int),  intent(in) :: c_key_rhs
+  integer (c_int),  intent(in) :: c_key_self   !< LHS state fields pointer
+  real (c_double),  intent(in) :: c_zz         !< multiplication constant
+  integer (c_int),  intent(in) :: c_key_rhs    !< LRS state fields pointer
 
-  TYPE (roms_state),  pointer :: self
-  real(kind=kind_real)        :: zz
-  TYPE (roms_state),  pointer :: rhs
+  TYPE (roms_state),  pointer  :: self
+  real (kind=kind_real)        :: zz
+  TYPE (roms_state),  pointer  :: rhs
 
   CALL roms_state_registry%get (c_key_self, self)
   CALL roms_state_registry%get (c_key_rhs, rhs)
@@ -124,12 +133,13 @@ SUBROUTINE roms_state_axpy_c (c_key_self, c_zz, c_key_rhs) &
 END SUBROUTINE roms_state_axpy_c
 
 ! ------------------------------------------------------------------------------
+!> Add a set of increments to the set fields: SELF(i) = SELF(i) + RHS(i)
 
 SUBROUTINE roms_state_add_incr_c (c_key_self, c_key_rhs) &
                             BIND (c, name='roms_state_add_incr_f90')
 
-  integer(c_int),     intent(in) :: c_key_self
-  integer(c_int),     intent(in) :: c_key_rhs
+  integer (c_int),     intent(in) :: c_key_self    !< state fields pointer
+  integer (c_int),     intent(in) :: c_key_rhs     !< fields increment pointer
 
   TYPE (roms_state),     pointer :: self
   TYPE (roms_increment), pointer :: rhs
@@ -142,16 +152,20 @@ SUBROUTINE roms_state_add_incr_c (c_key_self, c_key_rhs) &
 END SUBROUTINE roms_state_add_incr_c
 
 ! ------------------------------------------------------------------------------
+!> Initialize state fields by reading from an input NetCDF file if "statefile"
+!! has "read_from_file: 1" or with analytical expressions if "state generate"
+!! has "analytic_init: analytic_fields" and "read_from_file: 0" in the YAML
+!! configuration file.
 
 SUBROUTINE roms_state_read_file_c (c_key_fld, c_conf, c_dt) &
                              BIND (c, name='roms_state_read_file_f90')
 
-  integer(c_int),  intent(in) :: c_key_fld  !< Fields
-  TYPE (c_ptr),    intent(in) :: c_conf     !< Configuration
-  TYPE (c_ptr), intent(inout) :: c_dt       !< DateTime
+  integer (c_int), intent(in   ) :: c_key_fld  !< State fields pointer
+  TYPE (c_ptr),    intent(in   ) :: c_conf     !< Configuration pointer
+  TYPE (c_ptr),    intent(inout) :: c_dt       !< DateTime pointer
 
-  TYPE (roms_state),  pointer :: fld
-  TYPE (datetime)             :: fdate
+  TYPE (roms_state),  pointer    :: fld
+  TYPE (datetime)                :: fdate
 
   CALL roms_state_registry%get (c_key_fld, fld)
   CALL c_f_datetime (c_dt, fdate)
@@ -160,16 +174,48 @@ SUBROUTINE roms_state_read_file_c (c_key_fld, c_conf, c_dt) &
 END SUBROUTINE roms_state_read_file_c
 
 ! ------------------------------------------------------------------------------
+!> Initialize state fields with analytical expressions. It is activated if
+!! "state generate" has "read_from_file: 0" and the keyword "analytic_init" has
+!! as value "analytic_fields" or "uniform_fields" in the YAML configuration
+!! file.. This routine is a duplicated method for analytic initialization to
+!! that of the fields class 'roms_fields". That is, calls to self%analytic_init
+!! and self%analytic are identical since since the state class "roms_state" is
+!! and extension of "roms_fields". Therefore, this interface is not needed.
 
-SUBROUTINE roms_state_write_file_c (c_key_fld, c_conf, c_dt) &
+SUBROUTINE roms_state_analytic_init_c (c_key_state, c_key_geom, c_conf,      &
+                                       c_dt)                                 &
+                                 BIND (c, name='roms_state_analytic_init_f90')
+
+  integer (c_int), intent(in   ) :: c_key_state  !< State fields pointer
+  integer (c_int), intent(in   ) :: c_key_geom   !< Geometry pointer
+  TYPE (c_ptr),    intent(in   ) :: c_conf       !< Configuration pointer
+  TYPE (c_ptr),    intent(inout) :: c_dt         !< DateTime pointer
+
+  TYPE (roms_state), pointer      :: self
+  TYPE (roms_geom), pointer       :: geom
+  TYPE (datetime)                 :: fdate
+  TYPE (fckit_configuration)       :: f_conf
+
+  CALL roms_geom_registry%get (c_key_geom, geom)
+  CALL roms_state_registry%get (c_key_state, self)
+  CALL c_f_datetime (c_dt, fdate)
+  f_conf = fckit_configuration (c_conf)
+  CALL self%analytic_init (f_conf, fdate)
+
+END SUBROUTINE roms_state_analytic_init_c
+
+! ------------------------------------------------------------------------------
+!> Write out state fields into NetCDF file.
+
+SUBROUTINE roms_state_write_file_c (c_key_fld, c_conf, c_dt)                 &
                               BIND (c, name='roms_state_write_file_f90')
 
-  integer(c_int),  intent(in) :: c_key_fld  !< Fields
-  TYPE (c_ptr),    intent(in) :: c_conf     !< Configuration
-  TYPE (c_ptr),    intent(in) :: c_dt       !< DateTime
+  integer (c_int),  intent(in) :: c_key_fld   !< State fields pointer
+  TYPE  (c_ptr),    intent(in) :: c_conf      !< Configuration pointer
+  TYPE  (c_ptr),    intent(in) :: c_dt        !< DateTime pointer
 
-  TYPE (roms_state),  pointer :: fld
-  TYPE (datetime)             :: fdate
+  TYPE (roms_state), pointer   :: fld
+  TYPE (datetime)              :: fdate
 
   CALL roms_state_registry%get (c_key_fld, fld)
   CALL c_f_datetime (c_dt, fdate)
@@ -178,17 +224,18 @@ SUBROUTINE roms_state_write_file_c (c_key_fld, c_conf, c_dt) &
 END SUBROUTINE roms_state_write_file_c
 
 ! ------------------------------------------------------------------------------
+!> Calculate global statistics for each state field: min, max, and  avg.
 
-SUBROUTINE roms_state_gpnorm_c (c_key_fld, kf, pstat) &
+SUBROUTINE roms_state_gpnorm_c (c_key_fld, kf, pstat)                        &
                           BIND (c, name='roms_state_gpnorm_f90')
 
-  integer(c_int),     intent(in) :: c_key_fld
-  integer(c_int),     intent(in) :: kf
-  real(c_double),  intent(inout) :: pstat(3*kf)
+  integer (c_int),  intent(in   ) :: c_key_fld    !< State fields pointer
+  integer (c_int),  intent(in   ) :: kf           !< fields number pointer
+  real (c_double),  intent(inout) :: pstat(3*kf)  !< statistics pointer
 
-  TYPE (roms_state),     pointer :: fld
-  real(kind=kind_real)           :: zstat(3, kf)
-  integer :: jj, js, jf
+  TYPE (roms_state), pointer      :: fld
+  real (kind=kind_real)           :: zstat(3, kf)
+  integer                         :: jj, js, jf
 
   CALL roms_state_registry%get (c_key_fld, fld)
 
@@ -205,31 +252,37 @@ SUBROUTINE roms_state_gpnorm_c (c_key_fld, kf, pstat) &
 END SUBROUTINE roms_state_gpnorm_c
 
 ! ------------------------------------------------------------------------------
+!> Calculate the squared-root of the dot-product sum of a field to itself:
+!! unnormalized RMS.
 
-SUBROUTINE roms_state_rms_c (c_key_fld, prms) &
+SUBROUTINE roms_state_rms_c (c_key_fld, prms)                                &
                        BIND (c, name='roms_state_rms_f90')
 
-  integer(c_int),     intent(in) :: c_key_fld
-  real(c_double),  intent(inout) :: prms
+  integer (c_int),  intent(in   ) :: c_key_fld    !< State fields pointer
+  real (c_double),  intent(inout) :: prms         !< RMS pointer
 
-  TYPE (roms_state),     pointer :: fld
-  real(kind=kind_real)           :: zz
+  TYPE (roms_state), pointer      :: fld
+  real(kind=kind_real)            :: psum
 
   CALL roms_state_registry%get (c_key_fld, fld)
 
-  CALL fld%dot_prod (fld, zz)
-  prms = SQRT(zz)
+  ! Squared-root of the dot-product sum. Notice that we are not calling
+  ! fld%rms that will give prms = SQRT(psum/norm), where norm = npts.
+
+  CALL fld%dot_prod (fld, psum)
+  prms = SQRT(psum)
 
 END SUBROUTINE roms_state_rms_c
 
 ! ------------------------------------------------------------------------------
+!> Rotate vector fields from geographical to curvilinear coordinates.
 
-SUBROUTINE roms_state_rotate2grid_c (c_key_self, c_uvars, c_vvars) &
+SUBROUTINE roms_state_rotate2grid_c (c_key_self, c_uvars, c_vvars)           &
                                BIND (c, name='roms_state_rotate2grid_f90')
 
-  integer(c_int),  intent(in)     :: c_key_self
-  TYPE (c_ptr), value, intent(in) :: c_uvars
-  TYPE (c_ptr), value, intent(in) :: c_vvars
+  integer (c_int),     intent(in) :: c_key_self    !< State fields pointer
+  TYPE (c_ptr), value, intent(in) :: c_uvars       !< U-component variables
+  TYPE (c_ptr), value, intent(in) :: c_vvars       !< V-component variables
 
   TYPE (roms_state),      pointer :: self
   TYPE (oops_variables)           :: uvars, vvars
@@ -243,13 +296,14 @@ SUBROUTINE roms_state_rotate2grid_c (c_key_self, c_uvars, c_vvars) &
 END SUBROUTINE roms_state_rotate2grid_c
 
 ! ------------------------------------------------------------------------------
+!> Rotate vector fields from curvilinear to geographical coordinates.
 
-SUBROUTINE roms_state_rotate2north_c (c_key_self, c_uvars, c_vvars) &
+SUBROUTINE roms_state_rotate2north_c (c_key_self, c_uvars, c_vvars)          &
                                 BIND (c, name='roms_state_rotate2north_f90')
 
-  integer(c_int),      intent(in) :: c_key_self
-  TYPE (c_ptr), value, intent(in) :: c_uvars
-  TYPE (c_ptr), value, intent(in) :: c_vvars
+  integer (c_int),     intent(in) :: c_key_self    !< State fields pointer
+  TYPE (c_ptr), value, intent(in) :: c_uvars       !< U-component variables
+  TYPE (c_ptr), value, intent(in) :: c_vvars       !< V-component variables
 
   TYPE (roms_state),      pointer :: self
   TYPE (oops_variables)           :: uvars, vvars
@@ -263,19 +317,23 @@ SUBROUTINE roms_state_rotate2north_c (c_key_self, c_uvars, c_vvars) &
 END SUBROUTINE roms_state_rotate2north_c
 
 ! ------------------------------------------------------------------------------
+!> Get length of the dimensions of a state 3D-field.
 
-SUBROUTINE roms_state_sizes_c (c_key_fld, nx, ny, nz, nf) &
+SUBROUTINE roms_state_sizes_c (c_key_fld, nx, ny, nz, nf)                    &
                          BIND (c, name='roms_state_sizes_f90')
 
-  integer(c_int),         intent(in) :: c_key_fld
-  integer(kind=c_int), intent(inout) :: nx, ny, nz, nf
+  integer (c_int),      intent(in   ) :: c_key_fld    !< State fields pointer
+  integer (kind=c_int), intent(inout) :: nx           !< X-dimension
+  integer (kind=c_int), intent(inout) :: ny           !< Y-dimension
+  integer (kind=c_int), intent(inout) :: nz           !< Z-dimension
+  integer (kind=c_int), intent(inout) :: nf           !< number of fields
 
   TYPE (roms_state),         pointer :: fld
 
   CALL roms_state_registry%get (c_key_fld, fld)
 
-  nx = SIZE(fld%geom%lonr, 1)
-  ny = SIZE(fld%geom%lonr, 2)
+  nx = SIZE(fld%geom%lonr, DIM=1)
+  ny = SIZE(fld%geom%lonr, DIM=2)
   nz = fld%geom%N
   nf = SIZE(fld%fields)
 
@@ -283,41 +341,42 @@ END SUBROUTINE roms_state_sizes_c
 
 ! ------------------------------------------------------------------------------
 
-SUBROUTINE roms_state_change_resol_c (c_key_fld, c_key_rhs) &
+SUBROUTINE roms_state_change_resol_c (c_key_fld, c_key_rhs)                  &
                                 BIND (c, name='roms_state_change_resol_f90')
 
-  integer(c_int),  intent(in) :: c_key_fld
-  integer(c_int),  intent(in) :: c_key_rhs
+  integer (c_int), intent(in) :: c_key_fld    !< LHS state fields pointer
+  integer (c_int), intent(in) :: c_key_rhs    !< RHS state fields pointer
 
   TYPE (roms_state),  pointer :: fld, rhs
 
   CALL roms_state_registry%get (c_key_fld, fld)
   CALL roms_state_registry%get (c_key_rhs, rhs)
 
-  ! TODO (Guillaume or Travis) implement == in geometry or something to that effect.
+  ! TODO: implement == in geometry or something to that effect.
   
   IF ((SIZE(fld%geom%lonr,1) .eq. SIZE(rhs%geom%lonr,1)) .and. &
       (SIZE(fld%geom%latr,2) .eq. SIZE(rhs%geom%latr,2)) .and. &
       (fld%geom%N .eq. rhs%geom%N)) THEN
     CALL fld%copy (rhs)
   ELSE
-    call fld%convert (rhs)
+    CALL fld%convert (rhs)
   ENDIF
 
 END SUBROUTINE roms_state_change_resol_c
 
 ! ------------------------------------------------------------------------------
+!> Compute the number of elements in the packed (serialized) state vector.
 
-SUBROUTINE roms_state_serial_size_c (c_key_self, c_key_geom, c_vec_size) &
+SUBROUTINE roms_state_serial_size_c (c_key_self, c_key_geom, c_vec_size)     &
                                BIND (c, name='roms_state_serial_size_f90')
 
-  integer(c_int),     intent(in) :: c_key_self
-  integer(c_int),     intent(in) :: c_key_geom
-  integer(c_size_t), intent(out) :: c_vec_size
+  integer (c_int),    intent(in ) :: c_key_self    !< State fields pointer
+  integer (c_int),    intent(in ) :: c_key_geom    !< Geometry pointer
+  integer (c_size_t), intent(out) :: c_vec_size    !< number of elements
 
-  TYPE (roms_state),     pointer :: self
-  TYPE (roms_geom),      pointer :: geom
-  integer                        :: vec_size
+  TYPE (roms_state), pointer      :: self
+  TYPE (roms_geom), pointer       :: geom
+  integer                         :: vec_size
 
   CALL roms_state_registry%get (c_key_self, self)
   CALL roms_geom_registry%get (c_key_geom, geom)
@@ -328,21 +387,20 @@ SUBROUTINE roms_state_serial_size_c (c_key_self, c_key_geom, c_vec_size) &
 END SUBROUTINE roms_state_serial_size_c
 
 ! ------------------------------------------------------------------------------
+!> Pack all the fields into 1D state vector.
 
 SUBROUTINE roms_state_serialize_c (c_key_self, c_key_geom, c_vec_size, c_vec) &
                              BIND (c, name='roms_state_serialize_f90')
 
-  implicit none
+  integer (c_int),    intent(in ) :: c_key_self         !< State fields pointer
+  integer (c_int),    intent(in ) :: c_key_geom         !< Geometry pointer
+  integer (c_size_t), intent(in ) :: c_vec_size         !< State vector length
+  real (c_double),    intent(out) :: c_vec(c_vec_size)  !< State vector
 
-  integer(c_int),    intent(in) :: c_key_self
-  integer(c_int),    intent(in) :: c_key_geom
-  integer(c_size_t), intent(in) :: c_vec_size
-  real(c_double),   intent(out) :: c_vec(c_vec_size)
+  TYPE (roms_state), pointer      :: self
+  TYPE (roms_geom), pointer       :: geom
 
-  TYPE (roms_state),    pointer :: self
-  TYPE (roms_geom),     pointer :: geom
-
-  integer                       :: vec_size
+  integer                         :: vec_size
 
   vec_size = c_vec_size
   CALL roms_state_registry%get (c_key_self, self)
@@ -353,19 +411,22 @@ SUBROUTINE roms_state_serialize_c (c_key_self, c_key_geom, c_vec_size, c_vec) &
 END SUBROUTINE roms_state_serialize_c
 
 ! ------------------------------------------------------------------------------
+!> Unpack all fields from state vector.
 
-SUBROUTINE roms_state_deserialize_c (c_key_self, c_key_geom, c_vec_size, c_vec, c_index) &
+SUBROUTINE roms_state_deserialize_c (c_key_self, c_key_geom,                 &
+                                     c_vec_size, c_vec, c_index)             &
                                BIND (c, name='roms_state_deserialize_f90')
 
-  integer(c_int),       intent(in) :: c_key_self
-  integer(c_int),       intent(in) :: c_key_geom
-  integer(c_size_t),    intent(in) :: c_vec_size
-  real(c_double),       intent(in) :: c_vec(c_vec_size)
-  integer(c_size_t), intent(inout) :: c_index
+  integer (c_int),    intent(in   ) :: c_key_self        !< State fields pointer
+  integer (c_int),    intent(in   ) :: c_key_geom        !< Geometry pointer
+  integer (c_size_t), intent(in   ) :: c_vec_size        !< State vector length
+  real (c_double),    intent(in   ) :: c_vec(c_vec_size) !< State vector
+  integer (c_size_t), intent(inout) :: c_index           !< Unpack vector length
 
-  TYPE (roms_state),       pointer :: self
-  TYPE (roms_geom),        pointer :: geom
-  integer :: vec_size, idx
+  TYPE (roms_state), pointer        :: self
+  TYPE (roms_geom), pointer         :: geom
+
+  integer                           :: vec_size, idx
 
   vec_size = c_vec_size
   idx = c_index
@@ -378,14 +439,15 @@ SUBROUTINE roms_state_deserialize_c (c_key_self, c_key_geom, c_vec_size, c_vec, 
 END SUBROUTINE roms_state_deserialize_c
 
 ! ------------------------------------------------------------------------------
+!> Appy logarithmic transformation to state.
 
-SUBROUTINE roms_state_logtrans_c (c_key_self, c_trvars) &
+SUBROUTINE roms_state_logtrans_c (c_key_self, c_trvars)                      &
                             BIND (c, name='roms_state_logtrans_f90')
 
-  integer(c_int),      intent(in) :: c_key_self
-  TYPE (c_ptr), value, intent(in) :: c_trvars
+  integer (c_int),     intent(in) :: c_key_self     !< State fields pointer
+  TYPE (c_ptr), value, intent(in) :: c_trvars       !< Variables to transform
 
-  TYPE (roms_state),      pointer :: self
+  TYPE (roms_state), pointer      :: self
   TYPE (oops_variables)           :: trvars
 
   trvars = oops_variables(c_trvars)
@@ -396,12 +458,13 @@ SUBROUTINE roms_state_logtrans_c (c_key_self, c_trvars) &
 END SUBROUTINE roms_state_logtrans_c
 
 ! ------------------------------------------------------------------------------
+!> Appy exponential transformation to state.
 
-SUBROUTINE roms_state_expontrans_c (c_key_self, c_trvars) &
+SUBROUTINE roms_state_expontrans_c (c_key_self, c_trvars)                    &
                               BIND (c, name='roms_state_expontrans_f90')
 
-  integer(c_int),      intent(in) :: c_key_self
-  TYPE (c_ptr), value, intent(in) :: c_trvars
+  integer (c_int),     intent(in) :: c_key_self     !< State fields pointer
+  TYPE (c_ptr), value, intent(in) :: c_trvars       !< Variables to transform
 
   TYPE (roms_state),      pointer :: self
   TYPE (oops_variables)           :: trvars

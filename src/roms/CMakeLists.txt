@@ -43,13 +43,15 @@ target_link_libraries( roms PUBLIC ufo )
 
 # add source code in the subdirectories
 
+add_subdirectory(AnalyticInit)
+add_subdirectory(Fields)
 add_subdirectory(Geometry)
 add_subdirectory(GeometryIterator)
-add_subdirectory(Fields)
+add_subdirectory(GetValues)
 add_subdirectory(Increment)
 add_subdirectory(State)
+add_subdirectory(VariableChanges)
 
 # TODO(template_impl) add_subdirectory(Covariance)
-# TODO(template_impl) add_subdirectory(GetValues)
 # TODO(template_impl) add_subdirectory(Model)
 # TODO(template_impl) add_subdirectory(ModelAux)

@@ -3,4 +3,8 @@ roms_target_sources(
     GetValues.h
     LinearGetValues.cc
     LinearGetValues.h
+    GetValuesFortran.h
+    roms_getvalues_mod.F90
+    roms_getvalues.reg.F90
+    roms_getvalues.interface.F90
 )

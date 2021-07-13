@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2019-2020 UCAR
+ * (C) Copyright 2019-2021 UCAR
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -8,7 +8,7 @@
 #include "roms/Geometry/Geometry.h"
 #include "roms/GeometryIterator/GeometryIterator.h"
 
-#include "eckit/config/Configuration.h"
+#include "eckit/config/YAMLConfiguration.h"
 
 #include "oops/util/abor1_cpp.h"
 
@@ -20,7 +20,7 @@ namespace roms {
                      const eckit::mpi::Comm & comm)
     : comm_(comm) {
     const eckit::Configuration * configc = &conf;
-    roms_geo_setup_f90(keyGeom_, &configc, &comm);
+    roms_geo_setup_f90(keyGeom_, &conf, &comm);
   }
 
 // ----------------------------------------------------------------------------
@@ -51,6 +51,15 @@ namespace roms {
     // return end of the geometry on this mpi tile
     // decided to return index out of bounds for the iterator loops to work
     return GeometryIterator(*this, -1, -1);
+  }
+
+// ----------------------------------------------------------------------------
+
+  std::vector<size_t> Geometry::variableSizes(const oops::Variables & vars)
+       const {
+    std::vector<size_t> lvls(vars.size());
+    roms_geo_get_num_levels_f90(toFortran(), vars, lvls.size(), lvls.data());
+    return lvls;
   }
 
 // ----------------------------------------------------------------------------

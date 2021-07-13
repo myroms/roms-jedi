@@ -1,9 +1,21 @@
-! (C) Copyright 2017-2020 UCAR
+! (C) Copyright 2017-2021 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 !
-! Hernan G. Arango, Rutgers University, Apr 2021
+!>
+!! \brief    Geometry class for a ROMS-JEDI model/state space
+!!
+!! \details  This class includes several routines used to create, destroy, and
+!!           clone a geometry object. It contains all the spatial coordinates
+!!           (lon,lat,z) for the C-grid type fields located at the cell center
+!!           (RHO-points), west and east cell edges (U-points), and southern
+!!           and northern cell edges (V-points). It also includes parallel tile
+!!           array-allocation and computational decomposition, land/sea masking
+!!           arrays (0:land, 1:ocean), and curvilinear coordinates arrays.
+!!
+!! \author   Hernan G. Arango (Rutgers University)
+!! \date     April 2021
 
 MODULE roms_geom_mod
 
@@ -12,6 +24,8 @@ USE fckit_configuration_module, ONLY : fckit_configuration
 USE fckit_mpi_module,           ONLY : fckit_mpi_comm
 USE fckit_log_module
 
+USE roms_fields_metadata_mod
+
 implicit none
 
 PRIVATE
@@ -19,13 +33,14 @@ PUBLIC  :: roms_geom
 
 !> Switch for printing fields information during debugging
 
-logical :: LdebugGeometry = .TRUE.
+logical :: LdebugGeometry = .FALSE.
 
 !> Geometry data structure
 
 TYPE :: roms_geom
 
-  TYPE (fckit_mpi_comm) :: f_comm
+  TYPE (fckit_mpi_comm)       :: f_comm
+  TYPE (roms_fields_metadata) :: fields_metadata
 
   logical :: EWperiodic                       ! East-West periodicity switch
   logical :: NSperiodic                       ! North-South periodicity switch
@@ -87,7 +102,7 @@ CONTAINS
 ! ------------------------------------------------------------------------------
 
 ! ------------------------------------------------------------------------------
-!> Setup geometry object by calling "ROMS_initialize"
+!> Setup geometry object by calling "ROMS_initialize".
 
 SUBROUTINE roms_geom_init (self, f_conf, f_comm)
 
@@ -102,13 +117,12 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
   TYPE (fckit_configuration), intent(in)  :: f_conf
   TYPE (fckit_mpi_comm),      intent(in)  :: f_comm
 
-  logical, save :: first
-  integer :: i, j, k, ng, tile
-  integer :: MyComm, MyRank
+  logical, save                           :: first
+  integer                                 :: i, j, k, ng, tile
+  integer                                 :: MyComm
+  character (len=:), allocatable          :: flds_meta, project_dir, roms_stdinp
 
-  character (len=:), allocatable :: project_dir, roms_stdinp
-
-  ! MPI communicator
+  ! Get MPI communicator.
 
   MyComm = f_comm%communicator()
   tile = f_comm%rank()
@@ -116,7 +130,7 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
   self%f_comm = f_comm
   self%tile = tile
 
-  ! Get ROMS project directory and standard input filename from YAML file
+  ! Get ROMS project directory and standard input filename from YAML file.
 
   IF (.not.f_conf%get("project_dir", project_dir)) THEN
     CALL abor1_ftn ("geom_init: Cannot find ROMS project directory")
@@ -128,7 +142,12 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
   END IF
   self%roms_stdinp = roms_stdinp
 
-  ! Get nested grid number from YAML file
+  ! Get YAML metadata filename and create ROMS fields metadata object.
+
+  CALL f_conf%get_or_die ("fields metadata", flds_meta)
+  CALL self%fields_metadata%create (flds_meta)
+
+  ! Get nested grid number from configuration YAML file.
 
   CALL f_conf%get_or_die("ng", ng)
   self%ng = ng
@@ -145,9 +164,9 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
     END IF
   END IF
 
-  ! Domain decomposition ranges and indices
+  ! Domain decomposition ranges and indices.
 
-  self%model = iNLM                      ! numerical kernel
+  self%model = iNLM                      ! ROMS numerical kernel
 
   self%EWperiodic = EWperiodic(ng)       ! East-West periodicity switch
   self%NSperiodic = NSperiodic(ng)       ! North-South periodicity switch
@@ -179,7 +198,7 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
   self%IstrU = BOUNDS(ng)%IstrU(tile)    ! computational I-starting (U-points)
   self%JstrV = BOUNDS(ng)%JstrV(tile)    ! computational J-starting (V-points)
 
-  ! Allocate geometry arrays and initialize from ROMS GRID structure
+  ! Allocate geometry arrays and initialize from ROMS GRID structure.
 
   CALL roms_geom_allocate (self)
 
@@ -197,7 +216,7 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
   self%umask = GRID(ng)%umask
   self%vmask = GRID(ng)%vmask
 
-  ! Curvilinear rotation angle between XI-axis and EAST (radians)
+  ! Curvilinear rotation angle between XI-axis and EAST (radians).
 
   self%angler = GRID(ng)%angler
 
@@ -212,7 +231,7 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
     END DO
   END DO
 
-  ! Coriolis parameter (1/s)
+  ! Coriolis parameter (1/s).
 
   self%f_r = GRID(ng)%f
 
@@ -227,7 +246,7 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
     END DO
   END DO
 
-  ! Bathymetry (m; positive)
+  ! Bathymetry (m; positive).
 
   self%h_r = GRID(ng)%h
 
@@ -242,7 +261,7 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
     END DO
   END DO
 
-  ! Depths (m; negative)
+  ! Depths (m; negative).
 
   self%z_r = GRID(ng)%z_r
   self%z_w = GRID(ng)%z_w
@@ -260,16 +279,22 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
     END DO
   END DO
 
-  ! Report
+  ! Report.
 
   IF (LdebugGeometry) THEN
-    PRINT '(a,12(a,i0),a,3(i0,1x))', 'roms_geom::init: ', &
-                                      ' tile = ', self%tile, ', ng = ', self%ng, &
-                                      ', LBi = ', self%LBi, ', UBi = ', self%UBi, &
-                                      ', LBj = ', self%LBj, ', UBj = ', self%UBj, &
-                                      ', LBk = ', self%LBk, ', UBk = ', self%UBk, &
-                                      ', Istr = ', self%Istr, ', Iend = ', self%Iend, &
-                                      ', Jstr = ', self%Jstr, ', Jend = ', self%Jend, &
+    PRINT '(a,12(a,i0),a,3(i0,1x))', 'roms_geom::init: ',                    &
+                                      ' tile = ', self%tile,                 &             
+                                      ', ng = ', self%ng,                    &
+                                      ', LBi = ', self%LBi,                  &
+                                      ', UBi = ', self%UBi,                  &
+                                      ', LBj = ', self%LBj,                  &
+                                      ', UBj = ', self%UBj,                  &
+                                      ', LBk = ', self%LBk,                  &
+                                      ', UBk = ', self%UBk,                  &
+                                      ', Istr = ', self%Istr,                &
+                                      ', Iend = ', self%Iend,                &
+                                      ', Jstr = ', self%Jstr,                &
+                                      ', Jend = ', self%Jend,                &
                                       ', SHAPE = ', SHAPE(self%z_r)
     CALL self%f_comm%barrier()
   END IF
@@ -277,7 +302,7 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
 END SUBROUTINE roms_geom_init
 
 ! ------------------------------------------------------------------------------
-!> Geometry destructor
+!> Geometry object destructor: deallocate all arrays.
 
 SUBROUTINE roms_geom_end (self)
 
@@ -317,18 +342,18 @@ SUBROUTINE roms_geom_end (self)
 END SUBROUTINE roms_geom_end
 
 ! ------------------------------------------------------------------------------
-!> Clone, self = other
+!> Clone geometry object, self = other.
 
 SUBROUTINE roms_geom_clone (self, other)
 
   CLASS (roms_geom), intent(inout) :: self
   CLASS (roms_geom), intent(in   ) :: other
 
-  ! Clone communicator
+  ! Clone communicator.
 
   self%f_comm = other%f_comm
 
-  ! clone tiled domain bounds and range indices
+  ! Clone object parameters, domain bounds, and range indices.
 
   self%ng   = other%ng
   self%tile = other%tile
@@ -336,6 +361,7 @@ SUBROUTINE roms_geom_clone (self, other)
 
   self%project_dir = other%project_dir
   self%roms_stdinp = other%roms_stdinp
+  self%fields_metadata = other%fields_metadata
 
   self%model = other%model
 
@@ -367,7 +393,7 @@ SUBROUTINE roms_geom_clone (self, other)
   self%IstrU = other%IstrU
   self%JstrV = other%JstrV
 
-  ! Clone geometry arrays
+  ! Clone geometry arrays.
 
   CALL roms_geom_allocate (self)
 
@@ -402,20 +428,26 @@ SUBROUTINE roms_geom_clone (self, other)
   self%z_v = other%z_v
   self%z_w = other%z_w
 
+  ! Clone fields metadata.
+
+  CALL other%fields_metadata%clone (self%fields_metadata)
+
+  ! Report.
+
   IF (LdebugGeometry) THEN
-    PRINT '(a,12(a,i0),a,3(i0,1x))', 'roms_geom::clone: ',  &
-                                    ' tile = ', self%tile,  &
-                                    ', ng = ', self%ng,     &
-                                    ', LBi = ', self%LBi,   &
-                                    ', UBi = ', self%UBi,   &
-                                    ', LBj = ', self%LBj,   &
-                                    ', UBj = ', self%UBj,   &
-                                    ', LBk = ', self%LBk,   &
-                                    ', UBk = ', self%UBk,   &
-                                    ', Istr = ', self%Istr, &
-                                    ', Iend = ', self%Iend, &
-                                    ', Jstr = ', self%Jstr, &
-                                    ', Jend = ', self%Jend, &
+    PRINT '(a,12(a,i0),a,3(i0,1x))', 'roms_geom::clone: ',                   &
+                                    ' tile = ', self%tile,                   &
+                                    ', ng = ', self%ng,                      &
+                                    ', LBi = ', self%LBi,                    &
+                                    ', UBi = ', self%UBi,                    &
+                                    ', LBj = ', self%LBj,                    &
+                                    ', UBj = ', self%UBj,                    &
+                                    ', LBk = ', self%LBk,                    &
+                                    ', UBk = ', self%UBk,                    &
+                                    ', Istr = ', self%Istr,                  &
+                                    ', Iend = ', self%Iend,                  &
+                                    ', Jstr = ', self%Jstr,                  &
+                                    ', Jend = ', self%Jend,                  &
                                     ', SHAPE = ', SHAPE(self%z_r)
     CALL self%f_comm%barrier() 
   END IF
@@ -423,7 +455,7 @@ SUBROUTINE roms_geom_clone (self, other)
 END SUBROUTINE roms_geom_clone
 
 ! ------------------------------------------------------------------------------
-!> Allocate geometry arrays
+!> Allocate geometry object arrays.
 
 SUBROUTINE roms_geom_allocate (self)
 
@@ -431,7 +463,7 @@ SUBROUTINE roms_geom_allocate (self)
 
   integer :: LBi, UBi, LBj, UBj, LBk, UBk
 
-  ! Allocate and initialize geometry arrays
+  ! Allocate and initialize geometry arrays.
 
   LBi = self%LBi
   UBi = self%UBi

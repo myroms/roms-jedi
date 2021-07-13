@@ -13,6 +13,7 @@
 #include "oops/base/Variables.h"
 
 // Forward declarations
+
 namespace eckit {
   class Configuration;
 }
@@ -34,6 +35,9 @@ namespace roms {
     void roms_state_read_file_f90(const F90flds &,
                                   const eckit::Configuration * const &,
                                   util::DateTime * const *);
+    void roms_state_analytic_init_f90(const F90flds &,
+                                      const eckit::Configuration * const &,
+                                      util::DateTime * const *);
     void roms_state_write_file_f90(const F90flds &,
                                    const eckit::Configuration * const &,
                                    const util::DateTime * const *);
