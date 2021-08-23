@@ -1,19 +1,19 @@
 /*
- * (C) Copyright 2019-2020 UCAR.
+ * (C) Copyright 2019-2021 UCAR.
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "roms/Traits.h"
-#include "oops/runs/HofXNoModel.h"
+#include "oops/runs/HofX3D.h"
 #include "oops/runs/Run.h"
+#include "romsjedi/Traits.h"
 #include "ufo/instantiateObsFilterFactory.h"
 #include "ufo/ObsTraits.h"
 
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);
   ufo::instantiateObsFilterFactory<ufo::ObsTraits>();
-  oops::HofXNoModel<roms::Traits, ufo::ObsTraits> hofx;
+  oops::HofX3D<romsjedi::Traits, romsjedi::ObsTraits> hofx;
   return run.execute(hofx);
 }

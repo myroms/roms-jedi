@@ -11,7 +11,9 @@ state variables: &geovals [sea_surface_height,
                            sea_water_zonal_velocity,
                            sea_water_meridional_velocity,
                            sea_water_potential_temperature,
-                           sea_water_practical_salinity]
+                           sea_water_practical_salinity,
+                           sea_floor_depth_below_sea_surface,
+                           level_depth]
 
 linear getvalues test:
   tolerance linearity: 1.0e-11
@@ -27,7 +29,7 @@ background:
   fields_filename: wc13_roms_ini_20040103.nc
   fields_record: 1
   date: &date 2004-01-03T00:00:00Z
-  state variables: [ssh, uocn, vocn, tocn, socn]
+  state variables: [ssh, uocn, vocn, tocn, socn, hocn, zocn]
 
 geovals:
   state variables: *geovals
@@ -40,10 +42,10 @@ locations:
     simulated variables: *geovals
     generate:
       random:
-        nobs: 200
+        nobs: 10
         lat1: 30.0
         lat2: 48.0
         lon1: -134.0
         lon2: -116.0
         random seed: 452938
-      obs errors: [1.0, 1.0, 1.0, 1.0, 1.0]
+      obs errors: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]

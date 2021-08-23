@@ -1,5 +1,5 @@
 /*
-  * (C) Copyright 2019-2019 UCAR.
+  * (C) Copyright 2019-2021 UCAR.
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -8,13 +8,13 @@
  * does it submit to any jurisdiction.
  */
 
-#include "roms/Traits.h"
+#include "romsjedi/Traits.h"
 #include "oops/runs/Run.h"
 #include "test/interface/LinearModel.h"
 
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);
-  test::LinearModel<roms::Traits> tests;
+  test::LinearModel<romsjedi::Traits> tests;
   return run.execute(tests);
 }
 

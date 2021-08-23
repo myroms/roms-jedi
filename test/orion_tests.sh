@@ -50,25 +50,23 @@ ulimit -s unlimited
 export SLURM_EXPORT_ENV=ALL
 export HDF5_USE_FILE_LOCKING=FALSE
 
+MPIrun="srun --ntasks=2 --cpu_bind=core --distribution=block:block"
 
 # Run all avialable or specific tests
 
- ALL_TEST=0         # Run specific tests. Then, check ./log.tests
-#ALL_TEST=1         # Run all tests. Then, check ./Testing/Temporary/LastTest.log or
+#ALL_TEST=0         # Run specific tests. Then, check ./log.tests
+ ALL_TEST=1         # Run all tests. Then, check ./Testing/Temporary/LastTest.log or
                     #                            ./Testing/Temporary/LastTestsFailed.log
 
 if [ ${ALL_TEST} -eq 1 ]; then
   cd ../                            # go back to <root_dir>/roms-jedi/build/roms-jedi
-# ctest -E -V get_
-# ctest -V -R roms_coding_norms
-# ctest -VV -R test_roms_geometry
-# ctest -VV -R test_roms_state
-  ctest -VV -R test_roms_getvalues
+  ctest -E -V get_
+# ctest -V -R romsjedi_coding_norms
 else
-  cd test
-  srun --ntasks=2 --cpu_bind=core --distribution=block:block test_roms_geometry testinput/geometry.yaml
-  srun --ntasks=2 --cpu_bind=core --distribution=block:block test_roms_state testinput/state.yaml
-  srun --ntasks=2 --cpu_bind=core --distribution=block:block test_roms_getvalues testinput/getvalues.yaml
+  ${MPIrun} test_romsjedi_geometry testinput/geometry.yaml
+  ${MPIrun} test_romsjedi_state testinput/state.yaml
+  ${MPIrun} test_romsjedi_getvalues testinput/getvalues.yaml
+  ${MPIrun} ../../bin/romsjedi_hofx_nomodel.x testinput/hofx_3d.yaml
 fi
 
 exit 0

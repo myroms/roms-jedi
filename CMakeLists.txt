@@ -38,7 +38,7 @@ message( STATUS "here_DIR=${CMAKE_CURRENT_LIST_DIR}" )
 message( STATUS "ROMS_BUILD_DIR=${ROMS_BUILD_DIR}" )
 
 find_library( ROMS_LIBRARY
-              NAMES "libROMS.so"
+              NAMES "libROMS.so" "libROMS.dylib"
               DOC "ROMS library"
               HINTS ${ROMS_BUILD_DIR}
               PATH_SUFFIXES lib )

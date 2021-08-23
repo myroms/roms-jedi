@@ -5,13 +5,13 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "roms/Traits.h"
+#include "romsjedi/Traits.h"
 #include "oops/runs/Run.h"
 #include "test/interface/GetValues.h"
 #include "ufo/ObsTraits.h"
 
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);
-  test::GetValues<roms::Traits, roms::ObsTraits> tests;
+  test::GetValues<romsjedi::Traits, romsjedi::ObsTraits> tests;
   return run.execute(tests);
 }

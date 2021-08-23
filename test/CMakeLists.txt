@@ -5,14 +5,15 @@
 
 # Unit tests configuration files
 
-list( APPEND roms_test_input
-  testinput/geometry.yaml
+list( APPEND romsjedi_test_input
   testinput/errorcovariance.yaml
+  testinput/geometry.yaml
   testinput/geometryiterator.yaml
   testinput/getvalues.yaml
+  testinput/hofx_3d.yaml
+  testinput/increment.yaml
   testinput/lineargetvalues.yaml
   testinput/linearmodel.yaml
-  testinput/increment.yaml
   testinput/model.yaml
   testinput/modelaux.yaml
   testinput/state.yaml
@@ -20,7 +21,7 @@ list( APPEND roms_test_input
 
 # Unit tests reference files
 
-set( roms_test_ref
+set( romsjedi_test_ref
   testref/3dhyb.test
   testref/3dhybfgat.test
   testref/3dvarbump.test
@@ -61,17 +62,22 @@ set( roms_test_ref
 
 # Tests data files
 
-set( roms_data_files
+set( romsjedi_data_files
   Data/fields_metadata.yaml
+  Data/Obs/wc13_adt_20040103.nc4
+  Data/Obs/wc13_salt_20040103.nc4
+  Data/Obs/wc13_sst_20040103.nc4
+  Data/Obs/wc13_temp_20040103.nc4
 )
 
 # Create input/output directories for the tests and symlinks for all files
 
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/Obs)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testinput)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testoutput)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testref)
-foreach(FILENAME ${roms_data_files} ${roms_test_input} ${roms_test_ref})
+foreach(FILENAME ${romsjedi_data_files} ${romsjedi_test_input} ${romsjedi_test_ref})
   execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
     ${CMAKE_CURRENT_SOURCE_DIR}/${FILENAME}
     ${CMAKE_CURRENT_BINARY_DIR}/${FILENAME} )
@@ -88,75 +94,86 @@ execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
 #================================================================================
 
 ecbuild_add_test(
-  TARGET  test_roms_geometry
+  TARGET  test_romsjedi_geometry
   MPI     2
   SOURCES executables/TestGeometry.cc
-  ARGS    testinput/geometry.yml
-  LIBS    roms )
+  ARGS    testinput/geometry.yaml
+  LIBS    romsjedi )
 
-# ecbuild_add_test(
-#  TARGET  test_roms_geometryiterator
-#  SOURCES executables/TestGeometryIterator.cc
-#  ARGS    testinput/geometryiterator.yml
-#  LIBS    roms )
+#ecbuild_add_test(
+# TARGET  test_romsjedi_geometryiterator
+# MPI     2
+# SOURCES executables/TestGeometryIterator.cc
+# ARGS    testinput/geometryiterator.yaml
+# LIBS    romsjedi )
 
 ecbuild_add_test(
-  TARGET  test_roms_getvalues
+  TARGET  test_romsjedi_getvalues
+  MPI     2
   SOURCES executables/TestGetValues.cc
-  ARGS    testinput/getvalues.yml
-  LIBS    roms )
+  ARGS    testinput/getvalues.yaml
+  LIBS    romsjedi )
 
-# ecbuild_add_test(
-#  TARGET  test_roms_lineargetvalues
+#ecbuild_add_test(
+#  TARGET  test_romsjedi_increment
+#  MPI     2
+#  SOURCES executables/TestIncrement.cc
+# ARGS    testinput/increment.yaml
+# LIBS    romsjedi )
+
+#ecbuild_add_test(
+#  TARGET  test_romsjedi_lineargetvalues
+#  MPI     2
 #  SOURCES executables/TestLinearGetValues.cc
-#  ARGS    testinput/lineargetvalues.yml
-#  LIBS    roms )
+#  ARGS    testinput/lineargetvalues.yaml
+#  LIBS    romsjedi )
 
 ecbuild_add_test(
-  TARGET  test_roms_state
+  TARGET  test_romsjedi_state
+  MPI     2
   SOURCES executables/TestState.cc
-  ARGS    testinput/state.yml
-  LIBS    roms )
+  ARGS    testinput/state.yaml
+  LIBS    romsjedi )
 
+ecbuild_add_test(
+  TARGET       test_romsjedi_hofx_3d
+  MPI          2
+  COMMAND      romsjedi_hofx_nomodel.x
+  ARGS         testinput/hofx_3d.yaml
+  TEST_DEPENDS test_romsjedi_geometry  )
 
 # TODO(template_impl) ecbuild_add_test(
-# TODO(template_impl)   TARGET  test_roms_increment
-# TODO(template_impl)   SOURCES executables/TestIncrement.cc
-# TODO(template_impl)   ARGS    testinput/increment.yml
-# TODO(template_impl)   LIBS    roms )
-
-# TODO(template_impl) ecbuild_add_test(
-# TODO(template_impl)   TARGET  test_roms_model
+# TODO(template_impl)   TARGET  test_romsjedi_model
 # TODO(template_impl)   SOURCES executables/TestModel.cc
-# TODO(template_impl)   ARGS    testinput/model.yml
-# TODO(template_impl)   LIBS    roms )
+# TODO(template_impl)   ARGS    testinput/model.yaml
+# TODO(template_impl)   LIBS    romsjedi )
 
 # TODO(template_impl) ecbuild_add_test(
-# TODO(template_impl)   TARGET  test_roms_modelauxcontrol
+# TODO(template_impl)   TARGET  test_romsjedi_modelauxcontrol
 # TODO(template_impl)   SOURCES executables/TestModelAuxControl.cc
-# TODO(template_impl)   ARGS    testinput/modelaux.yml
-# TODO(template_impl)   LIBS    roms )
+# TODO(template_impl)   ARGS    testinput/modelaux.yaml
+# TODO(template_impl)   LIBS    romsjedi )
 
 # TODO(template_impl) ecbuild_add_test(
-# TODO(template_impl)   TARGET  test_roms_errorcovariance
+# TODO(template_impl)   TARGET  test_romsjedi_errorcovariance
 # TODO(template_impl)   SOURCES executables/TestErrorCovariance.cc
-# TODO(template_impl)   ARGS    testinput/errorcovariance.yml
-# TODO(template_impl)   LIBS    roms )
+# TODO(template_impl)   ARGS    testinput/errorcovariance.yaml
+# TODO(template_impl)   LIBS    romsjedi )
 
 # TODO(template_impl) ecbuild_add_test(
-# TODO(template_impl)   TARGET  test_roms_modelauxcovariance
+# TODO(template_impl)   TARGET  test_romsjedi_modelauxcovariance
 # TODO(template_impl)   SOURCES executables/TestModelAuxCovariance.cc
-# TODO(template_impl)   ARGS    testinput/modelaux.yml
-# TODO(template_impl)   LIBS    roms )
+# TODO(template_impl)   ARGS    testinput/modelaux.yaml
+# TODO(template_impl)   LIBS    romsjedi )
 
 # TODO(template_impl) ecbuild_add_test(
-# TODO(template_impl)   TARGET  test_roms_modelauxincrement
+# TODO(template_impl)   TARGET  test_romsjedi_modelauxincrement
 # TODO(template_impl)   SOURCES executables/TestModelAuxIncrement.cc
-# TODO(template_impl)   ARGS    testinput/modelaux.yml
-# TODO(template_impl)   LIBS    roms )
+# TODO(template_impl)   ARGS    testinput/modelaux.yaml
+# TODO(template_impl)   LIBS    romsjedi )
 
 # TODO(template_impl) ecbuild_add_test(
-# TODO(template_impl)   TARGET  test_roms_linearmodel
+# TODO(template_impl)   TARGET  test_romsjedi_linearmodel
 # TODO(template_impl)   SOURCES executables/TestLinearModel.cc
-# TODO(template_impl)   ARGS    testinput/linearmodel.yml
-# TODO(template_impl)   LIBS    roms )
+# TODO(template_impl)   ARGS    testinput/linearmodel.yaml
+# TODO(template_impl)   LIBS    romsjedi )
