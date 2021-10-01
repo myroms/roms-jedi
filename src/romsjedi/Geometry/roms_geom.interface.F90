@@ -185,7 +185,7 @@ SUBROUTINE c_roms_geom_get_num_levels (c_key_self, c_vars,                   &
   DO i = 1,vars%nvars()
 
     field_name = vars%variable(i)
-    field = self%fields_metadata%get(field_name)
+    field = self%fieldsinfo%get(field_name)
 
     SELECT CASE(field%levels)
       CASE ('1', 'surface')

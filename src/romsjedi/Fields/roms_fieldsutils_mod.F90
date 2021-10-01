@@ -20,6 +20,7 @@ MODULE roms_fieldsutils_mod
 USE fckit_configuration_module, ONLY : fckit_configuration
 USE datetime_mod,               ONLY : datetime,                             &
                                        datetime_to_string,                   &
+                                       datetime_to_yyyymmddhhmmss,           &
                                        datetime_create,                      &
                                        datetime_diff
 USE duration_mod,               ONLY : duration,                             &
@@ -55,7 +56,7 @@ INTERFACE field_info
   MODULE PROCEDURE field_info3d, field_info2d
 END INTERFACE field_info
 
-logical,  parameter :: LdebugFieldUtils = .TRUE.
+logical,  parameter :: LdebugFieldUtils = .FALSE.
 
 ! ------------------------------------------------------------------------------
 CONTAINS
@@ -65,37 +66,71 @@ CONTAINS
 !> Analytical field initialization at coordinate (lon,lat,z). It is primarily
 !> used to test horizontal and vertical interpolations.
 
-SUBROUTINE ana_fields (name, mask, lon, lat, z, h, value)
+FUNCTION ana_fields (name, mask, lon, lat, z, h, Tb, Sb, Ub, Vb)             &
+             RESULT (value)
 
   USE erf_mod, ONLY : erf                      !< ROMS Error Function, ERF(x)
 
-  real(kind=kind_real), intent( in) :: mask    !< land=0, ocean=1
-  real(kind=kind_real), intent( in) :: lon     !< longitude (degree_east)  
-  real(kind=kind_real), intent( in) :: lat     !< latitude (degree_north)
-  real(kind=kind_real), intent( in) :: z       !< depth (m; negative)
-  real(kind=kind_real), intent( in) :: h       !< bathymetry (m; positive)
-  real(kind=kind_real), intent(out) :: value   !< returned anlytical value
+  real (kind=kind_real), intent(in) :: mask    !< land=0, ocean=1
+  real (kind=kind_real), intent(in) :: lon     !< longitude (degree_east)  
+  real (kind=kind_real), intent(in) :: lat     !< latitude (degree_north)
+  real (kind=kind_real), intent(in) :: z       !< depth (m; negative)
+  real (kind=kind_real), intent(in) :: h       !< bathymetry (m; positive)
+  character (len=*),     intent(in) :: name    !< field name
 
-  character(len=*),      intent(in) :: name    !< field name
-  
-  real(kind=kind_real), parameter :: T0 = 25.0_kind_real      ! temperature (C)   
-  real(kind=kind_real), parameter :: S0 = 32.5_kind_real      ! salinity    
-  real(kind=kind_real), parameter :: U0 = 1.2_kind_real       ! U-velocity scale (m/s)
-  real(kind=kind_real), parameter :: v0 = 0.7_kind_real       ! V-velocity scale (m/s)
-  real(kind=kind_real), parameter :: Tcoef = 1.0E-4           ! thermal expansion (1/C)
-  real(kind=kind_real), parameter :: Scoef = 7.6E-4           ! saline contraction
-  real(kind=kind_real), parameter :: g = 9.81_kind_real       ! gravity (m/s2)
-  real(kind=kind_real), parameter :: dscale = 80.0_kind_real  ! dynamic scale
-  real(kind=kind_real), parameter :: omega = 7.2921E-5        ! Earth rotation (rad/s)
+  real (kind=kind_real), intent(in), optional :: Tb  !< background temperature
+  real (kind=kind_real), intent(in), optional :: Sb  !< background salinity
+  real (kind=kind_real), intent(in), optional :: Ub  !< background U-velocity
+  real (kind=kind_real), intent(in), optional :: Vb  !< background V-velocity
 
-  real(kind=kind_real), parameter :: pi = 3.14159265358979323846   
-  real(kind=kind_real), parameter :: deg2rad = pi/180.0_kind_real
 
-  real(kind=kind_real)            :: f, fac1, fac2, fac3
+  real (kind=kind_real)            :: value    !< returned anlytical value
+
+  real (kind=kind_real), parameter :: pi = 3.14159265358979323846   
+  real (kind=kind_real), parameter :: deg2rad = pi/180.0_kind_real
+
+  real (kind=kind_real)            :: T0, S0, U0, V0, Tcoef, Scoef
+  real (kind=kind_real)            :: dscale, f, g, omega
+  real (kind=kind_real)            :: fac1, fac2, fac3
+
+  ! Set bacground temperature (C), salinity, U-velocity (m/s), and V-velocity (m/s).
+  ! If the optional arguments are present, overwrite default values with the ones
+  ! specified in the YAML file ('analytic init.T0', 'analytic init.S0', 
+  ! 'analytic.init.U0', and 'analytic init.V0').
+
+  IF (PRESENT(Tb)) THEN
+    T0=Tb
+  ELSE
+    T0=25.0_kind_real
+  END IF
+
+  IF (PRESENT(Sb)) THEN
+    S0=Sb
+  ELSE
+    S0=32.5_kind_real
+  END IF
+
+  IF (PRESENT(Ub)) THEN
+    U0=Ub
+  ELSE
+    U0=1.2_kind_real
+  END IF
+
+  IF (PRESENT(Vb)) THEN
+    V0=Vb
+  ELSE
+    V0=0.7_kind_real
+  END IF
 
   ! Initialize
-  
-  f=2.0_kind_real*omega*sin(lat*deg2rad)            ! Coriolis parameter (1/s)
+ 
+  Tcoef  = 1.0E-4           ! thermal expansion (1/C)
+  Scoef  = 7.6E-4           ! saline contraction
+  omega  = 7.2921E-5        ! Earth rotation (rad/s)
+  dscale = 80.0_kind_real   ! dynamic scale
+  g      = 9.81_kind_real   ! acceleration due to gravity (m/s2)
+
+  f      = 2.0_kind_real*omega*SIN(lat*deg2rad)   ! Coriolis parameter (1/s)
 
   ! Analytical initialization.
 
@@ -135,7 +170,7 @@ SUBROUTINE ana_fields (name, mask, lon, lat, z, h, value)
       value=z
   END SELECT  
 
-END SUBROUTINE ana_fields
+END FUNCTION ana_fields
 
 ! ------------------------------------------------------------------------------
 !> If error is detected, create error message for aborting routine.
@@ -251,63 +286,56 @@ SUBROUTINE nc_err (status, NoErr, iotype, line, routine)
 END SUBROUTINE nc_err
 
 ! ------------------------------------------------------------------------------
-!> Converts JEDI date to ROMS time in second since reference-time.
+!> Converts JEDI ISO8601 date-time to ROMS time in second since reference-time
+!> and Matlab datenum (origin 0000-00-00 00:00:00) in days.
 
-SUBROUTINE roms_date2time (LocalPET, vdate, time)
+SUBROUTINE roms_date2time (LocalPET, vdate, romsTime, romsDateNumber)
 
   USE dateclock_mod, ONLY : datenum            !< from ROMS time management
-  USE mod_scalars,   ONLY : Rclock             !< ROMS reference time structure
+  USE mod_scalars,   ONLY : Rclock, time_ref   !< ROMS reference time structure
 
-  integer,               intent(in ) :: localPET   !< PET rank
-  TYPE (datetime),       intent(in ) :: vdate      !< JEDI Date/Time
-  real (kind=kind_real), intent(out) :: time       !< ROMS time (seconds)
+  integer,               intent(in ) :: localPET         !< PET rank
+  TYPE (datetime),       intent(in ) :: vdate            !< JEDI Date/Time
+  real (kind=kind_real), intent(out) :: romsTime         !< ROMS time
+  real (kind=kind_real), intent(out) :: romsDateNumber   !< Matlab datenum
 
-
-  integer                            :: i, lstr
-  integer                            :: year, month, day, hour, minutes
-  real (kind=kind_real)              :: DateNumber(2),  seconds
-  character (len=1), parameter       :: blank = CHAR(32)
+  integer                            :: year, month, day, hour, minute, iseconds
+  real (kind=kind_real)              :: myDateNumber(2), seconds
   character (len=120)                :: CurrentDateString
 
-  ! Convert ROMS reference-time string to datetime type (rdate). Replace non
-  ! numeric elements with blanks.
-  !
-  !     CHAR(45)=hyphen    CHAR(58)=colon
+  ! Convert ISO8601 date-time to ROMS time and date number.
 
   CALL datetime_to_string (vdate, CurrentDateString)
-
-  lstr = LEN_TRIM(CurrentDateString)
-  DO i = 1, lstr
-    IF ((CurrentDateString(i:i) .eq. CHAR(45)) .or.                          &
-        (CurrentDateString(i:i) .eq. CHAR(58)) .or.                          &
-        (CurrentDateString(i:i) .eq. 'T')      .or.                          &
-        (CurrentDateString(i:i) .eq. 'Z')) THEN
-      CurrentDateString(i:i) = blank
-    END IF
-  END DO
-
-  ! Decode string to integers. Then, compute datenum.
-
-  READ (CurrentDateString,*) year, month, day, hour, minutes, seconds
-
-  CALL datenum (DateNumber, year, month, day, hour, minutes, seconds)
+  CALL datetime_to_yyyymmddhhmmss (vdate,                                    &
+                                   year, month, day, hour, minute, iseconds)
+  seconds = REAL(iseconds, kind_real)  
+  CALL datenum (myDateNumber, year, month, day, hour, minute, seconds)
 
   ! Compute ROMS time as elapsed seconds from reference date.
 
-  time = DateNumber(2)-Rclock%DateNumber(2)
+  romsTime = myDateNumber(2)-Rclock%DateNumber(2)
+
+  ! ROMS allows both Proleptic Julian Calendar (origin Nov 24, 4713 BC) and
+  ! Gregorian (Proleptic or not) Calendar adjuted to Matlab origin of
+  ! 0000-00-00 00:00:00, datenum(0,0,0)=0, for consistence.
+   
+  IF (INT(time_ref).eq.-2) THEN                           ! Julian Calendar
+    romsDateNumber = myDateNumber(1)- 1721059.0_kind_real
+  ELSE
+    romsDateNumber = myDateNumber(1)                      ! Gregorian Calendar
+  END IF
 
   IF (LdebugFieldUtils .and. (LocalPET .eq. 0)) THEN
     PRINT '(a,a)',             'Reference Date:      ', TRIM(Rclock%string)
     PRINT '(a,a)',             'Current Date:        ', TRIM(CurrentDateString)
     PRINT '(a,5(i0,1x),f7.4)', 'YYYY MM DD hh mm ss: ', year,month,day,hour, &
-                                                        minutes,seconds
+                                                        minute,seconds
+    PRINT '(a,a)',             'Calendar:            ', TRIM(Rclock%Calendar)
     PRINT '(a,f0.4)',          'Reference datenum:   ', Rclock%DateNumber(1)
-    PRINT '(a,f0.4)',          'Current datenum:     ', DateNumber(1)
-    PRINT '(a,f0.4)',          'ROMS time (days):    ', time/86400.0_kind_real
-    PRINT '(a,f0.4)',          'ROMS time (seconds): ', time
+    PRINT '(a,f0.4)',          'Matlab datenum:      ', romsDateNumber
+    PRINT '(a,f0.4)',          'ROMS time (days):    ', romsTime/86400.0
+    PRINT '(a,f0.4)',          'ROMS time (seconds): ', romsTime
   END IF
-
-  10 FORMAT (5i0,f0.8)
 
 END SUBROUTINE roms_date2time
 
@@ -411,8 +439,9 @@ END FUNCTION roms_gen_filename
 
 SUBROUTINE roms_IOstruct (ng, Nfiles, ncname, S)
 
-  USE mod_param,   ONLY : MT, Ngrids, T_IO
+  USE mod_param,   ONLY : MT, Ngrids
   USE mod_ncparam, ONLY : NV, out_lib
+  USE mod_iounits, ONLY : T_IO
 
   integer,                  intent(in   ) :: ng         !< nested grid number
   integer,                  intent(in   ) :: Nfiles     !< number of multi-files
@@ -487,7 +516,8 @@ END SUBROUTINE roms_IOstruct
 
 SUBROUTINE roms_IOstruct_delete (S)
 
-  USE mod_param,   ONLY : Ngrids, T_IO
+  USE mod_param,   ONLY : Ngrids
+  USE mod_iounits, ONLY : T_IO
 
   TYPE (T_IO), allocatable, intent(inout) :: S(:)       !< IO structure
 
@@ -519,7 +549,7 @@ END SUBROUTINE roms_IOstruct_delete
 
 SUBROUTINE roms_close_ncfile (ng, model, S)
 
-  USE mod_param,      ONLY : T_IO
+  USE mod_iounits,    ONLY : T_IO
   USE mod_ncparam,    ONLY : io_nf90, io_pio
   USE mod_netcdf,     ONLY : netcdf_close
 #if defined PIO_LIB
@@ -558,7 +588,7 @@ END SUBROUTINE roms_close_ncfile
 
 SUBROUTINE roms_create_ncfile (ng, model, LocalPET, S)
 
-  USE mod_param,   ONLY : T_IO
+  USE mod_iounits, ONLY : T_IO
   USE mod_ncparam, ONLY : io_nf90, io_pio
 
   integer,      intent(in   ) :: ng           !< nested grid number
@@ -599,6 +629,7 @@ SUBROUTINE roms_create_ncfile_nf90 (ng, model, LocalPET, S)
   USE mod_netcdf
   USE mod_scalars
 
+  USE mod_iounits,  ONLY : T_IO
   USE def_dim_mod,  ONLY : def_dim
   USE def_info_mod, ONLY : def_info
   USE def_var_mod,  ONLY : def_var
@@ -1379,6 +1410,7 @@ SUBROUTINE roms_create_ncfile_pio (ng, model, LocalPET, S)
   USE mod_pio_netcdf
   USE mod_scalars
 
+  USE mod_iounits,  ONLY : T_IO
   USE def_dim_mod,  ONLY : def_dim
   USE def_info_mod, ONLY : def_info
   USE def_var_mod,  ONLY : def_var

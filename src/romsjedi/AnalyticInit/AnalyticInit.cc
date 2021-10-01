@@ -27,12 +27,15 @@
 
 namespace romsjedi {
 
+  static oops::AnalyticInitMaker<ufo::ObsTraits, AnalyticInit>
+         makerAnalytic_("ana_ocnfields");
+
 // -----------------------------------------------------------------------------
 /// Constructor.
 // -----------------------------------------------------------------------------
 
-  AnalyticInit::AnalyticInit(const eckit::Configuration & config)
-    : config_(config) {}
+  AnalyticInit::AnalyticInit(const Parameters_ & options)
+    : options_(options) {}
 
 // -----------------------------------------------------------------------------
 /// Get analytical values at the observation locations
@@ -41,11 +44,9 @@ namespace romsjedi {
   void AnalyticInit::fillGeoVaLs(const ufo::Locations & locs,
                                  ufo::GeoVaLs & geovals) const {
     oops::Log::trace() << "AnalyticInit::analitic_init starting" << std::endl;
-    if (config_.has("analytic_init")) {
-      roms_analytic_init_f90(geovals.toFortran(),
-                             locs,
-                             config_);
-    }
+    roms_analytic_init_f90(geovals.toFortran(),
+                           locs,
+                           options_.T0, options_.S0, options_.U0, options_.V0);
     oops::Log::trace() << "AnalyticInit::analytic_init done" << std::endl;
   }
 

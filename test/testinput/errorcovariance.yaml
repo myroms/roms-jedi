@@ -1,15 +1,21 @@
+# ROMS is configured with the JEDI driver and includes the NLM, TLM, and ADM kernels
+# for the US West Coast WC13 test application.
+
 geometry:
-  # insert other model specific things here
+  project_dir: jediroms_wc13/JEDI/
+  roms_stdinp: roms_wc13_20040103.in
+  fields metadata: Data/fields_metadata.yaml
+  ng: 1                                        # ROMS nested grid number
 
 covariance test:
   tolerance: 1e-12
   testinverse: false
 
-analysis variables: &vars [var1, var2]
+analysis variables: &vars [ssh, uocn, vocn, tocn, socn]
 
 background:
   state variables: *vars
-  date: 2018-04-15T00:00:00Z
+  date: 2004-01-03T00:00:00Z
 
 background error:
   covariance model: romsCovar

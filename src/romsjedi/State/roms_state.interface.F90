@@ -154,8 +154,8 @@ END SUBROUTINE roms_state_add_incr_c
 ! ------------------------------------------------------------------------------
 !> Initialize state fields by reading from an input NetCDF file if "statefile"
 !! has "read_from_file: 1" or with analytical expressions if "state generate"
-!! has "analytic_init: analytic_fields" and "read_from_file: 0" in the YAML
-!! configuration file.
+!! has "analytic init.method: ana_ocnfields" and "read_from_file: 0" in the
+!! YAML configuration file.
 
 SUBROUTINE roms_state_read_file_c (c_key_fld, c_conf, c_dt) &
                              BIND (c, name='roms_state_read_file_f90')
@@ -174,13 +174,15 @@ SUBROUTINE roms_state_read_file_c (c_key_fld, c_conf, c_dt) &
 END SUBROUTINE roms_state_read_file_c
 
 ! ------------------------------------------------------------------------------
-!> Initialize state fields with analytical expressions. It is activated if
-!! "state generate" has "read_from_file: 0" and the keyword "analytic_init" has
-!! as value "analytic_fields" or "uniform_fields" in the YAML configuration
-!! file.. This routine is a duplicated method for analytic initialization to
-!! that of the fields class 'roms_fields". That is, calls to self%analytic_init
-!! and self%analytic are identical since since the state class "roms_state" is
-!! and extension of "roms_fields". Therefore, this interface is not needed.
+!> Initialize state fields with analytical expressions.
+!!
+!! It is activated if  "state generate" has "read_from_file: 0" and the keyword
+!! "analytic init.method" has as value "ana_ocnfields" or "uniform_ocnfields"
+!! in the YAML configuration file. This routine is a duplicated method for
+!! analytic initialization to that of the fields class 'roms_fields". That is,
+!! calls to self%analytic_init and self%analytic are identical since since the
+!! state class "roms_state" is  and extension of "roms_fields". Therefore,
+!! this interface is not needed.
 
 SUBROUTINE roms_state_analytic_init_c (c_key_state, c_key_geom, c_conf,      &
                                        c_dt)                                 &

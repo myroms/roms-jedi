@@ -13,11 +13,6 @@ export OOPS__TRACE=1
 export MAIN_DEBUG=1
 export OOPS_DEBUG=1
 
-module purge
-module load jedi
-module list
-ulimit -s unlimited
-
 export HDF5_USE_FILE_LOCKING=FALSE
 
 MPIrun="mpirun -n 2"
@@ -36,7 +31,8 @@ else
   ${MPIrun} test_romsjedi_geometry testinput/geometry.yaml
   ${MPIrun} test_romsjedi_state testinput/state.yaml
   ${MPIrun} test_romsjedi_getvalues testinput/getvalues.yaml
-  ${MPIrun} ../../bin/romsjedi_hofx_nomodel.x testinput/hofx_3d.yaml
+  ${MPIrun} ../../bin/romsjedi_hofx_nomodel.x testinput/hofx_nomodel.yaml
+  ${MPIrun} test_romsjedi_model testinput/model.yaml
 fi
 
 exit 0

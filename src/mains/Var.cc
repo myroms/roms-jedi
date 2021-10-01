@@ -13,7 +13,7 @@
 
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);
-  ufo::instantiateObsFilterFactory<romsjedi::ObsTraits>();
-  oops::Variational<romsjedi::Traits, romsjedi::ObsTraits> var;
+  ufo::instantiateObsFilterFactory<romsjedi::Traits>();
+  oops::Variational<romsjedi::Traits, ufo::ObsTraits> var;
   return run.execute(var);
 }

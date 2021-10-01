@@ -16,6 +16,8 @@ USE oops_variables_mod
 
 USE roms_geom_mod
 USE roms_fields_mod
+USE roms_fields_metadata_mod
+USE roms_fieldsutils_mod
 USE roms_increment_mod
 !USE roms_convert_state_mod
 
@@ -29,26 +31,34 @@ TYPE, PUBLIC, EXTENDS(roms_fields) :: roms_state
 
   ! Constructors / Destructors
  
-  PROCEDURE :: create          => roms_state_create
+  PROCEDURE :: create                => roms_state_create
 
   ! Increment operations
 
-  PROCEDURE :: diff_incr       => roms_state_diff_incr
-  PROCEDURE :: add_incr        => roms_state_add_incr
+  PROCEDURE :: diff_incr             => roms_state_diff_incr
+  PROCEDURE :: add_incr              => roms_state_add_incr
 
-  ! Misc
+  ! Operations
 
-  PROCEDURE :: rotate          => roms_state_rotate
-  PROCEDURE :: convert         => roms_state_convert
-  PROCEDURE :: logexpon        => roms_state_logexpon
+  PROCEDURE :: rotate                => roms_state_rotate
+  PROCEDURE :: convert               => roms_state_convert
+  PROCEDURE :: logexpon              => roms_state_logexpon
+
+  ! Read extra fields
+
+  PROCEDURE :: read_extrafields_nf90 => roms_state_read_extrafields_nf90
+
+#if defined PIO_LIB
+  PROCEDURE :: read_extrafields_pio  => roms_state_read_extrafields_pio
+#endif
 
 END TYPE roms_state
 
-!------------------------------------------------------------------------------
+!-------------------------------------------------------------------------------
 CONTAINS
-!------------------------------------------------------------------------------
+!-------------------------------------------------------------------------------
 
-!------------------------------------------------------------------------------
+!-------------------------------------------------------------------------------
 !> Create State object
 
 SUBROUTINE roms_state_create (self, geom, vars)
@@ -79,11 +89,11 @@ SUBROUTINE roms_state_analytic_init (self, geom, f_conf, vdate)
 
   ! Get type of analytical field from configuration YAML.
 
-  IF (f_conf%has("analytic_init")) THEN
-    CALL f_conf%get_or_die ("analytic_init",string)
+  IF (f_conf%has("analytic init")) THEN
+    CALL f_conf%get_or_die ("analytic init.method",string)
     ana_config = string
   ELSE
-    ana_config = 'uniform_fields'
+    ana_config = 'uniform_ocnfields'
   END IF
   CALL fckit_log%warning ('roms_state_analytic_init: '//TRIM(ana_config))
 
@@ -97,9 +107,9 @@ SUBROUTINE roms_state_analytic_init (self, geom, f_conf, vdate)
   ! Define state fields
 
   SELECT CASE (TRIM(ana_config))
-    CASE ('analytic_fields')
+    CASE ('ana_ocnfields')
       CALL self%analytic ()
-    CASE ('uniform_fields')
+    CASE ('uniform_ocnfields')
       CALL self%zeros ()
     CASE DEFAULT
       CALL abor1_ftn ('roms_state_analytic_init: unknown analytical ' //     &
@@ -320,6 +330,444 @@ SUBROUTINE roms_state_logexpon (self, transfunc, trvars)
   END DO
 
 END SUBROUTINE roms_state_logexpon
+
+!-------------------------------------------------------------------------------
+!> Reads in extra fields that are not part of the state vector and load then
+!  to respective ROMS array.  They are needed for ROMS initialization. It uses
+!  the standard NetCDF library.
+
+SUBROUTINE roms_state_read_extrafields_nf90 (self, InpRec, Tindex,           &
+                                             extra_vars, ncname,             &
+                                             DateString, DateNumber)
+
+  USE mod_grid,       ONLY : GRID
+  USE mod_mixing,     ONLY : MIXING
+  USE mod_ocean,      ONLY : OCEAN
+
+  USE mod_ncparam,    ONLY : u2dvar, v2dvar, w3dvar, io_nf90
+  USE mod_iounits,    ONLY : stdout
+  USE mod_netcdf,     ONLY : netcdf_open, netcdf_close, netcdf_find_var
+  USE mod_scalars,    ONLY : NoError, exit_flag, itemp, isalt
+  USE netcdf,         ONLY : nf90_noerr
+  USE nf_fread2d_mod, ONLY : nf_fread2d
+  USE nf_fread3d_mod, ONLY : nf_fread3d
+
+  CLASS (roms_state),    intent(in) :: self          !< State object
+  integer,               intent(in) :: InpRec        !< time record to read
+  integer,               intent(in) :: Tindex        !< ROMS array time index 
+  real (kind=kind_real), intent(in) :: DateNumber    !< fields datenum
+  character (len=*),     intent(in) :: extra_vars(:) !< variables to read
+  character (len=*),     intent(in) :: ncname        !< input NetCDF file
+  character (len=*),     intent(in) :: DateString    !< ISO8601 DateTime
+
+  TYPE (roms_field_metadata)        :: metadata 
+  integer                           :: LocalPET, lstr, lend
+  integer                           :: LBi, UBi, LBj, UBj, N
+  integer                           :: i, model, ng, nvars
+  integer                           :: ncid, varid
+  integer, dimension(4)             :: Vsize
+  real (kind=kind_real)             :: Fmin, Fmax, scale
+  character (len=:), allocatable    :: fieldname
+  character (len=1024)              :: Message
+
+  character (len=*), parameter      :: MyFile =                              &
+     &  __FILE__//", roms_state_read_extrafields_nf90"
+
+  ! Initialize.
+
+  LocalPET = self%geom%f_comm%rank()   !> PET rank
+
+  model = self%geom%model              !> numerical kernel
+  ng    = MAX(1,self%geom%ng)          !> nested grid number
+  LBi   = self%geom%LBi                !> I-dimension lower bound
+  UBi   = self%geom%UBi                !> I-dimension upper bound
+  LBj   = self%geom%LBi                !> J-dimension lower bound
+  UBj   = self%geom%UBi                !> J-dimension upper bound
+  N     = self%geom%N                  !> number of vertical levels
+  scale = 1.0_kind_real
+  Vsize = 0
+
+  IF (LocalPET .eq. 0) THEN
+    lstr = SCAN(ncname, '/', BACK=.TRUE.) + 1
+    lend = LEN_TRIM(ncname)    
+    WRITE (stdout,10) 'State Extra Fields,', TRIM(DateString), ng,           &
+                      DateNumber, ncname(lstr:lend), InpRec
+  END IF
+
+  ! Open fields NetCDF file for reading.
+
+  CALL netcdf_open (ng, model, ncname, 0, ncid)
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))            &
+    CALL abor1_ftn (TRIM(Message))
+
+  ! Read in requested extra fields. ROMS needs to be compiled with MASKING
+  ! to use the NetCDF reading functions below.
+
+  nvars=UBOUND(extra_vars, DIM=1)
+
+  DO i = 1, nvars
+
+    ! Get variable metadata.
+
+    fieldname = extra_vars(i)
+    metadata  = self%geom%fieldsinfo%get(fieldname)
+
+    ! Inquire variable if requested variable exits.
+
+    IF (.not.netcdf_find_var(ng, model, ncid, metadata%io_name, varid)) THEN
+
+      IF (LocalPET .eq. 0) THEN
+        PRINT '(3a)', 'ROMS_STATE::read_extrafields_nf90 - Variable: ',      &
+                      metadata%io_name, ' not found in file: ', ncname                      
+      END IF
+
+      CYCLE
+
+    ELSE
+
+      SELECT CASE (TRIM(extra_vars(i)))
+
+        CASE ('u2docn')                    !> 2D U-momentum component
+
+          CALL nc_err (nf_fread2d(ng, model, ncname, ncid,                   &
+                                  metadata%io_name,                          &
+                                  varid, InpRec, u2dvar, Vsize,              &
+                                  LBi, UBi, LBj, UBj,                        &
+                                  scale, Fmin, Fmax,                         &
+                                  GRID(ng)%umask,                            &
+                                  OCEAN(ng)%ubar(:,:,Tindex)),               &
+                       nf90_noerr, io_nf90, __LINE__, MyFile)
+
+          IF (LocalPET .eq. 0) THEN
+            WRITE (stdout,20) metadata%getval_name, Fmin, Fmax
+          END IF
+
+        CASE ('v2docn')                    !> 2D V-momentum component
+
+          CALL nc_err (nf_fread2d(ng, model, ncname, ncid,                   &
+                                  metadata%io_name,                          &
+                                  varid, InpRec, v2dvar, Vsize,              &
+                                  LBi, UBi, LBj, UBj,                        &
+                                  scale, Fmin, Fmax,                         &
+                                  GRID(ng)%vmask,                            &
+                                  OCEAN(ng)%vbar(:,:,Tindex)),               &
+                     nf90_noerr, io_nf90, __LINE__, MyFile)
+
+          IF (LocalPET .eq. 0) THEN
+            WRITE (stdout,20) metadata%getval_name, Fmin, Fmax
+          END IF
+
+        CASE ('Ktocn')                     !> temperature vertical diffusion
+
+          CALL nc_err (nf_fread3d(ng, model, ncname, ncid,                   &
+                                  metadata%io_name,                          &
+                                  varid, InpRec, w3dvar, Vsize,              &
+                                  LBi, UBi, LBj, UBj, 0, N,                  &
+                                  scale, Fmin, Fmax,                         &
+                                  GRID(ng)%rmask,                            &
+                                  MIXING(ng)%AKt(:,:,:,itemp)),              &
+                       nf90_noerr, io_nf90, __LINE__, MyFile)
+
+          IF (LocalPET .eq. 0) THEN
+            WRITE (stdout,20) metadata%getval_name, Fmin, Fmax
+          END IF
+
+        CASE ('Ksocn')                     !> salinity vertical diffusion
+
+          CALL nc_err (nf_fread3d(ng, model, ncname, ncid,                   &
+                                  metadata%io_name,                          &
+                                  varid, InpRec, w3dvar, Vsize,              &
+                                  LBi, UBi, LBj, UBj, 0, N,                  &
+                                  scale, Fmin, Fmax,                         &
+                                  GRID(ng)%rmask,                            &
+                                  MIXING(ng)%AKt(:,:,:,isalt)),              &
+                       nf90_noerr, io_nf90, __LINE__, MyFile)
+
+          IF (LocalPET .eq. 0) THEN
+            WRITE (stdout,20) metadata%getval_name, Fmin, Fmax
+          END IF
+
+        CASE ('Kvocn')                     !> vertical viscosity
+
+          CALL nc_err (nf_fread3d(ng, model, ncname, ncid,                   &
+                                  metadata%io_name,                          &
+                                  varid, InpRec, w3dvar, Vsize,              &
+                                  LBi, UBi, LBj, UBj, 0, N,                  &
+                                  scale, Fmin, Fmax,                         &
+                                  GRID(ng)%rmask,                            &
+                                  MIXING(ng)%AKv),                           &
+                       nf90_noerr, io_nf90, __LINE__, MyFile)
+
+          IF (LocalPET .eq. 0) THEN
+            WRITE (stdout,20) metadata%getval_name, Fmin, Fmax
+          END IF
+
+        CASE DEFAULT
+  
+          WRITE (Message,'(5a)')                                             &
+                'roms_state::read_extrafields_nf90: Cannot find and option ',&
+                'to read = ', TRIM(extra_vars(i)), " - ", metadata%getval_name
+          CALL abor1_ftn (TRIM(Message))
+
+      END SELECT
+
+    END IF
+
+  END DO
+
+  ! Close NetCDF file.
+
+  CALL netcdf_close (ng, model, ncid, ncname, .FALSE.)
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))            &
+    CALL abor1_ftn (TRIM(Message))
+
+  10 FORMAT (/,1x,'ROMS_STATE::read_extrafields_nf90 - ',a,t75,a,/,26x,      &
+             '(Grid=',i2.2,', datenum=',f0.4,', File: ',a,', Rec= ',i0,')')
+  20 FORMAT (24x,'- ',a,/,27x,'(Min = ',1p,e15.8,' Max = ',1p,e15.8,')')
+
+END SUBROUTINE roms_state_read_extrafields_nf90
+
+#if defined PIO_LIB
+
+!-------------------------------------------------------------------------------
+!> Reads in extra fields that are not part of the state vector and load then
+!  to respective ROMS array.  They are needed for ROMS initialization. It uses
+!  the Parallel I/O (PIO) library.
+
+SUBROUTINE roms_state_read_extrafields_pio (self, InpRec, Tindex,            &
+                                            extra_vars, ncname,              &
+                                            DateString, DateNumber)
+
+  USE mod_grid,       ONLY : GRID
+  USE mod_mixing,     ONLY : MIXING
+  USE mod_ocean,      ONLY : OCEAN
+  USE mod_pio_netcdf
+
+  USE mod_ncparam,    ONLY : u2dvar, v2dvar, w3dvar, io_pio
+  USE mod_iounits,    ONLY : stdout
+  USE mod_scalars,    ONLY : NoError, exit_flag, itemp, isalt
+  USE nf_fread2d_mod, ONLY : nf_fread2d
+  USE nf_fread3d_mod, ONLY : nf_fread3d
+
+  CLASS (roms_state),    intent(in) :: self          !< State object
+  integer,               intent(in) :: InpRec        !< time record to read
+  integer,               intent(in) :: Tindex        !< ROMS array time index 
+  real (kind=kind_real), intent(in) :: DateNumber    !< fields datenum
+  character (len=*),     intent(in) :: extra_vars(:) !< variables to read
+  character (len=*),     intent(in) :: ncname        !< input NetCDF file
+  character (len=*),     intent(in) :: DateString    !< ISO8601 DateTime
+
+  TYPE (IO_desc_t), pointer         :: ioDesc
+  TYPE (My_VarDesc)                 :: pioVar
+
+  TYPE (roms_field_metadata)        :: metadata 
+  integer                           :: LocalPET, lstr, lend
+  integer                           :: LBi, UBi, LBj, UBj, N
+  integer                           :: i, model, ng, nvars
+  integer, dimension(4)             :: Vsize
+  real (kind=kind_real)             :: Fmin, Fmax, scale
+  character (len=:), allocatable    :: fieldname
+  character (len=1024)              :: Message
+
+  character (len=*), parameter      :: MyFile =                              &
+     &  __FILE__//", roms_state_read_extrafields_pio"
+
+  ! Initialize.
+
+  LocalPET = self%geom%f_comm%rank()   !> PET rank
+
+  model = self%geom%model              !> numerical kernel
+  ng    = MAX(1,self%geom%ng)          !> nested grid number
+  LBi   = self%geom%LBi                !> I-dimension lower bound
+  UBi   = self%geom%UBi                !> I-dimension upper bound
+  LBj   = self%geom%LBi                !> J-dimension lower bound
+  UBj   = self%geom%UBi                !> J-dimension upper bound
+  N     = self%geom%N                  !> number of vertical levels
+  scale = 1.0_kind_real
+  Vsize = 0
+
+  IF (LocalPET .eq. 0) THEN
+    lstr = SCAN(ncname, '/', BACK=.TRUE.) + 1
+    lend = LEN_TRIM(ncname)    
+    WRITE (stdout,10) 'State Extra Fields,', TRIM(DateString), ng,           &
+                      DateNumber, ncname(lstr:lend), InpRec
+  END IF
+
+  ! Open fields NetCDF file for reading.
+
+  CALL pio_netcdf_open (ng, model, ncname, 0, pioFile)
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))            &
+    CALL abor1_ftn (TRIM(Message))
+
+  ! Read in requested extra fields. ROMS needs to be compiled with MASKING
+  ! to use the NetCDF reading functions below.
+
+  nvars=UBOUND(extra_vars, DIM=1)
+
+  DO i = 1, nvars
+
+    ! Get variable metadata.
+
+    fieldname = extra_vars(i)
+    metadata  = self%geom%fieldsinfo%get(fieldname)
+
+    ! Inquire variable if requested variable exits.
+
+    IF (.not.pio_netcdf_find_var(ng, model, pioFile, metadata%io_name,       &
+                                 pioVar)) THEN
+
+      IF (LocalPET .eq. 0) THEN
+        PRINT '(3a)', 'ROMS_STATE::read_extrafields_pio - Variable: ',       &  
+                      metadata%io_name, ' not found in file: ', ncname                      
+      END IF
+
+      CYCLE
+
+    ELSE
+
+      SELECT CASE (TRIM(extra_vars(i)))
+
+        CASE ('u2docn')                    !> 2D U-momentum component
+
+          pioVar%gtype=u2dvar
+          IF (KIND(OCEAN(ng)%ubar).eq.8) THEN
+            pioVar%dkind=PIO_double
+            ioDesc => ioDesc_dp_u2dvar(ng)
+          ELSE
+            pioVar%dkind=PIO_real
+            ioDesc => ioDesc_sp_u2dvar(ng)
+          END IF
+          CALL nc_err (nf_fread2d(ng, model, ncname, pioFile                 &
+                                  metadata%io_name,                          &
+                                  pioVar, InpRec, ioDesc, Vsize,             &
+                                  LBi, UBi, LBj, UBj,                        &
+                                  scale, Fmin, Fmax,                         &
+                                  GRID(ng)%umask,                            &
+                                  OCEAN(ng)%ubar(:,:,Tindex)),               &
+                       PIO_noerr, io_pio, __LINE__, MyFile)
+
+          IF (LocalPET .eq. 0) THEN
+            WRITE (stdout,20) metadata%getval_name, Fmin, Fmax
+          END IF
+
+        CASE ('v2docn')                    !> 2D V-momentum component
+
+          pioVar%gtype=v2dvar
+          IF (KIND(OCEAN(ng)%vbar).eq.8) THEN
+            pioVar%dkind=PIO_double
+            ioDesc => ioDesc_dp_v2dvar(ng)
+          ELSE
+            pioVar%dkind=PIO_real
+            ioDesc => ioDesc_sp_v2dvar(ng)
+          END IF
+          CALL nc_err (nf_fread2d(ng, model, ncname, pioFile,                &
+                                  metadata%io_name,                          &
+                                  pioVar, InpRec, ioDesc, Vsize,             &
+                                  LBi, UBi, LBj, UBj,                        &
+                                  scale, Fmin, Fmax,                         &
+                                  GRID(ng)%vmask,                            &
+                                  OCEAN(ng)%vbar(:,:,Tindex)),               &
+                     PIO_noerr, io_pio, __LINE__, MyFile)
+
+          IF (LocalPET .eq. 0) THEN
+            WRITE (stdout,20) metadata%getval_name, Fmin, Fmax
+          END IF
+
+        CASE ('Ktocn')                     !> temperature vertical diffusion
+
+          pioVar%gtype=w3dvar
+          IF (KIND(MIXING(ng)%AKt).eq.8) THEN
+            pioVar%dkind=PIO_double
+            ioDesc => ioDesc_dp_w3dvar(ng)
+          ELSE
+            pioVar%dkind=PIO_real
+            ioDesc => ioDesc_sp_w3dvar(ng)
+          END IF
+          CALL nc_err (nf_fread3d(ng, model, ncname, pioFile,                &
+                                  metadata%io_name,                          &
+                                  pioVar, InpRec, ioDesc, Vsize,             &
+                                  LBi, UBi, LBj, UBj, 0, N,                  &
+                                  scale, Fmin, Fmax,                         &
+                                  GRID(ng)%rmask,                            &
+                                  MIXING(ng)%AKt(:,:,:,itemp)),              &
+                       PIO_noerr, io_pio, __LINE__, MyFile)
+
+          IF (LocalPET .eq. 0) THEN
+            WRITE (stdout,20) metadata%getval_name, Fmin, Fmax
+          END IF
+
+        CASE ('Ksocn')                     !> salinity vertical diffusion
+
+          pioVar%gtype=w3dvar
+          IF (KIND(MIXING(ng)%AKt).eq.8) THEN
+            pioVar%dkind=PIO_double
+            ioDesc => ioDesc_dp_w3dvar(ng)
+          ELSE
+            pioVar%dkind=PIO_real
+            ioDesc => ioDesc_sp_w3dvar(ng)
+          END IF
+          CALL nc_err (nf_fread3d(ng, model, ncname, pioFile,                &
+                                  metadata%io_name,                          &
+                                  pioVar, InpRec, ioDesc, Vsize,             &
+                                  LBi, UBi, LBj, UBj, 0, N,                  &
+                                  scale, Fmin, Fmax,                         &
+                                  GRID(ng)%rmask,                            &
+                                  MIXING(ng)%AKt(:,:,:,isalt)),              &
+                       PIO_noerr, io_pio, __LINE__, MyFile)
+
+          IF (LocalPET .eq. 0) THEN
+            WRITE (stdout,20) metadata%getval_name, Fmin, Fmax
+          END IF
+
+        CASE ('Kvocn')                     !> vertical viscosity
+
+          pioVar%gtype=w3dvar
+          IF (KIND(MIXING(ng)%AKv).eq.8) THEN
+            pioVar%dkind=PIO_double
+            ioDesc => ioDesc_dp_w3dvar(ng)
+          ELSE
+            pioVar%dkind=PIO_real
+            ioDesc => ioDesc_sp_w3dvar(ng)
+          END IF
+          CALL nc_err (nf_fread3d(ng, model, ncname, pioFile,                &
+                                  metadata%io_name,                          &
+                                  pioVar, InpRec, ioDesc, Vsize,             &
+                                  LBi, UBi, LBj, UBj, 0, N,                  &
+                                  scale, Fmin, Fmax,                         &
+                                  GRID(ng)%rmask,                            &
+                                  MIXING(ng)%AKv),                           &
+                       PIO_noerr, io_pio, __LINE__, MyFile)
+
+          IF (LocalPET .eq. 0) THEN
+            WRITE (stdout,20) metadata%getval_name, Fmin, Fmax
+          END IF
+
+        CASE DEFAULT
+  
+          WRITE (Message,'(5a)')                                             &
+                'roms_state::read_extrafields_pio: Cannot find and option ', &
+                'to read = ', TRIM(extra_vars(i)), " - ", metadata%getval_name
+          CALL abor1_ftn (TRIM(Message))
+
+      END SELECT
+
+    END IF
+
+  END DO
+
+  ! Close NetCDF file.
+
+  CALL pio_netcdf_close (ng, model, pioFile, ncname, .FALSE.)
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))            &
+    CALL abor1_ftn (TRIM(Message))
+
+  10 FORMAT (/,1x,'ROMS_STATE::read_extrafields_pio - ',a,t75,a,/,26x,       &
+             '(Grid=',i2.2,', datenum=',f0.4,', File: ',a,', Rec= ',i0,')')
+  20 FORMAT (24x,'- ',a,/,27x,'(Min = ',1p,e15.8,' Max = ',1p,e15.8,')')
+
+END SUBROUTINE roms_state_read_extrafields_pio
+
+#endif
 
 ! ------------------------------------------------------------------------------
 

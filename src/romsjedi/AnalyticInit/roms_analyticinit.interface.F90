@@ -19,7 +19,6 @@
 MODULE ROMS_analyticinit_mod_c
 
 USE iso_c_binding
-USE fckit_configuration_module, ONLY : fckit_configuration
 USE kinds,                      ONLY : kind_real
 
 USE roms_analyticinit_mod,      ONLY : roms_analytic_init
@@ -35,25 +34,18 @@ CONTAINS
 ! ------------------------------------------------------------------------------
 !> Analytic initialization of GeoVaLs.
 
-SUBROUTINE roms_analytic_init_c (c_key_geovals, c_locs, c_conf)              &
+SUBROUTINE roms_analytic_init_c (c_key_geovals, c_locs, T0, S0, U0, V0)      &
                            BIND (c, name='roms_analytic_init_f90')
 
-  integer (c_int),     intent(in) :: c_key_geovals  !< Key to UFO GeoVaLs
-  TYPE (c_ptr), value, intent(in) :: c_locs         !< Key to UFO obs locations
-  TYPE (c_ptr), value, intent(in) :: c_conf         !< Key to configuration
+  integer (c_int),       intent(in) :: c_key_geovals  !< Key to UFO GeoVaLs
+  TYPE (c_ptr), value,   intent(in) :: c_locs         !< Key to UFO locations
+  real (kind=kind_real), intent(in) :: T0             !< background temperature
+  real (kind=kind_real), intent(in) :: S0             !< background salinity
+  real (kind=kind_real), intent(in) :: U0             !< background U-velocity
+  real (kind=kind_real), intent(in) :: V0             !< background V-velocity
 
-  TYPE (fckit_configuration)      :: f_conf
   TYPE (ufo_geovals), pointer     :: geovals
   TYPE (ufo_locations)            :: locs
-  character (len=:), allocatable  :: str
-  character (len=30)              :: ana_method
-
-  ! Get analytical method from YAML configuration file.
-
-  f_conf = fckit_configuration(c_conf)
-  CALL f_conf%get_or_die ("analytic_init", str)
-  ana_method = str
-  deallocate (str)
 
   ! Get objects.
 
@@ -62,7 +54,7 @@ SUBROUTINE roms_analytic_init_c (c_key_geovals, c_locs, c_conf)              &
 
   ! Call method
 
-  CALL roms_analytic_init (geovals, locs, ana_method)
+  CALL roms_analytic_init (geovals, locs, T0, S0, U0, V0)
 
 END SUBROUTINE roms_analytic_init_c
 

@@ -50,7 +50,7 @@ TYPE :: roms_geom
 
   TYPE (atlas_functionspace_pointcloud) :: afunctionspace
   TYPE (fckit_mpi_comm)                 :: f_comm
-  TYPE (roms_fields_metadata)           :: fields_metadata
+  TYPE (roms_fields_metadata)           :: fieldsinfo
 
   logical :: EWperiodic                       ! East-West periodicity switch
   logical :: NSperiodic                       ! North-South periodicity switch
@@ -98,8 +98,8 @@ TYPE :: roms_geom
   real(kind=kind_real), allocatable, dimension(:,:) :: umask  ! U-points mask,   0=land 1=ocean
   real(kind=kind_real), allocatable, dimension(:,:) :: vmask  ! V-points mask,   0=land 1=ocean
 
-  character (len=:), allocatable :: project_dir               ! ROMS project directory
   character (len=:), allocatable :: roms_stdinp               ! ROMS standard input filename
+  character (len=:), allocatable :: project_dir               ! ROMS project directory
 
   CONTAINS
 
@@ -135,7 +135,7 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
   TYPE (fckit_mpi_comm),      intent(in)  :: f_comm
 
   logical, save                           :: first
-  integer                                 :: i, j, k, ng, tile
+  integer                                 :: i, j, k, lstr, ng, tile
   integer                                 :: MyComm
   character (len=:), allocatable          :: flds_meta, project_dir, roms_stdinp
 
@@ -152,17 +152,27 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
   IF (.not.f_conf%get("project_dir", project_dir)) THEN
     CALL abor1_ftn ("geom_init: Cannot find ROMS project directory")
   END IF
-  self%project_dir = project_dir
+ 
+  lstr = LEN_TRIM(project_dir)
+  IF (.not.allocated(self%project_dir)) THEN
+    allocate (character(LEN=lstr) :: self%project_dir)
+  END IF
+  self%project_dir = TRIM(project_dir)
 
   IF (.not.f_conf%get("roms_stdinp", roms_stdinp)) THEN
     CALL abor1_ftn ("geom_init: Cannot find ROMS standard input file")
   END IF
-  self%roms_stdinp = roms_stdinp
+
+  lstr = LEN_TRIM(roms_stdinp)
+  IF (.not.allocated(self%roms_stdinp)) THEN
+    allocate (character(LEN=lstr) :: self%roms_stdinp)
+  END IF
+  self%roms_stdinp = TRIM(roms_stdinp)
 
   ! Get YAML metadata filename and create ROMS fields metadata object.
 
   CALL f_conf%get_or_die ("fields metadata", flds_meta)
-  CALL self%fields_metadata%create (flds_meta)
+  CALL self%fieldsinfo%create (flds_meta)
 
   ! Get nested grid number from configuration YAML file.
 
@@ -175,7 +185,9 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
 
   IF (.not.allocated(BOUNDS)) THEN       ! it is only called once
     first = .TRUE.
-    CALL ROMS_initialize (first, MyComm)
+    CALL ROMS_initialize (first,                                             &
+                          mpiCOMM = MyComm,                                  &
+                          kernel  = iNLM)
     IF (exit_flag .ne. NoError) THEN
       CALL abor1_ftn ("geom_init: Error while calling ROMS_initialize")
     END IF
@@ -389,7 +401,7 @@ SUBROUTINE roms_geom_clone (self, other)
 
   self%project_dir = other%project_dir
   self%roms_stdinp = other%roms_stdinp
-  self%fields_metadata = other%fields_metadata
+  self%fieldsinfo  = other%fieldsinfo
 
   self%model = other%model
 
@@ -460,7 +472,7 @@ SUBROUTINE roms_geom_clone (self, other)
 
   ! Clone fields metadata.
 
-  CALL other%fields_metadata%clone (self%fields_metadata)
+  CALL other%fieldsinfo%clone (self%fieldsinfo)
 
   ! Report.
 

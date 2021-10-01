@@ -66,7 +66,8 @@ else
   ${MPIrun} test_romsjedi_geometry testinput/geometry.yaml
   ${MPIrun} test_romsjedi_state testinput/state.yaml
   ${MPIrun} test_romsjedi_getvalues testinput/getvalues.yaml
-  ${MPIrun} ../../bin/romsjedi_hofx_nomodel.x testinput/hofx_3d.yaml
+  ${MPIrun} ../../bin/romsjedi_hofx_nomodel.x testinput/hofx_nomodel.yaml
+  ${MPIrun} test_romsjedi_model testinput/model.yaml
 fi
 
 exit 0

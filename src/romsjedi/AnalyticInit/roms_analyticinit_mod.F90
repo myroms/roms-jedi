@@ -41,15 +41,18 @@ CONTAINS
 !! over-written with analytical values except the bathymetry and the level
 !! depths.
 
-SUBROUTINE roms_analytic_init (self, locs, ana_method)
+SUBROUTINE roms_analytic_init (self, locs, T0, S0, U0, V0)
 
-  TYPE (ufo_geovals),   intent(inout) :: self        !< GeoVaLs object
-  TYPE (ufo_locations), intent(in   ) :: locs        !< observation locations
-  character (len=*),    intent(in   ) :: ana_method  !< analytical case
+  TYPE (ufo_geovals),    intent(inout) :: self        !< GeoVaLs object
+  TYPE (ufo_locations),  intent(in   ) :: locs        !< observation locations
+  real (kind=kind_real), intent(in   ) :: T0          !< background temperature
+  real (kind=kind_real), intent(in   ) :: S0          !< background salinity
+  real (kind=kind_real), intent(in   ) :: U0          !< background U-velocity
+  real (kind=kind_real), intent(in   ) :: V0          !< background V-velocity
 
-  integer                             :: iloc, ivar, ival, nloc, nvar
-  real (kind=kind_real)               :: mask, value
-  real (kind=kind_real), allocatable  :: locs_lons(:), locs_lats(:)
+  integer                              :: iloc, ivar, ival, nloc, nvar
+  real (kind=kind_real)                :: mask, value
+  real (kind=kind_real), allocatable   :: locs_lons(:), locs_lats(:)
 
   ! Check if GeoVaLs are defined.
 
@@ -87,13 +90,16 @@ SUBROUTINE roms_analytic_init (self, locs, ana_method)
   DO ivar = 1, nvar
     DO iloc = 1, self%geovals(ivar)%nlocs
       DO ival = 1, self%geovals(ivar)%nval    
-        CALL ana_fields (TRIM(self%variables(ivar)),                         &
-                         mask,                                               &
-                         locs_lons(iloc),                                    &
-                         locs_lats(iloc),                                    &
-                         self%geovals(nvar)%vals(ival,iloc),                 &
-                         self%geovals(nvar-1)%vals(1,iloc),                  &
-                         value)                               
+        value = ana_fields(TRIM(self%variables(ivar)),                       &
+                           mask,                                             &
+                           locs_lons(iloc),                                  &
+                           locs_lats(iloc),                                  &
+                           self%geovals(nvar)%vals(ival,iloc),               &
+                           self%geovals(nvar-1)%vals(1,iloc),                &
+                           Tb = T0,                                          &
+                           Sb = S0,                                          &
+                           Ub = U0,                                          &
+                           Vb = V0)
         self%geovals(ivar)%vals(ival, iloc) = value
       END DO
     END DO

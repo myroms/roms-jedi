@@ -1,5 +1,5 @@
-# ROMS is configured with the standard dual formulation 4D-Var test for the US West Coast WC13
-# application
+# ROMS is configured with the JEDI driver and includes the NLM, TLM, and ADM kernels
+# for the US West Coast WC13 test application.
 #
 # 3D Hofx NoModel unit test for the period of Jan 3-7, 2004
 #   We either use an initial state for Jan 3, 2004 or 
@@ -66,3 +66,14 @@ observations:
 #      simulated variables: [sea_water_salinity]
 #    obs operator:
 #      name: MarineVertInterp
+
+# NOTES:
+#
+# * We need to implement a vertical interpolation operator for ROMS that
+#   use negative depths. In ROMS, level-1 is at the bottom and level-N
+#   at the surface. Then, we can test HofX with T and S observations.
+#
+# * To use altimetry data, we need the fields for the absolute dynamic
+#   topography (ADT) operator, ADT = MDT + SLA.  Here, MDT is the
+#   Mean Dynamic Topography and SLA is Sea Level Anomaly.
+#

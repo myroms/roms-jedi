@@ -52,7 +52,7 @@ END TYPE roms_field_metadata
 
 TYPE :: roms_fields_metadata
 
-  PRIVATE
+! PRIVATE
 
   TYPE (roms_field_metadata), allocatable :: metadata(:)
 
@@ -77,7 +77,7 @@ SUBROUTINE roms_fields_metadata_create (self, filename)
   TYPE (fckit_Configuration), allocatable     :: conf_list(:)
 
   logical                                     :: bool
-  integer                                     :: i, j
+  integer                                     :: i, j, lstr
   character (len=:), allocatable              :: str
 
   ! Parse all the metadata from a YAML configuration file.
@@ -89,32 +89,78 @@ SUBROUTINE roms_fields_metadata_create (self, filename)
 
   DO i=1, SIZE(self%metadata)
 
-    CALL conf_list(i)%get_or_die ("name", str)
-    self%metadata(i)%name =str
+    CALL conf_list(i)%get_or_die ("name", self%metadata(i)%name)
 
-    IF (.not.conf_list(i)%get("gtype", str)) str = 'r'
-    self%metadata(i)%gtype = str
+    IF (.not.conf_list(i)%get("gtype", str)) THEN
+      self%metadata(i)%gtype = 'r'
+    ELSE
+      self%metadata(i)%gtype = str
+      deallocate (str)
+    END IF
 
-    IF (.not.conf_list(i)%get("masked", bool)) bool = .TRUE.
-    self%metadata(i)%masked = bool
+    IF (.not.conf_list(i)%get("masked", bool)) THEN
+      self%metadata(i)%masked = .TRUE.
+    ELSE
+      self%metadata(i)%masked = bool
+    END IF
 
-    IF (.not.conf_list(i)%get("levels", str)) str = "surface"
-    self%metadata(i)%levels = str
+    IF (.not.conf_list(i)%get("levels", str)) THEN
+      allocate ( character(LEN=7) :: self%metadata(i)%levels )
+      self%metadata(i)%levels = "surface"
+    ELSE
+      lstr = LEN_TRIM(str)
+      allocate ( character(LEN=lstr) :: self%metadata(i)%levels )
+      self%metadata(i)%levels = str
+      deallocate (str)
+    END IF
 
-    IF (.not.conf_list(i)%get("getval name", str)) str = self%metadata(i)%name
-    self%metadata(i)%getval_name = str
+    IF (.not.conf_list(i)%get("getval name", str)) THEN
+      lstr = LEN_TRIM(self%metadata(i)%name)
+      allocate ( character(LEN=lstr) :: self%metadata(i)%getval_name )
+      self%metadata(i)%getval_name = self%metadata(i)%name
+    ELSE 
+      lstr = LEN_TRIM(str)
+      allocate ( character(LEN=lstr) :: self%metadata(i)%getval_name )
+      self%metadata(i)%getval_name = str
+      deallocate (str)
+    END IF
 
-    IF (.not.conf_list(i)%get("getval name surface", str)) str=""
-    self%metadata(i)%getval_name_surface = str
+    IF (.not.conf_list(i)%get("getval name surface", str)) THEN
+      self%metadata(i)%getval_name_surface = ""
+    ELSE
+      lstr = LEN_TRIM(str)
+      allocate ( character(LEN=lstr) :: self%metadata(i)%getval_name_surface )
+      self%metadata(i)%getval_name_surface = str
+      deallocate (str)
+    END IF
 
-    IF (.not.conf_list(i)%get("io name", str)) str = ""
-    self%metadata(i)%io_name = str
+    IF (.not.conf_list(i)%get("io name", str)) THEN
+      self%metadata(i)%io_name = ""
+    ELSE
+      lstr = LEN_TRIM(str)
+      allocate ( character(LEN=lstr) :: self%metadata(i)%io_name )
+      self%metadata(i)%io_name = str
+      deallocate (str)
+    END IF
 
-    IF (.not.conf_list(i)%get("io file", str)) str = ""
-    self%metadata(i)%io_file = str
+    IF (.not.conf_list(i)%get("io file", str)) THEN
+      self%metadata(i)%io_file = ""
+    ELSE
+      lstr = LEN_TRIM(str)
+      allocate ( character(LEN=lstr) :: self%metadata(i)%io_file )
+      self%metadata(i)%io_file = str
+      deallocate (str)
+    END IF
 
-    IF (.not.conf_list(i)%get("property", str)) str = "none"
-    self%metadata(i)%property = str
+    IF (.not.conf_list(i)%get("property", str)) THEN
+      allocate ( character(LEN=4) :: self%metadata(i)%property )
+      self%metadata(i)%property = "none"
+    ELSE
+      lstr = LEN_TRIM(str)
+      allocate ( character(LEN=lstr) :: self%metadata(i)%property )
+      self%metadata(i)%property = str
+      deallocate (str)
+    END IF
 
   END DO
 

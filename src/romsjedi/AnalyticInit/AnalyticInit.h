@@ -19,8 +19,10 @@
 #ifndef ROMSJEDI_ANALYTICINIT_ANALYTICINIT_H_
 #define ROMSJEDI_ANALYTICINIT_ANALYTICINIT_H_
 
-#include "eckit/config/LocalConfiguration.h"
-#include "romsjedi/Geometry/Geometry.h"
+#include "oops/interface/AnalyticInitBase.h"
+#include "oops/util/parameters/RequiredParameter.h"
+
+#include "ufo/ObsTraits.h"
 
 namespace ufo {
   class GeoVaLs;
@@ -29,18 +31,32 @@ namespace ufo {
 
 namespace romsjedi {
 
+  class AnalyticInitParameters : public oops::AnalyticInitParametersBase {
+    OOPS_CONCRETE_PARAMETERS(AnalyticInitParameters,
+                             AnalyticInitParametersBase)
+
+   public:
+    oops::RequiredParameter<double> T0{"T0", this};
+    oops::RequiredParameter<double> S0{"S0", this};
+    oops::RequiredParameter<double> U0{"U0", this};
+    oops::RequiredParameter<double> V0{"V0", this};
+  };
+
 // -----------------------------------------------------------------------------
 /// Fill GeoVaLs with analytic expressions.
 // -----------------------------------------------------------------------------
 
-  class AnalyticInit {
+  class AnalyticInit :
+        public oops::interface::AnalyticInitBase<ufo::ObsTraits> {
    public:
-    explicit AnalyticInit(const eckit::Configuration &);
+    typedef AnalyticInitParameters Parameters_;
+
+    explicit AnalyticInit(const Parameters_ &);
     void fillGeoVaLs(const ufo::Locations &,
-                     ufo::GeoVaLs &) const;
+                     ufo::GeoVaLs &) const override;
 
    private:
-    const eckit::LocalConfiguration config_;
+    const Parameters_ options_;
   };
 
 // -----------------------------------------------------------------------------

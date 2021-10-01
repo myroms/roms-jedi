@@ -307,6 +307,10 @@ SUBROUTINE roms_getvalues_fillgeovals (self, geom, fld, t1, t2, locs, geovals)
       DO i = 1, locs%nlocs()
         IF (time_mask(i)) THEN
           geovals%geovals(ivar)%vals(k, i) = gom_window(i)
+      !   PRINT '(a,a4,2(a,i0),a,f0.4)', 'GeoVal :: ',                       &
+      !                                  fldptr%metadata%name,               &
+      !                                  ': Loc = ', i, ' k = ', k,          &
+      !                                  ' value = ', gom_window(i)
         END IF
       END DO
     END DO

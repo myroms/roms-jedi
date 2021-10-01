@@ -1,3 +1,6 @@
+# ROMS is configured with the JEDI driver and includes the NLM, TLM, and ADM kernels
+# for the US West Coast WC13 test application.
+
 geometry:
   project_dir: jediroms_wc13/JEDI/
   roms_stdinp: roms_wc13_20040103.in

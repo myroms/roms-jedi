@@ -1,5 +1,5 @@
-# ROMS is configured with the standard dual formulation 4D-Var test for the US West Coast WC13
-# application
+# ROMS is configured with the JEDI driver and includes the NLM, TLM, and ADM kernels
+# for the US West Coast WC13 test application.
 
 geometry:
   project_dir: jediroms_wc13/JEDI/
@@ -18,7 +18,12 @@ state variables: &geovals [sea_surface_height,
 getvalues test:
   state generate:
     read_from_file: 0
-    analytic_init: analytic_fields
+    analytic init:
+      method: 'ana_ocnfields'
+      T0: [25.0]                               # background temperature (C)
+      S0: [32.5]                               # background salinity
+      U0: [1.2]                                # background U-velocity (m/s)
+      V0: [0.7]                                # background V-velocity (m/s)
     date: &date 2004-01-03T00:00:00Z
     state variables: [ssh, uocn, vocn, tocn, socn, hocn, zocn]
   interpolation tolerance: 0.02

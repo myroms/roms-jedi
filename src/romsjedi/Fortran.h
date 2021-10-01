@@ -12,10 +12,11 @@ namespace romsjedi {
 
   typedef int F90geom;        // Geometry key type
   typedef int F90goms;        // GeoVaLs key type
-  typedef int F90iter;        // Geometry iterator key type
   typedef int F90flds;        // Fields key type
   typedef int F90getval;      // GetValues key type
+  typedef int F90iter;        // Geometry iterator key type
   typedef int F90lingetval;   // LinearGetValues key type
+  typedef int F90model;       // Model key type
 
 }  // namespace romsjedi
 

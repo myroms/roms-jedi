@@ -28,12 +28,12 @@
 #include "romsjedi/GetValues/GetValues.h"
 #include "romsjedi/GetValues/LinearGetValues.h"
 #include "romsjedi/Increment/Increment.h"
+#include "romsjedi/ModelBias/ModelBias.h"
+#include "romsjedi/ModelBias/ModelBiasCovariance.h"
+#include "romsjedi/ModelBias/ModelBiasIncrement.h"
 #include "romsjedi/State/State.h"
 
 // #include "romsjedi/Covariance/Covariance.h"
-// #include "romsjedi/ModelAux/ModelAuxControl.h"
-// #include "romsjedi/ModelAux/ModelAuxCovariance.h"
-// #include "romsjedi/ModelAux/ModelAuxIncrement.h"
 
 namespace romsjedi {
 
@@ -50,31 +50,12 @@ namespace romsjedi {
     typedef romsjedi::GetValues           GetValues;
     typedef romsjedi::Increment           Increment;
     typedef romsjedi::LinearGetValues     LinearGetValues;
+    typedef romsjedi::ModelBias           ModelAuxControl;
+    typedef romsjedi::ModelBiasCovariance ModelAuxCovariance;
+    typedef romsjedi::ModelBiasIncrement  ModelAuxIncrement;
     typedef romsjedi::State               State;
 
 //  typedef romsjedi::Covariance          Covariance;
-//  typedef romsjedi::ModelAuxControl     ModelAuxControl;
-//  typedef romsjedi::ModelAuxCovariance  ModelAuxCovariance;
-//  typedef romsjedi::ModelAuxIncrement   ModelAuxIncrement;
-  };
-
-  struct ObsTraits {
-    static std::string name()
-                {return "UFO and IODA obs with ROMSJEDI::AnalyticInit";}
-
-    typedef romsjedi::AnalyticInit    AnalyticInit;
-    typedef ufo::GeoVaLs              GeoVaLs;
-    typedef ufo::LinearObsOperator    LinearObsOperator;
-    typedef ufo::Locations            Locations;
-    typedef ufo::ObsBias              ObsAuxControl;
-    typedef ufo::ObsBiasCovariance    ObsAuxCovariance;
-    typedef ufo::ObsBiasIncrement     ObsAuxIncrement;
-    typedef ufo::ObsDiagnostics       ObsDiagnostics;
-    typedef ufo::ObsOperator          ObsOperator;
-
-    typedef ioda::ObsSpace            ObsSpace;
-    typedef ioda::ObsVector           ObsVector;
-    template <typename DATA> using ObsDataVector = ioda::ObsDataVector<DATA>;
   };
 
 }  // namespace romsjedi

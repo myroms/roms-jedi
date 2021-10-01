@@ -1,19 +1,29 @@
+# ROMS is configured with the JEDI driver and includes the NLM, TLM, and ADM kernels
+# for the US West Coast WC13 test application
+
 geometry:
-  # insert other model specific things here
+  project_dir: jediroms_wc13/JEDI/
+  roms_stdinp: roms_wc13_20040103.in
+  fields metadata: Data/fields_metadata.yaml
+  ng: 1                                        # ROMS nested grid number
 
 model:
   name: ROMS
-  model variables: [var1, var2]
-  tstep: PT6H
-  # insert other model specific things here
+  model variables: [ssh, uocn, vocn, tocn, socn]
+  tstep: PT1800S                               # WC13 has a 30 minutes timestep
 
 model test:
-  forecast length: P1D
-  final norm: 0.0
-  tolerance: 1e-12
+  forecast length: PT96H                       # 96 hours (4 days) window ending on 2004-01-07T00:00:00Z
+  final norm: 8604.91697102
+  tolerance: 1e-2
+  test reforecast: true
 
 initial condition:
-  state variables: [var1, var2]
-  date: 2018-04-15T00:00:00Z
+  read_from_file: 1
+  fields_dir: jediroms_wc13/Data/
+  fields_filename: wc13_roms_ini_20040103.nc   # initial fields for 2004-01-03T00:00:00Z
+  fields_record: 1
+  state variables: [ssh, uocn, vocn, tocn, socn]
+  date: 2004-01-03T00:00:00Z
 
 model aux control:

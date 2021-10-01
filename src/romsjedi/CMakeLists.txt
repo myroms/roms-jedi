@@ -1,14 +1,19 @@
-#include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
+# (C) Copyright 2017-2021 UCAR.
+#
+# This software is licensed under the terms of the Apache Licence Version 2.0
+# which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
-# the source code in this directory,
-# all other files are handled through the subdirectory's respective CMakeLists.txt
+# The source code in this directory. ll other files are handled through the
+# sub-directory respective CMakeLists.txt
+
+#include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
 
 list( APPEND roms_src_files
   Traits.h
   Fortran.h
 )
 
-# a convenience frunction to make adding source files from subdirectories easier
+# A convenience function to make adding source files from subdirectories easier
 # (To keep from having to use the full path every time)
 
 function(roms_target_sources)
@@ -17,7 +22,7 @@ function(roms_target_sources)
   endforeach()
 endfunction()
 
-# the main library for this interface
+# The main library for this interface
 
 ecbuild_add_library( TARGET   romsjedi
                      SOURCES  ${roms_src_files}
@@ -41,7 +46,7 @@ target_link_libraries( romsjedi PUBLIC saber )
 target_link_libraries( romsjedi PUBLIC ioda )
 target_link_libraries( romsjedi PUBLIC ufo )
 
-# add source code in the subdirectories
+# Add source code in the sub-directories
 
 add_subdirectory(AnalyticInit)
 add_subdirectory(Fields)
@@ -49,9 +54,10 @@ add_subdirectory(Geometry)
 add_subdirectory(GeometryIterator)
 add_subdirectory(GetValues)
 add_subdirectory(Increment)
+add_subdirectory(Model)
+add_subdirectory(ModelBias)
 add_subdirectory(State)
 add_subdirectory(VariableChanges)
 
 # TODO(template_impl) add_subdirectory(Covariance)
-# TODO(template_impl) add_subdirectory(Model)
-# TODO(template_impl) add_subdirectory(ModelAux)
+

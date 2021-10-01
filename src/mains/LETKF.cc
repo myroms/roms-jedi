@@ -14,8 +14,8 @@
 
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);
-  ioda::instantiateObsLocFactory<romsjedi::ObsTraits>();
-  ufo::instantiateObsFilterFactory<romsjedi::ObsTraits>();
-  oops::LocalEnsembleDA<romsjedi::Traits, romsjedi::ObsTraits> letkf;
+  ioda::instantiateObsLocFactory<romsjedi::Traits>();
+  ufo::instantiateObsFilterFactory<romsjedi::Traits>();
+  oops::LocalEnsembleDA<romsjedi::Traits, ufo::ObsTraits> letkf;
   return run.execute(letkf);
 }

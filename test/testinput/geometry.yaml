@@ -1,5 +1,5 @@
-# ROMS is configured with the standard dual formulation 4D-Var test for the US West Coast WC13
-# application
+# ROMS is configured with the JEDI driver and includes the NLM, TLM, and ADM kernels
+# for the US West Coast WC13 test application.
 
 geometry:
   project_dir: jediroms_wc13/JEDI/

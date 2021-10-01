@@ -10,12 +10,11 @@ list( APPEND romsjedi_test_input
   testinput/geometry.yaml
   testinput/geometryiterator.yaml
   testinput/getvalues.yaml
-  testinput/hofx_3d.yaml
+  testinput/hofx_nomodel.yaml
   testinput/increment.yaml
   testinput/lineargetvalues.yaml
   testinput/linearmodel.yaml
   testinput/model.yaml
-  testinput/modelaux.yaml
   testinput/state.yaml
   )
 
@@ -48,10 +47,9 @@ set( romsjedi_test_ref
   testref/forecast_mom6.test
   testref/forecast_mom6_bgc.test
   testref/forecast_pseudo.test
+  testref/hofx_nomodel.test
   testref/hofx_3d.test
-  testref/hofx_3dcrtm.test
   testref/hofx_4d.test
-  testref/hofx_4d_pseudo.test
   testref/hybridgain.test
   testref/letkf_observer.test
   testref/letkf_solver.test
@@ -136,17 +134,18 @@ ecbuild_add_test(
   LIBS    romsjedi )
 
 ecbuild_add_test(
-  TARGET       test_romsjedi_hofx_3d
+  TARGET       test_romsjedi_hofx_nomodel
   MPI          2
   COMMAND      romsjedi_hofx_nomodel.x
-  ARGS         testinput/hofx_3d.yaml
+  ARGS         testinput/hofx_nomodel.yaml
   TEST_DEPENDS test_romsjedi_geometry  )
 
-# TODO(template_impl) ecbuild_add_test(
-# TODO(template_impl)   TARGET  test_romsjedi_model
-# TODO(template_impl)   SOURCES executables/TestModel.cc
-# TODO(template_impl)   ARGS    testinput/model.yaml
-# TODO(template_impl)   LIBS    romsjedi )
+ecbuild_add_test(
+  TARGET  test_romsjedi_model
+  MPI          2
+  SOURCES executables/TestModel.cc
+  ARGS    testinput/model.yaml
+  LIBS    romsjedi )
 
 # TODO(template_impl) ecbuild_add_test(
 # TODO(template_impl)   TARGET  test_romsjedi_modelauxcontrol
