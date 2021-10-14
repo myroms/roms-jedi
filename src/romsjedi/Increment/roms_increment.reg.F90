@@ -3,7 +3,11 @@
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 !
-! Hernan G. Arango, Rutgers University, Apr 2021
+!>
+!! \brief    **Increment Class** ROMS-JEDI interface Registry 
+!!
+!! \author   Hernan G. Arango (Rutgers University)
+!! \date     October 2021
 
 ! ------------------------------------------------------------------------------
 

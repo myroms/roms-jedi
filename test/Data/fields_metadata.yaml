@@ -51,7 +51,7 @@
 
 - name: 'ssh'
   gtype: 'r'
-  getval name: 'sea_surface_height'
+  getval name: 'sea_surface_height_above_geoid'
   io file: 'ocn'
   io name: 'zeta'
 

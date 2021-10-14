@@ -1,8 +1,19 @@
 /*
- * (C) Copyright 2017-2020 UCAR
+ * (C) Copyright 2017-2021 UCAR
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+ *
+ *!
+ * \brief   **Increment Class** C++ ROMS-JEDI interface
+ *
+ * \details It implements several methods in each field of the **Increment**
+ *          object, such as mathematical and algebraic operations, reading,
+ *          and writing. Thus, there is a fair amount of overlap with the
+ *          **Fields** and **State** objects.
+ *
+ * \author  Hernan G. Arango (Rutgers University)
+ * \date    October 2021
  */
 
 #include <iomanip>
@@ -94,8 +105,9 @@ void Increment::diff(const State & x1, const State & x2) {
   ASSERT(this->validTime() == x2.validTime());
   State x1_at_geomres(*geom_, x1);
   State x2_at_geomres(*geom_, x2);
-  roms_increment_diff_incr_f90(toFortran(), x1_at_geomres.toFortran(),
-                                            x2_at_geomres.toFortran());
+  roms_increment_diff_incr_f90(toFortran(),
+                               x1_at_geomres.toFortran(),
+                               x2_at_geomres.toFortran());
 }
 
 // -----------------------------------------------------------------------------
@@ -199,6 +211,7 @@ oops::LocalIncrement Increment::getLocal(
   std::vector<int> varlens(vars_.size());
 
   // Needs to be modified for non-nz variable names
+
   for (int ii = 0; ii < vars_.size(); ii++) {
     if (vars_[ii] == "ssh") varlens[ii] = 1;
     else
@@ -221,6 +234,29 @@ void Increment::setLocal(const oops::LocalIncrement & values,
   const std::vector<double> vals = values.getVals();
   roms_increment_setpoint_f90(toFortran(), iter.toFortran(), vals[0],
                               vals.size());
+}
+
+// -----------------------------------------------------------------------------
+/// ATLAS
+// -----------------------------------------------------------------------------
+
+void Increment::setAtlas(atlas::FieldSet * afieldset) const {
+  roms_increment_set_atlas_f90(toFortran(), geom_->toFortran(), vars_,
+                               afieldset->get());
+}
+
+// -----------------------------------------------------------------------------
+
+void Increment::toAtlas(atlas::FieldSet * afieldset) const {
+  roms_increment_to_atlas_f90(toFortran(), geom_->toFortran(), vars_,
+                                afieldset->get());
+}
+
+// -----------------------------------------------------------------------------
+
+void Increment::fromAtlas(atlas::FieldSet * afieldset) {
+  roms_increment_from_atlas_f90(toFortran(), geom_->toFortran(), vars_,
+                                afieldset->get());
 }
 
 // -----------------------------------------------------------------------------
@@ -282,11 +318,16 @@ void Increment::updateTime(const util::Duration & dt) {time_ += dt;}
 
 size_t Increment::serialSize() const {
   // Field
+
   size_t nn;
   roms_increment_serial_size_f90(toFortran(), geom_->toFortran(), nn);
+
   // Magic factor
+
   nn += 1;
+
   // Date and time
+
   nn += time_.serialSize();
   return nn;
 }
@@ -296,6 +337,7 @@ size_t Increment::serialSize() const {
 constexpr double SerializeCheckValue = -54321.98765;
 void Increment::serialize(std::vector<double> & vect) const {
   // Serialize the field
+
   size_t nn;
   roms_increment_serial_size_f90(toFortran(), geom_->toFortran(), nn);
   std::vector<double> vect_field(nn, 0);
@@ -303,8 +345,11 @@ void Increment::serialize(std::vector<double> & vect) const {
   roms_increment_serialize_f90(toFortran(), geom_->toFortran(), nn,
                                vect_field.data());
   vect.insert(vect.end(), vect_field.begin(), vect_field.end());
+
   // Magic value placed in serialization; used to validate deserialization
+
   vect.push_back(SerializeCheckValue);
+
   // Serialize the date and time
   time_.serialize(vect);
 }
@@ -314,12 +359,17 @@ void Increment::serialize(std::vector<double> & vect) const {
 void Increment::deserialize(const std::vector<double> & vect,
                             size_t & index) {
   // Deserialize the field
+
   roms_increment_deserialize_f90(toFortran(), geom_->toFortran(), vect.size(),
                                  vect.data(), index);
+
   // Use magic value to validate deserialization
+
   ASSERT(vect.at(index) == SerializeCheckValue);
   ++index;
+
   // Deserialize the date and time
+
   time_.deserialize(vect, index);
 }
 

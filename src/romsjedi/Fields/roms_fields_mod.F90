@@ -261,7 +261,7 @@ SUBROUTINE roms_field_check_congruent (self, rhs)
   END IF
 
   IF (SIZE(SHAPE(self%val)) .ne. SIZE(SHAPE(rhs%val))) THEN
-    call abor1_ftn ("roms_field: shape of self%val unequal rhs%val")
+    CALL abor1_ftn ("roms_field: shape of self%val unequal rhs%val")
   END IF
 
   DO i = 1, SIZE(SHAPE(self%val))
@@ -1233,8 +1233,7 @@ SUBROUTINE roms_fields_colocate (self, gtype)
 END SUBROUTINE roms_fields_colocate
 
 ! ------------------------------------------------------------------------------
-!> Compute the number of elements of in the state vector including packed
-!!  fields.
+!> Compute the number of elements of in the packed state vector.
 
 SUBROUTINE roms_fields_serial_size (self, geom, vec_size)
 

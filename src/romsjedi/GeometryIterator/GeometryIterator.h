@@ -3,6 +3,14 @@
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+ *!
+ * \brief   **GeometryIterator** C++ Class for ROMS-JEDI interface
+ *
+ * \details It extract state fields values at specified application grid points.
+ *
+ * \author  Hernan G. Arango (Rutgers University)
+ * \date    October 2021
+
  */
 
 #ifndef ROMSJEDI_GEOMETRYITERATOR_GEOMETRYITERATOR_H_

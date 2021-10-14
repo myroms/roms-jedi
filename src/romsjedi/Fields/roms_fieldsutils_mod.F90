@@ -98,34 +98,20 @@ FUNCTION ana_fields (name, mask, lon, lat, z, h, Tb, Sb, Ub, Vb)             &
   ! specified in the YAML file ('analytic init.T0', 'analytic init.S0', 
   ! 'analytic.init.U0', and 'analytic init.V0').
 
-  IF (PRESENT(Tb)) THEN
-    T0=Tb
-  ELSE
-    T0=25.0_kind_real
-  END IF
+  T0 = 25.0_kind_real         ! potential temperature (C)
+  S0 = 32.5_kind_real         ! practical salinity (nondimensional)
+  U0 = 1.2_kind_real          ! zonal velocity (m/s)
+  V0 = 0.7_kind_real          ! meridional velocity (m/s)
 
-  IF (PRESENT(Sb)) THEN
-    S0=Sb
-  ELSE
-    S0=32.5_kind_real
-  END IF
-
-  IF (PRESENT(Ub)) THEN
-    U0=Ub
-  ELSE
-    U0=1.2_kind_real
-  END IF
-
-  IF (PRESENT(Vb)) THEN
-    V0=Vb
-  ELSE
-    V0=0.7_kind_real
-  END IF
+  IF (PRESENT(Tb)) T0 = Tb    ! If present, use values from YAML file
+  IF (PRESENT(Sb)) S0 = Sb
+  IF (PRESENT(Ub)) U0 = Ub
+  IF (PRESENT(Vb)) V0 = Vb
 
   ! Initialize
  
-  Tcoef  = 1.0E-4           ! thermal expansion (1/C)
-  Scoef  = 7.6E-4           ! saline contraction
+  Tcoef  = 1.0E-4           ! thermal expansion coefficient (1/C)
+  Scoef  = 7.6E-4           ! saline contraction coefficient
   omega  = 7.2921E-5        ! Earth rotation (rad/s)
   dscale = 80.0_kind_real   ! dynamic scale
   g      = 9.81_kind_real   ! acceleration due to gravity (m/s2)
@@ -159,7 +145,7 @@ FUNCTION ana_fields (name, mask, lon, lat, z, h, Tb, Sb, Ub, Vb)             &
       fac2=z/h
       fac3=-V0*(0.5_kind_real+fac2+(0.5*fac2*fac2))*EXP(-fac1*fac1)
       value=fac3*mask
-    CASE ('ssh', 'sea_surface_height')
+    CASE ('ssh', 'sea_surface_height_above_geoid')
       fac1=COS(lon*deg2rad)*SIN(lat*deg2rad)/dscale
       fac2=-U0*dscale*f*SQRT(pi)/(12.0_kind_real*g)
       fac3=1.0E+5*fac2*erf(fac1);

@@ -42,7 +42,9 @@
 #SBATCH --error=err.tests                 # STDERR output file (optional)
 #SBATCH --export=ALL                      # Export you current env to the job env
 
-export OOPS__TRACE=1
+#######################################################################
+
+export OOPS_TRACE=0                       # Set to 1 for tracing
 export MAIN_DEBUG=1
 export OOPS_DEBUG=1
 
@@ -62,9 +64,12 @@ if [ ${ALL_TEST} -eq 1 ]; then
 # ctest -V -R romsjedi_coding_norms
 else
   ${MPIrun} test_romsjedi_geometry testinput/geometry.yaml
+  ${MPIrun} test_romsjedi_geometryiterator testinput/geometryiterator.yaml
   ${MPIrun} test_romsjedi_state testinput/state.yaml
   ${MPIrun} test_romsjedi_getvalues testinput/getvalues.yaml
   ${MPIrun} ../../bin/romsjedi_hofx_nomodel.x testinput/hofx_nomodel.yaml
+  ${MPIrun} ../../bin/romsjedi_hofx.x testinput/hofx_4d.yaml
+  ${MPIrun} test_romsjedi_increment testinput/increment.yaml
   ${MPIrun} test_romsjedi_model testinput/model.yaml
 fi
 

@@ -7,6 +7,7 @@ geometry:
   fields metadata: Data/fields_metadata.yaml
   ng: 1                                        # ROMS nested grid number
 
-inc variables: [tocn, socn]
-test date: 2004-01-03T00:00:00Z
+inc variables: [ssh, tocn, socn]
 
+increment test:
+  date: 2004-01-03T00:00:00Z

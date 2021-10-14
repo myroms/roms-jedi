@@ -5,17 +5,20 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "oops/runs/HofX.h"
+#include "oops/runs/HofX4D.h"
 #include "oops/runs/Run.h"
 #include "oops/generic/instantiateModelFactory.h"
-#include "romsjedi/Traits.h"
+#include "ufo/instantiateObsErrorFactory.h"
 #include "ufo/instantiateObsFilterFactory.h"
 #include "ufo/ObsTraits.h"
+
+#include "romsjedi/Traits.h"
 
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);
   oops::instantiateModelFactory<romsjedi::Traits>();
-  ufo::instantiateObsFilterFactory<ufo::ObsTraits>();
-  oops::HofX<romsjedi::Traits, ufo::ObsTraits> hofx;
+  ufo::instantiateObsErrorFactory();
+  ufo::instantiateObsFilterFactory();
+  oops::HofX4D<romsjedi::Traits, ufo::ObsTraits> hofx;
   return run.execute(hofx);
 }

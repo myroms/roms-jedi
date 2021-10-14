@@ -4,7 +4,16 @@
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 !
-! Hernan G. Arango, Rutgers University, Apr 2021
+!>
+!! \brief    Fortran and C++ binding interface for ROMS-JEDI GeometryIterator
+!!           Class
+!!
+!! \details  Interoperability mechanism for the **GeometryIterator** Class that
+!!           allows Fortran to invoke C++ functions and vice versa C++ to invoke
+!!           Fortran procedures.
+!!
+!! \author   Hernan G. Arango (Rutgers University)
+!! \date     October 2021
 
 MODULE roms_geom_iter_interface
 

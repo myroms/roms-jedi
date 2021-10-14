@@ -3,13 +3,26 @@
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 !
-! Hernan G. Arango, Rutgers University, Apr 2021
+!>
+!! \brief    **Increment** Class Fortran ROMS-JEDI interface 
+!!
+!! \details  It implements several methods in each field of the **Increment**
+!!           object, such as mathematical and algebraic operations, reading,
+!!           and writing. Thus, there is a fair amount of overlap with the
+!!           **Fields** and **State** objects.
+!!
+!! \author   Hernan G. Arango (Rutgers University)
+!! \date     October 2021
 
 MODULE roms_increment_mod
 
 USE kinds,                      ONLY : kind_real
+
+USE atlas_module,               ONLY : atlas_fieldset, atlas_field, atlas_real
 USE fckit_configuration_module, ONLY : fckit_configuration
 USE oops_variables_mod,         ONLY : oops_variables
+USE random_mod,                 ONLY : normal_distribution
+
 USE datetime_mod
 
 USE mod_ncparam,                ONLY : r3dvar, u3dvar, v3dvar
@@ -17,7 +30,6 @@ USE roms_fields_mod
 !USE roms_convert_state_mod
 USE roms_geom_mod,              ONLY : roms_geom
 USE roms_geom_iter_mod,         ONLY : roms_geom_iter
-USE white_noise_mod,            ONLY : white_noise3d
 
 implicit none
 
@@ -27,104 +39,75 @@ TYPE, PUBLIC, EXTENDS(roms_fields) :: roms_increment
 
   CONTAINS
 
-  PROCEDURE :: getpoint  => roms_increment_getpoint
-  PROCEDURE :: setpoint  => roms_increment_setpoint
+  ! Get/set a single point
 
-  PROCEDURE :: dirac     => roms_increment_dirac
-  PROCEDURE :: random    => roms_increment_random
-  PROCEDURE :: schur     => roms_increment_schur
-! PROCEDURE :: convert   => roms_increment_change_resol
+  PROCEDURE :: getpoint   => roms_increment_getpoint
+  PROCEDURE :: setpoint   => roms_increment_setpoint
+
+  ! ATLAS
+
+  PROCEDURE :: set_atlas  => roms_increment_set_atlas
+  PROCEDURE :: to_atlas   => roms_increment_to_atlas
+  PROCEDURE :: from_atlas => roms_increment_from_atlas
+
+  ! Operators
+
+  PROCEDURE :: dirac      => roms_increment_dirac
+  PROCEDURE :: random     => roms_increment_random
+  PROCEDURE :: schur      => roms_increment_schur
+! PROCEDURE :: convert    => roms_increment_change_resol     ! TODO
 
 END TYPE roms_increment
 
+! ------------------------------------------------------------------------------
 CONTAINS
+! ------------------------------------------------------------------------------
 
 ! ------------------------------------------------------------------------------
-!> Initialize fields with random normal distribution
+!> Initialize fields with random normal distribution.
 
 SUBROUTINE roms_increment_random (self)
 
-  CLASS (roms_increment), intent(inout) :: self
+  CLASS (roms_increment), intent(inout) :: self       !< Increment object
 
   TYPE (roms_field),            pointer :: field
-  integer                               :: i, igtype, k, model, ng
+
+  integer, parameter                    :: rseed = 1
   integer                               :: Istr, Iend, Jstr, Jend
-  integer                               :: LBi, UBi, LBj, UBj, LBk, UBk
-  integer                               :: Rscheme
-  real(kind=kind_real)                  :: MinVal, MaxVal
+  integer                               :: i, k
 
-  ! Get geometry parameters
+  ! Set random values (interior points).
 
-  ng    = self%geom%ng        ! nested grid number
-  model = self%geom%model     ! model kernel identifier
-  LBi   = self%geom%LBi
-  UBi   = self%geom%UBi
-  LBj   = self%geom%LBj
-  UBj   = self%geom%UBj
-
-  ! Set random deviates with Gaussian distribution, [-1 1]
-
-  Rscheme = 1              
+  Istr = self%geom%Istr
+  Iend = self%geom%Iend
+  Jstr = self%geom%Jstr
+  Jend = self%geom%Jend
 
   DO i = 1, SIZE(self%fields)
-
-    LBk = LBOUND(self%fields(i)%val, DIM=3)
-    UBk = UBOUND(self%fields(i)%val, DIM=3)
-
-    SELECT CASE (self%fields(i)%name)
-      CASE ('ssh', 'tocn', 'socn')
-        Istr = self%geom%IstrR
-        Iend = self%geom%IendR
-        Jstr = self%geom%JstrR
-        Jend = self%geom%JendR
-        igtype = r3dvar
-      CASE ('uocn')
-        Istr = self%geom%IstrU
-        Iend = self%geom%IendR
-        Jstr = self%geom%JstrR
-        Jend = self%geom%JendR
-        igtype = u3dvar
-      CASE ('vocn')
-        Istr = self%geom%IstrR
-        Iend = self%geom%IendR
-        Jstr = self%geom%JstrV
-        Jend = self%geom%JendR
-        igtype = v3dvar
-    END SELECT
-
-    CALL white_noise3d (ng, model, igtype, Rscheme, &
-                        Istr, Iend, Jstr, Jend, &
-                        LBi, UBi, LBj, UBj, LBk, UBk, &
-                        MinVal, MaxVal, self%fields(i)%val)
+    field => self%fields(i)
+    CALL normal_distribution (field%val(Istr:Iend,Jstr:Jend,:),              &
+                              0.0_kind_real, 1.0_kind_real, rseed)
   END DO
 
-  ! Mask out land, set to zero
+  ! Apply land/sea mask
 
   DO i = 1, SIZE(self%fields)
-
     field => self%fields(i)
-
-    IF (.not.associated(field%mask) ) CYCLE
-
+    IF (.not.associated(field%mask)) CYCLE
     DO k = 1, field%N
       field%val(:,:,k) = field%val(:,:,k) * field%mask(:,:)
     END DO
-
   END DO
-
-  ! Update halo
-
-  CALL self%update_halos ()
 
 END SUBROUTINE roms_increment_random
 
 ! ------------------------------------------------------------------------------
-!> Perform a Shur product between two sets of fields
+!> Perform a Shur product between two sets of increment fields.
 
 SUBROUTINE roms_increment_schur (self, rhs)
 
-  CLASS (roms_increment), intent(inout) :: self
-  CLASS (roms_increment),    intent(in) :: rhs
+  CLASS (roms_increment), intent(inout) :: self       !< Increment object
+  CLASS (roms_increment), intent(in   ) :: rhs        !< Increment object
 
   integer                               :: i
 
@@ -141,12 +124,13 @@ SUBROUTINE roms_increment_schur (self, rhs)
 END SUBROUTINE roms_increment_schur
 
 ! ------------------------------------------------------------------------------
+!> Get increment fields values at geometry iterator points.
 
 SUBROUTINE roms_increment_getpoint (self, geoiter, values)
 
-  CLASS (roms_increment),   intent(in) :: self
-  TYPE (roms_geom_iter),    intent(in) :: geoiter
-  real(kind=kind_real),  intent(inout) :: values(:)
+  CLASS (roms_increment), intent(in   ) :: self       !< Increment object
+  TYPE (roms_geom_iter),  intent(in   ) :: geoiter    !< geometry iterator
+  real(kind=kind_real),   intent(inout) :: values(:)   
 
   integer                              :: ic, nf, nk
   TYPE (roms_field),           pointer :: field
@@ -167,12 +151,13 @@ SUBROUTINE roms_increment_getpoint (self, geoiter, values)
 END SUBROUTINE roms_increment_getpoint
 
 ! ------------------------------------------------------------------------------
+!> Set increment fields values from geometry iterator point data.
 
 SUBROUTINE roms_increment_setpoint (self, geoiter, values)
 
-  CLASS (roms_increment), intent(inout) :: self
-  TYPE (roms_geom_iter),     intent(in) :: geoiter
-  real(kind=kind_real),      intent(in) :: values(:)
+  CLASS (roms_increment), intent(inout) :: self       !< Increment object
+  TYPE (roms_geom_iter),  intent(in   ) :: geoiter    !< Geometry iterator
+  real(kind=kind_real),   intent(in   ) :: values(:)
 
   integer                               :: ic, nf, nk
   TYPE (roms_field),            pointer :: field
@@ -197,8 +182,8 @@ END SUBROUTINE roms_increment_setpoint
 
 SUBROUTINE roms_increment_dirac (self, f_conf)
 
-  CLASS (roms_increment),         intent(inout) :: self
-  TYPE (fckit_configuration), value, intent(in) :: f_conf   !< Configuration
+  CLASS (roms_increment),            intent(inout) :: self     !< Increment
+  TYPE (fckit_configuration), value, intent(in   ) :: f_conf   !< Configuration
 
   integer                                       :: Istr, Iend, Jstr, Jend
   integer                                       :: n, ndir, nk
@@ -215,7 +200,8 @@ SUBROUTINE roms_increment_dirac (self, f_conf)
   IF (( f_conf%get_size("iydir") .ne. ndir ) .or. &
       ( f_conf%get_size("izdir") .ne. ndir ) .or. &
       ( f_conf%get_size("ifdir") .ne. ndir )) THEN
-    CALL abor1_ftn ('roms_fields_dirac: inconsistent sizes for ixdir, iydir, izdir, and ifdir')
+    CALL abor1_ftn ('roms_fields_dirac: inconsistent sizes for '//           &
+                    'ixdir, iydir, izdir, and ifdir')
   END IF
 
   ! Allocation
@@ -274,12 +260,206 @@ SUBROUTINE roms_increment_dirac (self, f_conf)
 END SUBROUTINE roms_increment_dirac
 
 ! ------------------------------------------------------------------------------
-!>  Change resolution
+!> Defines increment fields in the ATLAS object.
+
+SUBROUTINE roms_increment_set_atlas (self, geom, vars, afieldset)
+
+  CLASS (roms_increment), intent(in   ) :: self       !< Increment object
+  TYPE (roms_geom),       intent(in   ) :: geom       !< geometry object
+  TYPE (oops_variables),  intent(in   ) :: vars       !< OOPS variables
+  TYPE (atlas_fieldset),  intent(inout) :: afieldset  !< ATLAS fieldset
+
+  TYPE (roms_field), pointer            :: field
+  TYPE (atlas_field)                    :: afield
+
+  logical                               :: var_found
+  integer                               :: N, i, ivar
+  character (len=1024)                  :: fieldname
+
+  ! Create and add fields to ATLAS. Currently, ATLAS allows a single function
+  ! space which is problematic with staggered C-grids. That is, ATLAS assumes
+  ! that all the variables are at the same location.
+
+  DO ivar = 1, vars%nvars()
+    var_found = .FALSE.
+    DO i=1, SIZE(self%fields)
+      field => self%fields(i)
+      IF (TRIM(vars%variable(ivar)) .eq. TRIM(field%name)) THEN
+        IF (.not.afieldset%has_field(vars%variable(ivar))) THEN
+          N = field%N
+          IF (N .eq. 1) N = 0
+
+          afield = geom%afunctionspace%create_field(name=vars%variable(ivar),  & 
+                                                    kind=atlas_real(kind_real),&
+                                                    levels=N)
+
+          CALL afieldset%add (afield)                    ! add field
+          CALL afield%final ()                           ! release pointer
+        END IF
+        var_found = .TRUE.
+        EXIT
+      END IF
+    END DO
+
+    IF (.not.var_found)                                                        &
+      CALL abor1_ftn ('variable '//TRIM(vars%variable(ivar))//                 &
+                      ' not found in increment')
+
+  END DO
+
+END SUBROUTINE roms_increment_set_atlas
+
+! ------------------------------------------------------------------------------
+!> Loads increment object data into ATLAS object.
+
+SUBROUTINE roms_increment_to_atlas (self, geom, vars, afieldset)
+
+  CLASS (roms_increment), intent(in   ) :: self       !< Increment object
+  TYPE (roms_geom),       intent(in   ) :: geom       !< Geometry object
+  TYPE (oops_variables),  intent(in   ) :: vars       !< OOPS variables
+  TYPE (atlas_fieldset),  intent(inout) :: afieldset  !< ATLAS fieldset
+
+  TYPE (roms_field), pointer            :: field
+  TYPE (atlas_field)                    :: afield
+
+  logical                               :: var_found
+  integer                               :: Istr, Iend, Jstr, Jend
+  integer                               :: N, i, ivar, k
+  real (kind=kind_real), pointer        :: fldptr1(:), fldptr2(:,:)
+  character (len=1024)                  :: fieldname
+
+  ! Load fields increment data into the ATLAS object. Currently, ATLAS allows a
+  ! single function space which is problematic with staggered C-grids. That is,
+  ! ATLAS assumes that all the variables are at the same location.
+
+  Istr = geom%IstrR
+  Iend = geom%IendR
+  Jstr = geom%JstrR
+  Jend = geom%JendR
+
+  DO ivar = 1, vars%nvars()
+    var_found = .false.
+    DO i = 1, SIZE(self%fields)
+      field => self%fields(i)
+      IF (TRIM(vars%variable(ivar)) .eq. TRIM(field%name)) THEN
+        N = field%N
+        IF (N.eq.1) N = 0
+
+        IF (afieldset%has_field(vars%variable(ivar))) THEN
+          afield = afieldset%field(vars%variable(ivar))        ! get field
+        ELSE
+          afield = geom%afunctionspace%create_field(name=vars%variable(ivar),  &
+                                                    kind=atlas_real(kind_real),&
+                                                    levels=N)  ! create field
+          CALL afieldset%add (afield)                          ! add field
+        end if
+
+        ! Copy data.
+
+        IF (N .eq. 0) THEN
+          CALL afield%data (fldptr1)
+          fldptr1 = RESHAPE(field%val(Istr:Iend, Jstr:Jend, 1),                &
+                                      (/ (Iend-Istr+1)*(Jend-Jstr+1) /))
+        ELSE
+          CALL afield%data (fldptr2)
+          DO k=1,N
+            fldptr2(k,:) = RESHAPE(field%val(Istr:Iend, Jstr:Jend, k),         &
+                                             (/ (Iend-Istr+1)*(Jend-Jstr+1) /))
+          END DO
+        END IF
+
+        CALL afield%final ()                      ! release pointer
+        var_found = .TRUE.
+        EXIT
+      END IF
+    END DO
+
+    IF (.not.var_found)                                                        &
+      CALL abor1_ftn ('variable '//TRIM(vars%variable(ivar))//                 &
+                      ' not found in increment')
+  END DO
+
+END SUBROUTINE roms_increment_to_atlas
+
+! ------------------------------------------------------------------------------
+!> Fills increment object with data from the ATLAS object.
+
+SUBROUTINE roms_increment_from_atlas (self, geom, vars, afieldset)
+
+  CLASS (roms_increment), intent(inout) :: self       !< Increment object
+  TYPE (roms_geom),       intent(in   ) :: geom       !< Geometry object
+  TYPE (oops_variables),  intent(in   ) :: vars       !< OOPS variables
+  TYPE (atlas_fieldset),  intent(in   ) :: afieldset  !< ATLAS fieldset
+
+  TYPE (roms_field), pointer            :: field
+  TYPE (atlas_field)                    :: afield
+
+  logical                               :: var_found
+  integer                               :: Istr, Iend, Jstr, Jend
+  integer                               :: N, i, ivar, k
+  real (kind=kind_real), pointer        :: fldptr1(:), fldptr2(:,:)
+  character (len=1024)                  :: fieldname
+
+  ! Initialize increment fields to zero.
+
+  CALL self%zeros ()
+
+  ! Retrieve field increments from the ATLAS object. Currently, ATLAS allows a
+  ! single function space which is problematic with staggered C-grids. That is,
+  ! ATLAS assumes that all the variables are at the same location.
+
+  Istr = geom%IstrR
+  Iend = geom%IendR
+  Jstr = geom%JstrR
+  Jend = geom%JendR
+
+  DO ivar = 1, vars%nvars()
+    var_found = .FALSE.
+    DO i = 1, SIZE(self%fields)
+      field => self%fields(i)
+      IF (TRIM(vars%variable(ivar)) .eq. TRIM(field%name)) THEN
+        N = field%N
+        IF (N .eq. 1) N = 0
+
+        afield = afieldset%field(vars%variable(ivar))        ! get field
+
+        ! Copy data.
+
+        IF (N .eq. 0) THEN
+          CALL afield%data (fldptr1)
+          field%val(Istr:Iend,Jstr:Jend,1) = RESHAPE(fldptr1,                  &
+                                                (/Iend-Istr+1, Jend-Jstr+1/))
+        ELSE
+          CALL afield%data (fldptr2)
+          DO k = 1, N
+            field%val(Istr:Iend,Jstr:Jend,k) = RESHAPE(fldptr2(k,:),           &
+                                                  (/Iend-Istr+1, Jend-Jstr+1/))
+          END DO
+        END IF
+
+        CALL afield%final ()                                 ! release pointer
+        var_found = .TRUE.
+        EXIT
+      END IF
+    END DO
+
+    IF (.not.var_found)                                                        &
+      CALL abor1_ftn ('variable '//TRIM(vars%variable(ivar))//                 &
+                      ' not found in increment')
+
+  END DO
+
+END SUBROUTINE roms_increment_from_atlas
+
+! ------------------------------------------------------------------------------
+!>  Spatially interpolate increment object to SELF geometry using source RHS
+!!  geometry. The number of vertical levels between source and target geometries
+!!  must be the same.
 
 SUBROUTINE roms_increment_change_resol (self, rhs)
 
-  CLASS (roms_increment), intent(inout) :: self   !> target
-  CLASS (roms_increment),    intent(in) :: rhs    !> source
+  CLASS (roms_increment), intent(inout) :: self   !> Target grid and values
+  CLASS (roms_increment), intent(in   ) :: rhs    !> Source grid and values
 
 ! TYPE (roms_convertstate_type)         :: convert_state
   TYPE (roms_field),            pointer :: field1, field2

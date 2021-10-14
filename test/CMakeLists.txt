@@ -11,6 +11,7 @@ list( APPEND romsjedi_test_input
   testinput/geometryiterator.yaml
   testinput/getvalues.yaml
   testinput/hofx_nomodel.yaml
+  testinput/hofx_4d.yaml
   testinput/increment.yaml
   testinput/lineargetvalues.yaml
   testinput/linearmodel.yaml
@@ -98,12 +99,12 @@ ecbuild_add_test(
   ARGS    testinput/geometry.yaml
   LIBS    romsjedi )
 
-#ecbuild_add_test(
-# TARGET  test_romsjedi_geometryiterator
-# MPI     2
-# SOURCES executables/TestGeometryIterator.cc
-# ARGS    testinput/geometryiterator.yaml
-# LIBS    romsjedi )
+ecbuild_add_test(
+ TARGET  test_romsjedi_geometryiterator
+ MPI     2
+ SOURCES executables/TestGeometryIterator.cc
+ ARGS    testinput/geometryiterator.yaml
+ LIBS    romsjedi )
 
 ecbuild_add_test(
   TARGET  test_romsjedi_getvalues
@@ -112,12 +113,12 @@ ecbuild_add_test(
   ARGS    testinput/getvalues.yaml
   LIBS    romsjedi )
 
-#ecbuild_add_test(
-#  TARGET  test_romsjedi_increment
-#  MPI     2
-#  SOURCES executables/TestIncrement.cc
-# ARGS    testinput/increment.yaml
-# LIBS    romsjedi )
+ecbuild_add_test(
+  TARGET  test_romsjedi_increment
+  MPI     2
+  SOURCES executables/TestIncrement.cc
+ ARGS    testinput/increment.yaml
+ LIBS    romsjedi )
 
 #ecbuild_add_test(
 #  TARGET  test_romsjedi_lineargetvalues
@@ -138,6 +139,13 @@ ecbuild_add_test(
   MPI          2
   COMMAND      romsjedi_hofx_nomodel.x
   ARGS         testinput/hofx_nomodel.yaml
+  TEST_DEPENDS test_romsjedi_geometry  )
+
+ecbuild_add_test(
+  TARGET       test_romsjedi_hofx_4d
+  MPI          2
+  COMMAND      romsjedi_hofx.x
+  ARGS         testinput/hofx_4d.yaml
   TEST_DEPENDS test_romsjedi_geometry  )
 
 ecbuild_add_test(

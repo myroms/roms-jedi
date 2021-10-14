@@ -7,9 +7,10 @@
 
 #include "oops/runs/HofX3D.h"
 #include "oops/runs/Run.h"
-#include "romsjedi/Traits.h"
 #include "ufo/instantiateObsFilterFactory.h"
 #include "ufo/ObsTraits.h"
+
+#include "romsjedi/Traits.h"
 
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);

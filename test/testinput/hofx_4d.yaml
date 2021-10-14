@@ -1,9 +1,8 @@
 # ROMS is configured with the JEDI driver and includes the NLM, TLM, and ADM kernels
 # for the US West Coast WC13 test application.
 #
-# 3D Hofx NoModel unit test for the period of Jan 3-7, 2004
-#   We either use an initial state for Jan 3, 2004 or 
-#      the nonlinear model (NLM) trajectory for Jan 3-7, 2004 with fields every two hours
+# 4D Hofx  unit test for the period of Jan 3-7, 2004
+#   We either use an initial state for Jan 3, 2004
 
 geometry:
   project_dir: jediroms_wc13/JEDI/
@@ -11,20 +10,22 @@ geometry:
   fields metadata: Data/fields_metadata.yaml
   ng: 1                                        # ROMS nested grid number
 
-state:
-  read_from_file: 1                            # Reads an existing state NetCDF file
+model:
+  name: ROMS
+  model variables: [ssh, uocn, vocn, tocn, socn]
+  tstep: PT1800S                               # WC13 has a 30 minutes timestep
+
+initial condition:
+  read_from_file: 1
   fields_dir: jediroms_wc13/Data/
   fields_filename: wc13_roms_ini_20040103.nc   # initial fields for 2004-01-03T00:00:00Z
-  fields_record: 1                             # assign middle window time of 2004-01-05T00:00:00Z
-# fields_filename: wc13_NLtrajectory_sp.nc     # single precision NLM trajectory (2 hours snapshots)
-# fields_filename: wc13_NLtrajectory_dp.nc     # double precision NLM trajectory (2 hours snapshots)
-# fields_record: 26                            # record for middle of time window on 2004-01-05T00:00:00Z
-  date: 2004-01-05T00:00:00Z
-  state variables: [ssh, tocn, socn]
-# state variables: [tocn]
+  fields_record: 1
+  state variables: [ssh, uocn, vocn, tocn, socn]
+  date: 2004-01-03T00:00:00Z
 
 window begin: 2004-01-03T00:00:00Z
 window length: P4D                             # 4 days window ending on 2004-01-07T00:00:00Z
+forecast length: P4D
 
 observations:
   - obs space:
@@ -66,14 +67,3 @@ observations:
 #      simulated variables: [sea_water_salinity]
 #    obs operator:
 #      name: MarineVertInterp
-
-# NOTES:
-#
-# * We need to implement a vertical interpolation operator for ROMS that
-#   use negative depths. In ROMS, level-1 is at the bottom and level-N
-#   at the surface. Then, we can test HofX with T and S observations.
-#
-# * To use altimetry data, we need the fields for the absolute dynamic
-#   topography (ADT) operator, ADT = MDT + SLA.  Here, MDT is the
-#   Mean Dynamic Topography and SLA is Sea Level Anomaly.
-#

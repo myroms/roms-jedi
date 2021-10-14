@@ -5,10 +5,12 @@
 ! ------------------------------------------------------------------------------
 !
 !>
-!! \brief   Model class to initialize, run, and finalize ROMS nonlinear kernel
+!! \brief   **Model** class to initialize, run, and finalize ROMS nonlinear
+!!          kernel.
 !!
 !! \details This class includes several routines used by JEDI to take control
-!!          on how the nonlinear kernel is initialized, advanced, and terminated.
+!!          on how the nonlinear kernel is initialized, advanced, and
+!!          terminated.
 !!
 !! \author  Hernan G. Arango (Rutgers University)
 !! \date    September 2021
@@ -23,7 +25,14 @@ USE duration_mod
 USE fckit_configuration_module, ONLY : fckit_configuration
 USE fckit_mpi_module,           ONLY : fckit_mpi_comm
 
+!> ROMS modules association.
+
 USE roms_kernel_mod
+USE mod_param,                  ONLY : BOUNDS, Ngrids, iNLM
+USE mod_scalars,                ONLY : NoError, exit_flag,                   &
+                                       itemp, isalt
+
+!> ROMS-JEDI interface module association.
 
 USE roms_geom_mod,              ONLY : roms_geom
 USE roms_fields_mod,            ONLY : roms_field
@@ -31,6 +40,11 @@ USE roms_fieldsutils_mod,       ONLY : roms_date2time
 USE roms_state_mod,             ONLY : roms_state
 
 implicit none
+
+!> Local routines.
+
+PRIVATE :: jedi2roms_state                 ! Load JEDI nonlinear state into ROMS
+PRIVATE :: roms2jedi_state                 ! Load ROMS nonlinear state into JEDI
 
 PRIVATE
 
@@ -79,6 +93,8 @@ logical, save :: LsetROMS = .TRUE.
 
 ! ------------------------------------------------------------------------------
 CONTAINS
+! ------------------------------------------------------------------------------
+
 ! ------------------------------------------------------------------------------
 !> Creates ROMS NLM kernel object.
 
@@ -189,17 +205,16 @@ END SUBROUTINE roms_model_delete
 
 SUBROUTINE roms_model_initialize (self, state)
 
-  USE mod_param,   ONLY : BOUNDS, Ngrids, iNLM
-  USE mod_ncparam, ONLY : inp_lib, io_nf90, io_pio
-  USE mod_scalars, ONLY : NoError, exit_flag, time
+  USE mod_ncparam,  ONLY : inp_lib, io_nf90, io_pio
+  USE mod_scalars,  ONLY : time
+  USE mod_stepping, ONLY : nnew
 
   CLASS (roms_model), intent(inout) :: self
   CLASS (roms_state), intent(in   ) :: state
 
   TYPE (roms_field), pointer        :: field
   TYPE (datetime)                   :: Fdatetime
-  integer                           :: LocalPET, MyComm, Tindex
-  integer                           :: i, ng
+  integer                           :: LocalPET, MyComm, Tindex, ng
   real (kind=kind_real)             :: romsDateNumber, romstime(Ngrids)
   character (len=6), dimension(5)   :: extra_vars
   character (len=256)               :: text
@@ -234,21 +249,7 @@ SUBROUTINE roms_model_initialize (self, state)
 
   Tindex = nnew(ng)                                  !> timestep index
 
-  DO i=1, SIZE(state%fields)
-    field => state%fields(i)
-    SELECT CASE (field%name)
-      CASE ('ssh')                                   !> free-surface
-        OCEAN(ng)%zeta(:,:,Tindex) = field%val(:,:,1)
-      CASE ('uocn')                                  !> 3D U-momentum component
-        OCEAN(ng)%u(:,:,:,Tindex) = field%val
-      CASE ('vocn')                                  !> 3D V-momentum component
-        OCEAN(ng)%v(:,:,:,Tindex) = field%val
-      CASE ('tocn')                                  !> potential temperature
-        OCEAN(ng)%t(:,:,:,Tindex,itemp) = field%val
-      CASE ('socn')                                  !> salinity
-        OCEAN(ng)%t(:,:,:,Tindex,isalt) = field%val
-    END SELECT
-  END DO
+  CALL jedi2roms_state (ng, iNLM, Tindex, state)
 
   !> Read in additional ROMS initial fields that are not part of the control
   !> state like barotropic momentum components (ubar, vbar) and vertical
@@ -264,6 +265,8 @@ SUBROUTINE roms_model_initialize (self, state)
   extra_vars(3) = 'Ktocn '        ! temperature vertical diffusion coefficient
   extra_vars(4) = 'Ksocn '        ! salinity vertical diffusion coefficient
   extra_vars(5) = 'Kvocn '        ! vertical viscosity coefficient
+
+  field => state%fields(1)
 
   SELECT CASE (inp_lib)
 
@@ -305,12 +308,8 @@ END SUBROUTINE roms_model_initialize
 
 SUBROUTINE roms_model_step (self, state, geom, vdate)
 
-  USE mod_grid
-  USE mod_coupling
-  USE mod_ocean
-
   USE dateclock_mod, ONLY : time_iso8601
-  USE mod_scalars,   ONLY : NoError, exit_flag, time, time_code
+  USE mod_scalars,   ONLY : time, time_code
   USE mod_stepping,  ONLY : nnew
 
   CLASS (roms_model), intent(inout) :: self    !< ROMS NLM object
@@ -319,7 +318,7 @@ SUBROUTINE roms_model_step (self, state, geom, vdate)
   TYPE (datetime),    intent(inout) :: vdate   !< Valid datetime after step
 
   TYPE (roms_field), pointer        :: field
-  integer                           :: i, indx, j, k, ng
+  integer                           :: Tindex, ng
 
   !> Advance ROMS NLM kernel for the specified RunInterval in seconds.
   !> It needs to be a multiple of the baroclinic timestep.
@@ -332,41 +331,9 @@ SUBROUTINE roms_model_step (self, state, geom, vdate)
   !> Update state fields with current ROMS NLM values.
 
   ng = self%ng
-  indx = nnew(ng)                                    !> timestep index
+  Tindex = nnew(ng)
 
-  DO i=1, SIZE(state%fields)
-    field => state%fields(i)
-    SELECT CASE (field%name)
-      CASE ('ssh')                                   !> free-surface
-        field%val(:,:,1) = COUPLING(ng)%Zt_avg1
-      CASE ('uocn')                                  !> 3D U-momentum component
-        field%val = OCEAN(ng)%u(:,:,:,indx)
-      CASE ('vocn')                                  !> 3D V-momentum component
-        field%val = OCEAN(ng)%v(:,:,:,indx)
-      CASE ('tocn')                                  !> potential temperature
-        field%val = OCEAN(ng)%t(:,:,:,indx, itemp)
-      CASE ('socn')                                  !> salinity
-        field%val = OCEAN(ng)%t(:,:,:,indx, isalt)
-    END SELECT
-  END DO
-
-  !> Update geometry time-dependent variables: depths (m; negative).
-
-  geom%z_r = GRID(ng)%z_r
-  geom%z_w = GRID(ng)%z_w
-
-  DO k=1,geom%N
-    DO j=geom%Jstr-1,geom%Jend+1
-      DO i=geom%IstrU-1,geom%Iend+1
-        geom%z_u(i,j,k) = 0.5_kind_real*(geom%z_r(i-1,j,k)+geom%z_r(i,j,k))
-      END DO
-    END DO
-    DO j=geom%JstrV-1,geom%Jend+1
-      DO i=geom%Istr-1,geom%Iend+1
-        geom%z_v(i,j,k) = 0.5_kind_real*(geom%z_r(i,j-1,k)+geom%z_r(i,j,k))
-      END DO
-    END DO
-  END DO
+  CALL roms2jedi_state (ng, iNLM, Tindex, state, geom)
 
   !> Set valid datetime after step.
 
@@ -402,6 +369,112 @@ SUBROUTINE roms_model_finalize (self, state)
   LsetROMS = .TRUE.
 
 END SUBROUTINE roms_model_finalize
+
+! ------------------------------------------------------------------------------
+!> It loads JEDI nonlinear state fields into ROMS field structure.
+
+SUBROUTINE jedi2roms_state (ng, kernel, Tindex, state)
+
+  USE mod_coupling, ONLY : COUPLING
+  USE mod_ocean,    ONLY : OCEAN
+
+  integer,           intent(in) :: ng       !< nested grid number
+  integer,           intent(in) :: kernel   !< ROMS kernel identifier
+  integer,           intent(in) :: Tindex   !< ROMS time level index
+  TYPE (roms_state), intent(in) :: state    !< State fields object
+
+  TYPE (roms_field), pointer    :: field
+  integer                       :: i
+
+  ! Load NLROMS state into JEDI state object.
+
+  ROMS_KERNEL : IF (kernel .eq. iNLM) THEN
+
+    DO i=1, SIZE(state%fields)
+      field => state%fields(i)
+      SELECT CASE (field%name)
+         CASE ('ssh')                                   !> free-surface
+           OCEAN(ng)%zeta(:,:,Tindex) = field%val(:,:,1)
+         CASE ('uocn')                                  !> 3D U-momentum
+           OCEAN(ng)%u(:,:,:,Tindex) = field%val
+         CASE ('vocn')                                  !> 3D V-momentum
+           OCEAN(ng)%v(:,:,:,Tindex) = field%val
+         CASE ('tocn')                                  !> potential temperature
+           OCEAN(ng)%t(:,:,:,Tindex,itemp) = field%val
+         CASE ('socn')                                  !> salinity
+           OCEAN(ng)%t(:,:,:,Tindex,isalt) = field%val
+         CASE DEFAULT
+           CALL abor1_ftn ("roms2jedi_state: Cannot find option for field: "// &
+                           TRIM(field%name))
+      END SELECT
+    END DO
+
+  END IF ROMS_KERNEL
+
+END SUBROUTINE jedi2roms_state
+
+! ------------------------------------------------------------------------------
+!> It loads ROMS nonlinear state fields into JEDI state object.
+
+SUBROUTINE roms2jedi_state (ng, kernel, Tindex, state, geom)
+
+  USE mod_coupling, ONLY : COUPLING
+  USE mod_grid,     ONLY : GRID
+  USE mod_ocean,    ONLY : OCEAN
+
+  integer,           intent(in   ) :: ng       !< nested grid number
+  integer,           intent(in   ) :: kernel   !< ROMS kernel identifier
+  integer,           intent(in   ) :: Tindex   !< ROMS time level index
+  TYPE (roms_state), intent(inout) :: state    !< State fields object
+  TYPE (roms_geom),  intent(inout) :: geom     !< geometry object
+
+  TYPE (roms_field), pointer       :: field
+  integer                          :: i, j, k
+
+  ! Load NLROMS state into JEDI state object.
+
+  ROMS_KERNEL : IF (kernel .eq. iNLM) THEN
+
+    DO i=1, SIZE(state%fields)
+      field => state%fields(i)
+      SELECT CASE (field%name)
+        CASE ('ssh')                                    !> free-surface
+          field%val(:,:,1) = COUPLING(ng)%Zt_avg1
+        CASE ('uocn')                                   !> 3D U-momentum
+          field%val = OCEAN(ng)%u(:,:,:,Tindex)
+        CASE ('vocn')                                   !> 3D V-momentum
+          field%val = OCEAN(ng)%v(:,:,:,Tindex)
+        CASE ('tocn')                                   !> potential temperature
+          field%val = OCEAN(ng)%t(:,:,:,Tindex,itemp)
+        CASE ('socn')                                   !> salinity
+          field%val = OCEAN(ng)%t(:,:,:,Tindex,isalt)
+        CASE DEFAULT
+          CALL abor1_ftn ("roms2jedi_state: Cannot find option for field: "// &
+                          TRIM(field%name))
+      END SELECT
+    END DO
+
+  END IF ROMS_KERNEL
+
+  !> Update geometry time-dependent variables: depths (m; negative).
+
+  geom%z_r = GRID(ng)%z_r
+  geom%z_w = GRID(ng)%z_w
+
+  DO k=1,geom%N
+    DO j=geom%Jstr-1,geom%Jend+1
+      DO i=geom%IstrU-1,geom%Iend+1
+        geom%z_u(i,j,k) = 0.5_kind_real*(geom%z_r(i-1,j,k)+geom%z_r(i,j,k))
+      END DO
+    END DO
+    DO j=geom%JstrV-1,geom%Jend+1
+      DO i=geom%Istr-1,geom%Iend+1
+        geom%z_v(i,j,k) = 0.5_kind_real*(geom%z_r(i,j-1,k)+geom%z_r(i,j,k))
+      END DO
+    END DO
+  END DO
+
+END SUBROUTINE roms2jedi_state
 
 ! ------------------------------------------------------------------------------
 

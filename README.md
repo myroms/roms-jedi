@@ -7,29 +7,28 @@ running some of the basic JEDI applications, as well as the available data assim
 To get started:
 
 1. Check out the ROMS source code from GitHub repository. It is highly recommended to clone
-   to the default
-   destination sub-directories: `<source_dir=roms_src>`, `<interface_dir=roms-jedi>`, and
-   `<project_dir=jediroms_wc13>`. If using relative paths, they need to be located in the
+   to the default destination sub-directories: `<source_dir=roms_src>`, `<interface_dir=roms-jedi>`,
+   and `<project_dir=jediroms_wc13>`. If using relative paths, they need to be located in the
    same user's root directory `<root_dir>`. The source code includes ROMS nonlinear model
    (NLM), perturbation tangent linear model (TLM), finite-amplitude tangent linear model
-   (RPM), and adjoint model (ADM) kernels. For any ROMS-JEDI application, activate the
+   (RPM), and adjoint model (ADM) kernels. For any `ROMS-JEDI` application, activate the
    `JEDI` C-preprocessing option when compiling ROMS to include the NLM, TLM, ADM kernels,
-   and direct interface to `initialize`, `run`, and `finalize` driver phases.
+   and direct interface to the `initialize`, `run`, and `finalize` driver phases.
 
    ```
    git clone https://github.com/JCSDA-internal/roms_src.git                             (default)
    git clone https://github.com/JCSDA-internal/roms_src.git <source_dir>
    ```
 
-2. Check out the ROMS-JEDI interface repository
+2. Check out the `ROMS-JEDI` interface repository.
 
    ```
    git clone https://github.com/JCSDA-internal/roms-jedi.git                            (default)
    git clone https://github.com/JCSDA-internal/roms-jedi roms-jedi.git <interface_dir>
    ```
 
-3. Check out the ROMS-JEDI application repository. We are using a one-third-degree US West
-   Coast (WC13) application. See https://www.myroms.org/wiki/4DVar_Tutorial_Introduction
+3. Check out the `ROMS-JEDI` application repository. We are using a one-third-degree US West
+   Coast (**WC13**) application. See https://www.myroms.org/wiki/4DVar_Tutorial_Introduction
    for detailed information about the WC13 configuration.
 
    ```
@@ -59,14 +58,12 @@ To get started:
    setenv MPIRUN          /opt/slurm/bin/srun                           (orion SLURM)
    ```
 
-6. Create ROMS shared library `libROMS.so` configured for US West COAST application WC13, which
-   will be used to test the ROMS-JEDI interface.  ROMS is configured with all the C-preprocessing
-   options to run the Restricted, B-preconditioned Lanczos 4D-Var (RBL4D-Var), strong or weak
-   constraint data assimilation algorithm (check: www.myroms.org/wiki/RBL4D-Var_Tutorial).  The
-   shared library includes the NLM, TLM, and ADM kernels. Primarily, ROMS needs the NetCDF library.
-   Some applications may require additional libraries. Check www.myroms.org/wiki/External_Libraries
-   for more information. Customize `cbuild_roms.sh` to change options and the compiler; see `FORT`
-   environmental variable. This step needs to be done only once per application.  
+6. Create ROMS shared library `libROMS.so` configured for US West COAST application **WC13**, which
+   will be used to test the `ROMS-JEDI` interface. The shared library includes the NLM, TLM, and ADM
+   kernels. Primarily, ROMS needs the NetCDF library. Some applications may require additional
+   libraries. Check www.myroms.org/wiki/External_Libraries for more information. Customize
+   `cbuild_roms.sh` to change options and the compiler; see `FORT` environmental variable. This
+   step needs to be done only once per application.  
 
    ```
    cd ${ROMS_HOME}                                !> root directory where roms_src is installed
@@ -74,7 +71,7 @@ To get started:
    cbuild_roms.sh -j 10                           !> CMake script to compile ROMS (default ifort)
    ```
 
-7. Setup the ROMS-JEDI build directory. For simplicity, and unlike other current JEDI projects, the bundle
+7. Setup the `ROMS-JEDI` build directory. For simplicity, and unlike other current JEDI projects, the bundle
    `CMakeLists.txt` is actually present in this repository at `bundle` sub-directory instead of in a separate
    repository (Feel free to make the bundle a separate repository for your project if you wish).
 
@@ -108,6 +105,19 @@ To get started:
 
    NOTE: In `<interface_dir>/build/roms-jedi/test` there is a `orion_tests.sh` to run the unit tests
          using SLURM in orion. Customize that script for desired unit tests.
+
+9. So far, the following `ROMS-JEDI` objects have been coded and tested:
+
+- AnalyticInit
+- Geometry
+- GeometryIterator
+- GetValues
+- Fields
+- Increment
+- Model
+- ModelBias
+- State
+- VariableChanges
 
 ## JEDI Applications
 

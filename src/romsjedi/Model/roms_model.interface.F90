@@ -119,7 +119,7 @@ SUBROUTINE roms_model_step_c (c_key_self, c_key_state, c_key_geom, c_dt)     &
 END SUBROUTINE roms_model_step_c
 
 ! ------------------------------------------------------------------------------
-!> Bindinf interface to finalize ROMS NLM kernel integration.
+!> Binding interface to finalize ROMS NLM kernel integration.
 
 SUBROUTINE roms_model_finalize_c (c_key_self, c_key_state)                   &
                             BIND (c, name='roms_model_finalize_f90')

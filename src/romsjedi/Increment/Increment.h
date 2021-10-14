@@ -3,9 +3,16 @@
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
- * In applying this licence, ECMWF does not waive the privileges and immunities
- * granted to it by virtue of its status as an intergovernmental organisation nor
- * does it submit to any jurisdiction.
+ *
+ *!
+ * \brief   **Increment**  C++ Class: Difference between two states
+ *
+ * \details The Increment contains everything that is needed by
+ *          the tangent-linear and adjoint models. Some fields that are
+ *          present in a State may not be present in an Increment. 
+ *
+ * \author  Hernan G. Arango (Rutgers University)
+ * \date    October 2021
  */
 
 #ifndef ROMSJEDI_INCREMENT_INCREMENT_H_
@@ -16,7 +23,8 @@
 #include <string>
 #include <vector>
 
-#include "oops/base/GeneralizedDepartures.h"
+#include "atlas/field.h"
+
 #include "oops/base/LocalIncrement.h"
 #include "oops/base/Variables.h"
 #include "oops/util/DateTime.h"
@@ -27,6 +35,7 @@
 
 #include "romsjedi/Fortran.h"
 #include "romsjedi/Geometry/Geometry.h"
+#include "romsjedi/GeometryIterator/GeometryIterator.h"
 #include "romsjedi/Increment/IncrementFortran.h"
 #include "romsjedi/State/State.h"
 
@@ -42,8 +51,8 @@ namespace ufo {
 }
 
 namespace romsjedi {
+  class ModelBiasIncrement;
   class Geometry;
-  class GeometryIterator;
   class State;
 }
 
@@ -51,77 +60,88 @@ namespace romsjedi {
 
 namespace romsjedi {
 
-  /// Increment Class: Difference between two states
-  /*!
-   *  Some fields that are present in a State may not be present in
-   *  an Increment. The Increment contains everything that is needed by
-   *  the tangent-linear and adjoint models.
-   */
+  /// Increment Class
 
-  class Increment : public oops::GeneralizedDepartures,
-    public util::Printable,
-    public util::Serializable,
-    private util::ObjectCounter<Increment> {
+  class Increment : public util::Printable,
+                    private util::ObjectCounter<Increment> {
    public:
-      static const std::string classname() {return "ROMS::Increment";}
+      static const std::string classname() {return "romsjedi::Increment";}
 
-      /// Constructor, destructor
-      Increment(const Geometry &, const oops::Variables &,
-                const util::DateTime &);
-      Increment(const Geometry &, const Increment &);
-      Increment(const Increment &, const bool);
-      Increment(const Increment &);
-      virtual ~Increment();
+  /// Constructor, destructor
 
-      /// Basic operators
-      void diff(const State &, const State &);
-      void ones();
-      void zero();
-      void zero(const util::DateTime &);
-      Increment & operator =(const Increment &);
-      Increment & operator+=(const Increment &);
-      Increment & operator-=(const Increment &);
-      Increment & operator*=(const double &);
-      void axpy(const double &, const Increment &, const bool check = true);
-      double dot_product_with(const Increment &) const;
-      void schur_product_with(const Increment &);
-      void random();
-      void dirac(const eckit::Configuration &);
+  Increment(const Geometry &, const oops::Variables &,
+            const util::DateTime &);
+  Increment(const Geometry &, const Increment &);
+  Increment(const Increment &, const bool);
+  Increment(const Increment &);
+  virtual ~Increment();
 
-      /// Getpoint/Setpoint
-      oops::LocalIncrement getLocal(const GeometryIterator &) const;
-      void setLocal(const oops::LocalIncrement &, const GeometryIterator &);
+  /// Basic operators
 
-      /// I/O and diagnostics
-      void read(const eckit::Configuration &);
-      void write(const eckit::Configuration &) const;
-      double norm() const;
-      const util::DateTime & validTime() const;
-      util::DateTime & validTime();
-      void updateTime(const util::Duration & dt);
+  void diff(const State &, const State &);
+  void ones();
+  void zero();
+  void zero(const util::DateTime &);
+  Increment & operator =(const Increment &);
+  Increment & operator+=(const Increment &);
+  Increment & operator-=(const Increment &);
+  Increment & operator*=(const double &);
+  void axpy(const double &, const Increment &, const bool check = true);
+  double dot_product_with(const Increment &) const;
+  void schur_product_with(const Increment &);
+  void random();
+  void dirac(const eckit::Configuration &);
 
-      /// Serialize and deserialize
-      size_t serialSize() const override;
-      void serialize(std::vector<double> &) const override;
-      void deserialize(const std::vector<double> &, size_t &) override;
+  /// Getpoint/Setpoint
 
-      /// Other
-      void accumul(const double &, const State &);
-      int & toFortran() {return keyFlds_;}
-      const int & toFortran() const {return keyFlds_;}
-      std::shared_ptr<const Geometry> geometry() const;
+  oops::LocalIncrement getLocal(const GeometryIterator &) const;
+  void setLocal(const oops::LocalIncrement &, const GeometryIterator &);
 
+  /// ATLAS
 
-      /// Data
+  void setAtlas(atlas::FieldSet *) const;
+  void toAtlas(atlas::FieldSet *) const;
+  void fromAtlas(atlas::FieldSet *);
+
+  /// I/O and diagnostics
+
+  void read(const eckit::Configuration &);
+  void write(const eckit::Configuration &) const;
+  double norm() const;
+
+  /// Other
+
+  void accumul(const double &, const State &);
+
+  /// Serialize and deserialize
+
+  size_t serialSize() const;
+  void serialize(std::vector<double> &) const;
+  void deserialize(const std::vector<double> &, size_t &);
+
+  /// Utilities
+
+  std::shared_ptr<const Geometry> geometry() const;
+
+  const util::DateTime & validTime() const;
+  util::DateTime & validTime();
+  void updateTime(const util::Duration & dt);
+
+  int & toFortran() {return keyFlds_;}
+  const int & toFortran() const {return keyFlds_;}
+
+  /// Private methods and variables
+
    private:
-      void print(std::ostream &) const override;
+    void print(std::ostream &) const;
 
-      F90flds keyFlds_;
-      oops::Variables vars_;
-      util::DateTime time_;
-      std::shared_ptr<const Geometry> geom_;
+    F90flds keyFlds_;
+    std::shared_ptr<const Geometry> geom_;
+    oops::Variables vars_;
+    util::DateTime time_;
   };
-  // -----------------------------------------------------------------------------
+
+// -----------------------------------------------------------------------------
 
 }  // namespace romsjedi
 

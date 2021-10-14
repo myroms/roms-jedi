@@ -3,6 +3,15 @@
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+ *
+ *!
+ * \brief   **GeometryIterator** Class C++ ROMS-JEDI interface
+ *
+ * \details It implements the **GeometryIterator** object to extract state
+ *          fields values at specified grid points.
+ *
+ * \author  Hernan G. Arango (Rutgers University)
+ * \date    October 2021
  */
 
 #include "eckit/config/Configuration.h"

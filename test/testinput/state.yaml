@@ -28,10 +28,10 @@ state test:
     read_from_file: 0
     analytic init:
       method: 'ana_ocnfields'
-      T0: [25.0]                               # background temperature (C)
-      S0: [32.5]                               # background salinity
-      U0: [1.2]                                # background U-velocity (m/s)
-      V0: [0.7]                                # background V-velocity (m/s)
+      T0: 25.0                                 # background temperature (C)
+      S0: 32.5                                 # background salinity
+      U0: 1.2                                  # background U-velocity (m/s)
+      V0: 0.7                                  # background V-velocity (m/s)
     date: 2004-01-03T00:00:00Z
     state variables: [ssh, uocn, vocn, tocn, socn]
 

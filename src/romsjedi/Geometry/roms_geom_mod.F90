@@ -40,10 +40,6 @@ implicit none
 PRIVATE
 PUBLIC  :: roms_geom
 
-!> Switch for printing fields information during debugging
-
-logical :: LdebugGeometry = .FALSE.
-
 !> Geometry data structure
 
 TYPE :: roms_geom
@@ -65,41 +61,45 @@ TYPE :: roms_geom
   integer :: N                                ! number of vertical levels at RHO-, U-, V-points
 
   integer :: IstrR, IendR, JstrR, JendR       ! tiled RHO-cell full indices range
-  integer :: Istr,  Iend,  Jstr,  Jend        ! computational I- and J-indices range at RHO-points
+  integer :: Istr,  Iend,  Jstr,  Jend        ! computational I- and J-indices range, RHO-points
   integer :: IstrU, JstrV                     ! computational starting U- and V-indices
 
-  real(kind=kind_real), allocatable, dimension(:,:) :: f_r        ! Coriolis parameter (1/s), RHO-points
-  real(kind=kind_real), allocatable, dimension(:,:) :: f_u        ! Coriolis parameter (1/s), U-points
-  real(kind=kind_real), allocatable, dimension(:,:) :: f_v        ! Coriolis parameter (1/s), V-points
+  real (kind_real), allocatable  :: f_r(:,:)       ! Coriolis parameter (1/s), RHO-points
+  real (kind_real), allocatable  :: f_u(:,:)       ! Coriolis parameter (1/s), U-points
+  real (kind_real), allocatable  :: f_v(:,:)       ! Coriolis parameter (1/s), V-points
 
-  real(kind=kind_real), allocatable, dimension(:,:) :: h_r        ! bathymetry (m; positive), RHO-points
-  real(kind=kind_real), allocatable, dimension(:,:) :: h_u        ! bathymetry (m; positive), U-points
-  real(kind=kind_real), allocatable, dimension(:,:) :: h_v        ! bathymetry (m; positive), V-points
+  real (kind_real), allocatable  :: h_r(:,:)       ! bathymetry (m; positive), RHO-points
+  real (kind_real), allocatable  :: h_u(:,:)       ! bathymetry (m; positive), U-points
+  real (kind_real), allocatable  :: h_v(:,:)       ! bathymetry (m; positive), V-points
 
-  real(kind=kind_real), allocatable, dimension(:,:) :: lonr, latr ! RHO-longitude, RHO-latitude
-  real(kind=kind_real), allocatable, dimension(:,:) :: lonu, latu ! U-longitude, U-latitude
-  real(kind=kind_real), allocatable, dimension(:,:) :: lonv, latv ! V-longitude, V-latitude
+  real (kind_real), allocatable  :: lonr(:,:)      ! longitude, RHO-points
+  real (kind_real), allocatable  :: lonu(:,:)      ! longitude, U-points
+  real (kind_real), allocatable  :: lonv(:,:)      ! longitude, V-points
 
-  real(kind=kind_real), allocatable, dimension(:,:) :: cell_area  ! RHO-points cell area (m2)
+  real (kind_real), allocatable  :: latr(:,:)      ! latitude, RHO-points
+  real (kind_real), allocatable  :: latu(:,:)      ! latitude, U-points
+  real (kind_real), allocatable  :: latv(:,:)      ! latitude, V-points
 
-  real(kind=kind_real), allocatable, dimension(:,:) :: angler     ! RHO-angle between XI-axis and EAST (radians)
-  real(kind=kind_real), allocatable, dimension(:,:) :: angleu     ! U-angle between XI-axis and EAST (radians)
-  real(kind=kind_real), allocatable, dimension(:,:) :: anglev     ! V-angle between XI-axis and EAST (radians)
+  real (kind_real), allocatable  :: cell_area(:,:) ! RHO-points cell area (m2)
 
-  real(kind=kind_real), allocatable, dimension(:,:) :: CosAngler  ! cosine of curvilinear angle, cos(angler)
-  real(kind=kind_real), allocatable, dimension(:,:) :: SinAngler  ! sine of curvilinear angle, sin(angler)
+  real (kind_real), allocatable  :: angler(:,:)    ! XI-axis and EAST RHO-angle (radians)
+  real (kind_real), allocatable  :: angleu(:,:)    ! XI-axis and EAST U-angle (radians)
+  real (kind_real), allocatable  :: anglev(:,:)    ! XI-axis and EAST V-angle (radians)
 
-  real(kind=kind_real), allocatable, dimension(:,:,:) :: z_r  ! depths at RHO-points (m, negative)
-  real(kind=kind_real), allocatable, dimension(:,:,:) :: z_u  ! depths at U-points (m, negative)
-  real(kind=kind_real), allocatable, dimension(:,:,:) :: z_v  ! depths at V-points (m, negative)
-  real(kind=kind_real), allocatable, dimension(:,:,:) :: z_w  ! depths at W-points (m, negative)
+  real (kind_real), allocatable  :: CosAngler(:,:) ! cosine of curvilinear angle, cos(angler)
+  real (kind_real), allocatable  :: SinAngler(:,:) ! sine of curvilinear angle, sin(angler)
 
-  real(kind=kind_real), allocatable, dimension(:,:) :: rmask  ! RHO-points mask, 0=land 1=ocean
-  real(kind=kind_real), allocatable, dimension(:,:) :: umask  ! U-points mask,   0=land 1=ocean
-  real(kind=kind_real), allocatable, dimension(:,:) :: vmask  ! V-points mask,   0=land 1=ocean
+  real (kind_real), allocatable  :: z_r(:,:,:)     ! depths at RHO-points (m, negative)
+  real (kind_real), allocatable  :: z_u(:,:,:)     ! depths at U-points (m, negative)
+  real (kind_real), allocatable  :: z_v(:,:,:)     ! depths at V-points (m, negative)
+  real (kind_real), allocatable  :: z_w(:,:,:)     ! depths at W-points (m, negative)
 
-  character (len=:), allocatable :: roms_stdinp               ! ROMS standard input filename
-  character (len=:), allocatable :: project_dir               ! ROMS project directory
+  real (kind_real), allocatable  :: rmask(:,:)     ! RHO-points mask, 0=land 1=ocean
+  real (kind_real), allocatable  :: umask(:,:)     ! U-points mask,   0=land 1=ocean
+  real (kind_real), allocatable  :: vmask(:,:)     ! V-points mask,   0=land 1=ocean
+
+  character (len=:), allocatable :: roms_stdinp    ! ROMS standard input filename
+  character (len=:), allocatable :: project_dir    ! ROMS project directory
 
   CONTAINS
 
@@ -113,6 +113,10 @@ TYPE :: roms_geom
   PROCEDURE :: struct2atlas         => roms_geom_struct2atlas
 
 END TYPE roms_geom
+
+!> Switch for printing fields information during debugging
+
+logical :: LdebugGeometry = .TRUE.
 
 ! ------------------------------------------------------------------------------
 CONTAINS
@@ -550,23 +554,25 @@ SUBROUTINE roms_geom_allocate (self)
 END SUBROUTINE roms_geom_allocate
 
 ! ------------------------------------------------------------------------------
-!> Set ATLAS **lonlat** fieldset.
+!> Set ATLAS **lonlat** fieldset at density points.
 
 SUBROUTINE roms_geom_set_atlas_lonlat (self, afieldset)
 
   CLASS (roms_geom),     intent(inout) :: self        !< Geometry object
   TYPE (atlas_fieldset), intent(inout) :: afieldset   !< ATLAS fieldset
 
+  TYPE (atlas_field)                   :: afield
   integer                              :: Istr, Iend, Jstr, Jend
   real (kind_real), pointer            :: r_ptr(:,:)
-  TYPE (atlas_field)                   :: afield
 
-  ! Create lon/lat field
+  ! Create lon/lat fields at RHO (density) points. Currently, ATLAS allows a
+  ! single function space which is problematic with staggered C-grids. That
+  ! is, ATLAS assumes that all the variables are at the same location.
 
-  Istr = self%Istr
-  Iend = self%Iend
-  Jstr = self%Jstr
-  Jend = self%Jend
+  Istr = self%IstrR
+  Iend = self%IendR
+  Jstr = self%JstrR
+  Jend = self%JendR
 
   afield = atlas_field(name="lonlat",                                        &
                        kind=atlas_real(kind_real),                           &
@@ -583,24 +589,27 @@ END SUBROUTINE roms_geom_set_atlas_lonlat
 
 ! ------------------------------------------------------------------------------
 !> Fill ATLAS fieldset with cell area, vertical level units, and geographical
-!! mask.
+!! mask at density points.
 
 SUBROUTINE roms_geom_fill_atlas_fieldset (self, afieldset)
 
   CLASS (roms_geom),     intent(inout) :: self         !< Geometry object
   TYPE (atlas_fieldset), intent(inout) :: afieldset    !< ATLAS fieldset
 
-  integer                              :: Istr, Iend, Jstr, Jend, N, k
-  integer, pointer                     :: i_ptr(:,:)
-  real (kind=kind_real), pointer       :: r_ptr_1(:), r_ptr_2(:,:)
   TYPE (atlas_field)                   :: afield
+  integer                              :: Istr, Iend, Jstr, Jend, N
+  integer                              :: k
+  integer, pointer                     :: i_ptr(:,:)
+  real (kind_real), pointer            :: r_ptr_1(:), r_ptr_2(:,:)
 
-  ! Initialize.
+  ! Initialize. Currently, ATLAS allows a single function space which is
+  ! problematic with staggered C-grids. That is, ATLAS assumes that all
+  ! the variables are at the same location.
 
-  Istr = self%Istr
-  Iend = self%Iend
-  Jstr = self%Jstr
-  Jend = self%Jend
+  Istr = self%IstrR
+  Iend = self%IendR
+  Jstr = self%JstrR
+  Jend = self%JendR
   N    = self%N
 
   ! Add grid cell area at RHO-points.
@@ -649,28 +658,32 @@ SUBROUTINE roms_geom_atlas2struct (self, dx_struct, dx_atlas)
   real (kind=kind_real), intent(inout) :: dx_struct(:,:)  !< structured field
   TYPE (atlas_fieldset), intent(inout) :: dx_atlas        !< ATLAS fieldset
 
-  logical                              :: umask(self%Istr:self%Iend,         &
-                                                self%Jstr:self%Jend)
+  TYPE (atlas_field)                   :: afield
+  logical, allocatable                 :: fmask(:,:)
   integer                              :: Istr, Iend, Jstr, Jend
   real (kind_real), pointer            :: r_ptr(:)
-  TYPE (atlas_field)                   :: afield
 
-  ! Initialize.
+  ! Initialize. Currently, ATLAS allows a single function space which is
+  ! problematic with staggered C-grids. That is, ATLAS assumes that all
+  ! the variables are at the same location.
 
-  Istr = self%Istr
-  Iend = self%Iend
-  Jstr = self%Jstr
-  Jend = self%Jend
+  Istr = self%IstrR
+  Iend = self%IendR
+  Jstr = self%JstrR
+  Jend = self%JendR
 
-  ! Unpack field from ATLAS
+  allocate ( fmask(Istr:Iend, Jstr:Jend) )
+  fmask = .TRUE.
 
-  umask = .TRUE.
+  ! Unpack field from ATLAS.
 
   afield = dx_atlas%field('var')
   CALL afield%data (r_ptr)
-  dx_struct(Istr:Iend, Jstr:Jend) = UNPACK(r_ptr, umask,                     &
-                                           dx_struct(Istr:Iend,Jstr:Jend))
+  dx_struct(Istr:Iend, Jstr:Jend) = UNPACK(r_ptr, fmask,                     &
+                                           dx_struct(Istr:Iend, Jstr:Jend))
   CALL afield%final ()
+
+  deallocate ( fmask )
 
 END SUBROUTINE roms_geom_atlas2struct
 
@@ -683,16 +696,18 @@ SUBROUTINE roms_geom_struct2atlas (self, dx_struct, dx_atlas)
   real (kind=kind_real), intent(in ) :: dx_struct(:,:)    !< structured field
   TYPE (atlas_fieldset), intent(out) :: dx_atlas          !< ATLAS fieldset
 
+  TYPE (atlas_field)                 :: afield
   integer                            :: Istr, Iend, Jstr, Jend
   real (kind_real), pointer          :: r_ptr(:)
-  TYPE (atlas_field)                 :: afield
 
-  ! Initialize.
+  ! Initialize. Currently, ATLAS allows a single function space which is
+  ! problematic with staggered C-grids. That is, ATLAS assumes that all
+  ! the variables are at the same location.
 
-  Istr = self%Istr
-  Iend = self%Iend
-  Jstr = self%Jstr
-  Jend = self%Jend
+  Istr = self%IstrR
+  Iend = self%IendR
+  Jstr = self%JstrR
+  Jend = self%JendR
 
   ! Add structured field to ATLAS.
 

@@ -10,4 +10,14 @@ geometry:
 inc variables: [ssh, uocn, vocn, tocn, socn]
 
 increment test:
-  date: &date 2004-01-03T00:00:00Z
+  date: 2004-01-03T00:00:00Z
+  skip atlas: true
+
+initial condition:
+  state analytic init:
+    method: 'ana_ocnfields'
+    T0: [25.0]                                 # background temperature (C)
+    S0: [32.5]                                 # background salinity
+    U0: [1.2]                                  # background U-velocity (m/s)
+    V0: [0.7]                                  # background V-velocity (m/s)
+    date: 2004-01-03T00:00:00Z
