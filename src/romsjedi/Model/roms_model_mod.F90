@@ -187,7 +187,10 @@ SUBROUTINE roms_model_delete (self)
 
   CLASS (roms_model), intent(inout) :: self
 
-  !> Deallocates ROMS state arrays and vectors.
+  ! Deallocate ROMS state arrays and vectors. It forces regular allocation and
+  ! initialization in the next JEDI iteration, although not needed if the
+  ! resolution of the Geometry object remains the same. Anyway, ut is always
+  ! a good idea to release memory to avoid any leaks.
 
   CALL ROMS_deallocate_arrays
 

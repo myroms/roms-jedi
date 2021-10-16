@@ -116,7 +116,7 @@ END TYPE roms_geom
 
 !> Switch for printing fields information during debugging
 
-logical :: LdebugGeometry = .TRUE.
+logical :: LdebugGeometry = .FALSE.
 
 ! ------------------------------------------------------------------------------
 CONTAINS

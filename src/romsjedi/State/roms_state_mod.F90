@@ -381,8 +381,8 @@ SUBROUTINE roms_state_read_extrafields_nf90 (self, InpRec, Tindex,           &
   ng    = MAX(1,self%geom%ng)          !> nested grid number
   LBi   = self%geom%LBi                !> I-dimension lower bound
   UBi   = self%geom%UBi                !> I-dimension upper bound
-  LBj   = self%geom%LBi                !> J-dimension lower bound
-  UBj   = self%geom%UBi                !> J-dimension upper bound
+  LBj   = self%geom%LBj                !> J-dimension lower bound
+  UBj   = self%geom%UBj                !> J-dimension upper bound
   N     = self%geom%N                  !> number of vertical levels
   scale = 1.0_kind_real
   Vsize = 0
@@ -580,8 +580,8 @@ SUBROUTINE roms_state_read_extrafields_pio (self, InpRec, Tindex,            &
   ng    = MAX(1,self%geom%ng)          !> nested grid number
   LBi   = self%geom%LBi                !> I-dimension lower bound
   UBi   = self%geom%UBi                !> I-dimension upper bound
-  LBj   = self%geom%LBi                !> J-dimension lower bound
-  UBj   = self%geom%UBi                !> J-dimension upper bound
+  LBj   = self%geom%LBj                !> J-dimension lower bound
+  UBj   = self%geom%UBj                !> J-dimension upper bound
   N     = self%geom%N                  !> number of vertical levels
   scale = 1.0_kind_real
   Vsize = 0
