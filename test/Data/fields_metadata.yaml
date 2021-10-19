@@ -75,7 +75,8 @@
   io name: 'h'
 
 # --------------------------------------------------------------------------------------------------
-# Other initialization ROMS variables that are not included in the state vector.
+# Other ROMS variables that are not included in the state vector. Mostly all of then are needed in
+# forward trajectory and are used to linearize the tangent linear and adjoint kernels.
 # --------------------------------------------------------------------------------------------------
 
 - name: 'u2docn'
@@ -89,6 +90,30 @@
   getval name: 'sea_water_meridional_vertically_integrated_velocity'
   io file: 'ocn'
   io name: 'vbar'
+
+- name: 'DU_avg1'
+  gtype: 'u'
+  getval name: 'time_averaged_barotropic_zonal_momentum_flux'
+  io file: 'ocn'
+  io name: 'DU_avg1'
+
+- name: 'DV_avg1'
+  gtype: 'v'
+  getval name: 'time_averaged_barotropic_meridional_momentum_flux'
+  io file: 'ocn'
+  io name: 'DV_avg1'
+
+- name: 'DU_avg2'
+  gtype: 'u'
+  getval name: 'time_averaged_barotropic_zonal_momentum_flux_3D_coupling'
+  io file: 'ocn'
+  io name: 'DU_avg2'
+
+- name: 'DV_avg2'
+  gtype: 'v'
+  getval name: 'time_averaged_barotropic_meridional_momentum_flux_3D_coupling'
+  io file: 'ocn'
+  io name: 'DV_avg2'
 
 - name: 'Ktocn'
   gtype: 'w'
@@ -110,5 +135,76 @@
   getval name: 'sea_water_vertical_viscosity_coefficient'
   io file: 'ocn'
   io name: 'AKv'
+
+# --------------------------------------------------------------------------------------------------
+# Atmospheric forcing variables.
+# --------------------------------------------------------------------------------------------------
+
+- name: 'Pair'
+  gtype: 'r'
+  getval name: 'surface_air_pressure'
+  io file: 'ocn'
+  io name: 'Pair'
+
+- name: 'Uwind'
+  gtype: 'r'
+  getval name: 'near_surface_zonal_wind_component'
+  io file: 'ocn'
+  io name: 'Uwind'
+
+- name: 'Vwind'
+  gtype: 'r'
+  getval name: 'near_surface_meridional_wind_component'
+  io file: 'ocn'
+  io name: 'Uwind'
+
+- name: 'sustr'
+  gtype: 'u'
+  getval name: 'surface_zonal_wind_stress'
+  io file: 'ocn'
+  io name: 'sustr'
+
+- name: 'svstr'
+  gtype: 'v'
+  getval name: 'surface_meridional_wind_stress'
+  io file: 'ocn'
+  io name: 'svstr'
+
+- name: 'shflux'
+  gtype: 'r'
+  getval name: 'surface_net_heat_flux'
+  io file: 'ocn'
+  io name: 'shflux'
+
+- name: 'ssflux'
+  gtype: 'r'
+  getval name: 'kinematic_surface_net_salt_flux'
+  io file: 'ocn'
+  io name: 'shflux'
+
+- name: 'latent'
+  gtype: 'r'
+  getval name: 'surface_net_latent_heat_flux'
+  io file: 'ocn'
+  io name: 'latent'
+
+- name: 'sensible'
+  gtype: 'r'
+  getval name: 'surface_net_sensible_heat_flux'
+  io file: 'ocn'
+  io name: 'sensible'
+
+- name: 'lwrad'
+  gtype: 'r'
+  getval name: 'surface_net_longwave_radiation_flux'
+  io file: 'ocn'
+  io name: 'lwrad'
+
+- name: 'swrad'
+  gtype: 'r'
+  getval name: 'surface_solar_shortwave_radiation_flux'
+  io file: 'ocn'
+  io name: 'swrad'
+
 
 

@@ -27,6 +27,8 @@ USE duration_mod,               ONLY : duration,                             &
                                        duration_to_string
 USE kinds,                      ONLY : kind_real
 
+USE roms_fields_metadata_mod,   ONLY : roms_field_metadata
+
 implicit none
 
 PRIVATE
@@ -41,6 +43,7 @@ PUBLIC  :: roms_date2time
 PUBLIC  :: roms_gen_filename
 PUBLIC  :: roms_IOstruct
 PUBLIC  :: roms_IOstruct_delete
+PUBLIC  :: roms_tracer_index
 
 PRIVATE :: roms_create_ncfile_nf90
 PRIVATE :: roms_def_info_nf90
@@ -336,38 +339,41 @@ FUNCTION roms_gen_filename (f_conf, max_length, vdate, file_type)            &
   TYPE (datetime),             intent(in) :: vdate      !< Date/Time
   character (len=*), optional, intent(in) :: file_type  !< file type or purpose
 
-  integer                                 :: i, lstr
-  character (len=max_length)              :: filename
-  character (len=max_length)              :: MyPrefix, StepString, ValidityDate
-  character (len=:),          allocatable :: Fdir, Fexp, Fprefix, Ftype, MyDate
   TYPE (datetime)                         :: rdate
   TYPE (duration)                         :: step
+  integer                                 :: year, month, day
+  integer                                 :: hour, minute, seconds
+  integer                                 :: lstr
+  character (len=19)                      :: filedate
+  character (len=max_length)              :: filename 
+  character (len=max_length)              :: MyPrefix, StepString, ValidityDate
+  character (len=:), allocatable          :: Fdir, Fexp, Fprefix, Ftype, iniDate
 
   ! Inquire configuration YAML file about the output directory, file prefix,
   ! file type, and application date
 
-  IF (.not.f_conf%get("datadir", Fdir)) THEN
-    CALL abor1_ftn ("roms_set_filename: Cannot find 'datadir'"//             &
+  IF (.not.f_conf%get("data_dir", Fdir)) THEN
+    CALL abor1_ftn ("roms_gen_filename: Cannot find 'data_dir'"//            &
                     " in YAML configuration")
   END IF
 
   IF (.not.f_conf%get("prefix", Fprefix)) THEN
-    CALL abor1_ftn ("roms_set_filename: Cannot find 'prefix'"//              &
+    CALL abor1_ftn ("roms_gen_filename: Cannot find 'prefix'"//              &
                     " in YAML configuration")
   END IF
 
   IF (.not.f_conf%get("exp", Fexp)) THEN
-    CALL abor1_ftn ("roms_set_filename: Cannot find 'exp'"//                 &
+    CALL abor1_ftn ("roms_gen_filename: Cannot find 'exp'"//                 &
                     " in YAML configuration")
   END IF
 
   IF (.not.f_conf%get("type", Ftype)) THEN
-    CALL abor1_ftn ("roms_set_filename: Cannot find 'type'"//                &
+    CALL abor1_ftn ("roms_gen_filename: Cannot find 'type'"//                &
                     " in YAML configuration")
   END IF
 
-  IF (.not.f_conf%get("date", MyDate)) THEN
-    CALL abor1_ftn ("roms_set_filename: Cannot find 'date'"//                &
+  IF (.not.f_conf%get("date", iniDate)) THEN
+    CALL abor1_ftn ("roms_gen_filename: Cannot find 'date'"//                &
                     " in YAML configuration")
   END IF
 
@@ -383,26 +389,22 @@ FUNCTION roms_gen_filename (f_conf, max_length, vdate, file_type)            &
   ! Get information from vdate structure.
 
   CALL datetime_to_string (vdate, ValidityDate)
-  CALL datetime_create    (MyDate, rdate)
-  CALL datetime_diff      (vdate, rdate, step)
+  CALL datetime_create    (iniDate, rdate)         ! initial date
+  CALL datetime_diff      (vdate, rdate, step)     ! time since initial date
   CALL duration_to_string (step, StepString)
 
-  ! Generate filename: <DirPath>/<Prefix>_<Type>_YYYY-MM-DDThh.mm.ssZ.nc
-  ! So, edit ValidityDate ISO 8601 format and replace ':' with '.' to
-  ! facilitate UNIX manipulations like copy/paste, auto complete, etc.
-  
-  lstr = LEN_TRIM(ValidityDate)
-  DO i = 1, lstr
-    IF (ValidityDate(i:i) .eq. ':') THEN
-      ValidityDate(i:i) = '.'
-    END IF
-  END DO
+  CALL datetime_to_yyyymmddhhmmss (vdate,                                    &
+                                   year, month, day, hour, minute, seconds)
 
-  filename = TRIM(MyPrefix) // '_' // TRIM(ValidityDate) // '.nc'
+  ! Generate filename: <DirPath>/<Prefix>_<Type>_YYYY-MM-DD-hh.mm.ss.nc
+
+  WRITE (filedate,10) year, month, day, hour, minute, seconds
+
+  filename = TRIM(MyPrefix) // '_' // TRIM(filedate) // '.nc'
 
   IF (LdebugFieldUtils) THEN  
     PRINT '(a)',   '------------------'
-    PRINT '(a,a)', 'Initial Date   = ', TRIM(MyDate)
+    PRINT '(a,a)', 'Initial Date   = ', TRIM(iniDate)
     PRINT '(a,a)', 'Validity Date  = ', TRIM(ValidityDate)
     PRINT '(a,a)', 'Step String    = ', TRIM(StepString)
     PRINT '(a,a)', 'Directory Path = ', TRIM(Fdir)
@@ -415,13 +417,18 @@ FUNCTION roms_gen_filename (f_conf, max_length, vdate, file_type)            &
   ! Deallocate
 
   IF ( allocated(Fdir) )    deallocate (Fdir)
+  IF ( allocated(Fexp) )    deallocate (Fexp)
   IF ( allocated(Fprefix) ) deallocate (Fprefix)
   IF ( allocated(Ftype) )   deallocate (Ftype)
+  IF ( allocated(iniDate) ) deallocate (iniDate)
+
+  10  FORMAT (i4,'-',i2.2,'-',i2.2,'-',i2.2,'.',i2.2,'.',i2.2)
 
 END FUNCTION roms_gen_filename
 
 ! ------------------------------------------------------------------------------
-!> Allocates and initalize ROMS T_IO type structure.
+!> It allocates ROMS T_IO type structure it necessary. Then, intialize its
+!> fields.
 
 SUBROUTINE roms_IOstruct (ng, Nfiles, ncname, S)
 
@@ -436,99 +443,132 @@ SUBROUTINE roms_IOstruct (ng, Nfiles, ncname, S)
 
   integer                                 :: i, j, lstr
 
+  IF (.not.allocated(S)) THEN
+
   ! Allocate structure according to the number of nested grids.
 
-  IF (.not.allocated(S)) THEN
     allocate ( S(Ngrids) )
-  END IF
 
   ! Allocate fields in the structure.
 
-  DO i = 1, Ngrids
-    IF (.not.associated(S(i)%Nrec))      allocate ( S(ng)%Nrec(Nfiles) )
-    IF (.not.associated(S(i)%time_min))  allocate ( S(ng)%time_min(Nfiles) )
-    IF (.not.associated(S(i)%time_max))  allocate ( S(ng)%time_max(Nfiles) )
-    IF (.not.associated(S(i)%Vid))       allocate ( S(ng)%Vid(NV) )
-    IF (.not.associated(S(i)%Tid))       allocate ( S(ng)%Tid(MT) )
+    DO i = 1, Ngrids
+      IF (.not.associated(S(i)%Nrec))      allocate ( S(ng)%Nrec(Nfiles) )
+      IF (.not.associated(S(i)%time_min))  allocate ( S(ng)%time_min(Nfiles) )
+      IF (.not.associated(S(i)%time_max))  allocate ( S(ng)%time_max(Nfiles) )
+      IF (.not.associated(S(i)%Vid))       allocate ( S(ng)%Vid(NV) )
+      IF (.not.associated(S(i)%Tid))       allocate ( S(ng)%Tid(MT) )
 #if defined PIO_LIB
-    IF (.not.associated(S(i)%pioVar))    allocate ( S(ng)%pioVar(NV) )
-    IF (.not.associated(S(i)%pioTrc))    allocate ( S(ng)%pioTrc(MT) )
+      IF (.not.associated(S(i)%pioVar))    allocate ( S(ng)%pioVar(NV) )
+      IF (.not.associated(S(i)%pioTrc))    allocate ( S(ng)%pioTrc(MT) )
 #endif
-    IF (.not.associated(S(i)%files))     allocate ( S(ng)%files(Nfiles) )
-  END DO
+      IF (.not.associated(S(i)%files))     allocate ( S(ng)%files(Nfiles) )
+    END DO
+ 
+    ! Initialize various fields.
 
-  ! Initialize various fields.
-
-  S(ng)%IOtype=out_lib                         ! file IO type
-  S(ng)%Nfiles=Nfiles                          ! number of multi-files
-  S(ng)%Fcount=1                               ! multi-file counter
-  S(ng)%load=1                                 ! filename load counter
-  S(ng)%Rindex=0                               ! time index
-  S(ng)%ncid=-1                                ! closed NetCDF state
-  S(ng)%Vid=-1                                 ! NetCDF variables IDs
-  S(ng)%Tid=-1                                 ! NetCDF tracers IDs
+    S(ng)%IOtype=out_lib                       ! file IO type
+    S(ng)%Nfiles=Nfiles                        ! number of multi-files
+    S(ng)%Fcount=1                             ! multi-file counter
+    S(ng)%load=1                               ! filename load counter
+    S(ng)%Rindex=0                             ! time index
+    S(ng)%ncid=-1                              ! closed NetCDF state
+    S(ng)%Vid=-1                               ! NetCDF variables IDs
+    S(ng)%Tid=-1                               ! NetCDF tracers IDs
 #if defined PIO_LIB
-  S(ng)%pioFile%fh=-1                          ! closed file handler
-  DO i=1,NV
-    S(ng)%pioVar(i)%vd%varID=-1                ! variables IDs
-    S(ng)%pioVar(i)%dkind=-1                   ! variables data kind
-    S(ng)%pioVar(i)%gtype=0                    ! variables C-grid type
-  END DO
-  DO i=1,MT
-    S(ng)%pioTrc(i)%vd%varID=-1                ! tracers IDs
-    S(ng)%pioTrc(i)%dkind=-1                   ! tracers data kind
-    S(ng)%pioTrc(j)%gtype=0                    ! tracers C-grid type
-  END DO
+    S(ng)%pioFile%fh=-1                        ! closed file handler
+    DO i=1,NV
+      S(ng)%pioVar(i)%vd%varID=-1              ! variables IDs
+      S(ng)%pioVar(i)%dkind=-1                 ! variables data kind
+      S(ng)%pioVar(i)%gtype=0                  ! variables C-grid type
+    END DO
+    DO i=1,MT
+      S(ng)%pioTrc(i)%vd%varID=-1              ! tracers IDs
+      S(ng)%pioTrc(i)%dkind=-1                 ! tracers data kind
+      S(ng)%pioTrc(i)%gtype=0                  ! tracers C-grid type
+    END DO
 #endif
 
-  i=0
-  DO j=1,Nfiles
-    i=i+1
-    S(ng)%files(j)=TRIM(ncname)                ! load multi-files
-    S(ng)%Nrec(j)=0                            ! record counter
-    S(ng)%time_min(j)=0.0_kind_real            ! starting time
-    S(ng)%time_max(j)=0.0_kind_real            ! ending time
-  END DO
-  S(ng)%label='ROMS-JEDI State Fields'         ! structure label
-  S(ng)%name=TRIM(S(ng)%files(1))              ! current filename
-  lstr=LEN_TRIM(S(ng)%name)
-  S(ng)%head=S(ng)%name(1:lstr-3)              ! head filename (without  ".nc")
-  S(ng)%base=S(ng)%name(1:lstr-3)              ! base filename (without  ".nc")
+    S(ng)%Nrec=0                               ! record counter
+    S(ng)%time_min=0.0_kind_real               ! starting time
+    S(ng)%time_max=0.0_kind_real               ! ending time
+
+    DO j=1,Nfiles
+      S(ng)%files(j)=TRIM(ncname)              ! load multi-files
+    END DO
+    S(ng)%label='ROMS-JEDI State Fields'       ! structure label
+    S(ng)%name=TRIM(S(ng)%files(1))            ! current filename
+    lstr=LEN_TRIM(S(ng)%name)
+    S(ng)%head=S(ng)%name(1:lstr-3)            ! head filename (without  ".nc")
+    S(ng)%base=S(ng)%name(1:lstr-3)            ! base filename (without  ".nc")
+
+  ELSE
+
+  ! Structure is recycled. That is, output NetCDF files are created according
+  ! to specified policy: a new file is create every policy interval (like one
+  ! record per file, daily files, etc.).  Reset essential variables.
+
+    S(ng)%Fcount=1
+    S(ng)%load=1
+    S(ng)%Rindex=0
+
+    S(ng)%Nrec=0
+    S(ng)%time_min=0.0_kind_real
+    S(ng)%time_max=0.0_kind_real
+
+    S(ng)%files(1)=TRIM(ncname)
+    S(ng)%name=TRIM(S(ng)%files(1))
+    lstr=LEN_TRIM(S(ng)%name)
+    S(ng)%head=S(ng)%name(1:lstr-3)
+    S(ng)%base=S(ng)%name(1:lstr-3)
+
+  END IF
 
 END SUBROUTINE roms_IOstruct
 
 ! ------------------------------------------------------------------------------
-!> Deallocates and initalize ROMS T_IO type structure.
+!> Deallocates ROMS T_IO type structure.
 
 SUBROUTINE roms_IOstruct_delete (S)
 
-  USE mod_param,   ONLY : Ngrids
   USE mod_iounits, ONLY : T_IO
 
   TYPE (T_IO), allocatable, intent(inout) :: S(:)       !< IO structure
 
-  integer                                 :: ng
-
-  ! Deallocate fields in the structure.
-
-  DO ng = 1, Ngrids
-    IF (associated(S(ng)%Nrec))     deallocate (S(ng)%Nrec)
-    IF (associated(S(ng)%time_min)) deallocate (S(ng)%time_min)
-    IF (associated(S(ng)%time_max)) deallocate (S(ng)%time_max)
-    IF (associated(S(ng)%Vid))      deallocate (S(ng)%Vid)
-    IF (associated(S(ng)%Tid))      deallocate (S(ng)%Tid)
-#if defined PIO_LIB
-    IF (associated(S(ng)%pioVar))   deallocate (S(ng)%pioVar)
-    IF (associated(S(ng)%pioTrc))   deallocate (S(ng)%pioTrc)
-#endif
-    IF (associated(S(ng)%files))    deallocate (S(ng)%files)
-  END DO
-
-  ! Deallocate structure.
+  ! Deallocate I/O structure. The Fortran 2003 standard allows deallocating
+  ! just the parent object to deallocate all array variables within its scope
+  ! automatically.
 
   IF (allocated(S))                 deallocate (S)
 
 END SUBROUTINE roms_IOstruct_delete
+
+! ------------------------------------------------------------------------------
+!> It set ROMS tracer index from ROMS-JEDI internal metadata name.
+
+FUNCTION roms_tracer_index (name) RESULT (tracer_index)
+
+  USE mod_scalars, ONLY : itemp, isalt
+
+  character (len=*), intent(in) :: name
+
+  integer                       :: tracer_index    !< returned value
+  character (len=1024)          :: Message
+
+  ! Set ROMS tracer-type variable array index.
+
+  SELECT CASE (TRIM(name))
+    CASE ('tocn')                          !< potential temperature
+      tracer_index = itemp
+    CASE ('socn')                          !< salinity
+      tracer_index = isalt
+    CASE DEFAULT
+      WRITE (Message,'(2a)')                                                 &
+            'roms_tracer_index: Cannot find an option for tracer variable: ',&
+            TRIM(name)
+      CALL abor1_ftn (TRIM(Message))
+  END SELECT
+
+END FUNCTION roms_tracer_index
 
 ! ------------------------------------------------------------------------------
 !> Closes state NetCDF file from IO structure.
@@ -572,26 +612,27 @@ END SUBROUTINE roms_close_ncfile
 ! ------------------------------------------------------------------------------
 !> Creates output state NetCDF file.
 
-SUBROUTINE roms_create_ncfile (ng, model, LocalPET, S)
+SUBROUTINE roms_create_ncfile (ng, model, LocalPET, S, metadata)
 
   USE mod_iounits, ONLY : T_IO
   USE mod_ncparam, ONLY : io_nf90, io_pio
 
-  integer,      intent(in   ) :: ng           !< nested grid number
-  integer,      intent(in   ) :: model        !< ROMS numerical kernel
-  integer,      intent(in   ) :: LocalPET     !< PET rank
-  TYPE (T_IO),  intent(inout) :: S(:)         !< ROMS I/O structure
+  integer,                    intent(in   ) :: ng          !< nested grid number
+  integer,                    intent(in   ) :: model       !< numerical kernel
+  integer,                    intent(in   ) :: LocalPET    !< PET rank
+  TYPE (T_IO),                intent(inout) :: S(:)        !< ROMS I/O structure
+  TYPE (roms_field_metadata), intent(in   ) :: metadata(:) !< field Metadata
 
   character (len=256)         :: text
 
   SELECT CASE (S(ng)%IOtype)
 
     CASE (io_nf90)
-      CALL roms_create_ncfile_nf90 (ng, model, LocalPET, S)
+      CALL roms_create_ncfile_nf90 (ng, model, LocalPET, S, metadata)
 
 #if defined PIO_LIB
     CASE (io_pio)
-      CALL roms_create_ncfile_pio (ng, model, LocalPET, S)
+      CALL roms_create_ncfile_pio (ng, model, LocalPET, S, metadata)
 #endif
 
     CASE DEFAULT
@@ -607,7 +648,7 @@ END SUBROUTINE roms_create_ncfile
 ! ------------------------------------------------------------------------------
 !> Creates output state file using the standard NetCDF library.
 
-SUBROUTINE roms_create_ncfile_nf90 (ng, model, LocalPET, S)
+SUBROUTINE roms_create_ncfile_nf90 (ng, model, LocalPET, S, metadata)
 
   USE mod_param
   USE mod_parallel
@@ -621,12 +662,13 @@ SUBROUTINE roms_create_ncfile_nf90 (ng, model, LocalPET, S)
   USE def_var_mod,  ONLY : def_var
   USE wrt_info_mod, ONLY : wrt_info
 
-  integer,       intent(in   ) :: ng           !< nested grid number
-  integer,       intent(in   ) :: model        !< ROMS numerical kernel
-  integer,       intent(in   ) :: LocalPET     !< PET rank
-  TYPE (T_IO),   intent(inout) :: S(:)         !< ROMS I/O structure
+  integer,                    intent(in   ) :: ng          !< nested grid number
+  integer,                    intent(in   ) :: model       !< numerical kernel
+  integer,                    intent(in   ) :: LocalPET    !< PET rank
+  TYPE (T_IO),                intent(inout) :: S(:)        !< ROMS I/O structure
+  TYPE (roms_field_metadata), intent(in   ) :: metadata(:) !< field Metadata
 
-  integer                      :: itrc
+  integer                      :: i, itrc
   integer                      :: DimIDs(nDimID)
   integer                      :: r2dgrd(3), u2dgrd(3), v2dgrd(3)
   integer                      :: r3dgrd(4), u3dgrd(4), v3dgrd(4)
@@ -729,83 +771,107 @@ SUBROUTINE roms_create_ncfile_nf90 (ng, model, LocalPET, S)
                        ncname, SetParAccess = .TRUE.),                       &
                nf90_noerr, io_nf90, __LINE__, MyFile)
 
-  ! Define free-surface.
+  ! Define state variables.
 
-  Vinfo( 1)=Vname(1,idFsur)
-  Vinfo( 2)=Vname(2,idFsur)
-  Vinfo( 3)=Vname(3,idFsur)
-  Vinfo(16)=Vname(1,idtime)
-  Vinfo(22)='coordinates'
-  Aval(5)=REAL(Iinfo(1,idFsur,ng),r8)
+  DO i = 1, SIZE(metadata)
 
-  CALL nc_err (def_var(ng, model, S(ng)%ncid, S(ng)%Vid(idFsur),             &
-                       NF_FOUT, 3, r2dgrd, Aval, Vinfo, ncname),             &
-               nf90_noerr, io_nf90, __LINE__, MyFile)
+    SELECT CASE (metadata(i)%name)
 
-  ! Define 2D U-momentum component.
+      CASE ('ssh')                             !< free-surface
 
-  Vinfo( 1)=Vname(1,idUbar)
-  Vinfo( 2)=Vname(2,idUbar)
-  Vinfo( 3)=Vname(3,idUbar)
-  Vinfo(16)=Vname(1,idtime)
-  Vinfo(22)='coordinates'
-  Aval(5)=REAL(Iinfo(1,idUbar,ng),r8)
+        Vinfo( 1)=Vname(1,idFsur)
+        Vinfo( 2)=Vname(2,idFsur)
+        Vinfo(21)=metadata(i)%getval_name
+        Vinfo( 3)=Vname(3,idFsur)
+        Vinfo(16)=Vname(1,idtime)
+        Vinfo(22)='coordinates'
+        Aval(5)=REAL(Iinfo(1,idFsur,ng),r8)
 
-  CALL nc_err (def_var(ng, model, S(ng)%ncid, S(ng)%Vid(idUbar),             &
-                       NF_FOUT, 3, u2dgrd, Aval, Vinfo, ncname),             &
-               nf90_noerr, io_nf90, __LINE__, MyFile)
+        CALL nc_err (def_var(ng, model, S(ng)%ncid, S(ng)%Vid(idFsur),       &
+                             NF_FOUT, 3, r2dgrd, Aval, Vinfo, ncname),       &
+                     nf90_noerr, io_nf90, __LINE__, MyFile)
 
-  ! Define 2D V-momentum component.
+      CASE ('u2docn')                          !< 2D U-momentum component
 
-  Vinfo( 1)=Vname(1,idVbar)
-  Vinfo( 2)=Vname(2,idVbar)
-  Vinfo( 3)=Vname(3,idVbar)
-  Vinfo(14)=Vname(4,idVbar)
-  Vinfo(16)=Vname(1,idtime)
-  Vinfo(22)='coordinates'
-  Aval(5)=REAL(Iinfo(1,idVbar,ng),r8)
+        Vinfo( 1)=Vname(1,idUbar)
+        Vinfo( 2)=Vname(2,idUbar)
+        Vinfo(21)=metadata(i)%getval_name
+        Vinfo( 3)=Vname(3,idUbar)
+        Vinfo(16)=Vname(1,idtime)
+        Vinfo(22)='coordinates'
+        Aval(5)=REAL(Iinfo(1,idUbar,ng),r8)
 
-  CALL nc_err (def_var(ng, model, S(ng)%ncid, S(ng)%Vid(idVbar),              &
-                       NF_FOUT, 3, v2dgrd, Aval, Vinfo, ncname),              &
-               nf90_noerr, io_nf90, __LINE__, MyFile)
+        CALL nc_err (def_var(ng, model, S(ng)%ncid, S(ng)%Vid(idUbar),       &
+                             NF_FOUT, 3, u2dgrd, Aval, Vinfo, ncname),       &
+                     nf90_noerr, io_nf90, __LINE__, MyFile)
 
-  ! Define 3D U-momentum component.
+      CASE ('v2docn')                          !< 2D v-momentum component
 
-  Vinfo( 1)=Vname(1,idUvel)
-  Vinfo( 2)=Vname(2,idUvel)
-  Vinfo( 3)=Vname(3,idUvel)
-  Vinfo(16)=Vname(1,idtime)
-  Vinfo(22)='coordinates'
-  Aval(5)=REAL(Iinfo(1,idUvel,ng),r8)
-  CALL nc_err (def_var(ng, model, S(ng)%ncid, S(ng)%Vid(idUvel),              &
-                       NF_FOUT, 4, u3dgrd, Aval, Vinfo, ncname),              &
-               nf90_noerr, io_nf90, __LINE__, MyFile)
+        Vinfo( 1)=Vname(1,idVbar)
+        Vinfo( 2)=Vname(2,idVbar)
+        Vinfo(21)=metadata(i)%getval_name
+        Vinfo( 3)=Vname(3,idVbar)
+        Vinfo(14)=Vname(4,idVbar)
+        Vinfo(16)=Vname(1,idtime)
+        Vinfo(22)='coordinates'
+        Aval(5)=REAL(Iinfo(1,idVbar,ng),r8)
 
-  ! Define 3D V-momentum component.
+        CALL nc_err (def_var(ng, model, S(ng)%ncid, S(ng)%Vid(idVbar),        &
+                             NF_FOUT, 3, v2dgrd, Aval, Vinfo, ncname),        &
+                     nf90_noerr, io_nf90, __LINE__, MyFile)
 
-  Vinfo( 1)=Vname(1,idVvel)
-  Vinfo( 2)=Vname(2,idVvel)
-  Vinfo( 3)=Vname(3,idVvel)
-  Vinfo(16)=Vname(1,idtime)
-  Vinfo(22)='coordinates'
-  Aval(5)=REAL(Iinfo(1,idVvel,ng),r8)
-  CALL nc_err (def_var(ng, model, S(ng)%ncid, S(ng)%Vid(idVvel),              &
-                       NF_FOUT, 4, v3dgrd, Aval, Vinfo, ncname),              &
-               nf90_noerr, io_nf90, __LINE__, MyFile)
+      CASE ('uocn')                            !< 3D U-momentum component
 
-  ! Define tracer type variables.
+        Vinfo( 1)=Vname(1,idUvel)
+        Vinfo( 2)=Vname(2,idUvel)
+        Vinfo(21)=metadata(i)%getval_name
+        Vinfo( 3)=Vname(3,idUvel)
+        Vinfo(16)=Vname(1,idtime)
+        Vinfo(22)='coordinates'
+        Aval(5)=REAL(Iinfo(1,idUvel,ng),r8)
 
-  DO itrc=1,NT(ng)
-    Vinfo( 1)=Vname(1,idTvar(itrc))
-    Vinfo( 2)=Vname(2,idTvar(itrc))
-    Vinfo( 3)=Vname(3,idTvar(itrc))
-    Vinfo(16)=Vname(1,idtime)
-    Vinfo(22)='coordinates'
-    Aval(5)=REAL(r3dvar,r8)
+        CALL nc_err (def_var(ng, model, S(ng)%ncid, S(ng)%Vid(idUvel),        &
+                             NF_FOUT, 4, u3dgrd, Aval, Vinfo, ncname),        &
+                     nf90_noerr, io_nf90, __LINE__, MyFile)
 
-    CALL nc_err (def_var(ng, model, S(ng)%ncid, S(ng)%Tid(itrc),             &
-                         NF_FOUT, 4, r3dgrd, Aval, Vinfo, ncname),           &
-                 nf90_noerr, io_nf90, __LINE__, MyFile)
+      CASE ('vocn')                            !< 3D V-momentum component
+
+        Vinfo( 1)=Vname(1,idVvel)
+        Vinfo( 2)=Vname(2,idVvel)
+        Vinfo(21)=metadata(i)%getval_name
+        Vinfo( 3)=Vname(3,idVvel)
+        Vinfo(16)=Vname(1,idtime)
+        Vinfo(22)='coordinates'
+        Aval(5)=REAL(Iinfo(1,idVvel,ng),r8)
+
+        CALL nc_err (def_var(ng, model, S(ng)%ncid, S(ng)%Vid(idVvel),        &
+                             NF_FOUT, 4, v3dgrd, Aval, Vinfo, ncname),        &
+                    nf90_noerr, io_nf90, __LINE__, MyFile)
+
+      CASE ('tocn', 'socn')                    !< tracer-type variables
+
+        itrc = roms_tracer_index(metadata(i)%name)
+        Vinfo( 1)=Vname(1,idTvar(itrc))
+        Vinfo( 2)=Vname(2,idTvar(itrc))
+        Vinfo(21)=metadata(i)%getval_name
+        Vinfo( 3)=Vname(3,idTvar(itrc))
+        Vinfo(16)=Vname(1,idtime)
+        Vinfo(22)='coordinates'
+        Aval(5)=REAL(r3dvar,r8)
+
+        CALL nc_err (def_var(ng, model, S(ng)%ncid, S(ng)%Tid(itrc),         &
+                             NF_FOUT, 4, r3dgrd, Aval, Vinfo, ncname),       &
+                     nf90_noerr, io_nf90, __LINE__, MyFile)
+
+      CASE DEFAULT
+  
+        WRITE (Message,'(4a)')                                               &
+              'roms_create_ncfile::nf90: Cannot find an option to define = ',&
+              metadata(i)%name, " - ", metadata(i)%getval_name
+        CALL abor1_ftn (TRIM(Message))
+
+    END SELECT
+
   END DO
 
   ! Leave definition mode.
@@ -1389,7 +1455,7 @@ END SUBROUTINE roms_wrt_info_nf90
 ! ------------------------------------------------------------------------------
 !> Creates output state file using the Paralell-IO (PIO) library.
 
-SUBROUTINE roms_create_ncfile_pio (ng, model, LocalPET, S)
+SUBROUTINE roms_create_ncfile_pio (ng, model, LocalPET, S, metadata)
 
   USE mod_param
   USE mod_ncparam
@@ -1402,13 +1468,14 @@ SUBROUTINE roms_create_ncfile_pio (ng, model, LocalPET, S)
   USE def_var_mod,  ONLY : def_var
   USE wrt_info_mod, ONLY : wrt_info
 
-  integer,              intent(in) :: ng           !< nested grid number
-  integer,              intent(in) :: model        !< ROMS numerical kernel
-  integer,              intent(in) :: LocalPET     !< PET rank
-  character (len=*),    intent(in) :: ncname       !< NetCDF filename
-  TYPE (T_IO),       intent(inout) :: S(:)         !< ROMS I/O structure
+  integer,                    intent(in   ) :: ng          !< nested grid number
+  integer,                    intent(in   ) :: model       !< numerical kernel
+  integer,                    intent(in   ) :: LocalPET    !< PET rank
+  character (len=*),          intent(in   ) :: ncname      !< NetCDF filename
+  TYPE (T_IO),                intent(inout) :: S(:)        !< ROMS I/O structure
+  TYPE (roms_field_metadata), intent(in   ) :: metadata(:) !< field Metadata
 
-  integer                          :: itrc
+  integer                          :: i, itrc
   integer                          :: DimIDs(nDimID)
   integer                          :: r2dgrd(3), u2dgrd(3), v2dgrd(3)
   integer                          :: r3dgrd(4), u3dgrd(4), v3dgrd(4)
@@ -1514,96 +1581,124 @@ SUBROUTINE roms_create_ncfile_pio (ng, model, LocalPET, S)
                        ncname, SetParAccess = .TRUE.),                       &
                PIO_noerr, io_pio, __LINE__, MyFile)
 
-  ! Define free-surface.
+  ! Define state variables.
 
-  Vinfo( 1)=Vname(1,idFsur)
-  Vinfo( 2)=Vname(2,idFsur)
-  Vinfo( 3)=Vname(3,idFsur)
-  Vinfo(16)=Vname(1,idtime)
-  Vinfo(22)='coordinates'
-  Aval(5)=REAL(Iinfo(1,idFsur,ng),r8)
-  S(ng)%pioVar(idFsur)%dkind=PIO_FOUT
-  S(ng)%pioVar(idFsur)%gtype=r2dvar
-  CALL nc_err (def_var(ng, model, S(ng)%pioFile,                             &
-                       S(ng)%pioVar(idFsur)%vd,                              & 
-                       PIO_FOUT, 3, r2dgrd, Aval, Vinfo, ncname),            &
-               PIO_noerr, io_pio, __LINE__, MyFile)
+  DO i = 1, SIZE(metadata)
 
-  ! Define 2D U-momentum component.
+    SELECT CASE (metadata(i)%name)
 
-  Vinfo( 1)=Vname(1,idUbar)
-  Vinfo( 2)=Vname(2,idUbar)
-  Vinfo( 3)=Vname(3,idUbar)
-  Vinfo(16)=Vname(1,idtime)
-  Vinfo(22)='coordinates'
-  Aval(5)=REAL(Iinfo(1,idUbar,ng),r8)
-  S(ng)%pioVar(idUbar)%dkind=PIO_FOUT
-  S(ng)%pioVar(idUbar)%gtype=u2dvar
-  CALL nc_err (def_var(ng, model, S(ng)%pioFile,                             &
-                       S(ng)%pioVar(idUbar)%vd,                              &
-                       PIO_FOUT, 3, u2dgrd, Aval, Vinfo, ncname),            &
-               PIO_noerr, io_pio, __LINE__, MyFile)
+      CASE ('ssh')                             !< free-surface
 
-  ! Define 2D V-momentum component.
+        Vinfo( 1)=Vname(1,idFsur)
+        Vinfo( 2)=Vname(2,idFsur)
+        Vinfo(21)=metadata(i)%getval_name
+        Vinfo( 3)=Vname(3,idFsur)
+        Vinfo(16)=Vname(1,idtime)
+        Vinfo(22)='coordinates'
+        Aval(5)=REAL(Iinfo(1,idFsur,ng),r8)
+        S(ng)%pioVar(idFsur)%dkind=PIO_FOUT
+        S(ng)%pioVar(idFsur)%gtype=r2dvar
 
-  Vinfo( 1)=Vname(1,idVbar)
-  Vinfo( 2)=Vname(2,idVbar)
-  Vinfo( 3)=Vname(3,idVbar)
-  Vinfo(16)=Vname(1,idtime)
-  Vinfo(22)='coordinates'
-  Aval(5)=REAL(Iinfo(1,idVbar,ng),r8)
-  S(ng)%pioVar(idVbar)%dkind=PIO_FOUT
-  S(ng)%pioVar(idVbar)%gtype=v2dvar
-  CALL nc_err (def_var(ng, model, S(ng)%pioFile,                             &
-                       S(ng)%pioVar(idVbar)%vd,                              &
-                       PIO_FOUT, 3, v2dgrd, Aval, Vinfo, ncname),            &
-               PIO_noerr, io_pio, __LINE__, MyFile)
+        CALL nc_err (def_var(ng, model, S(ng)%pioFile,                       &
+                             S(ng)%pioVar(idFsur)%vd,                        & 
+                             PIO_FOUT, 3, r2dgrd, Aval, Vinfo, ncname),      &
+                     PIO_noerr, io_pio, __LINE__, MyFile)
 
-  ! Define 3D U-momentum component.
+      CASE ('u2docn')                          !< 2D U-momentum component
 
-  Vinfo( 1)=Vname(1,idUvel)
-  Vinfo( 2)=Vname(2,idUvel)
-  Vinfo( 3)=Vname(3,idUvel)
-  Vinfo(16)=Vname(1,idtime)
-  Vinfo(22)='coordinates'
-  Aval(5)=REAL(Iinfo(1,idUvel,ng),r8)
-  S(ng)%pioVar(idUvel)%dkind=PIO_FOUT
-  S(ng)%pioVar(idUvel)%gtype=u3dvar
-  CALL nc_err (def_var(ng, model, S(ng)%pioFile,                             &
-                       S(ng)%pioVar(idUvel)%vd,                              &
-                       PIO_FOUT, 4, u3dgrd, Aval, Vinfo, ncname),            &
-               PIO_noerr, io_pio, __LINE__, MyFile)
+        Vinfo( 1)=Vname(1,idUbar)
+        Vinfo( 2)=Vname(2,idUbar)
+        Vinfo(21)=metadata(i)%getval_name
+        Vinfo( 3)=Vname(3,idUbar)
+        Vinfo(16)=Vname(1,idtime)
+        Vinfo(22)='coordinates'
+        Aval(5)=REAL(Iinfo(1,idUbar,ng),r8)
+        S(ng)%pioVar(idUbar)%dkind=PIO_FOUT
+        S(ng)%pioVar(idUbar)%gtype=u2dvar
 
-  ! Define 3D V-momentum component.
+        CALL nc_err (def_var(ng, model, S(ng)%pioFile,                       &
+                             S(ng)%pioVar(idUbar)%vd,                        &
+                             PIO_FOUT, 3, u2dgrd, Aval, Vinfo, ncname),      &
+                     PIO_noerr, io_pio, __LINE__, MyFile)
 
-  Vinfo( 1)=Vname(1,idVvel)
-  Vinfo( 2)=Vname(2,idVvel)
-  Vinfo( 3)=Vname(3,idVvel)
-  Vinfo(16)=Vname(1,idtime)
-  Vinfo(22)='coordinates'
-  Aval(5)=REAL(Iinfo(1,idVvel,ng),r8)
-  S(ng)%pioVar(idVvel)%dkind=PIO_FOUT
-  S(ng)%pioVar(idVvel)%gtype=v3dvar
-  CALL nc_err (def_var(ng, model, S(ng)%pioFile,                              &
-                       S(ng)%pioVar(ifield)%vd,                               &
-                       PIO_FOUT, 4, v3dgrd, Aval, Vinfo, ncname),             &
-               PIO_noerr, io_pio, __LINE__, MyFile)
+      CASE ('v2docn')                          !< 2D v-momentum component
 
-  ! Define tracer type variables.
+        Vinfo( 1)=Vname(1,idVbar)
+        Vinfo( 2)=Vname(2,idVbar)
+        Vinfo(21)=metadata(i)%getval_name
+        Vinfo( 3)=Vname(3,idVbar)
+        Vinfo(16)=Vname(1,idtime)
+        Vinfo(22)='coordinates'
+        Aval(5)=REAL(Iinfo(1,idVbar,ng),r8)
+        S(ng)%pioVar(idVbar)%dkind=PIO_FOUT
+        S(ng)%pioVar(idVbar)%gtype=v2dvar
 
-  DO itrc=1,NT(ng)
-    Vinfo( 1)=Vname(1,idTvar(itrc))
-    Vinfo( 2)=Vname(2,idTvar(itrc))
-    Vinfo( 3)=Vname(3,idTvar(itrc))
-    Vinfo(16)=Vname(1,idtime)
-    Vinfo(22)='coordinates'
-    Aval(5)=REAL(r3dvar,r8)
-    S(ng)%pioTrc(itrc)%dkind=PIO_FOUT
-    S(ng)%pioTrc(itrc)%gtype=r3dvar
-    CALL nc_err (def_var(ng, model, S(ng)%pioFile,                           &
-                         S(ng)%pioTrc(itrc)%vd,                              &
-                         PIO_FOUT, 4, r3dgrd, Aval, Vinfo, ncname),          &
-                 PIO_noerr, io_pio, __LINE__, MyFile)
+        CALL nc_err (def_var(ng, model, S(ng)%pioFile,                       &
+                             S(ng)%pioVar(idVbar)%vd,                        &
+                             PIO_FOUT, 3, v2dgrd, Aval, Vinfo, ncname),      &
+                     PIO_noerr, io_pio, __LINE__, MyFile)
+
+      CASE ('uocn')                            !< 3D U-momentum component
+
+        Vinfo( 1)=Vname(1,idUvel)
+        Vinfo( 2)=Vname(2,idUvel)
+        Vinfo(21)=metadata(i)%getval_name
+        Vinfo( 3)=Vname(3,idUvel)
+        Vinfo(16)=Vname(1,idtime)
+        Vinfo(22)='coordinates'
+        Aval(5)=REAL(Iinfo(1,idUvel,ng),r8)
+        S(ng)%pioVar(idUvel)%dkind=PIO_FOUT
+        S(ng)%pioVar(idUvel)%gtype=u3dvar
+
+        CALL nc_err (def_var(ng, model, S(ng)%pioFile,                       &
+                             S(ng)%pioVar(idUvel)%vd,                        &
+                             PIO_FOUT, 4, u3dgrd, Aval, Vinfo, ncname),      &
+                     PIO_noerr, io_pio, __LINE__, MyFile)
+
+      CASE ('vocn')                            !< 3D V-momentum component
+
+        Vinfo( 1)=Vname(1,idVvel)
+        Vinfo( 2)=Vname(2,idVvel)
+        Vinfo(21)=metadata(i)%getval_name
+        Vinfo( 3)=Vname(3,idVvel)
+        Vinfo(16)=Vname(1,idtime)
+        Vinfo(22)='coordinates'
+        Aval(5)=REAL(Iinfo(1,idVvel,ng),r8)
+        S(ng)%pioVar(idVvel)%dkind=PIO_FOUT
+        S(ng)%pioVar(idVvel)%gtype=v3dvar
+
+        CALL nc_err (def_var(ng, model, S(ng)%pioFile,                        &
+                             S(ng)%pioVar(ifield)%vd,                         &
+                             PIO_FOUT, 4, v3dgrd, Aval, Vinfo, ncname),       &
+                     PIO_noerr, io_pio, __LINE__, MyFile)
+
+      CASE ('tocn', 'socn')                    !< tracer-type variables
+
+        itrc = roms_tracer_index(metadata(i)%name)
+        Vinfo( 1)=Vname(1,idTvar(itrc))
+        Vinfo( 2)=Vname(2,idTvar(itrc))
+        Vinfo(21)=metadata(i)%getval_name
+        Vinfo( 3)=Vname(3,idTvar(itrc))
+        Vinfo(16)=Vname(1,idtime)
+        Vinfo(22)='coordinates'
+        Aval(5)=REAL(r3dvar,r8)
+        S(ng)%pioTrc(itrc)%dkind=PIO_FOUT
+        S(ng)%pioTrc(itrc)%gtype=r3dvar
+
+        CALL nc_err (def_var(ng, model, S(ng)%pioFile,                       &
+                             S(ng)%pioTrc(itrc)%vd,                          &
+                             PIO_FOUT, 4, r3dgrd, Aval, Vinfo, ncname),      &
+                     PIO_noerr, io_pio, __LINE__, MyFile)
+
+      CASE DEFAULT
+  
+        WRITE (Message,'(4a)')                                               &
+              'roms_create_ncfile::pio: Cannot find an option to define = ', &
+              metadata(i)%name, " - ", metadata(i)%getval_name
+        CALL abor1_ftn (TRIM(Message))
+
+    END SELECT
+
   END DO
 
   ! Leave definition mode.

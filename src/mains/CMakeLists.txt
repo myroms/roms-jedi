@@ -6,9 +6,9 @@ ecbuild_add_executable( TARGET  romsjedi_hofx.x
                         SOURCES HofX.cc
                         LIBS    romsjedi )
 
-#ecbuild_add_executable( TARGET  romsjedi_forecast.x
-#                        SOURCES Forecast.cc
-#                        LIBS    romsjedi )
+ecbuild_add_executable( TARGET  romsjedi_forecast.x
+                        SOURCES Forecast.cc
+                        LIBS    romsjedi )
 
 #ecbuild_add_executable( TARGET  romsjedi_letkf.x
 #                        SOURCES LETKF.cc

@@ -73,6 +73,7 @@ else
   ${MPIrun} ../../bin/romsjedi_hofx.x testinput/hofx_4d.yaml
   ${MPIrun} test_romsjedi_increment testinput/increment.yaml
   ${MPIrun} test_romsjedi_model testinput/model.yaml
+  ${MPIrun} ../../bin/romsjedi_forecast.x testinput/forecast_roms.yaml
 fi
 
 exit 0

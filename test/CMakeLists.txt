@@ -7,6 +7,7 @@
 
 list( APPEND romsjedi_test_input
   testinput/errorcovariance.yaml
+  testinput/forecast_roms.yaml
   testinput/geometry.yaml
   testinput/geometryiterator.yaml
   testinput/getvalues.yaml
@@ -45,9 +46,8 @@ set( romsjedi_test_ref
   testref/ensrecenter.test
   testref/ensvariance.test
   testref/forecast_identity.test
-  testref/forecast_mom6.test
-  testref/forecast_mom6_bgc.test
   testref/forecast_pseudo.test
+  testref/forecast_roms.test
   testref/hofx_nomodel.test
   testref/hofx_3d.test
   testref/hofx_4d.test
@@ -93,46 +93,46 @@ execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
 #================================================================================
 
 ecbuild_add_test(
-  TARGET  test_romsjedi_geometry
-  MPI     2
-  SOURCES executables/TestGeometry.cc
-  ARGS    testinput/geometry.yaml
-  LIBS    romsjedi )
+  TARGET       test_romsjedi_geometry
+  MPI          2
+  SOURCES      executables/TestGeometry.cc
+  ARGS         testinput/geometry.yaml
+  LIBS         romsjedi )
 
 ecbuild_add_test(
- TARGET  test_romsjedi_geometryiterator
- MPI     2
- SOURCES executables/TestGeometryIterator.cc
- ARGS    testinput/geometryiterator.yaml
- LIBS    romsjedi )
+ TARGET        test_romsjedi_geometryiterator
+ MPI           2
+ SOURCES       executables/TestGeometryIterator.cc
+ ARGS          testinput/geometryiterator.yaml
+ LIBS          romsjedi )
 
 ecbuild_add_test(
-  TARGET  test_romsjedi_getvalues
-  MPI     2
-  SOURCES executables/TestGetValues.cc
-  ARGS    testinput/getvalues.yaml
-  LIBS    romsjedi )
+  TARGET       test_romsjedi_getvalues
+  MPI          2
+  SOURCES      executables/TestGetValues.cc
+  ARGS         testinput/getvalues.yaml
+  LIBS         romsjedi )
 
 ecbuild_add_test(
-  TARGET  test_romsjedi_increment
-  MPI     2
-  SOURCES executables/TestIncrement.cc
- ARGS    testinput/increment.yaml
- LIBS    romsjedi )
+  TARGET       test_romsjedi_increment
+  MPI          2
+  SOURCES      executables/TestIncrement.cc
+  ARGS         testinput/increment.yaml
+ LIBS          romsjedi )
 
 #ecbuild_add_test(
-#  TARGET  test_romsjedi_lineargetvalues
-#  MPI     2
-#  SOURCES executables/TestLinearGetValues.cc
-#  ARGS    testinput/lineargetvalues.yaml
-#  LIBS    romsjedi )
+#  TARGET       test_romsjedi_lineargetvalues
+#  MPI          2
+#  SOURCES      executables/TestLinearGetValues.cc
+#  ARGS         testinput/lineargetvalues.yaml
+#  LIBS         romsjedi )
 
 ecbuild_add_test(
-  TARGET  test_romsjedi_state
-  MPI     2
-  SOURCES executables/TestState.cc
-  ARGS    testinput/state.yaml
-  LIBS    romsjedi )
+  TARGET       test_romsjedi_state
+  MPI          2
+  SOURCES      executables/TestState.cc
+  ARGS         testinput/state.yaml
+  LIBS         romsjedi )
 
 ecbuild_add_test(
   TARGET       test_romsjedi_hofx_nomodel
@@ -149,38 +149,45 @@ ecbuild_add_test(
   TEST_DEPENDS test_romsjedi_geometry  )
 
 ecbuild_add_test(
-  TARGET  test_romsjedi_model
+  TARGET       test_romsjedi_forecast_roms
   MPI          2
-  SOURCES executables/TestModel.cc
-  ARGS    testinput/model.yaml
-  LIBS    romsjedi )
+  COMMAND      romsjedi_forecast.x
+  ARGS         testinput/forecast_roms.yaml
+  LIBS         romsjedi )
 
-# TODO(template_impl) ecbuild_add_test(
-# TODO(template_impl)   TARGET  test_romsjedi_modelauxcontrol
-# TODO(template_impl)   SOURCES executables/TestModelAuxControl.cc
-# TODO(template_impl)   ARGS    testinput/modelaux.yaml
-# TODO(template_impl)   LIBS    romsjedi )
+ecbuild_add_test(
+  TARGET       test_romsjedi_model
+  MPI          2
+  SOURCES      executables/TestModel.cc
+  ARGS         testinput/model.yaml
+  LIBS         romsjedi )
 
-# TODO(template_impl) ecbuild_add_test(
-# TODO(template_impl)   TARGET  test_romsjedi_errorcovariance
-# TODO(template_impl)   SOURCES executables/TestErrorCovariance.cc
-# TODO(template_impl)   ARGS    testinput/errorcovariance.yaml
-# TODO(template_impl)   LIBS    romsjedi )
+#ecbuild_add_test(
+#  TARGET       test_romsjedi_modelauxcontrol
+#  SOURCES      executables/TestModelAuxControl.cc
+#  ARGS         testinput/modelaux.yaml
+#  LIBS         romsjedi )
 
-# TODO(template_impl) ecbuild_add_test(
-# TODO(template_impl)   TARGET  test_romsjedi_modelauxcovariance
-# TODO(template_impl)   SOURCES executables/TestModelAuxCovariance.cc
-# TODO(template_impl)   ARGS    testinput/modelaux.yaml
-# TODO(template_impl)   LIBS    romsjedi )
+#ecbuild_add_test(
+#  TARGET       test_romsjedi_errorcovariance
+#  SOURCES      executables/TestErrorCovariance.cc
+#  ARGS         testinput/errorcovariance.yaml
+#  LIBS         romsjedi )
 
-# TODO(template_impl) ecbuild_add_test(
-# TODO(template_impl)   TARGET  test_romsjedi_modelauxincrement
-# TODO(template_impl)   SOURCES executables/TestModelAuxIncrement.cc
-# TODO(template_impl)   ARGS    testinput/modelaux.yaml
-# TODO(template_impl)   LIBS    romsjedi )
+#ecbuild_add_test(
+#  TARGET       test_romsjedi_modelauxcovariance
+#  SOURCES      executables/TestModelAuxCovariance.cc
+#  ARGS         testinput/modelaux.yaml
+#  LIBS         romsjedi )
 
-# TODO(template_impl) ecbuild_add_test(
-# TODO(template_impl)   TARGET  test_romsjedi_linearmodel
-# TODO(template_impl)   SOURCES executables/TestLinearModel.cc
-# TODO(template_impl)   ARGS    testinput/linearmodel.yaml
-# TODO(template_impl)   LIBS    romsjedi )
+#ecbuild_add_test(
+#  TARGET       test_romsjedi_modelauxincrement
+#  SOURCES      executables/TestModelAuxIncrement.cc
+#  ARGS         testinput/modelaux.yaml
+#  LIBS         romsjedi )
+
+#ecbuild_add_test(
+#  TARGET       test_romsjedi_linearmodel
+#  SOURCES      executables/TestLinearModel.cc
+#  ARGS         testinput/linearmodel.yaml
+#  LIBS         romsjedi )
