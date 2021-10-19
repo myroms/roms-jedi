@@ -71,6 +71,8 @@ else
   ${MPIrun} test_romsjedi_getvalues testinput/getvalues.yaml
   ${MPIrun} ../../bin/romsjedi_hofx_nomodel.x testinput/hofx_nomodel.yaml
   ${MPIrun} ../../bin/romsjedi_hofx.x testinput/hofx_4d.yaml
+  ${MPIrun} ../../bin/romsjedi_hofx.x testinput/makeobs_4d.yaml
+  ${MPIrun} ../../bin/romsjedi_hofx.x testinput/makeobs_4d_perturbed.yaml
   ${MPIrun} test_romsjedi_increment testinput/increment.yaml
   ${MPIrun} test_romsjedi_model testinput/model.yaml
   ${MPIrun} ../../bin/romsjedi_forecast.x testinput/forecast_roms.yaml

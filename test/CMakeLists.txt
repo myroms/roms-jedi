@@ -16,6 +16,8 @@ list( APPEND romsjedi_test_input
   testinput/increment.yaml
   testinput/lineargetvalues.yaml
   testinput/linearmodel.yaml
+  testinput/makeobs_4d.yaml
+  testinput/makeobs_4d_perturbed.yaml
   testinput/model.yaml
   testinput/state.yaml
   )
@@ -54,7 +56,8 @@ set( romsjedi_test_ref
   testref/hybridgain.test
   testref/letkf_observer.test
   testref/letkf_solver.test
-  testref/makeobs.test
+  testref/makeobs_4d.test
+  testref/makeobs_4d_perturbed.test
   testref/parameters_bump_cor_nicas.test
   testref/parameters_bump_cov_lct.test
 )
@@ -147,6 +150,20 @@ ecbuild_add_test(
   COMMAND      romsjedi_hofx.x
   ARGS         testinput/hofx_4d.yaml
   TEST_DEPENDS test_romsjedi_geometry  )
+
+ecbuild_add_test(
+  TARGET       test_romsjedi_makeobs_4d
+  MPI          2
+  COMMAND      romsjedi_hofx.x
+  ARGS         testinput/makeobs_4d.yaml
+  TEST_DEPENDS test_romsjedi_hofx_4d )
+
+ecbuild_add_test(
+  TARGET       test_romsjedi_makeobs_4d_perturbed
+  MPI          2
+  COMMAND      romsjedi_hofx.x
+  ARGS         testinput/makeobs_4d_perturbed.yaml
+  TEST_DEPENDS test_romsjedi_hofx_4d )
 
 ecbuild_add_test(
   TARGET       test_romsjedi_forecast_roms
