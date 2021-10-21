@@ -30,7 +30,7 @@ namespace romsjedi {
 
   extern "C" {
     void roms_geom_setup_f90(F90geom &,
-                             const eckit::Configuration * const &,
+                             const eckit::Configuration &,
                              const eckit::mpi::Comm *);
     void roms_geom_clone_f90(F90geom &, const F90geom &);
     void roms_geom_delete_f90(F90geom &);

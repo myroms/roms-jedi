@@ -58,7 +58,7 @@ SUBROUTINE c_roms_geom_setup (c_key_self, c_conf, c_comm)                    &
                        BIND (c, name='roms_geom_setup_f90')
 
   integer (c_int),     intent(inout) :: c_key_self
-  TYPE (c_ptr),        intent(in   ) :: c_conf
+  TYPE (c_ptr), value, intent(in   ) :: c_conf
   TYPE (c_ptr), value, intent(in   ) :: c_comm
 
   TYPE (roms_geom), pointer          :: self

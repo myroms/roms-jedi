@@ -16,14 +16,6 @@ state test:
     date: 2004-01-03T00:00:00Z
     state variables: [ssh, uocn, vocn, tocn, socn]
 
-  statefileout2:                               # Creates a state NetCDF file
-    datadir: testoutput/   
-    prefix: wc13_roms
-    exp: ini
-    type: state
-    date: 2004-01-03T00:00:00Z
-    state variables: [ssh, uocn, vocn, tocn, socn]
-
   state generate:                              # Generates an analytical state
     read_from_file: 0
     analytic init:

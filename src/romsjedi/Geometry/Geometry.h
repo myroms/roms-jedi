@@ -18,6 +18,9 @@
 
 #include "oops/util/ObjectCounter.h"
 #include "oops/util/Printable.h"
+#include "oops/util/parameters/Parameter.h"
+#include "oops/util/parameters/Parameters.h"
+#include "oops/util/parameters/RequiredParameter.h"
 
 #include "romsjedi/Fortran.h"
 #include "romsjedi/Geometry/GeometryFortran.h"
@@ -50,16 +53,35 @@ namespace romsjedi {
 
 namespace romsjedi {
 
+  /// \brief Parameter used to initialize ROMS Geometry object
+
+  class GeometryParameters : public oops::Parameters {
+    OOPS_CONCRETE_PARAMETERS(GeometryParameters, Parameters)
+
+   public:
+    oops::RequiredParameter<std::string> projectDir{
+      "project_dir", "Project directory", this};
+    oops::RequiredParameter<std::string> romsStdinp{
+      "roms_stdinp", "ROMS standard input file", this};
+    oops::RequiredParameter<std::string> fldsMetadata{
+      "fields metadata", "ROMS-JEDI fields metadata file", this};
+    oops::RequiredParameter<int> ng{
+      "ng", "ROMS nested grid number", this};
+  };
+
   // Geometry class
 
   class Geometry : public util::Printable,
                    private util::ObjectCounter<Geometry> {
    public:
+    typedef GeometryParameters Parameters_;
+
     static const std::string classname() {return "roms::Geometry";}
 
     // constructors and destructor
 
-    explicit Geometry(const eckit::Configuration &, const eckit::mpi::Comm &);
+    explicit Geometry(const GeometryParameters & parameters,
+                      const eckit::mpi::Comm &);
     Geometry(const Geometry &);
     ~Geometry();
 

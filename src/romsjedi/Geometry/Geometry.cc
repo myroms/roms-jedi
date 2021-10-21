@@ -21,11 +21,10 @@ namespace romsjedi {
 
 // ----------------------------------------------------------------------------
 
-  Geometry::Geometry(const eckit::Configuration & conf,
-                     const eckit::mpi::Comm & comm)
-    : comm_(comm) {
-    const eckit::Configuration * configc = &conf;
-    roms_geom_setup_f90(keyGeom_, &conf, &comm);
+  Geometry::Geometry(const GeometryParameters & params,
+                     const eckit::mpi::Comm & comm) : comm_(comm) {
+    // Geometry constructor
+    roms_geom_setup_f90(keyGeom_, params.toConfiguration(), &comm);
 
     // Set ATLAS lon/lat field
     atlasFieldSet_.reset(new atlas::FieldSet());
