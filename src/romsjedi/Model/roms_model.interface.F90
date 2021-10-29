@@ -39,9 +39,9 @@ CONTAINS
 SUBROUTINE roms_model_create_c (c_conf, c_key_geom, c_key_self)              &
                           BIND (c, name='roms_model_create_f90')
 
-  integer (c_int), intent(inout) :: c_key_self   !< Model object pointer
-  integer (c_int), intent(in   ) :: c_key_geom   !< Geometry object pointer
-  TYPE (c_ptr),    intent(in   ) :: c_conf       !< Config object pointer
+  integer (c_int),     intent(inout) :: c_key_self   !< Model object pointer
+  integer (c_int),     intent(in   ) :: c_key_geom   !< Geometry object pointer
+  TYPE (c_ptr), value, intent(in   ) :: c_conf       !< Config object pointer
 
   TYPE (roms_model), pointer     :: self
   TYPE (roms_geom),  pointer     :: geom

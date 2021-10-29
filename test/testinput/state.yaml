@@ -8,28 +8,27 @@ geometry:
   ng: 1                                        # ROMS nested grid number
 
 state test:
+  date: &date 2004-01-03T00:00:00Z
+
   statefile:                                   # Reads an existing state NetCDF file
-    read_from_file: 1
     fields_dir: jediroms_wc13/Data/
     fields_filename: wc13_roms_ini_20040103.nc
     fields_record: 1
-    date: 2004-01-03T00:00:00Z
+    date: *date
     state variables: [ssh, uocn, vocn, tocn, socn]
 
   state generate:                              # Generates an analytical state
-    read_from_file: 0
     analytic init:
       method: 'ana_ocnfields'
       T0: 25.0                                 # background temperature (C)
       S0: 32.5                                 # background salinity
       U0: 1.2                                  # background U-velocity (m/s)
       V0: 0.7                                  # background V-velocity (m/s)
-    date: 2004-01-03T00:00:00Z
+    date: *date
     state variables: [ssh, uocn, vocn, tocn, socn]
 
   norm file: 8609.0895530693979
   norm generated state: 9463.4685549140231
-  date: 2004-01-03T00:00:00Z
   tolerance: 1.0e-12
 
 # NOTES:

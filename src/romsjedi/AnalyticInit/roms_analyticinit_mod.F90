@@ -30,7 +30,7 @@ USE ufo_locations_mod,    ONLY : ufo_locations
 implicit none
 
 PRIVATE
-PUBLIC  :: roms_analytic_init
+PUBLIC  :: roms_analytic_geovals
 
 logical :: LdebugAnalyticInit = .FALSE.
 
@@ -41,10 +41,11 @@ CONTAINS
 !! over-written with analytical values except the bathymetry and the level
 !! depths.
 
-SUBROUTINE roms_analytic_init (self, locs, T0, S0, U0, V0)
+SUBROUTINE roms_analytic_geovals (self, locs, method, T0, S0, U0, V0)
 
   TYPE (ufo_geovals),    intent(inout) :: self        !< GeoVaLs object
   TYPE (ufo_locations),  intent(in   ) :: locs        !< observation locations
+  character (len=*),     intent(in   ) :: method      !< analytic method
   real (kind=kind_real), intent(in   ) :: T0          !< background temperature
   real (kind=kind_real), intent(in   ) :: S0          !< background salinity
   real (kind=kind_real), intent(in   ) :: U0          !< background U-velocity
@@ -87,30 +88,62 @@ SUBROUTINE roms_analytic_init (self, locs, T0, S0, U0, V0)
 
   mask = 1.0_kind_real    ! Assume that all GeoVaLs are at water locations
 
-  DO ivar = 1, nvar
-    DO iloc = 1, self%geovals(ivar)%nlocs
-      DO ival = 1, self%geovals(ivar)%nval    
-        value = ana_fields(TRIM(self%variables(ivar)),                       &
-                           mask,                                             &
-                           locs_lons(iloc),                                  &
-                           locs_lats(iloc),                                  &
-                           self%geovals(nvar)%vals(ival,iloc),               &
-                           self%geovals(nvar-1)%vals(1,iloc),                &
-                           Tb = T0,                                          &
-                           Sb = S0,                                          &
-                           Ub = U0,                                          &
-                           Vb = V0)
-        self%geovals(ivar)%vals(ival, iloc) = value
+  IF (method .eq. 'ana_ocnfields') THEN                ! Analitical formula
+
+    DO ivar = 1, nvar
+      DO iloc = 1, self%geovals(ivar)%nlocs
+        DO ival = 1, self%geovals(ivar)%nval    
+          value = ana_fields(TRIM(self%variables(ivar)),                     &
+                             mask,                                           &
+                             locs_lons(iloc),                                &
+                             locs_lats(iloc),                                &
+                             self%geovals(nvar)%vals(ival,iloc),             &
+                             self%geovals(nvar-1)%vals(1,iloc),              &
+                             Tb = T0,                                        &
+                             Sb = S0,                                        &
+                             Ub = U0,                                        &
+                             Vb = V0)
+          self%geovals(ivar)%vals(ival, iloc) = value
+        END DO
       END DO
     END DO
-  END DO
+
+  ELSE IF (method .eq. 'uniform_ocnfields') THEN       ! Uniform fields
+
+    DO ivar = 1, nvar
+
+      SELECT CASE (TRIM(self%variables(ivar)))
+        CASE ('tocn', 'sea_water_potential_temperature',                 &
+              'sst',  'sea_surface_temperature')
+          value = T0
+        CASE ('socn', 'sea_water_practical_salinity',                    &
+              'sss',  'sea_surface_salinity')
+          value = S0
+        CASE ('uocn', 'sea_water_zonal_velocity',                        &
+              'usur', 'surface_sea_water_zonal_velocity')
+          value = U0
+        CASE ('vocn', 'sea_water_meridional_velocity',                   &
+              'vsur', 'surface_sea_water_meridional_velocity')
+          value = V0
+        CASE ('ssh', 'sea_surface_height_above_geoid')
+          value = 0.0_kind_real
+      END SELECT
+
+      DO iloc = 1, self%geovals(ivar)%nlocs
+        DO ival = 1, self%geovals(ivar)%nval    
+          self%geovals(ivar)%vals(ival, iloc) = value
+        END DO
+      END DO
+    END DO
+
+  END IF
 
   ! Deallocate local variables.
 
   IF (allocated(locs_lons))   deallocate (locs_lons)
   IF (allocated(locs_lats))   deallocate (locs_lats)
 
-END SUBROUTINE roms_analytic_init
+END SUBROUTINE roms_analytic_geovals
 
 ! ------------------------------------------------------------------------------
 

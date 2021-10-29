@@ -160,12 +160,12 @@ END SUBROUTINE roms_state_add_incr_c
 SUBROUTINE roms_state_read_file_c (c_key_fld, c_conf, c_dt) &
                              BIND (c, name='roms_state_read_file_f90')
 
-  integer (c_int), intent(in   ) :: c_key_fld  !< State fields pointer
-  TYPE (c_ptr),    intent(in   ) :: c_conf     !< Configuration pointer
-  TYPE (c_ptr),    intent(inout) :: c_dt       !< DateTime pointer
+  integer (c_int),     intent(in   ) :: c_key_fld  !< State fields pointer
+  TYPE (c_ptr), value, intent(in   ) :: c_conf     !< Configuration pointer
+  TYPE (c_ptr),        intent(inout) :: c_dt       !< DateTime pointer
 
-  TYPE (roms_state),  pointer    :: fld
-  TYPE (datetime)                :: fdate
+  TYPE (roms_state),  pointer        :: fld
+  TYPE (datetime)                    :: fdate
 
   CALL roms_state_registry%get (c_key_fld, fld)
   CALL c_f_datetime (c_dt, fdate)
@@ -184,27 +184,21 @@ END SUBROUTINE roms_state_read_file_c
 !! state class "roms_state" is  and extension of "roms_fields". Therefore,
 !! this interface is not needed.
 
-SUBROUTINE roms_state_analytic_init_c (c_key_state, c_key_geom, c_conf,      &
-                                       c_dt)                                 &
-                                 BIND (c, name='roms_state_analytic_init_f90')
+SUBROUTINE roms_state_analytic_c (c_key_state, c_conf, c_dt)                 &
+                            BIND (c, name='roms_state_analytic_f90')
 
-  integer (c_int), intent(in   ) :: c_key_state  !< State fields pointer
-  integer (c_int), intent(in   ) :: c_key_geom   !< Geometry pointer
-  TYPE (c_ptr),    intent(in   ) :: c_conf       !< Configuration pointer
-  TYPE (c_ptr),    intent(inout) :: c_dt         !< DateTime pointer
+  integer (c_int),     intent(in   ) :: c_key_state  !< State fields pointer
+  TYPE (c_ptr), value, intent(in   ) :: c_conf       !< Configuration pointer
+  TYPE (c_ptr),        intent(inout) :: c_dt         !< DateTime pointer
 
-  TYPE (roms_state), pointer      :: self
-  TYPE (roms_geom), pointer       :: geom
-  TYPE (datetime)                 :: fdate
-  TYPE (fckit_configuration)       :: f_conf
+  TYPE (roms_state), pointer         :: self
+  TYPE (datetime)                    :: fdate
 
-  CALL roms_geom_registry%get (c_key_geom, geom)
   CALL roms_state_registry%get (c_key_state, self)
   CALL c_f_datetime (c_dt, fdate)
-  f_conf = fckit_configuration (c_conf)
-  CALL self%analytic_init (f_conf, fdate)
+  CALL self%analytic (fckit_configuration(c_conf), fdate)
 
-END SUBROUTINE roms_state_analytic_init_c
+END SUBROUTINE roms_state_analytic_c
 
 ! ------------------------------------------------------------------------------
 !> Write out state fields into NetCDF file.
@@ -212,16 +206,19 @@ END SUBROUTINE roms_state_analytic_init_c
 SUBROUTINE roms_state_write_file_c (c_key_fld, c_conf, c_dt)                 &
                               BIND (c, name='roms_state_write_file_f90')
 
-  integer (c_int),  intent(in) :: c_key_fld   !< State fields pointer
-  TYPE  (c_ptr),    intent(in) :: c_conf      !< Configuration pointer
-  TYPE  (c_ptr),    intent(in) :: c_dt        !< DateTime pointer
+  integer (c_int),      intent(in) :: c_key_fld   !< State fields pointer
+  TYPE  (c_ptr), value, intent(in) :: c_conf      !< Configuration pointer
+  TYPE  (c_ptr),        intent(in) :: c_dt        !< DateTime pointer
 
-  TYPE (roms_state), pointer   :: fld
-  TYPE (datetime)              :: fdate
+  TYPE (roms_state), pointer       :: fld
+  TYPE (datetime)                  :: fdate
+  TYPE (fckit_configuration)       :: f_conf
 
   CALL roms_state_registry%get (c_key_fld, fld)
   CALL c_f_datetime (c_dt, fdate)
-  CALL fld%write (fckit_configuration(c_conf), fdate)
+  f_conf = fckit_configuration (c_conf)
+! CALL fld%write (fckit_configuration(c_conf), fdate)
+  CALL fld%write (f_conf, fdate)
 
 END SUBROUTINE roms_state_write_file_c
 

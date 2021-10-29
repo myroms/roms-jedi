@@ -13,23 +13,24 @@ model:
   tstep: PT1800S                               # WC13 has a 30 minutes timestep
 
 initial condition:
-  read_from_file: 1
   fields_dir: jediroms_wc13/Data/
   fields_filename: wc13_roms_ini_20040103.nc   # initial fields for 2004-01-03T00:00:00Z
   fields_record: 1
   state variables: [ssh, uocn, vocn, tocn, socn]
-  date: 2004-01-03T00:00:00Z
+  date: &initial_date 2004-01-03T00:00:00Z
 
-forecast length: PT96H                         # 96 hours (4 days) window ending on 2004-01-07T00:00:00Z
+forecast length: &forecast_length PT96H        # 96 hours (4 days) window ending on 2004-01-07T00:00:00Z
 
 output:
   file_policy: PT98H                           # single output file with 49 records (see NOTES)
-  frequency: PT2H                              # write output data every 2 hours
+  frequency: &frequency PT2H                   # write output data every 2 hours
+  data_frequency: *frequency
   data_dir: Data
   prefix: wc13_roms
   exp: nlm
   type: fct
-  date: 2004-01-03T00:00:00Z                   # initial date reference
+  date: *initial_date                          # alias to initial date
+  forecast length: *forecast_length            # alias to forecast length
 
 # NOTES:
 #
@@ -39,3 +40,7 @@ output:
 #   4-day window. We can also create a single file (wc13_roms_fct_2004-01-03-00.00.00.nc) with
 #   49 records. In this case, it is advisable for file_policy > PT96H, so the last record is in
 #   a single file. See the logic routine in "roms_field_write", module "roms_fields_mod.F90".
+#   We need the aliases for the initial date and forecast length in the output file(s) creation
+#   policy logic.
+#
+# * Output files are of the form: "prefix_exp_type_date.nc".

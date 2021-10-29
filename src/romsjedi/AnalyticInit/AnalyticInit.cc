@@ -43,11 +43,15 @@ namespace romsjedi {
 
   void AnalyticInit::fillGeoVaLs(const ufo::Locations & locs,
                                  ufo::GeoVaLs & geovals) const {
-    oops::Log::trace() << "AnalyticInit::analitic_init starting" << std::endl;
-    roms_analytic_init_f90(geovals.toFortran(),
-                           locs,
-                           options_.T0, options_.S0, options_.U0, options_.V0);
-    oops::Log::trace() << "AnalyticInit::analytic_init done" << std::endl;
+    oops::Log::trace() << "AnalyticInit::fillGeoVals starting" << std::endl;
+    const int method_len = options_.method.value().length();
+    const char* method_str = options_.method.value().c_str();
+    roms_analytic_geovals_f90(geovals.toFortran(),
+                              locs,
+                              method_len, method_str,
+                              options_.T0, options_.S0,
+                              options_.U0, options_.V0);
+    oops::Log::trace() << "AnalyticInit::fillGeoVals done" << std::endl;
   }
 
 // -----------------------------------------------------------------------------

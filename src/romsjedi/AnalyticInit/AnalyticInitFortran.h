@@ -28,12 +28,13 @@ namespace ufo {
 namespace romsjedi {
 
   extern "C" {
-    void roms_analytic_init_f90(F90goms &,
-                                const ufo::Locations &,
-                                const double & T0,
-                                const double & S0,
-                                const double & U0,
-                                const double & V0);
+    void roms_analytic_geovals_f90(F90goms &,
+                                   const ufo::Locations &,
+                                   const int &, const char *,
+                                   const double & T0,
+                                   const double & S0,
+                                   const double & U0,
+                                   const double & V0);
   }
 
 }  // namespace romsjedi

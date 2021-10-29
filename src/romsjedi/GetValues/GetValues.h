@@ -25,10 +25,10 @@
 #include "oops/util/DateTime.h"
 #include "oops/util/ObjectCounter.h"
 #include "oops/util/Printable.h"
+#include "ufo/Locations.h"
 
 #include "romsjedi/Fortran.h"
-
-#include "ufo/Locations.h"
+#include "romsjedi/AnalyticInit/AnalyticInit.h"
 
 // Forward declarations
 

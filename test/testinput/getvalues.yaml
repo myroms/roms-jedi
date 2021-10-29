@@ -17,9 +17,8 @@ state variables: &geovals [sea_surface_height_above_geoid,
 
 getvalues test:
   state generate:
-    read_from_file: 0
     analytic init:
-      method: 'ana_ocnfields'
+      method: ana_ocnfields
       T0: 25.0                                 # background temperature (C)
       S0: 32.5                                 # background salinity
       U0: 1.2                                  # background U-velocity (m/s)

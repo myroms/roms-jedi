@@ -74,51 +74,6 @@ SUBROUTINE roms_state_create (self, geom, vars)
 END SUBROUTINE roms_state_create
 
 ! ------------------------------------------------------------------------------
-!> Initialize state with analytical expressions.
-
-SUBROUTINE roms_state_analytic_init (self, geom, f_conf, vdate)
-
-  CLASS (roms_state),         intent(inout) :: self    !< State
-  TYPE (roms_geom),           intent(in   ) :: geom    !< Geometry
-  TYPE (fckit_configuration), intent(in   ) :: f_conf  !< Configuration
-  TYPE (datetime),            intent(inout) :: vdate   !< DateTime
-
-  character (len=20)                        :: sdate
-  character (len=30)                        :: ana_config
-  character (len=: ), allocatable           :: string
-
-  ! Get type of analytical field from configuration YAML.
-
-  IF (f_conf%has("analytic init")) THEN
-    CALL f_conf%get_or_die ("analytic init.method",string)
-    ana_config = string
-  ELSE
-    ana_config = 'uniform_ocnfields'
-  END IF
-  CALL fckit_log%warning ('roms_state_analytic_init: '//TRIM(ana_config))
-
-  ! Set date and time
-
-  CALL f_conf%get_or_die ("date", string)
-  sdate = string
-  CALL fckit_log%info ('roms_state_analytic_init: validity date is '//sdate)
-  CALL datetime_set (sdate, vdate)
-
-  ! Define state fields
-
-  SELECT CASE (TRIM(ana_config))
-    CASE ('ana_ocnfields')
-      CALL self%analytic ()
-    CASE ('uniform_ocnfields')
-      CALL self%zeros ()
-    CASE DEFAULT
-      CALL abor1_ftn ('roms_state_analytic_init: unknown analytical ' //     &
-                      'initialization: ' // TRIM(ana_config))
-  END SELECT
-
-END SUBROUTINE roms_state_analytic_init
-
-! ------------------------------------------------------------------------------
 !> Rotate horizontal vector components to geographical or curvilinear 
 !! coordinates
 

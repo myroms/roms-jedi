@@ -157,7 +157,7 @@ FUNCTION ana_fields (name, mask, lon, lat, z, h, Tb, Sb, Ub, Vb)             &
       value=h
     CASE ('zocn', 'level_depth')
       value=z
-  END SELECT  
+  END SELECT
 
 END FUNCTION ana_fields
 
@@ -381,9 +381,9 @@ FUNCTION roms_gen_filename (f_conf, max_length, vdate, file_type)            &
 
   lstr = LEN_TRIM(Fdir)
   IF (Fdir(lstr:lstr) .eq. CHAR(47) ) THEN
-    MyPrefix = Fdir // Fprefix // '_' // Ftype
+    MyPrefix = Fdir // Fprefix // '_' // Fexp // '_' // Ftype
   ELSE
-    MyPrefix = Fdir // CHAR(47) // Fprefix // '_' // Ftype
+    MyPrefix = Fdir // CHAR(47) // Fprefix // '_' // Fexp // '_' // Ftype
   END IF
 
   ! Get information from vdate structure.

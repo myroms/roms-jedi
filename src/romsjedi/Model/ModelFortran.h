@@ -30,7 +30,7 @@ namespace eckit {
 namespace romsjedi {
 
   extern "C" {
-    void roms_model_create_f90(const eckit::Configuration * const *,
+    void roms_model_create_f90(const eckit::Configuration &,
                                const F90geom &,
                                F90model &);
     void roms_model_delete_f90(F90model &);

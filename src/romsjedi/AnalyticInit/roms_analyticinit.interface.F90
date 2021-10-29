@@ -20,8 +20,8 @@ MODULE ROMS_analyticinit_mod_c
 
 USE iso_c_binding
 USE kinds,                      ONLY : kind_real
-
-USE roms_analyticinit_mod,      ONLY : roms_analytic_init
+USE string_f_c_mod,             ONLY : c_f_string
+USE roms_analyticinit_mod,      ONLY : roms_analytic_geovals
 
 USE ufo_geovals_mod,            ONLY : ufo_geovals
 USE ufo_geovals_mod_c,          ONLY : ufo_geovals_registry
@@ -34,29 +34,34 @@ CONTAINS
 ! ------------------------------------------------------------------------------
 !> Analytic initialization of GeoVaLs.
 
-SUBROUTINE roms_analytic_init_c (c_key_geovals, c_locs, T0, S0, U0, V0)      &
-                           BIND (c, name='roms_analytic_init_f90')
+SUBROUTINE roms_analytic_geovals_c (c_key_geovals, c_locs,                   &
+                                    c_slen, c_str, T0, S0, U0, V0)           &
+                              BIND (c, name='roms_analytic_geovals_f90')
 
-  integer (c_int),       intent(in) :: c_key_geovals  !< Key to UFO GeoVaLs
-  TYPE (c_ptr), value,   intent(in) :: c_locs         !< Key to UFO locations
-  real (kind=kind_real), intent(in) :: T0             !< background temperature
-  real (kind=kind_real), intent(in) :: S0             !< background salinity
-  real (kind=kind_real), intent(in) :: U0             !< background U-velocity
-  real (kind=kind_real), intent(in) :: V0             !< background V-velocity
+  integer (c_int),               intent(in) :: c_key_geovals  !< UFO GeoVaLs
+  TYPE (c_ptr), value,           intent(in) :: c_locs         !< UFO locations
+  integer (c_int),               intent(in) :: c_slen         !< LEN(method)
+  character (kind=c_char,len=1), intent(in) :: c_str(c_slen+1)!< analytic method
+  real (kind=kind_real),         intent(in) :: T0             !< temperature
+  real (kind=kind_real),         intent(in) :: S0             !< salinity
+  real (kind=kind_real),         intent(in) :: U0             !< U-velocity
+  real (kind=kind_real),         intent(in) :: V0             !< V-velocity
 
-  TYPE (ufo_geovals), pointer     :: geovals
-  TYPE (ufo_locations)            :: locs
+  TYPE (ufo_geovals), pointer               :: geovals
+  TYPE (ufo_locations)                      :: locs
+  character (len=c_slen)                    :: method
 
   ! Get objects.
 
   CALL ufo_geovals_registry%get (c_key_geovals, geovals)
   locs = ufo_locations(c_locs)
+  CALL c_f_string (c_str, method)
 
-  ! Call method
+  ! Call analytic GeoVals method.
 
-  CALL roms_analytic_init (geovals, locs, T0, S0, U0, V0)
+  CALL roms_analytic_geovals (geovals, locs, method, T0, S0, U0, V0)
 
-END SUBROUTINE roms_analytic_init_c
+END SUBROUTINE roms_analytic_geovals_c
 
 ! ------------------------------------------------------------------------------
 

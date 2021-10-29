@@ -13,7 +13,6 @@ model:
   tstep: PT1800S                               # WC13 has a 30 minutes timestep
 
 initial condition:
-  read_from_file: 1
   fields_dir: jediroms_wc13/Data/
   fields_filename: wc13_roms_ini_20040103.nc   # initial fields for 2004-01-03T00:00:00Z
   fields_record: 1

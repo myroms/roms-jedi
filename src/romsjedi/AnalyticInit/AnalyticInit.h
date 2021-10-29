@@ -19,6 +19,8 @@
 #ifndef ROMSJEDI_ANALYTICINIT_ANALYTICINIT_H_
 #define ROMSJEDI_ANALYTICINIT_ANALYTICINIT_H_
 
+#include <string>
+
 #include "oops/interface/AnalyticInitBase.h"
 #include "oops/util/parameters/RequiredParameter.h"
 
@@ -36,10 +38,22 @@ namespace romsjedi {
                              AnalyticInitParametersBase)
 
    public:
-    oops::RequiredParameter<double> T0{"T0", this};
-    oops::RequiredParameter<double> S0{"S0", this};
-    oops::RequiredParameter<double> U0{"U0", this};
-    oops::RequiredParameter<double> V0{"V0", this};
+    oops::RequiredParameter<double> T0{
+      "T0",
+      "Background temperature (C) scale factor",
+      this};
+    oops::RequiredParameter<double> S0{
+      "S0",
+      "Background salinity scale factor",
+      this};
+    oops::RequiredParameter<double> U0{
+      "U0",
+      "Background zonal velocity (m/s) scale factor",
+      this};
+    oops::RequiredParameter<double> V0{
+      "V0",
+      "Background meridional velocity (m/s) scale factor",
+      this};
   };
 
 // -----------------------------------------------------------------------------

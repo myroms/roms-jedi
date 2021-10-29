@@ -14,12 +14,18 @@
 #include <vector>
 
 #include "oops/base/Variables.h"
+#include "oops/base/WriteParametersBase.h"
 #include "oops/util/DateTime.h"
+#include "oops/util/Duration.h"
 #include "oops/util/ObjectCounter.h"
 #include "oops/util/Printable.h"
 #include "oops/util/Serializable.h"
+#include "oops/util/parameters/OptionalParameter.h"
+#include "oops/util/parameters/Parameters.h"
+#include "oops/util/parameters/RequiredParameter.h"
 
 #include "romsjedi/Fortran.h"
+#include "romsjedi/AnalyticInit/AnalyticInit.h"
 #include "romsjedi/Geometry/Geometry.h"
 #include "romsjedi/Increment/Increment.h"
 #include "romsjedi/State/StateFortran.h"
@@ -44,6 +50,84 @@ namespace ufo {
 
 namespace romsjedi {
 
+  /// \brief Parameters controlling reading state from a NetCDF file
+  /// ('initial condition' or 'statefile') or generating state fields
+  /// with analytic expressions ('state generate', 'state analytic init',
+  /// 'analytic init').
+
+  class StateParameters : public oops::Parameters {
+    OOPS_CONCRETE_PARAMETERS(StateParameters, Parameters)
+
+   public:
+    typedef AnalyticInitParameters AnalyticParameters_;
+
+    oops::OptionalParameter<AnalyticParameters_> analyticInit{
+      "analytic init",
+      "State analytic initialization",
+      this};
+    oops::OptionalParameter<std::string> FieldsDir{
+      "fields_dir",
+      "Input State directory",
+      this};
+    oops::OptionalParameter<std::string> FieldsFileName{
+      "fields_filename",
+      "Input State NetCDF filename",
+      this};
+    oops::OptionalParameter<int> FieldsRecord{
+      "fields_record",
+      "State NetCDF time record to read and process",
+      this};
+    oops::RequiredParameter<util::DateTime> date{
+      "date",
+      "Date to assign to analytical or read State fields",
+      this};
+    oops::RequiredParameter<oops::Variables> vars{
+      "state variables",
+      "State variables to process",
+      this};
+  };
+
+  /// \brief Parameters controlling writing state to NetCDF file(s).
+  /// Output filenames are of form: 'prefix_exp_type_date.nc'.
+  /// The properties 'date', 'iteration', and 'member' are already part
+  /// of the schema, but 'frequency' is not. For now, an alias
+  /// 'data_frequency' is created to avoid conflicting schemas.
+
+  class StateWriteParameters : public oops::WriteParametersBase {
+    OOPS_CONCRETE_PARAMETERS(StateWriteParameters, WriteParametersBase)
+
+   public:
+    oops::RequiredParameter<util::Duration> filePolicy{
+      "file_policy",
+      "State output new file creation policy time interval for "
+      "single or multiple files",
+      this};
+    oops::RequiredParameter<util::Duration> dataFrequency{
+      "data_frequency",
+      "State data writing frequency",
+      this};
+    oops::RequiredParameter<std::string> dataDir{
+      "data_dir",
+      "State output file(s) directory",
+      this};
+    oops::RequiredParameter<std::string> prefix{
+      "prefix",
+      "NetCDF filename prefix",
+      this};
+    oops::RequiredParameter<std::string> exp{
+      "exp",
+      "State 'exp' label used in the generation of filename(s)",
+      this};
+    oops::RequiredParameter<std::string> type{
+      "type",
+      "State 'type' label used in the generation of filename(s)",
+      this};
+    oops::RequiredParameter<util::Duration> forecastLength{
+      "forecast length",
+      "Alias to application forecast length needed in file creation policy",
+      this};
+  };
+
   /// ROMS model state
   /*!
    * A State contains everything that is needed to propagate the state
@@ -53,12 +137,15 @@ namespace romsjedi {
                 public util::Serializable,
                 private util::ObjectCounter<State> {
    public:
+     typedef StateParameters Parameters_;
+     typedef StateWriteParameters WriteParameters_;
+
       static const std::string classname() {return "roms::State";}
 
       /// Constructor, destructor
       State(const Geometry &, const oops::Variables &,
             const util::DateTime &);
-      State(const Geometry &, const eckit::Configuration &);
+      State(const Geometry &, const Parameters_ &);
       State(const Geometry &, const State &);
       State(const State &);
       virtual ~State();
@@ -80,9 +167,9 @@ namespace romsjedi {
       State & operator+=(const Increment &);
 
       /// I/O and diagnostics
-      void read(const eckit::Configuration &);
-      void analytic_init(const eckit::Configuration &);
-      void write(const eckit::Configuration &) const;
+      void read(const Parameters_ &);
+      void analytic_init(const Parameters_ &);
+      void write(const WriteParameters_ &) const;
       double norm() const;
 
       const util::DateTime & validTime() const;
@@ -112,6 +199,7 @@ namespace romsjedi {
     oops::Variables vars_;
     util::DateTime time_;
   };
+
 // -----------------------------------------------------------------------------
 
 }  // namespace romsjedi

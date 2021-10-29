@@ -38,17 +38,17 @@ namespace romsjedi {
 
 // ----------------------------------------------------------------------------
 
-  Model::Model(const Geometry & resol, const eckit::Configuration & mconf)
+  Model::Model(const Geometry & resol, const ModelParameters & params)
     : keyConfig_(0),
-      tstep_(0),
+      tstep_(params.tstep),
       geom_(new Geometry(resol)),
-      vars_(mconf, "model variables")
+      vars_(params.vars)
   {
     Log::trace() << "Model::Model" << std::endl;
     Log::trace() << "Model vars: " << vars_ << std::endl;
-    tstep_ = util::Duration(mconf.getString("tstep"));
-    const eckit::Configuration * configc = &mconf;
-    roms_model_create_f90(&configc, geom_->toFortran(), keyConfig_);
+    roms_model_create_f90(params.toConfiguration(),
+                          geom_->toFortran(),
+                          keyConfig_);
     oops::Log::trace() << "Model created" << std::endl;
   }
 

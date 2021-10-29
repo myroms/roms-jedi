@@ -116,11 +116,9 @@ TYPE :: roms_fields
   PROCEDURE :: ones            => roms_fields_ones
   PROCEDURE :: zeros           => roms_fields_zeros
 
-  ! Analytical initialization: CALL fields%analytic ()
-  !                            CALL fields%analytic_int (f_conf, vdate)
+  ! Analytical initialization.
 
   PROCEDURE :: analytic        => roms_fields_analytic
-  PROCEDURE :: analytic_init   => roms_fields_analytic_init
 
   ! I/O processing.
 
@@ -652,8 +650,9 @@ SUBROUTINE roms_fields_check_congruent (f1, f2)
     END IF
 
     DO j = 1, SIZE(SHAPE(f1%fields(i)%val))
-      IF (SIZE(f1%fields(i)%val,DIM=j) .ne. SIZE(f2%fields(i)%val,DIM=j) ) THEN
-        CALL abor1_ftn ("roms_fields: field '"// &
+      IF (SIZE(f1%fields(i)%val,DIM=j) .ne.                                  &
+          SIZE(f2%fields(i)%val,DIM=j) ) THEN
+        CALL abor1_ftn ("roms_fields: field '"//                             &
                         f1%fields(i)%name//"' has different dimensions")
       END IF
     END DO
@@ -810,100 +809,139 @@ SUBROUTINE roms_fields_update_halos (self)
 END SUBROUTINE roms_fields_update_halos
 
 ! ------------------------------------------------------------------------------
-!> Initialize all fields with analytical functions.
+!> Initialize the fields set with analytical functions if the "state generate"
+!! has a false value in "read_from_file" in the YAML configuration file. The
+!! keyword "analytic init.method" can either have a value of "ana_ocnfields"
+!! or "uniform_ocnfields".
 
-SUBROUTINE roms_fields_analytic (self)
-
-  CLASS (roms_fields), intent(inout) :: self     !< Fields object
-
-  integer                            :: i, j, k, n
-  real(kind=kind_real),      pointer :: h(:,:), z(:,:,:) 
-  TYPE (roms_field),         pointer :: field
-
-  DO n = 1, SIZE(self%fields)
-
-    field => self%fields(n)
-
-    SELECT CASE (field%metadata%gtype)
-      CASE ('r')
-        h => self%geom%h_r
-        z => self%geom%z_r
-      CASE ('u')
-        h => self%geom%h_u
-        z => self%geom%z_u
-      CASE ('v')
-        h => self%geom%h_v
-        z => self%geom%z_v
-      CASE DEFAULT
-        CALL abor1_ftn ('roms_fields::analytic: unknown C-grid type: ' //    &
-                        field%metadata%gtype // ', field: ' // field%name)
-    END SELECT      
-
-    ! Optional arguments Tb, Sb, Ub, and Vb to 'ana_fields' are omitted. Using
-    ! default values.
-
-    DO k = 1, field%N
-      DO j = field%Jstr, field%Jend
-        DO i = field%Istr, field%Iend
-          field%val(i,j,k) = ana_fields(field%name,                          &
-                                        field%mask(i,j),                     &
-                                        field%lon(i,j),                      &
-                                        field%lat(i,j),                      &
-                                        z(i,j,k),                            &
-                                        h(i,j))
-        END DO
-      END DO
-    END DO
-
-  END DO
-
-END SUBROUTINE roms_fields_analytic
-
-! ------------------------------------------------------------------------------
-!> Initialize a set of fields with analytical expressions. It is activated if
-!! "state generate" has "read_from_file: 0" and the keyword "analytic_init" has
-!! as value "ana_ocnfields" or "uniform_ocnfields" in the YAML configuration
-!! file.
-
-SUBROUTINE roms_fields_analytic_init (self, f_conf, vdate)
+SUBROUTINE roms_fields_analytic (self, f_conf, vdate)
 
   CLASS (roms_fields),        intent(inout) :: self    !< Fields object
-  TYPE (fckit_configuration), intent(   in) :: f_conf  !< configuration
+  TYPE (fckit_configuration), intent(in   ) :: f_conf  !< configuration
   TYPE (datetime),            intent(inout) :: vdate   !< Date and Time
 
-  character (len=21)                        :: fdate
-  character (len=30)                        :: ana_config
-  character (len=: ), allocatable           :: my_string
+  TYPE (roms_field), pointer                :: field
+  integer                                   :: LocalPET
+  integer                                   :: i, j, k, n
+  real (kind=kind_real)                     :: romsDateNumber, romsTime
+  real (kind=kind_real), pointer            :: h(:,:), z(:,:,:) 
+  real (kind=kind_real)                     :: T0, S0, U0, V0
+  character (len=21)                        :: DateString
+  character (len=30)                        :: method
+  character (len=:), allocatable            :: my_string
 
-  ! Get configuration.= from YAML file.
+  ! Initialize.
 
-  IF (f_conf%has("analytic init")) THEN
-    CALL f_conf%get_or_die ("analytic init.method", my_string)
-    ana_config = my_string
-  ELSE
-    ana_config = 'uniform_ocnfields'
+  LocalPET = self%geom%f_comm%rank()   ! PET rank
+
+  ! Get analytical parameters from input configuration YAML file.
+
+  IF (.not.f_conf%has("analytic init")) THEN
+    CALL abor1_ftn ("roms_fields::analytic: Cannot find 'analytic init' " // &
+                    "component and its elements")
   END IF
-  CALL fckit_log%warning ('roms_fields::analytic_init: '//TRIM(ana_config))
 
-  ! Assign date and time to analytical fields.
+  ! Analytical method: "ana_ocnfields" or "uniform_ocnfields".
 
-    CALL f_conf%get_or_die ("date", my_string)
-    fdate = my_string
-    CALL fckit_log%info ('roms_fields::analytic_init: validity date is '//fdate)
-    CALL datetime_set (fdate, vdate)
+  CALL f_conf%get_or_die ("analytic init.method", my_string)
+  method = my_string
+  deallocate (my_string)
 
-  ! Define state fields.
+  ! Background temperature (C), salinity, zonal velocity (m/s), and meridional
+  ! velocity (m/s).
 
-  SELECT CASE (TRIM(ana_config))
-    CASE ('ana_ocnfields')
-      CALL self%analytic ()
-    CASE ('uniform_ocnfields')
-      CALL self%zeros ()
-    CASE DEFAULT
-      CALL abor1_ftn ('roms_fields::analytic_init: unknown analytical method')
-  END SELECT
+  CALL f_conf%get_or_die ("analytic init.T0", T0)
+  CALL f_conf%get_or_die ("analytic init.S0", S0)
+  CALL f_conf%get_or_die ("analytic init.U0", U0)
+  CALL f_conf%get_or_die ("analytic init.V0", V0)
 
-END SUBROUTINE roms_fields_analytic_init
+  CALL fckit_log%warning ("roms_fields::analytic: inventing analytical " //  &
+                          "fields, method: '" // TRIM(method) // "'.")
+
+  ! Set fields date and time.
+
+  CALL f_conf%get_or_die ("date", my_string)
+  DateString = my_string
+  deallocate (my_string)
+
+  CALL datetime_set (DateString, vdate)    
+  CALL roms_date2time (LocalPET, vdate, romsTime, romsDateNumber) 
+
+  ! Analitical formula.
+
+  IF (method .eq. 'ana_ocnfields') THEN
+
+    DO n = 1, SIZE(self%fields)
+
+      field => self%fields(n)
+
+      SELECT CASE (field%metadata%gtype)
+        CASE ('r')
+          h => self%geom%h_r
+          z => self%geom%z_r
+        CASE ('u')
+          h => self%geom%h_u
+          z => self%geom%z_u
+        CASE ('v')
+          h => self%geom%h_v
+          z => self%geom%z_v
+        CASE DEFAULT
+          CALL abor1_ftn ('roms_fields::analytic: unknown C-grid type: ' //  &
+                        field%metadata%gtype // ', field: ' // field%name)
+      END SELECT      
+
+      DO k = 1, field%N
+        DO j = field%Jstr, field%Jend
+          DO i = field%Istr, field%Iend
+            field%val(i,j,k) = ana_fields(field%name,                        &
+                                          field%mask(i,j),                   &
+                                          field%lon(i,j),                    &
+                                          field%lat(i,j),                    &
+                                          z(i,j,k),                          &
+                                          h(i,j),                            &
+                                          T0, S0, U0, V0)
+          END DO
+        END DO
+      END DO
+
+    END DO
+
+  ! Uniform fields.
+
+  ELSE IF (method .eq. 'uniform_ocnfields') THEN
+
+    DO n = 1, SIZE(self%fields)
+
+      field => self%fields(n)
+  
+      SELECT CASE (field%name)
+        CASE ('tocn', 'sea_water_potential_temperature',                     &
+              'sst',  'sea_surface_temperature')
+          field%val = T0
+        CASE ('socn', 'sea_water_practical_salinity',                        &
+              'sss',  'sea_surface_salinity')
+          field%val = S0
+        CASE ('uocn', 'sea_water_zonal_velocity',                            &
+              'usur', 'surface_sea_water_zonal_velocity')
+          field%val = U0
+        CASE ('vocn', 'sea_water_meridional_velocity',                       &
+              'vsur', 'surface_sea_water_meridional_velocity')
+          field%val = V0
+        CASE ('ssh', 'sea_surface_height_above_geoid')
+          field%val = 0.0_kind_real
+      END SELECT
+
+    END DO
+
+  ! Otherwise, zero fields.
+
+  ELSE
+
+    CALL self%zeros ()
+
+  END IF
+
+END SUBROUTINE roms_fields_analytic
 
 ! ------------------------------------------------------------------------------
 !> Set ROMS I/O metadata structure. It is used to create output NetCDF files.
@@ -1332,9 +1370,8 @@ END SUBROUTINE roms_fields_deserialize
 
 ! ------------------------------------------------------------------------------
 !> Initialize a fields set by reading from an input NetCDF file if "statefile"
-!! has "read_from_file: 1" or with analytical expressions if "state generate"
-!! has keyword "analytic init.method" with values "ana_ocnfields" or 
-!! "uniform_ocnfields" and "read_from_file: 0" in the YAML configuration file.
+!! or "initial condition" has "read_from_file" set to true in the YAML
+!! configuraion file.
 
 SUBROUTINE roms_fields_read (self, f_conf, vdate)
 
@@ -1344,9 +1381,10 @@ SUBROUTINE roms_fields_read (self, f_conf, vdate)
   TYPE (fckit_configuration), intent(   in) :: f_conf  !< configuration
   TYPE (datetime),            intent(inout) :: vdate   !< Date and Time
 
-  integer                                   :: InpRec, LocalPET, iread
+  integer                                   :: InpRec, LocalPET
   real (kind=kind_real)                     :: romsDateNumber, romsTime
-  character (len=:), allocatable            :: fields_dir, fields_filename, str
+  character (len=:), allocatable            :: fields_dir, fields_filename
+  character (len=:), allocatable            :: my_string
   character (len=21)                        :: DateString
   character (len=256)                       :: ncname, text
 
@@ -1354,71 +1392,51 @@ SUBROUTINE roms_fields_read (self, f_conf, vdate)
 
   LocalPET = self%geom%f_comm%rank()   ! PET rank
 
-  ! Get flag to read fields from NetCDF file or get values from analytical
-  ! expressions from input configuration YAML file.
+  ! Get fields data directory, filename, and time record to process from
+  ! configuration YAML file.
 
-  IF (f_conf%has("read_from_file")) THEN
-    CALL f_conf%get_or_die ("read_from_file", iread)
-  ELSE
-    iread = 0
+  IF (.not.f_conf%get("fields_dir", fields_dir)) THEN
+    CALL abor1_ftn ("roms_fields::read: Cannot find fields directory")
+  END IF
+
+  IF (.not.f_conf%get("fields_filename", fields_filename)) THEN
+    CALL abor1_ftn ("roms_fields::read: Cannot find fields input filename")
+  END IF
+  ncname = TRIM(fields_dir)//TRIM(fields_filename)
+
+  IF (.not.f_conf%get("fields_record", InpRec)) THEN
+    CALL abor1_ftn ("roms_fields::read: Cannot find record to process")
   END IF
 
   ! Set fields date and time.
 
-  CALL f_conf%get_or_die ("date", str)
-  DateString = str
+  CALL f_conf%get_or_die ("date", my_string)
+  DateString = my_string
+  deallocate (my_string)
+
   CALL datetime_set (DateString, vdate)    
   CALL roms_date2time (LocalPET, vdate, romsTime, romsDateNumber) 
 
-  ! If reading from file, get fields directory, filename, and time record to
-  ! process from input configuration YAML file.
+  ! Read fields set from input NetCDF file.
 
-  IF (iread .eq. 1) THEN
-    IF (.not.f_conf%get("fields_dir", fields_dir)) THEN
-      CALL abor1_ftn ("roms_fields::read: Cannot find fields directory")
-    END IF
+  SELECT CASE (inp_lib)
 
-    IF (.not.f_conf%get("fields_filename", fields_filename)) THEN
-      CALL abor1_ftn ("roms_fields::read: Cannot find fields input filename")
-    END IF
-    ncname = TRIM(fields_dir)//TRIM(fields_filename)
-
-    IF (.not.f_conf%get("fields_record", InpRec)) THEN
-      CALL abor1_ftn ("roms_fields::read: Cannot find record to process")
-    END IF
-  END IF
-
-  ! Process required fields.
-
-  IF (iread .eq. 0) THEN         !< analytical initialization
-
-    CALL fckit_log%warning ('roms_fields::read: inventing analytical ' //    &
-                            'fields, DateTime: '// DateString)
-    CALL self%analytic ()
-
-  ELSE                           !< read input NetCDF file
-
-    SELECT CASE (inp_lib)
-
-      CASE (io_nf90)
-        CALL roms_fields_read_nf90 (self, InpRec, TRIM(ncname),              &
-                                    DateString, romsDateNumber)
+    CASE (io_nf90)
+      CALL roms_fields_read_nf90 (self, InpRec, TRIM(ncname),                &
+                                  DateString, romsDateNumber)
 
 #if defined PIO_LIB
-      CASE (io_pio)
-        CALL roms_fields_read_pio (self, InpRec, TRIM(ncname),               &
-                                   DateString, romsDateNumber)
+    CASE (io_pio)
+      CALL roms_fields_read_pio (self, InpRec, TRIM(ncname),                 &
+                                 DateString, romsDateNumber)
 #endif
 
-      CASE DEFAULT
-        WRITE (text,'(a,i0)')                                                &
-                    'roms_fields::read: Ilegal input type, io_type = ',      &
-                    inp_lib
+    CASE DEFAULT
+      WRITE (text,'(a,i0)')                                                  &
+            'roms_fields::read: Ilegal input type, io_type = ', inp_lib
       CALL abor1_ftn (TRIM(text))
 
-    END SELECT
-
-  END IF
+  END SELECT
 
 END SUBROUTINE roms_fields_read
 
@@ -1463,17 +1481,17 @@ SUBROUTINE roms_fields_write (self, f_conf, vdate)
   ! initial date.
 
   IF (.not.f_conf%get("file_policy", Fpolicy)) THEN
-    CALL abor1_ftn ("roms_gen_filename: Cannot find 'file_policy'"//         &
+    CALL abor1_ftn ("roms_fields::write: Cannot find 'file_policy'"//        &
                     " in YAML configuration")
   END IF
 
-  IF (.not.f_conf%get("frequency", ioFrequency)) THEN
-    CALL abor1_ftn ("roms_gen_filename: Cannot find 'frequency'"//           &
+  IF (.not.f_conf%get("data_frequency", ioFrequency)) THEN
+    CALL abor1_ftn ("roms_fields::write: Cannot find 'data_frequency'"//     &
                     " in YAML configuration")
   END IF
 
   IF (.not.f_conf%get("date", iniDate)) THEN
-    CALL abor1_ftn ("roms_set_filename: Cannot find 'date'"//                &
+    CALL abor1_ftn ("roms_fields::write: Cannot find 'date'"//               &
                     " in YAML configuration")
   END IF
 

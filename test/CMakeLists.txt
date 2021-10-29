@@ -121,7 +121,7 @@ ecbuild_add_test(
   MPI          2
   SOURCES      executables/TestIncrement.cc
   ARGS         testinput/increment.yaml
- LIBS          romsjedi )
+  LIBS         romsjedi )
 
 #ecbuild_add_test(
 #  TARGET       test_romsjedi_lineargetvalues

@@ -33,13 +33,13 @@ namespace romsjedi {
     void roms_state_axpy_f90(const F90flds &, const double &, const F90flds &);
     void roms_state_add_incr_f90(const F90flds &, const F90flds &);
     void roms_state_read_file_f90(const F90flds &,
-                                  const eckit::Configuration * const &,
+                                  const eckit::Configuration &,
                                   util::DateTime * const *);
-    void roms_state_analytic_init_f90(const F90flds &,
-                                      const eckit::Configuration * const &,
-                                      util::DateTime * const *);
+    void roms_state_analytic_f90(const F90flds &,
+                                 const eckit::Configuration &,
+                                 util::DateTime * const *);
     void roms_state_write_file_f90(const F90flds &,
-                                   const eckit::Configuration * const &,
+                                   const eckit::Configuration &,
                                    const util::DateTime * const *);
     void roms_state_rotate2grid_f90(const F90flds &,
                                     const oops::Variables &,
