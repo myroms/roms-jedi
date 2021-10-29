@@ -118,8 +118,8 @@ END SUBROUTINE roms_increment_zero_c
 SUBROUTINE roms_increment_dirac_c (c_key_self, c_conf)                       &
                              BIND (c, name='roms_increment_dirac_f90')
 
-  integer (c_int),    intent(in) :: c_key_self      !< Increment object pointer
-  TYPE (c_ptr),       intent(in) :: c_conf          !< Configuration
+  integer (c_int),     intent(in) :: c_key_self     !< Increment object pointer
+  TYPE (c_ptr), value, intent(in) :: c_conf         !< Configuration
 
   TYPE (roms_increment), pointer :: self
 
@@ -437,12 +437,12 @@ END SUBROUTINE roms_increment_from_atlas_c
 SUBROUTINE roms_increment_read_file_c (c_key_fld, c_conf, c_dt)              &
                                  BIND (c, name='roms_increment_read_file_f90')
 
-  integer (c_int), intent(in   ) :: c_key_fld    !< Fields object pointer
-  TYPE (c_ptr),    intent(in   ) :: c_conf       !< Configuration pointer
-  TYPE (c_ptr),    intent(inout) :: c_dt         !< DateTime pointer
+  integer (c_int),     intent(in   ) :: c_key_fld   !< Fields object pointer
+  TYPE (c_ptr), value, intent(in   ) :: c_conf      !< Configuration pointer
+  TYPE (c_ptr),        intent(inout) :: c_dt        !< DateTime pointer
 
-  TYPE (roms_increment), pointer :: fld
-  TYPE (datetime)                :: fdate
+  TYPE (roms_increment), pointer     :: fld
+  TYPE (datetime)                    :: fdate
 
   CALL roms_increment_registry%get (c_key_fld, fld)
   CALL c_f_datetime (c_dt, fdate)
@@ -455,12 +455,12 @@ END SUBROUTINE roms_increment_read_file_c
 SUBROUTINE roms_increment_write_file_c (c_key_fld, c_conf, c_dt)             &
                                   BIND (c, name='roms_increment_write_file_f90')
 
-  integer (c_int),    intent(in) :: c_key_fld    !< Fields object pointer
-  TYPE (c_ptr),       intent(in) :: c_conf       !< Configuration pointer
-  TYPE (c_ptr),       intent(in) :: c_dt         !< DateTime pointer
+  integer (c_int),     intent(in) :: c_key_fld      !< Fields object pointer
+  TYPE (c_ptr), value, intent(in) :: c_conf         !< Configuration pointer
+  TYPE (c_ptr),        intent(in) :: c_dt           !< DateTime pointer
 
-  TYPE (roms_increment), pointer :: fld
-  TYPE (datetime)                :: fdate
+  TYPE (roms_increment), pointer  :: fld
+  TYPE (datetime)                 :: fdate
 
   CALL roms_increment_registry%get (c_key_fld, fld)
   CALL c_f_datetime (c_dt, fdate)

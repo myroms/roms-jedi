@@ -54,6 +54,8 @@ namespace romsjedi {
   class GetValues : public util::Printable,
                     private util::ObjectCounter<GetValues> {
    public:
+    typedef AnalyticInitParameters AnalyticParameters_;
+
     static const std::string classname() {return "roms::GetValues";}
 
     // Constructors and Destructors.

@@ -17,6 +17,8 @@
 #ifndef ROMSJEDI_ANALYTICINIT_ANALYTICINITFORTRAN_H_
 #define ROMSJEDI_ANALYTICINIT_ANALYTICINITFORTRAN_H_
 
+#include <string>
+
 #include "romsjedi/Fortran.h"
 
 // Forward declarations

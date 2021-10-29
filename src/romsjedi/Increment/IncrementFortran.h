@@ -57,16 +57,16 @@ namespace romsjedi {
     void roms_increment_self_schur_f90(const F90flds &, const F90flds &);
     void roms_increment_random_f90(const F90flds &);
     void roms_increment_dirac_f90(const F90flds &,
-                              const eckit::Configuration * const &);
+                                  const eckit::Configuration &);
     void roms_increment_diff_incr_f90(const F90flds &, const F90flds &,
-                                  const F90flds &);
+                                      const F90flds &);
     void roms_increment_change_resol_f90(const F90flds &, const F90flds &);
     void roms_increment_read_file_f90(const F90flds &,
-                                  const eckit::Configuration * const &,
-                                  util::DateTime * const *);
+                                      const eckit::Configuration &,
+                                      util::DateTime * const *);
     void roms_increment_write_file_f90(const F90flds &,
-                                   const eckit::Configuration * const &,
-                                   const util::DateTime * const *);
+                                       const eckit::Configuration &,
+                                       const util::DateTime * const *);
     void roms_increment_set_atlas_f90(const F90flds &,
                                       const F90geom &,
                                       const oops::Variables &,
@@ -81,11 +81,11 @@ namespace romsjedi {
                                        atlas::field::FieldSetImpl *);
     void roms_increment_gpnorm_f90(const F90flds &, const int &, double &);
     void roms_increment_getpoint_f90(const F90flds &, const F90iter &, double &,
-                           const int &);
+                                     const int &);
     void roms_increment_setpoint_f90(F90flds &, const F90iter &, const double &,
-                           const int &);
+                                     const int &);
     void roms_increment_sizes_f90(const F90flds &, int &,
-                              int &, int &, int &);
+                                  int &, int &, int &);
     void roms_increment_rms_f90(const F90flds &, double &);
     void roms_increment_serial_size_f90(const F90flds &,
                                         const F90geom &,
