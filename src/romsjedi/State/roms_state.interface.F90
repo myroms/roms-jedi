@@ -17,18 +17,20 @@ MODULE roms_state_mod_c
 
 USE iso_c_binding
 
+USE kinds,                      ONLY : kind_real
+
 USE datetime_mod,               ONLY : datetime, c_f_datetime
 USE fckit_configuration_module, ONLY : fckit_configuration
-USE kinds,                      ONLY : kind_real
 USE oops_variables_mod
-USE roms_geom_mod_c,            ONLY : roms_geom_registry
-USE roms_geom_mod,              ONLY : roms_geom
-USE roms_increment_mod
-USE roms_increment_reg
-USE roms_state_mod
-USE roms_state_reg
 USE ufo_geovals_mod_c,          ONLY : ufo_geovals_registry
 USE ufo_geovals_mod,            ONLY : ufo_geovals
+
+USE roms_geom_mod,              ONLY : roms_geom
+USE roms_geom_reg,              ONLY : roms_geom_registry
+USE roms_increment_mod,         ONLY : roms_increment
+USE roms_increment_reg,         ONLY : roms_increment_registry
+USE roms_state_mod,             ONLY : roms_state
+USE roms_state_reg,             ONLY : roms_state_registry
 
 implicit none
 
@@ -39,7 +41,7 @@ CONTAINS
 ! ------------------------------------------------------------------------------
 !> Create state fields object.
 
-SUBROUTINE roms_state_create_c (c_key_self, c_key_geom, c_vars)              &
+SUBROUTINE roms_state_create_c (c_key_self, c_key_geom, c_vars)                &
                           BIND (c, name='roms_state_create_f90')
 
   integer (c_int),     intent(inout) :: c_key_self  !< State fields pointer
@@ -63,7 +65,7 @@ END SUBROUTINE roms_state_create_c
 ! ------------------------------------------------------------------------------
 !> Deallocate state fields.
 
-SUBROUTINE roms_state_delete_c (c_key_self)                                  &
+SUBROUTINE roms_state_delete_c (c_key_self)                                    &
                           BIND (c, name='roms_state_delete_f90')
 
   integer (c_int), intent(inout) :: c_key_self   !< State fields pointer
@@ -79,7 +81,7 @@ END SUBROUTINE roms_state_delete_c
 ! ------------------------------------------------------------------------------
 !> Set state fields to zero.
 
-SUBROUTINE roms_state_zero_c (c_key_self)                                    &
+SUBROUTINE roms_state_zero_c (c_key_self)                                      &
                         BIND (c, name='roms_state_zero_f90')
 
   integer (c_int), intent(in) :: c_key_self   !< State fields pointer
@@ -94,7 +96,7 @@ END SUBROUTINE roms_state_zero_c
 ! ------------------------------------------------------------------------------
 !> Copy state fields: LHS = RHS
 
-SUBROUTINE roms_state_copy_c (c_key_self, c_key_rhs)                         &
+SUBROUTINE roms_state_copy_c (c_key_self, c_key_rhs)                           &
                         BIND (c, name='roms_state_copy_f90')
 
   integer (c_int), intent(in) :: c_key_self   !< output state fields pointer
@@ -113,7 +115,7 @@ END SUBROUTINE roms_state_copy_c
 ! ------------------------------------------------------------------------------
 !> Compute LHS = LHS + zz * RHS
 
-SUBROUTINE roms_state_axpy_c (c_key_self, c_zz, c_key_rhs)                   &
+SUBROUTINE roms_state_axpy_c (c_key_self, c_zz, c_key_rhs)                     &
                         BIND (c, name='roms_state_axpy_f90')
 
   integer (c_int),  intent(in) :: c_key_self   !< LHS state fields pointer
@@ -135,7 +137,7 @@ END SUBROUTINE roms_state_axpy_c
 ! ------------------------------------------------------------------------------
 !> Add a set of increments to the set fields: SELF(i) = SELF(i) + RHS(i)
 
-SUBROUTINE roms_state_add_incr_c (c_key_self, c_key_rhs) &
+SUBROUTINE roms_state_add_incr_c (c_key_self, c_key_rhs)                       &
                             BIND (c, name='roms_state_add_incr_f90')
 
   integer (c_int),     intent(in) :: c_key_self    !< state fields pointer
@@ -157,7 +159,7 @@ END SUBROUTINE roms_state_add_incr_c
 !! has "analytic init.method: ana_ocnfields" and "read_from_file: 0" in the
 !! YAML configuration file.
 
-SUBROUTINE roms_state_read_file_c (c_key_fld, c_conf, c_dt) &
+SUBROUTINE roms_state_read_file_c (c_key_fld, c_conf, c_dt)                    &
                              BIND (c, name='roms_state_read_file_f90')
 
   integer (c_int),     intent(in   ) :: c_key_fld  !< State fields pointer
@@ -184,7 +186,7 @@ END SUBROUTINE roms_state_read_file_c
 !! state class "roms_state" is  and extension of "roms_fields". Therefore,
 !! this interface is not needed.
 
-SUBROUTINE roms_state_analytic_c (c_key_state, c_conf, c_dt)                 &
+SUBROUTINE roms_state_analytic_c (c_key_state, c_conf, c_dt)                   &
                             BIND (c, name='roms_state_analytic_f90')
 
   integer (c_int),     intent(in   ) :: c_key_state  !< State fields pointer
@@ -203,7 +205,7 @@ END SUBROUTINE roms_state_analytic_c
 ! ------------------------------------------------------------------------------
 !> Write out state fields into NetCDF file.
 
-SUBROUTINE roms_state_write_file_c (c_key_fld, c_conf, c_dt)                 &
+SUBROUTINE roms_state_write_file_c (c_key_fld, c_conf, c_dt)                   &
                               BIND (c, name='roms_state_write_file_f90')
 
   integer (c_int),      intent(in) :: c_key_fld   !< State fields pointer
@@ -216,8 +218,8 @@ SUBROUTINE roms_state_write_file_c (c_key_fld, c_conf, c_dt)                 &
 
   CALL roms_state_registry%get (c_key_fld, fld)
   CALL c_f_datetime (c_dt, fdate)
+
   f_conf = fckit_configuration (c_conf)
-! CALL fld%write (fckit_configuration(c_conf), fdate)
   CALL fld%write (f_conf, fdate)
 
 END SUBROUTINE roms_state_write_file_c
@@ -225,7 +227,7 @@ END SUBROUTINE roms_state_write_file_c
 ! ------------------------------------------------------------------------------
 !> Calculate global statistics for each state field: min, max, and  avg.
 
-SUBROUTINE roms_state_gpnorm_c (c_key_fld, kf, pstat)                        &
+SUBROUTINE roms_state_gpnorm_c (c_key_fld, kf, pstat)                          &
                           BIND (c, name='roms_state_gpnorm_f90')
 
   integer (c_int),  intent(in   ) :: c_key_fld    !< State fields pointer
@@ -254,7 +256,7 @@ END SUBROUTINE roms_state_gpnorm_c
 !> Calculate the squared-root of the dot-product sum of a field to itself:
 !! unnormalized RMS.
 
-SUBROUTINE roms_state_rms_c (c_key_fld, prms)                                &
+SUBROUTINE roms_state_rms_c (c_key_fld, prms)                                  &
                        BIND (c, name='roms_state_rms_f90')
 
   integer (c_int),  intent(in   ) :: c_key_fld    !< State fields pointer
@@ -276,7 +278,7 @@ END SUBROUTINE roms_state_rms_c
 ! ------------------------------------------------------------------------------
 !> Rotate vector fields from geographical to curvilinear coordinates.
 
-SUBROUTINE roms_state_rotate2grid_c (c_key_self, c_uvars, c_vvars)           &
+SUBROUTINE roms_state_rotate2grid_c (c_key_self, c_uvars, c_vvars)             &
                                BIND (c, name='roms_state_rotate2grid_f90')
 
   integer (c_int),     intent(in) :: c_key_self    !< State fields pointer
@@ -297,7 +299,7 @@ END SUBROUTINE roms_state_rotate2grid_c
 ! ------------------------------------------------------------------------------
 !> Rotate vector fields from curvilinear to geographical coordinates.
 
-SUBROUTINE roms_state_rotate2north_c (c_key_self, c_uvars, c_vvars)          &
+SUBROUTINE roms_state_rotate2north_c (c_key_self, c_uvars, c_vvars)            &
                                 BIND (c, name='roms_state_rotate2north_f90')
 
   integer (c_int),     intent(in) :: c_key_self    !< State fields pointer
@@ -318,7 +320,7 @@ END SUBROUTINE roms_state_rotate2north_c
 ! ------------------------------------------------------------------------------
 !> Get length of the dimensions of a state 3D-field.
 
-SUBROUTINE roms_state_sizes_c (c_key_fld, nx, ny, nz, nf)                    &
+SUBROUTINE roms_state_sizes_c (c_key_fld, nx, ny, nz, nf)                      &
                          BIND (c, name='roms_state_sizes_f90')
 
   integer (c_int),      intent(in   ) :: c_key_fld    !< State fields pointer
@@ -340,7 +342,7 @@ END SUBROUTINE roms_state_sizes_c
 
 ! ------------------------------------------------------------------------------
 
-SUBROUTINE roms_state_change_resol_c (c_key_fld, c_key_rhs)                  &
+SUBROUTINE roms_state_change_resol_c (c_key_fld, c_key_rhs)                    &
                                 BIND (c, name='roms_state_change_resol_f90')
 
   integer (c_int), intent(in) :: c_key_fld    !< LHS state fields pointer
@@ -366,7 +368,7 @@ END SUBROUTINE roms_state_change_resol_c
 ! ------------------------------------------------------------------------------
 !> Compute the number of elements in the packed (serialized) state vector.
 
-SUBROUTINE roms_state_serial_size_c (c_key_self, c_key_geom, c_vec_size)     &
+SUBROUTINE roms_state_serial_size_c (c_key_self, c_key_geom, c_vec_size)       &
                                BIND (c, name='roms_state_serial_size_f90')
 
   integer (c_int),    intent(in ) :: c_key_self    !< State fields pointer
@@ -388,7 +390,7 @@ END SUBROUTINE roms_state_serial_size_c
 ! ------------------------------------------------------------------------------
 !> Pack all the fields into 1D state vector.
 
-SUBROUTINE roms_state_serialize_c (c_key_self, c_key_geom, c_vec_size, c_vec) &
+SUBROUTINE roms_state_serialize_c (c_key_self, c_key_geom, c_vec_size, c_vec)  &
                              BIND (c, name='roms_state_serialize_f90')
 
   integer (c_int),    intent(in ) :: c_key_self         !< State fields pointer
@@ -412,8 +414,8 @@ END SUBROUTINE roms_state_serialize_c
 ! ------------------------------------------------------------------------------
 !> Unpack all fields from state vector.
 
-SUBROUTINE roms_state_deserialize_c (c_key_self, c_key_geom,                 &
-                                     c_vec_size, c_vec, c_index)             &
+SUBROUTINE roms_state_deserialize_c (c_key_self, c_key_geom,                   &
+                                     c_vec_size, c_vec, c_index)               &
                                BIND (c, name='roms_state_deserialize_f90')
 
   integer (c_int),    intent(in   ) :: c_key_self        !< State fields pointer
@@ -440,7 +442,7 @@ END SUBROUTINE roms_state_deserialize_c
 ! ------------------------------------------------------------------------------
 !> Appy logarithmic transformation to state.
 
-SUBROUTINE roms_state_logtrans_c (c_key_self, c_trvars)                      &
+SUBROUTINE roms_state_logtrans_c (c_key_self, c_trvars)                        &
                             BIND (c, name='roms_state_logtrans_f90')
 
   integer (c_int),     intent(in) :: c_key_self     !< State fields pointer
@@ -459,7 +461,7 @@ END SUBROUTINE roms_state_logtrans_c
 ! ------------------------------------------------------------------------------
 !> Appy exponential transformation to state.
 
-SUBROUTINE roms_state_expontrans_c (c_key_self, c_trvars)                    &
+SUBROUTINE roms_state_expontrans_c (c_key_self, c_trvars)                      &
                               BIND (c, name='roms_state_expontrans_f90')
 
   integer (c_int),     intent(in) :: c_key_self     !< State fields pointer
@@ -474,6 +476,26 @@ SUBROUTINE roms_state_expontrans_c (c_key_self, c_trvars)                    &
   CALL self%logexpon (transfunc="expon", trvars=trvars)
 
 END SUBROUTINE roms_state_expontrans_c
+
+
+! ------------------------------------------------------------------------------
+!> Add or remove fields because of VariableChange object elsewhere.
+
+SUBROUTINE roms_state_update_fields_c (c_key_self, c_vars)                     &
+                                 BIND (c, name='roms_state_update_fields_f90')
+
+  integer (c_int),     intent(inout) :: c_key_self  !< State fields pointer
+  TYPE (c_ptr), value, intent(in   ) :: c_vars      !< List of variables
+
+  TYPE (roms_state),         pointer :: self
+  TYPE (oops_variables)              :: vars
+
+  CALL roms_state_registry%get (c_key_self, self)
+
+  vars = oops_variables(c_vars)
+  CALL self%update_fields (vars)
+
+END SUBROUTINE roms_state_update_fields_c
 
 ! ------------------------------------------------------------------------------
 

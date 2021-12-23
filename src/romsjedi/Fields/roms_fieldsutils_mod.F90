@@ -18,6 +18,7 @@
 MODULE roms_fieldsutils_mod
 
 USE fckit_configuration_module, ONLY : fckit_configuration
+USE fckit_log_module,           ONLY : fckit_log
 USE datetime_mod,               ONLY : datetime,                             &
                                        datetime_to_string,                   &
                                        datetime_to_yyyymmddhhmmss,           &
@@ -34,6 +35,7 @@ implicit none
 PRIVATE
 
 PUBLIC  :: ana_fields
+PUBLIC  :: date2string
 PUBLIC  :: DetectError
 PUBLIC  :: field_info
 PUBLIC  :: nc_err
@@ -41,8 +43,6 @@ PUBLIC  :: roms_close_ncfile
 PUBLIC  :: roms_create_ncfile
 PUBLIC  :: roms_date2time
 PUBLIC  :: roms_gen_filename
-PUBLIC  :: roms_IOstruct
-PUBLIC  :: roms_IOstruct_delete
 PUBLIC  :: roms_tracer_index
 
 PRIVATE :: roms_create_ncfile_nf90
@@ -136,14 +136,14 @@ FUNCTION ana_fields (name, mask, lon, lat, z, h, Tb, Sb, Ub, Vb)             &
       fac2=-0.5*U0*dscale*f*SQRT(pi)/(Scoef*g*h)
       fac3=S0+(0.03_kind_real*fac1/fac2)*(2.0_kind_real-EXP(z/500.0_kind_real))
       value=fac3*mask
-    CASE ('uocn', 'sea_water_zonal_velocity',                                &
-          'usur', 'surface_sea_water_zonal_velocity')
+    CASE ('uocn', 'sea_water_eastward_velocity',                             &
+          'usur', 'surface_eastward_sea_water_velocity')
       fac1=SIN(lon*deg2rad)*COS(lat*deg2rad)/dscale
       fac2=z/h
       fac3=U0*(0.5_kind_real+fac2+(0.5*fac2*fac2))*EXP(-fac1*fac1)
       value=fac3*mask
-    CASE ('vocn', 'sea_water_meridional_velocity',                           &
-          'vsur', 'surface_sea_water_meridional_velocity')
+    CASE ('vocn', 'sea_water_northward_velocity',                            &
+          'vsur', 'surface_northward_sea_water_velocity')
       fac1=COS(lon*deg2rad)*SIN(lat*deg2rad)/dscale
       fac2=z/h
       fac3=-V0*(0.5_kind_real+fac2+(0.5*fac2*fac2))*EXP(-fac1*fac1)
@@ -160,6 +160,35 @@ FUNCTION ana_fields (name, mask, lon, lat, z, h, Tb, Sb, Ub, Vb)             &
   END SELECT
 
 END FUNCTION ana_fields
+
+! ------------------------------------------------------------------------------
+!> It converts date/time object to string.
+
+SUBROUTINE date2string (vdate, DateString, ISO)
+
+  TYPE (datetime),   intent(in ) :: vdate       !< Date/Time object
+  character (len=*), intent(out) :: DateString  !< calling routine
+  logical, optional, intent(in ) :: ISO         !< ISO8601 format
+
+  integer                        :: is
+ 
+  ! Convert date/time object to ISO8601 string.
+
+  CALL datetime_to_string (vdate, DateString)
+
+  ! If applicable, convert string to 'YYYY-MM-DD hh:mm:ss' format.
+
+  IF (PRESENT(ISO)) THEN
+    IF (.not.ISO) THEN
+      is=INDEX(DateString, 'T')
+      IF (is.gt.0) DateString(is:is) = CHAR(32)   ! replace 'T' with blank
+
+      is=INDEX(DateString, 'Z')
+      IF (is.gt.0) DateString(is:is) = CHAR(32)   ! replace 'Z' with blank
+    END IF
+  END IF
+
+END SUBROUTINE date2string
 
 ! ------------------------------------------------------------------------------
 !> If error is detected, create error message for aborting routine.
@@ -275,7 +304,7 @@ SUBROUTINE nc_err (status, NoErr, iotype, line, routine)
 END SUBROUTINE nc_err
 
 ! ------------------------------------------------------------------------------
-!> Converts JEDI ISO8601 date-time to ROMS time in second since reference-time
+!> Converts JEDI ISO8601 date-time to ROMS time in seconds since reference-time
 !> and Matlab datenum (origin 0000-00-00 00:00:00) in days.
 
 SUBROUTINE roms_date2time (LocalPET, vdate, romsTime, romsDateNumber)
@@ -427,122 +456,6 @@ FUNCTION roms_gen_filename (f_conf, max_length, vdate, file_type)            &
 END FUNCTION roms_gen_filename
 
 ! ------------------------------------------------------------------------------
-!> It allocates ROMS T_IO type structure it necessary. Then, intialize its
-!> fields.
-
-SUBROUTINE roms_IOstruct (ng, Nfiles, ncname, S)
-
-  USE mod_param,   ONLY : MT, Ngrids
-  USE mod_ncparam, ONLY : NV, out_lib
-  USE mod_iounits, ONLY : T_IO
-
-  integer,                  intent(in   ) :: ng         !< nested grid number
-  integer,                  intent(in   ) :: Nfiles     !< number of multi-files
-  character (len=*),        intent(in   ) :: ncname     !< NetCDF file name
-  TYPE (T_IO), allocatable, intent(inout) :: S(:)       !< IO structure
-
-  integer                                 :: i, j, lstr
-
-  IF (.not.allocated(S)) THEN
-
-  ! Allocate structure according to the number of nested grids.
-
-    allocate ( S(Ngrids) )
-
-  ! Allocate fields in the structure.
-
-    DO i = 1, Ngrids
-      IF (.not.associated(S(i)%Nrec))      allocate ( S(ng)%Nrec(Nfiles) )
-      IF (.not.associated(S(i)%time_min))  allocate ( S(ng)%time_min(Nfiles) )
-      IF (.not.associated(S(i)%time_max))  allocate ( S(ng)%time_max(Nfiles) )
-      IF (.not.associated(S(i)%Vid))       allocate ( S(ng)%Vid(NV) )
-      IF (.not.associated(S(i)%Tid))       allocate ( S(ng)%Tid(MT) )
-#if defined PIO_LIB
-      IF (.not.associated(S(i)%pioVar))    allocate ( S(ng)%pioVar(NV) )
-      IF (.not.associated(S(i)%pioTrc))    allocate ( S(ng)%pioTrc(MT) )
-#endif
-      IF (.not.associated(S(i)%files))     allocate ( S(ng)%files(Nfiles) )
-    END DO
- 
-    ! Initialize various fields.
-
-    S(ng)%IOtype=out_lib                       ! file IO type
-    S(ng)%Nfiles=Nfiles                        ! number of multi-files
-    S(ng)%Fcount=1                             ! multi-file counter
-    S(ng)%load=1                               ! filename load counter
-    S(ng)%Rindex=0                             ! time index
-    S(ng)%ncid=-1                              ! closed NetCDF state
-    S(ng)%Vid=-1                               ! NetCDF variables IDs
-    S(ng)%Tid=-1                               ! NetCDF tracers IDs
-#if defined PIO_LIB
-    S(ng)%pioFile%fh=-1                        ! closed file handler
-    DO i=1,NV
-      S(ng)%pioVar(i)%vd%varID=-1              ! variables IDs
-      S(ng)%pioVar(i)%dkind=-1                 ! variables data kind
-      S(ng)%pioVar(i)%gtype=0                  ! variables C-grid type
-    END DO
-    DO i=1,MT
-      S(ng)%pioTrc(i)%vd%varID=-1              ! tracers IDs
-      S(ng)%pioTrc(i)%dkind=-1                 ! tracers data kind
-      S(ng)%pioTrc(i)%gtype=0                  ! tracers C-grid type
-    END DO
-#endif
-
-    S(ng)%Nrec=0                               ! record counter
-    S(ng)%time_min=0.0_kind_real               ! starting time
-    S(ng)%time_max=0.0_kind_real               ! ending time
-
-    DO j=1,Nfiles
-      S(ng)%files(j)=TRIM(ncname)              ! load multi-files
-    END DO
-    S(ng)%label='ROMS-JEDI State Fields'       ! structure label
-    S(ng)%name=TRIM(S(ng)%files(1))            ! current filename
-    lstr=LEN_TRIM(S(ng)%name)
-    S(ng)%head=S(ng)%name(1:lstr-3)            ! head filename (without  ".nc")
-    S(ng)%base=S(ng)%name(1:lstr-3)            ! base filename (without  ".nc")
-
-  ELSE
-
-  ! Structure is recycled. That is, output NetCDF files are created according
-  ! to specified policy: a new file is create every policy interval (like one
-  ! record per file, daily files, etc.).  Reset essential variables.
-
-    S(ng)%Fcount=1
-    S(ng)%load=1
-    S(ng)%Rindex=0
-
-    S(ng)%Nrec=0
-    S(ng)%time_min=0.0_kind_real
-    S(ng)%time_max=0.0_kind_real
-
-    S(ng)%files(1)=TRIM(ncname)
-    S(ng)%name=TRIM(S(ng)%files(1))
-    lstr=LEN_TRIM(S(ng)%name)
-    S(ng)%head=S(ng)%name(1:lstr-3)
-    S(ng)%base=S(ng)%name(1:lstr-3)
-
-  END IF
-
-END SUBROUTINE roms_IOstruct
-
-! ------------------------------------------------------------------------------
-!> Deallocates ROMS T_IO type structure.
-
-SUBROUTINE roms_IOstruct_delete (S)
-
-  USE mod_iounits, ONLY : T_IO
-
-  TYPE (T_IO), allocatable, intent(inout) :: S(:)       !< IO structure
-
-  ! Deallocate I/O structure. The Fortran 2003 standard allows deallocating
-  ! just the parent object to deallocate all array variables within its scope
-  ! automatically.
-
-  IF (allocated(S))                 deallocate (S)
-
-END SUBROUTINE roms_IOstruct_delete
-
-! ------------------------------------------------------------------------------
 !> It set ROMS tracer index from ROMS-JEDI internal metadata name.
 
 FUNCTION roms_tracer_index (name) RESULT (tracer_index)
@@ -554,12 +467,12 @@ FUNCTION roms_tracer_index (name) RESULT (tracer_index)
   integer                       :: tracer_index    !< returned value
   character (len=1024)          :: Message
 
-  ! Set ROMS tracer-type variable array index.
+  ! Set ROMS tracer-type variable and diffusion array index.
 
   SELECT CASE (TRIM(name))
-    CASE ('tocn')                          !< potential temperature
+    CASE ('tocn', 'Ktocn')                 !< potential temperature
       tracer_index = itemp
-    CASE ('socn')                          !< salinity
+    CASE ('socn', 'Ksocn')                 !< salinity
       tracer_index = isalt
     CASE DEFAULT
       WRITE (Message,'(2a)')                                                 &

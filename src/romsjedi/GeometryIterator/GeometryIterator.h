@@ -28,7 +28,7 @@
 
 namespace eckit {
   namespace geometry {
-    class Point2;
+    class Point3;
   }
 }
 namespace romsjedi {
@@ -41,25 +41,29 @@ namespace romsjedi {
 // -----------------------------------------------------------------------------
 
   class GeometryIterator: public std::iterator<std::forward_iterator_tag,
-                                               eckit::geometry::Point2>,
+                                               eckit::geometry::Point3>,
                           public util::Printable,
                           private util::ObjectCounter<GeometryIterator> {
    public:
-    static const std::string classname() {return "roms::GeometryIterator";}
+    static const std::string classname() {return "romsjedi::GeometryIterator";}
 
     // constructor / destructor
 
     GeometryIterator(const GeometryIterator &);
     explicit GeometryIterator(const Geometry & geom,
-                              const int & iindex = 1, const int & jindex = 1);
+                              const int & Iindex = 1,
+                              const int & Jindex = 1,
+                              const int & Kindex = 1);
     ~GeometryIterator();
 
     // other operators
 
     bool operator==(const GeometryIterator &) const;
     bool operator!=(const GeometryIterator &) const;
-    eckit::geometry::Point2 operator*() const;
+    eckit::geometry::Point3 operator*() const;
     GeometryIterator& operator++();
+
+    int iteratorDimension() const;
 
     F90iter & toFortran() {return keyIter_;}
     const F90iter & toFortran() const {return keyIter_;}

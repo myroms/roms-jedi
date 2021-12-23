@@ -27,7 +27,6 @@
 #include "romsjedi/GetValues/GetValues.h"
 #include "romsjedi/GetValues/GetValuesFortran.h"
 #include "romsjedi/State/State.h"
-#include "romsjedi/VariableChanges/Model2GeoVaLs/Model2GeoVaLs.h"
 
 #include "ufo/GeoVaLs.h"
 #include "ufo/Locations.h"
@@ -41,8 +40,7 @@ namespace romsjedi {
   GetValues::GetValues(const Geometry & geom,
                        const ufo::Locations & locs,
                        const eckit::Configuration & config)
-    : locs_(locs), geom_(new Geometry(geom)),
-    model2geovals_(new Model2GeoVaLs(geom, config)) {
+    : locs_(locs), geom_(new Geometry(geom)) {
     oops::Log::trace() << "GetValues::GetValues starting" << std::endl;
     roms_getvalues_create_f90(keyGetValues_, geom.toFortran(), locs);
     oops::Log::trace() << "GetValues::GetValues done" << std::endl;
@@ -67,26 +65,11 @@ namespace romsjedi {
                               const util::DateTime & t2,
                               ufo::GeoVaLs & geovals) const {
     oops::Log::trace() << "GetValues::fillGeoVaLs starting" << std::endl;
-
-    // Do variable change if it has not already been done.
-    std::unique_ptr<State> varChangeState;
-    const State * state_ptr;
-    if (geovals.getVars() <= state.variables()) {
-      state_ptr = &state;
-    } else {
-      varChangeState.reset(new State(*geom_, geovals.getVars(),
-                                     state.validTime()));
-      model2geovals_->changeVar(state, *varChangeState);
-      state_ptr = varChangeState.get();
-    }
-
-    // Get ocean state GeoVaLs.
     roms_getvalues_fill_geovals_f90(keyGetValues_,
                                     geom_->toFortran(),
                                     state.toFortran(),
                                     t1, t2, locs_,
                                     geovals.toFortran());
-
     oops::Log::trace() << "GetValues::fillGeoVaLs done" << geovals << std::endl;
   }
 

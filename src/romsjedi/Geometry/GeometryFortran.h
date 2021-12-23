@@ -37,7 +37,7 @@ namespace romsjedi {
     void roms_geom_info_f90(const F90geom &, int &, int &, int &, int &, int &,
                             int &, int &, int &, int &, int &, int &, int &);
     void roms_geom_start_end_f90(const F90geom &, int &, int &, int &, int &,
-                                 int &);
+                                 int &, int &);
     void roms_geom_get_num_levels_f90(const F90geom &, const oops::Variables &,
                                       const size_t &, size_t[]);
     void roms_geom_set_atlas_lonlat_f90(const F90geom &,

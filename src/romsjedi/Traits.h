@@ -10,52 +10,40 @@
 
 #include <string>
 
-#include "ioda/ObsSpace.h"
-#include "ioda/ObsVector.h"
-
-#include "ufo/GeoVaLs.h"
-#include "ufo/LinearObsOperator.h"
-#include "ufo/Locations.h"
-#include "ufo/ObsBias.h"
-#include "ufo/ObsBiasCovariance.h"
-#include "ufo/ObsBiasIncrement.h"
-#include "ufo/ObsDiagnostics.h"
-#include "ufo/ObsOperator.h"
-
-#include "romsjedi/AnalyticInit/AnalyticInit.h"
+#include "romsjedi/ErrorCovariance/ErrorCovariance.h"
 #include "romsjedi/Geometry/Geometry.h"
 #include "romsjedi/GeometryIterator/GeometryIterator.h"
 #include "romsjedi/GetValues/GetValues.h"
 #include "romsjedi/GetValues/LinearGetValues.h"
 #include "romsjedi/Increment/Increment.h"
+#include "romsjedi/LinearVariableChange/LinearVariableChange.h"
 #include "romsjedi/ModelBias/ModelBias.h"
 #include "romsjedi/ModelBias/ModelBiasCovariance.h"
 #include "romsjedi/ModelBias/ModelBiasIncrement.h"
 #include "romsjedi/State/State.h"
-
-// #include "romsjedi/Covariance/Covariance.h"
+#include "romsjedi/VariableChange/VariableChange.h"
 
 namespace romsjedi {
 
   struct Traits{
     static std::string name() {return "ROMSJEDI";}
-    static std::string nameCovar() {return "romsjediCovar";}
-    static std::string nameCovar4D() {return "romsjediCovar";}
+    static std::string nameCovar() {return "romsjedi-ID";}
 
     // Interfaces that roms has to implement
-    // ---------------------------------------------------
+    // ----------------------------------------------------------
 
-    typedef romsjedi::Geometry            Geometry;
-    typedef romsjedi::GeometryIterator    GeometryIterator;
-    typedef romsjedi::GetValues           GetValues;
-    typedef romsjedi::Increment           Increment;
-    typedef romsjedi::LinearGetValues     LinearGetValues;
-    typedef romsjedi::ModelBias           ModelAuxControl;
-    typedef romsjedi::ModelBiasCovariance ModelAuxCovariance;
-    typedef romsjedi::ModelBiasIncrement  ModelAuxIncrement;
-    typedef romsjedi::State               State;
-
-//  typedef romsjedi::Covariance          Covariance;
+    typedef romsjedi::ErrorCovariance      Covariance;
+    typedef romsjedi::Geometry             Geometry;
+    typedef romsjedi::GeometryIterator     GeometryIterator;
+    typedef romsjedi::GetValues            GetValues;
+    typedef romsjedi::Increment            Increment;
+    typedef romsjedi::LinearGetValues      LinearGetValues;
+    typedef romsjedi::LinearVariableChange LinearVariableChange;
+    typedef romsjedi::ModelBias            ModelAuxControl;
+    typedef romsjedi::ModelBiasCovariance  ModelAuxCovariance;
+    typedef romsjedi::ModelBiasIncrement   ModelAuxIncrement;
+    typedef romsjedi::State                State;
+    typedef romsjedi::VariableChange       VariableChange;
   };
 
 }  // namespace romsjedi

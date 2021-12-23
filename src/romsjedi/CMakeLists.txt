@@ -49,15 +49,15 @@ target_link_libraries( romsjedi PUBLIC ufo )
 # Add source code in the sub-directories
 
 add_subdirectory(AnalyticInit)
+add_subdirectory(ErrorCovariance)
 add_subdirectory(Fields)
 add_subdirectory(Geometry)
 add_subdirectory(GeometryIterator)
 add_subdirectory(GetValues)
 add_subdirectory(Increment)
+add_subdirectory(LinearModel)
+add_subdirectory(LinearVariableChange)
 add_subdirectory(Model)
 add_subdirectory(ModelBias)
 add_subdirectory(State)
-add_subdirectory(VariableChanges)
-
-# TODO(template_impl) add_subdirectory(Covariance)
-
+add_subdirectory(VariableChange)

@@ -20,9 +20,9 @@ USE datetime_mod
 USE duration_mod
 USE fckit_configuration_module, ONLY : fckit_configuration
 USE fckit_log_module,           ONLY : log, fckit_log
-USE fckit_mpi_module,           ONLY : fckit_mpi_comm,                       &
-                                       fckit_mpi_min,                        &
-                                       fckit_mpi_max,                        &
+USE fckit_mpi_module,           ONLY : fckit_mpi_comm,                         &
+                                       fckit_mpi_min,                          &
+                                       fckit_mpi_max,                          &
                                        fckit_mpi_sum
 USE kinds,                      ONLY : kind_real
 USE oops_variables_mod
@@ -52,13 +52,18 @@ TYPE :: roms_field
   integer                            :: InpNCid, OutNCid     !< NetCDF file IDs
   integer                            :: InpRec, OutRec       !< NetCDF records
 
+  real (kind=kind_real)              :: CheckSum             !< field checksum
   real (kind=kind_real)              :: DateNumber           !< Matlab datenum
+  real (kind=kind_real)              :: MinValue             !< field min value
+  real (kind=kind_real)              :: MaxValue             !< field max value
 
+  real (kind=kind_real)              :: spval = 1.0E+37_kind_real
+ 
   real (kind=kind_real),     pointer :: angle(:,:) => null() !< field grid angle
   real (kind=kind_real),     pointer :: lon(:,:)   => null() !< field lon
   real (kind=kind_real),     pointer :: lat(:,:)   => null() !< field lat
   real (kind=kind_real),     pointer :: mask(:,:)  => null() !< field mask
-  real (kind=kind_real), allocatable :: val(:,:,:)           !< field dat
+  real (kind=kind_real), allocatable :: val(:,:,:)           !< field data
 
   character (len=:),     allocatable :: name                 !< internal name
 
@@ -77,6 +82,9 @@ TYPE :: roms_field
   PROCEDURE :: update_halo     => roms_field_update_halo
   PROCEDURE :: stencil_interp  => roms_field_stencil_interp
 
+  PROCEDURE :: io_has_var      => roms_field_io_has_var
+  PROCEDURE :: stats           => roms_field_stats
+
 END TYPE roms_field
 
 ! ------------------------------------------------------------------------------
@@ -86,8 +94,10 @@ END TYPE roms_field
 
 TYPE :: roms_fields
 
-  TYPE (roms_geom),  pointer :: geom                  !< Geometry
-  TYPE (roms_field), pointer :: fields(:) => null()   !< Fields set
+  TYPE (roms_geom),  pointer     :: geom => null()    !< Geometry
+  TYPE (roms_field), allocatable :: fields(:)         !< Fields set
+
+  TYPE (T_IO), allocatable       :: IO(:)             !< ROMS I/O file structure
 
   CONTAINS
 
@@ -122,14 +132,17 @@ TYPE :: roms_fields
 
   ! I/O processing.
 
-  PROCEDURE :: IOmetadata      => roms_fields_IOmetadata
+  PROCEDURE :: IO_create       => roms_fields_IO_create
+  PROCEDURE :: IO_metadata     => roms_fields_IO_metadata
   PROCEDURE :: read            => roms_fields_read
   PROCEDURE :: write           => roms_fields_write
+  PROCEDURE :: write_debug     => roms_fields_write_debug
 
   ! Misc.
 
-  PROCEDURE :: update_halos    => roms_fields_update_halos
   PROCEDURE :: colocate        => roms_fields_colocate
+  PROCEDURE :: update_fields   => roms_fields_update_fields
+  PROCEDURE :: update_halos    => roms_fields_update_halos
 
   ! Field serialization.
 
@@ -141,15 +154,21 @@ END TYPE roms_fields
 
 PRIVATE
 
-!  Switch for printing fields information during debugging.
+! Switch for printing fields information during debugging.
 
 logical :: LdebugFields = .FALSE.
 
-!  Define input and output ROMS I/O structures
+! Number of I/O multi-files.
 
-TYPE (T_IO), allocatable :: Sinput(:)                  ! Input  file structure
-TYPE (T_IO), allocatable :: Soutput(:)                 ! Output file structure
+integer, parameter :: Nfiles = 1
+
+! Define input and output ROMS I/O structures
+
 TYPE (roms_field_metadata), allocatable :: metadata(:) ! I/O metadata structure
+
+! Local MPI communicator.
+
+TYPE (fckit_mpi_comm) :: my_comm
 
 ! ------------------------------------------------------------------------------
 CONTAINS
@@ -167,23 +186,60 @@ CONTAINS
 SUBROUTINE roms_field_copy (self, rhs)
 
   CLASS (roms_field), intent(inout) :: self      !< LHS Field object
-  TYPE (roms_field),  intent(   in) :: rhs       !< RHS Field object
+  TYPE (roms_field),  intent(in   ) :: rhs       !< RHS Field object
 
   integer                           :: lstr
+  integer                           :: LBi, UBi, LBj, UBj, N
+
+  IF (LdebugFields .and. (my_comm%rank() .eq. 0)) THEN
+    PRINT '(9a,5(a,i0))', ' roms_field::copy: Processing RHS - ',              &
+                          ' name = ', rhs%name,                                & 
+                          ', metadata%name ', rhs%metadata%name,               &
+                          ', getval_name ', rhs%metadata%getval_name,          &
+                          ', getval_name_surface = ',                          &
+                          rhs%metadata%getval_name_surface,                    &
+                          ', LBi = ', LBOUND(rhs%val,DIM=1),                   &
+                          ', UBi = ', UBOUND(rhs%val,DIM=1),                   &
+                          ', LBj = ', LBOUND(rhs%val,DIM=2),                   &
+                          ', UBj = ', UBOUND(rhs%val,DIM=2),                   &
+                          ', N = ',   UBOUND(rhs%val,DIM=3)
+  END IF
+
+  ! Sometimes, fields are transformed by the variable change operator that
+  ! may change the size of the level dimension.  For example, we can extract
+  ! and operate on a particular level like the surface value to pass SST, SSS,
+  ! or other fields.  In such a case, deallocate/allocate "self" to the correct
+  ! third dimension of "rhs"
+
+  IF ((rhs%name .eq. rhs%metadata%getval_name_surface) .and.                   &
+      (SIZE(self%val, DIM=3) .ne. SIZE(rhs%val, DIM=3))) THEN
+
+    deallocate (self%val)
+
+    LBi = LBOUND(rhs%val, DIM=1)
+    UBi = UBOUND(rhs%val, DIM=1)
+    LBj = LBOUND(rhs%val, DIM=2)
+    UBj = UBOUND(rhs%val, DIM=2)
+    N   = UBOUND(rhs%val, DIM=3)
+
+    allocate ( self%val(LBi:UBi, LBj:UBj, N) )
+    self%N = N
+
+    self%name = rhs%name                      ! update field name and metadata
+    self%metadata = rhs%metadata
+    self%metadata%name = rhs%name 
+  END IF
+
+  ! Special case for processing RHS variable with GeoVaLs as short-name.
+
+  IF ((rhs%name .ne. rhs%metadata%name) .and.                                  &
+      (self%name .ne. rhs%name)) THEN
+    self%name = rhs%name
+  END IF
 
   ! The only variable that should be different is %val.
 
   CALL self%check_congruent (rhs)
-
-  IF (LdebugFields) THEN
-    PRINT '(2a,a5,5(a,i0))', 'Entered roms_field::copy:',                    &
-                             ' variable = ', rhs%metadata%io_name,           &
-                             ', LBi = ', LBOUND(rhs%val,DIM=1),              &
-                             ', UBi = ', UBOUND(rhs%val,DIM=1),              &
-                             ', LBj = ', LBOUND(rhs%val,DIM=2),              &
-                             ', UBj = ', UBOUND(rhs%val,DIM=2),              &
-                             ', N = ',   UBOUND(rhs%val,DIM=3)
-  END IF
 
   ! Copy field values.
 
@@ -234,13 +290,13 @@ SUBROUTINE roms_field_delete (self)
 
   CLASS (roms_field), intent(inout) :: self      !< Field object
 
-  IF (LdebugFields) THEN
-    PRINT '(2a,a5,5(a,i0))', 'Entered roms_field::copy:',                    &
-                             ', variable = ', self%metadata%io_name,         &
-                             '  LBi = ', LBOUND(self%val,DIM=1),             &
-                             ', UBi = ', UBOUND(self%val,DIM=1),             &
-                             ', LBj = ', LBOUND(self%val,DIM=2),             &
-                             ', UBj = ', UBOUND(self%val,DIM=2),             &
+  IF (LdebugFields .and. (my_comm%rank() .eq. 0)) THEN
+    PRINT '(2a,a5,5(a,i0))', 'Entered roms_field::copy:',                      &
+                             ', variable = ', self%metadata%io_name,           &
+                             '  LBi = ', LBOUND(self%val,DIM=1),               &
+                             ', UBi = ', UBOUND(self%val,DIM=1),               &
+                             ', LBj = ', LBOUND(self%val,DIM=2),               &
+                             ', UBj = ', UBOUND(self%val,DIM=2),               &
                              ', N = ',   UBOUND(self%val,DIM=3)
   END IF
 
@@ -257,22 +313,31 @@ SUBROUTINE roms_field_check_congruent (self, rhs)
   TYPE (roms_field),  intent(in) :: rhs          !< RHS Field object
 
   integer                       :: i
+  character (len=1)             :: mydim
 
   IF (self%N .ne. rhs%N) THEN
-    CALL abor1_ftn ("roms_field:  self%N unequal rhs%N") 
+    CALL abor1_ftn ("roms_field::check_congruent: '" // self%name //           &
+                    "', third dimension self%N unequal to '" // rhs%name //    &
+                    "' rhs%N") 
   END IF
 
   IF (self%name .ne. rhs%name) THEN
-    CALL abor1_ftn ("roms_field:  self%name unequal rhs%name")
+    CALL abor1_ftn ("roms_field:::check_congruent: '" // self%name //          &
+                    "', variable name self%name unequal '" // rhs%name //      &
+                    "' rhs%name, and possible metadata is different")
   END IF
 
   IF (SIZE(SHAPE(self%val)) .ne. SIZE(SHAPE(rhs%val))) THEN
-    CALL abor1_ftn ("roms_field: shape of self%val unequal rhs%val")
+    CALL abor1_ftn ("roms_field::check_congruent: " //                         &
+                    "variable array rank of self%val unequal rhs%val")
   END IF
 
   DO i = 1, SIZE(SHAPE(self%val))
     IF (SIZE(self%val, DIM=i) .ne. SIZE(rhs%val, DIM=i)) THEN
-      CALL abor1_ftn ("roms_field: shape of self%val unequal rhs%val")
+      WRITE (mydim,'(i0)') i
+      CALL abor1_ftn ("roms_field::check_congruent:  '" // self%name //        &
+                      "', dimension " // mydim //                              &
+                      " in variable self%val unequal rhs%val")
     END IF
   END DO
 
@@ -286,7 +351,7 @@ SUBROUTINE roms_field_update_halo (self, geom)
   USE mp_exchange_mod, ONLY : mp_exchange2d, mp_exchange3d
 
   CLASS (roms_field),        intent(inout) :: self  !< Field object
-  TYPE (roms_geom), pointer, intent(   in) :: geom  !< Geometry
+  TYPE (roms_geom), pointer, intent(in   ) :: geom  !< Geometry
 
   logical                                  :: EWperiodic, NSperiodic
   integer                                  :: model, ng, tile, NghostPoints
@@ -309,12 +374,12 @@ SUBROUTINE roms_field_update_halo (self, geom)
   UBk = geom%UBk
 
   IF (self%N .eq. 1) THEN
-    CALL mp_exchange2d (ng, tile, 1, 1, LBi, UBi, LBj, UBj,                  &
-                        NghostPoints, EWperiodic, NSperiodic,                &
+    CALL mp_exchange2d (ng, tile, 1, 1, LBi, UBi, LBj, UBj,                    &
+                        NghostPoints, EWperiodic, NSperiodic,                  &
                         self%val(:,:,1))
   ELSE
-     CALL mp_exchange3d (ng, tile, 1, 1, LBi, UBi, LBj, UBj, LBk, UBk,       &
-                         NghostPoints, EWperiodic, NSperiodic,               &
+     CALL mp_exchange3d (ng, tile, 1, 1, LBi, UBi, LBj, UBj, LBk, UBk,         &
+                         NghostPoints, EWperiodic, NSperiodic,                 &
                          self%val)
   END IF
     
@@ -326,9 +391,9 @@ END SUBROUTINE roms_field_update_halo
 SUBROUTINE roms_field_stencil_interp (self, geom, interp, method)
 
   CLASS (roms_field),        intent(inout) :: self    !< Field object
-  TYPE (roms_geom), pointer, intent(   in) :: geom    !< Geometry
+  TYPE (roms_geom), pointer, intent(in   ) :: geom    !< Geometry
   TYPE (roms_interp_type),   intent(inout) :: interp  !< interpolation object
-  integer,                   intent(   in) :: method  !< interpolation method
+  integer,                   intent(in   ) :: method  !< interpolation method
 
   real(kind=kind_real),        allocatable :: val_src(:,:,:)
 
@@ -341,7 +406,7 @@ SUBROUTINE roms_field_stencil_interp (self, geom, interp, method)
 
   CALL roms_horiz_interp (interp, val_src, self%val, method)
   IF (exit_flag .ne. NoError) THEN
-    CALL abor1_ftn ("roms_field::stencil_interp: Error in roms_horiz_interp")
+    CALL abor1_ftn ('roms_field::stencil_interp: Error in roms_horiz_interp')
   END IF
 
   ! Update halo.
@@ -359,10 +424,10 @@ END SUBROUTINE roms_field_stencil_interp
 
 SUBROUTINE roms_field_interp_initialize (geom, field, interp, gtype)
 
-  TYPE (roms_geom),        intent(   in) :: geom      !< geometry object
+  TYPE (roms_geom),        intent(in   ) :: geom      !< geometry object
   TYPE (roms_field),       intent(inout) :: field     !< field object
   TYPE (roms_interp_type), intent(inout) :: interp    !< interpolation object
-  character (len=*),       intent(   in) :: gtype     !< C-grid location
+  character (len=*),       intent(in   ) :: gtype     !< C-grid location
 
   integer                                :: LBi, UBi, LBj, UBj
 
@@ -419,7 +484,7 @@ SUBROUTINE roms_field_interp_initialize (geom, field, interp, gtype)
   interp%UBj_dst = UBj
 
   SELECT CASE (gtype)
-    CASE ('r', 'R')                      !< RHO-points
+    CASE ('r', 'R', 'w', 'W')            !< RHO-points
       interp%Istr_dst = geom%IstrR
       interp%Iend_dst = geom%IendR
       interp%Jstr_dst = geom%JstrR
@@ -444,7 +509,8 @@ SUBROUTINE roms_field_interp_initialize (geom, field, interp, gtype)
       interp%lat_dst  = geom%latv
       interp%mask_dst = geom%vmask
     CASE DEFAULT
-      CALL abor1_ftn ('roms_field::hindices unknown C-grid location = '// gtype)
+      CALL abor1_ftn ('roms_field::interp_initialize: unknown C-grid ' //      &
+                      'location = ' // gtype)
   END SELECT
 
   ! Compute the horizontal fractional coordinates (x_dst, y_dst) of the source
@@ -453,6 +519,190 @@ SUBROUTINE roms_field_interp_initialize (geom, field, interp, gtype)
   CALL roms_interp_fractional (interp)
 
 END SUBROUTINE roms_field_interp_initialize
+
+! ------------------------------------------------------------------------------
+!> It checks if field data is in file and return its NetCDF variable index. It
+!! assumes that either 'netcdf_inq_var' or 'pio_netcdf_inq_var' has been called
+!! previously. If found, it checks variable dimensions for consistency with
+!! geometry.
+ 
+FUNCTION roms_field_io_has_var (field, geom, vindex) RESULT (foundit)
+
+  USE mod_netcdf,  ONLY : dim_size, n_var, var_dim, var_name
+
+  CLASS (roms_field), intent(in ) :: field         !< Field object  
+  TYPE (roms_geom),   intent(in ) :: geom          !< Geometry object
+  integer,            intent(out) :: vindex        !< variable index
+
+  logical                         :: foundit       !< returned value
+
+  logical                         :: is3d
+  integer                         :: Im, Jm, Km
+  integer                         :: LBk, UBk
+  integer                         :: i, nx, ny, nz
+  character (len=256)             :: text
+
+  ! Initialize
+
+  foundit = .FALSE.
+  is3d    = .FALSE.
+  vindex  = -1
+
+  ! Check if field name is in list of NetCDF variables.
+
+  DO i = 1, n_var
+    IF (field%metadata%io_name .eq. TRIM(var_name(i))) THEN
+      foundit = .TRUE.
+      vindex  = i
+      EXIT
+    END IF
+  END DO
+
+  ! If found variable, check its dimensions for consitency with geometry object.
+
+  IF (foundit) THEN
+
+    SELECT CASE (field%metadata%levels)
+      CASE ('full_ocn')                             ! 3D field, full r-column
+        LBk = 1
+        UBk = geom%N
+        is3d = .TRUE.
+      CASE ('wfull_ocn')                            ! 3D field, full column
+        LBk = 0
+        UBk = geom%N
+        is3d = .TRUE.
+      CASE ('1', 'surface')                  
+        LBk = 1                                     ! 3D field, single level
+        UBk = 1
+    END SELECT
+    Km = UBk-LBk+1
+
+    SELECT CASE (field%metadata%gtype)
+      CASE ('r')                                    ! RHO-points variable
+        Im = geom%Lm + 2
+        Jm = geom%Mm + 2
+      CASE ('u')                                    ! U-points variable
+        Im = geom%Lm + 1
+        Jm = geom%Mm + 2
+      CASE ('v')                                    ! V-points variable
+        Im = geom%Lm + 2
+        Jm = geom%Mm + 1
+      CASE ('w')                                    ! W-poits variable
+        Im = geom%Lm + 2
+        Jm = geom%Mm + 2
+    END SELECT
+
+    ! Check variable dimensions for consistency.
+
+    nx = dim_size(var_dim(1,vindex))
+    ny = dim_size(var_dim(2,vindex))
+
+    IF (is3d) THEN
+
+      nz = dim_size(var_dim(3,vindex))
+      IF ((nx.ne.Im).or.(ny.ne.Jm).or.(nz.ne.Km)) THEN
+        IF (geom%f_comm%rank() .eq. 0) THEN
+          WRITE (text,'(a,3(1x,i0))')                                          &
+                      'roms_field_io_has_var: inconsitent dimensions for '//   &
+                      TRIM(field%metadata%io_name)//':', Im, Jm, Km
+          CALL fckit_log%error (TRIM(text))
+          WRITE (text,'(a,2(1x,i0))')                                          &
+                      'roms_field::io_has_var: expected    dimensions for '//  &
+                      TRIM(field%metadata%io_name)//':', nx, ny, nz
+          CALL fckit_log%error (TRIM(text))
+        END IF
+      END IF
+
+    ELSE
+
+      IF ((nx.ne.Im).or.(ny.ne.Jm)) THEN
+        IF (geom%f_comm%rank() .eq. 0) THEN
+          WRITE (text,'(a,2(1x,i0))')                                          &
+                      'roms_field::io_has_var: inconsitent dimensions for '//  &
+                      TRIM(field%metadata%io_name)//':', Im, Jm
+          CALL fckit_log%error (TRIM(text))
+          WRITE (text,'(a,2(1x,i0))')                                          &
+                      'roms_field::io_has_var: expected    dimensions for '//  &
+                      TRIM(field%metadata%io_name)//':', nx, ny 
+          CALL fckit_log%error (TRIM(text))
+        END IF
+      END IF
+
+    END IF
+
+  END IF
+
+END FUNCTION roms_field_io_has_var
+
+! ------------------------------------------------------------------------------
+!> It computes global field statistics: Min and Max.
+
+SUBROUTINE roms_field_stats (self, fstats)
+
+  USE get_hash_mod, ONLY : get_hash 
+
+  CLASS (roms_field),     intent(in ) :: self         !< Field object  
+  real (kind=kind_real),  intent(out) :: fstats(3)    !< Field statistics
+
+  logical,                allocatable :: mask(:,:)
+  integer                             :: Istr, Iend, Jstr, Jend, LBk, UBk
+  integer                             :: Npts, k
+  integer (kind=SELECTED_INT_KIND(8)) :: checksum
+  real (kind=kind_real),      pointer :: Cwrk(:)
+  real (kind=kind_real),  allocatable :: buffer(:,:)
+  real (kind=kind_real)               :: stats(3)
+
+  ! Initialize.
+
+  Istr = self%Istr
+  Iend = self%Iend
+  Jstr = self%Jstr
+  Jend = self%Jend
+  LBk  = LBOUND(self%val, DIM=3)
+  UBk  = UBOUND(self%val, DIM=3)
+  Npts = (Iend-Istr+1)*(Jend-Jstr+1)*(UBk-LBk+1)
+
+  ! Get the mask and the total number of grid cells.
+
+  allocate ( mask(Istr:Iend, Jstr:Jend) )
+
+  IF (.not. ASSOCIATED(self%mask)) THEN
+    mask = .true.
+  ELSE
+    mask = self%mask(Istr:Iend,Jstr:Jend) > 0.0
+  END IF
+
+  ! Compute field statistics.
+
+  allocate ( buffer(2,LBk:UBk) )
+
+  DO k = LBk, UBK
+    buffer(1,k) = MINVAL(self%val(Istr:Iend, Jstr:Jend, k), MASK=mask)
+    buffer(2,k) = MAXVAL(self%val(Istr:Iend, Jstr:Jend, k), MASK=mask)
+  END DO
+
+  stats(1) = MINVAL(buffer(1,:))
+  stats(2) = MAXVAL(buffer(2,:))
+
+  ! Global reductions
+
+  CALL my_comm%allreduce (stats(1), fstats(1), fckit_mpi_min())
+  CALL my_comm%allreduce (stats(2), fstats(2), fckit_mpi_max())
+
+  ! Compute order invariant 'checksum'.
+
+  IF (.not.associated(Cwrk)) allocate ( Cwrk(Npts) )
+  Cwrk = PACK(self%val(Istr:Iend, Jstr:Jend, LBk:UBk), .TRUE.)
+  CALL get_hash (Cwrk, Npts, checksum, .TRUE.)
+  IF (associated(Cwrk)) deallocate (Cwrk)  
+
+  fstats(3) = REAL(checksum, KIND=kind_real)
+
+  ! Deallocate.
+
+  IF (allocated(mask)) deallocate (mask)
+
+END SUBROUTINE roms_field_stats
 
 ! ------------------------------------------------------------------------------
 ! ROMS routines for a set of fields:
@@ -465,26 +715,26 @@ SUBROUTINE roms_fields_create (self, geom, vars)
 
   CLASS (roms_fields),        intent(inout) :: self   !< Fields object
   TYPE (roms_geom),  pointer, intent(inout) :: geom   !< Geometry
-  TYPE (oops_variables),      intent(inout) :: vars   !< Fields names to create
+  TYPE (oops_variables),      intent(in   ) :: vars   !< Fields names to create
 
   integer                                   :: i
   character(len=:), allocatable             :: vars_str(:)
 
   ! Make sure current object has not already been allocated.
 
-  IF (ASSOCIATED(self%fields)) THEN
-    CALL abor1_ftn ("roms_fields::create(): object already allocated")
+  IF (allocated(self%fields)) THEN
+    CALL abor1_ftn ('roms_fields::create: SELF object already allocated')
   END IF
 
   ! Associate geometry.
 
   self%geom => geom
 
-  IF (LdebugFields) THEN
-    PRINT '(a, 6(a,i0))', 'roms_fields::create: ',                           &
-                          ' tile = ', geom%f_comm%rank(),                    &
-                          ', LBi = ', geom%LBi, ', UBi = ', geom%UBi,        &
-                          ', LBj = ', geom%LBj, ', UBj = ', geom%UBj,        &
+  IF (LdebugFields .and. (my_comm%rank() .eq. 0)) THEN
+    PRINT '(a, 6(a,i0))', 'roms_fields::create: ',                             &
+                          ' tile = ', geom%f_comm%rank(),                      &
+                          ', LBi = ', geom%LBi, ', UBi = ', geom%UBi,          &
+                          ', LBj = ', geom%LBj, ', UBj = ', geom%UBj,          &
                           ', N = ', geom%N
     CALL geom%f_comm%barrier()
   END IF
@@ -503,6 +753,19 @@ SUBROUTINE roms_fields_create (self, geom, vars)
 
   CALL self%zeros ()
 
+  ! If vertical mixing, initialize to background value.
+
+  DO i = 1, SIZE(self%fields)
+    SELECT CASE (self%fields(i)%name)
+      CASE ('AKt', 'AKs', 'AKv')
+        self%fields(i)%val = 1.0E-5_kind_real
+    END SELECT
+  END DO
+
+  ! Allocate and initialize ROMS I/O structure.
+
+  CALL self%IO_create ()
+
 END SUBROUTINE roms_fields_create
 
 ! ------------------------------------------------------------------------------
@@ -512,25 +775,25 @@ END SUBROUTINE roms_fields_create
 SUBROUTINE roms_fields_copy (self, rhs)
 
   CLASS (roms_fields), intent(inout) :: self     !< LHS Fields object
-  CLASS (roms_fields),    intent(in) :: rhs      !< RHS Fields object
+  CLASS (roms_fields), intent(in   ) :: rhs      !< RHS Fields object
 
   integer                            :: i
-  character(len=:),      allocatable :: vars_str(:)
-  TYPE (roms_field),         pointer :: rhs_fld
+  character(len=:), allocatable      :: vars_str(:)
+  TYPE (roms_field), pointer         :: rhs_fld
 
   ! Initialize the variables based on the names in RHS.
 
-  IF (LdebugFields) THEN
-    PRINT '(a, 6(a,i0))', 'Entered roms_fields::copy:',                      &
-                          ' tile = ', rhs%geom%f_comm%rank(),                &
-                          ', LBi = ', rhs%geom%LBi,                          &
-                          ', UBi = ', rhs%geom%UBi,                          &
-                          ', LBj = ', rhs%geom%LBj,                          &
-                          ', UBj = ', rhs%geom%UBj,                          &
+  IF (LdebugFields .and. (my_comm%rank() .eq. 0)) THEN
+    PRINT '(a, 6(a,i0))', ' roms_fields::copy:',                               &
+                          ' tile = ', rhs%geom%f_comm%rank(),                  &
+                          ', LBi = ', rhs%geom%LBi,                            &
+                          ', UBi = ', rhs%geom%UBi,                            &
+                          ', LBj = ', rhs%geom%LBj,                            &
+                          ', UBj = ', rhs%geom%UBj,                            &
                           ', N = ', rhs%geom%N
   END IF
 
-  IF (.not. ASSOCIATED(self%fields)) THEN
+  IF (.not. allocated(self%fields)) THEN
     self%geom => rhs%geom
 
     ALLOCATE (character(len=1024) :: vars_str(SIZE(rhs%fields)))
@@ -562,15 +825,19 @@ SUBROUTINE roms_fields_delete (self)
 
   ! Clear the fields and nullify pointers.
 
-  NULLIFY (self%geom)
+  nullify (self%geom)
 
   DO i = 1, SIZE(self%fields)
     CALL self%fields(i)%delete ()
   END DO
 
-  DEALLOCATE (self%fields)
+  deallocate (self%fields)
 
-  NULLIFY (self%fields)
+  ! Deallocate I/O structure. The Fortran 2003 standard allows deallocating
+  ! just the parent object to deallocate all array variables within its scope
+  ! automatically.
+
+  IF (allocated(self%IO)) deallocate (self%IO)
 
 END SUBROUTINE roms_fields_delete
 
@@ -581,16 +848,16 @@ END SUBROUTINE roms_fields_delete
 
 SUBROUTINE roms_fields_get (self, name, field)
 
-  CLASS (roms_fields),        intent( in) :: self   !< fields object
-  character (len=*),          intent( in) :: name   !< name of field to find
-  TYPE (roms_field), pointer, intent(out) :: field  !< resulting field pointer
+  CLASS (roms_fields), target, intent(in ) :: self   !< fields object
+  character (len=*),           intent(in ) :: name   !< name of field to find
+  TYPE (roms_field), pointer,  intent(out) :: field  !< resulting field pointer
 
-  integer                                 :: i
+  integer                                  :: i
 
   ! Find the field with the given internal name or UFO standard name.
 
   DO i = 1, SIZE(self%fields)
-    IF ((TRIM(name) .eq. self%fields(i)%name) .or.                           &
+    IF ((TRIM(name) .eq. self%fields(i)%name) .or.                             &
         (TRIM(name) .eq. self%fields(i)%metadata%getval_name)) THEN
       field => self%fields(i)
       RETURN
@@ -599,7 +866,7 @@ SUBROUTINE roms_fields_get (self, name, field)
 
   ! Error: field was not found.
 
-  CALL abor1_ftn ("roms_fields::get: cannot find field "//TRIM(name))
+  CALL abor1_ftn ("roms_fields::get: cannot find field '" // TRIM(name) // "'")
 
 END SUBROUTINE roms_fields_get
 
@@ -639,21 +906,24 @@ SUBROUTINE roms_fields_check_congruent (f1, f2)
   ! Number of fields should be the same.
 
   IF (SIZE(f1%fields) .ne. SIZE(f2%fields)) THEN
-    CALL abor1_ftn ("roms_fields: contains different number of fields")
+    CALL abor1_ftn ("roms_fields::check_congruent: '" //                       &
+                    "f1' and 'f2' objects contains different number of fields")
   END IF
 
   ! Each field should match (name, size, shape).
 
   DO i = 1, SIZE(f1%fields)
     IF (f1%fields(i)%name .ne. f2%fields(i)%name) THEN
-      CALL abor1_ftn ("roms_fields: field have different names")
+      CALL abor1_ftn ("roms_fields:check_congruent: '" //                      &
+                      "f1' and 'f2' objects have different fields names")
     END IF
 
     DO j = 1, SIZE(SHAPE(f1%fields(i)%val))
-      IF (SIZE(f1%fields(i)%val,DIM=j) .ne.                                  &
+      IF (SIZE(f1%fields(i)%val,DIM=j) .ne.                                    &
           SIZE(f2%fields(i)%val,DIM=j) ) THEN
-        CALL abor1_ftn ("roms_fields: field '"//                             &
-                        f1%fields(i)%name//"' has different dimensions")
+        CALL abor1_ftn ("roms_fields::check_congruent: objects f1' and 'f2'"// &
+                        " have different dimensions for '" //                  &
+                        f1%fields(i)%name // "'")
       END IF
     END DO
   END DO
@@ -672,21 +942,23 @@ SUBROUTINE roms_fields_check_subset (f1, f2)
   CLASS (roms_fields), intent(in) :: f2          !< Fields set 2 object
 
   integer                         :: i, j
-  TYPE (roms_field),      pointer :: fld
+  TYPE (roms_field), pointer      :: fld
 
   ! Each field should match (name, size, shape).
 
   DO i = 1, SIZE(f1%fields)
     IF (.not. f2%has(f1%fields(i)%name)) THEN
-      CALL abor1_ftn ("roms_fields: f1 is not a subset of f2")
+      CALL abor1_ftn ("roms_fields_check_subset: '" //                         &
+                      "f1' is not a subset of 'f2'")
     END IF
 
     CALL f2%get (f1%fields(i)%name, fld)
 
     DO j = 1, SIZE(SHAPE(fld%val))
       IF (SIZE(f1%fields(i)%val, dim=j) .ne. SIZE(fld%val, dim=j) ) THEN
-        CALL abor1_ftn ("roms_fields: field '"//f1%fields(i)%name//          &
-                        "' has different dimensions")
+        CALL abor1_ftn ("roms_fields::check_subset: objects f1' and 'f2'" //   &
+                        " have different dimensions for '" //                  &
+                        f1%fields(i)%name // "'")
       END IF
     END DO
   END DO
@@ -694,17 +966,15 @@ SUBROUTINE roms_fields_check_subset (f1, f2)
 END SUBROUTINE roms_fields_check_subset
 
 ! ------------------------------------------------------------------------------
-!> for a given list of field names, initialize the properties of those fields.
-
-!  NOTE: this information should be moved into a yaml file
-!  TODO, allocate space for derived variables
+!> For a given list of field names, it allocates and initilizes Fields object
+!! properties.
 
 SUBROUTINE roms_fields_init_vars (self, vars)
 
   CLASS (roms_fields),            intent(inout) :: self     !< Fields object
   character (len=:), allocatable, intent(in   ) :: vars(:)  !< variable names
 
-  integer                                       :: LBi, UBi, LBj, UBj, N
+  integer                                       :: LBi, UBi, LBj, UBj, LBk, UBk
   integer                                       :: i
 
   LBi = self%geom%LBi
@@ -716,16 +986,23 @@ SUBROUTINE roms_fields_init_vars (self, vars)
 
   DO i = 1, SIZE(vars)
 
-    ! Get field information from metadata 'geom%fieldsinfo' object, which was
-    ! read from its YAML configuration file.
+    ! Get field information from the metadata 'geom%fieldsinfo' object, which
+    ! is read from the YAML configuration file elsewhere. Notice that the user
+    ! may specify the variable names as the ROMS-JEDI internal value or the UFO
+    ! value.  For example, 'ssh' or 'sea_surface_height_above_geoid'.
 
     self%fields(i)%name = TRIM(vars(i))
     self%fields(i)%metadata = self%geom%fieldsinfo%get(self%fields(i)%name)
 
+    ! Initialize Min/Max values.
+
+    self%fields(i)%MinValue = self%fields(i)%spval
+    self%fields(i)%MaxValue = self%fields(i)%spval
+
     ! Set state field metadata and grid information.
 
     SELECT CASE (self%fields(i)%metadata%gtype)
-      CASE ('r')
+      CASE ('r','w')
         self%fields(i)%Istr    =  self%geom%IstrR
         self%fields(i)%Iend    =  self%geom%IendR
         self%fields(i)%Jstr    =  self%geom%JstrR
@@ -753,45 +1030,89 @@ SUBROUTINE roms_fields_init_vars (self, vars)
         self%fields(i)%lat     => self%geom%latv
         self%fields(i)%mask    => self%geom%vmask
       CASE DEFAULT
-        CALL abor1_ftn ('roms_fields::init_vars: Illegal C-grid type = ' //  &
-                        self%fields(i)%metadata%gtype //                     &
-                        ' given for ' // self%fields(i)%name)
+        CALL abor1_ftn ("roms_fields::init_vars: Illegal C-grid type = " //    &
+                        self%fields(i)%metadata%gtype //                       &
+                        " given for '" // self%fields(i)%name // "'")
     END SELECT
 
     ! Set number of vertical levels.
 
     IF (self%fields(i)%name == self%fields(i)%metadata%getval_name_surface) THEN
-      N = 1                                             ! surface field
+      LBk = 1
+      UBk = 1                                          ! surface field
     ELSE
       SELECT CASE (self%fields(i)%metadata%levels)
-        CASE ('full_ocn')                               ! 3D field, full column
-          N = self%geom%N
+        CASE ('full_ocn')                              ! 3D field, full r-column
+          LBk = 1
+          UBk = self%geom%N
+        CASE ('wfull_ocn')                             ! 3D field, full column
+          LBk = 0
+          UBk = self%geom%N
         CASE ('1', 'surface')                               
-          N = 1                                         ! 3D field, single level
+          LBk = 1                                      ! 3D field, single level
+          UBk = 1
         CASE DEFAULT
-          CALL abor1_ftn ('roms_fields::init_vars: Illegal levels ' //       &
-                          self%fields(i)%metadata%levels //                  &
-                          ' given for ' // self%fields(i)%name)
+          CALL abor1_ftn ("roms_fields::init_vars: Illegal levels '" //        &
+                          self%fields(i)%metadata%levels //                    &
+                          "' given for '" // self%fields(i)%name // "'")
       END SELECT
     END IF
 
     ! Allocate space.
     
-    self%fields(i)%N = N
+    self%fields(i)%N = UBk-LBk+1
     
-    allocate ( self%fields(i)%val(LBi:UBi, LBj:UBj, N) )
+    allocate ( self%fields(i)%val(LBi:UBi, LBj:UBj, LBk:UBk) )
 
     ! Report.
 
     IF (LdebugFields .and. (self%geom%f_comm%rank() .eq. 0)) THEN
-      PRINT '(a,a5,a,3(i0,1x))', 'roms_fields::init_vars: allocated ',       &
-                                 self%fields(i)%metadata%io_name,            &
-                                 ', SHAPE = ', SHAPE(self%fields(i)%val)
+      PRINT '(2a,a40,a,3(i0,1x))', 'roms_fields::init_vars: ',                 &
+                                   'created and allocated ',                   &
+                                   self%fields(i)%name,                        &
+                                   ', SHAPE = ', SHAPE(self%fields(i)%val)
     END IF
 
   END DO
 
 END SUBROUTINE roms_fields_init_vars
+
+! ------------------------------------------------------------------------------
+!> It updates the Fields object by adding/removing variables in the requested
+!! OOPS list.  It removes fields not in the list and allocates unallocated
+!! fields in the list.
+
+SUBROUTINE roms_fields_update_fields (self, vars)
+
+  CLASS (roms_fields),   intent(inout) :: self     !< Fields object
+  TYPE (oops_variables), intent(in   ) :: vars     !< variable names
+
+  TYPE (roms_fields)                   :: tmp
+  TYPE (roms_field), pointer           :: field
+  integer                              :: i
+
+  ! Create new fields.
+
+  CALL tmp%create (self%geom, vars)
+
+  ! If field exists, copy from SELF to TMP object.
+
+  DO i = 1, SIZE(tmp%fields)
+    IF (self%has(tmp%fields(i)%name)) THEN
+      CALL self%get (tmp%fields(i)%name, field)
+      CALL tmp%fields(i)%copy (field)
+    END IF
+  END DO
+
+  ! Transfer allocation from TMP to SELF object. It uses Fortran 2003
+  ! intrinsic procedure. Here, "self%fields" are allocated with the same
+  ! dynamic type, type parameters, array bounds, and it is given the
+  ! same values as "tmp%fields" have before MOVE_ALLOC was invoked. Then,
+  ! "tmp%fields" becomes unallocated or undefined.
+
+  CALL MOVE_ALLOC (tmp%fields, self%fields)
+
+END SUBROUTINE roms_fields_update_fields
 
 ! ------------------------------------------------------------------------------
 !> Update the halo points for all the fields in the list.
@@ -816,19 +1137,19 @@ END SUBROUTINE roms_fields_update_halos
 
 SUBROUTINE roms_fields_analytic (self, f_conf, vdate)
 
-  CLASS (roms_fields),        intent(inout) :: self    !< Fields object
-  TYPE (fckit_configuration), intent(in   ) :: f_conf  !< configuration
-  TYPE (datetime),            intent(inout) :: vdate   !< Date and Time
+  CLASS (roms_fields), target, intent(inout) :: self    !< Fields object
+  TYPE (fckit_configuration),  intent(in   ) :: f_conf  !< configuration
+  TYPE (datetime),             intent(inout) :: vdate   !< Date and Time
 
-  TYPE (roms_field), pointer                :: field
-  integer                                   :: LocalPET
-  integer                                   :: i, j, k, n
-  real (kind=kind_real)                     :: romsDateNumber, romsTime
-  real (kind=kind_real), pointer            :: h(:,:), z(:,:,:) 
-  real (kind=kind_real)                     :: T0, S0, U0, V0
-  character (len=21)                        :: DateString
-  character (len=30)                        :: method
-  character (len=:), allocatable            :: my_string
+  TYPE (roms_field), pointer                 :: field
+  integer                                    :: LocalPET
+  integer                                    :: i, j, k, n
+  real (kind=kind_real)                      :: romsDateNumber, romsTime
+  real (kind=kind_real), pointer             :: h(:,:), z(:,:,:) 
+  real (kind=kind_real)                      :: T0, S0, U0, V0
+  character (len=21)                         :: DateString
+  character (len=30)                         :: method
+  character (len=:), allocatable             :: my_string
 
   ! Initialize.
 
@@ -837,7 +1158,7 @@ SUBROUTINE roms_fields_analytic (self, f_conf, vdate)
   ! Get analytical parameters from input configuration YAML file.
 
   IF (.not.f_conf%has("analytic init")) THEN
-    CALL abor1_ftn ("roms_fields::analytic: Cannot find 'analytic init' " // &
+    CALL abor1_ftn ("roms_fields::analytic: Cannot find 'analytic init' " //   &
                     "component and its elements")
   END IF
 
@@ -855,7 +1176,7 @@ SUBROUTINE roms_fields_analytic (self, f_conf, vdate)
   CALL f_conf%get_or_die ("analytic init.U0", U0)
   CALL f_conf%get_or_die ("analytic init.V0", V0)
 
-  CALL fckit_log%warning ("roms_fields::analytic: inventing analytical " //  &
+  CALL fckit_log%warning ("roms_fields::analytic: inventing analytical " //    &
                           "fields, method: '" // TRIM(method) // "'.")
 
   ! Set fields date and time.
@@ -886,19 +1207,20 @@ SUBROUTINE roms_fields_analytic (self, f_conf, vdate)
           h => self%geom%h_v
           z => self%geom%z_v
         CASE DEFAULT
-          CALL abor1_ftn ('roms_fields::analytic: unknown C-grid type: ' //  &
-                        field%metadata%gtype // ', field: ' // field%name)
+          CALL abor1_ftn ("roms_fields::analytic: unknown C-grid type: '" //   &
+                           field%metadata%gtype // "', field: '" //            &
+                           field%name // "'")
       END SELECT      
 
       DO k = 1, field%N
         DO j = field%Jstr, field%Jend
           DO i = field%Istr, field%Iend
-            field%val(i,j,k) = ana_fields(field%name,                        &
-                                          field%mask(i,j),                   &
-                                          field%lon(i,j),                    &
-                                          field%lat(i,j),                    &
-                                          z(i,j,k),                          &
-                                          h(i,j),                            &
+            field%val(i,j,k) = ana_fields(field%name,                          &
+                                          field%mask(i,j),                     &
+                                          field%lon(i,j),                      &
+                                          field%lat(i,j),                      &
+                                          z(i,j,k),                            &
+                                          h(i,j),                              &
                                           T0, S0, U0, V0)
           END DO
         END DO
@@ -915,17 +1237,17 @@ SUBROUTINE roms_fields_analytic (self, f_conf, vdate)
       field => self%fields(n)
   
       SELECT CASE (field%name)
-        CASE ('tocn', 'sea_water_potential_temperature',                     &
+        CASE ('tocn', 'sea_water_potential_temperature',                       &
               'sst',  'sea_surface_temperature')
           field%val = T0
-        CASE ('socn', 'sea_water_practical_salinity',                        &
+        CASE ('socn', 'sea_water_practical_salinity',                          &
               'sss',  'sea_surface_salinity')
           field%val = S0
-        CASE ('uocn', 'sea_water_zonal_velocity',                            &
-              'usur', 'surface_sea_water_zonal_velocity')
+        CASE ('uocn', 'sea_water_eastward_velocity',                           &
+              'usur', 'surface_eastward_sea_water_velocity')
           field%val = U0
-        CASE ('vocn', 'sea_water_meridional_velocity',                       &
-              'vsur', 'surface_sea_water_meridional_velocity')
+        CASE ('vocn', 'sea_water_northward_velocity',                          &
+              'vsur', 'surface_northward_sea_water_velocity')
           field%val = V0
         CASE ('ssh', 'sea_surface_height_above_geoid')
           field%val = 0.0_kind_real
@@ -944,9 +1266,87 @@ SUBROUTINE roms_fields_analytic (self, f_conf, vdate)
 END SUBROUTINE roms_fields_analytic
 
 ! ------------------------------------------------------------------------------
+!> It allocates and initializes ROMS I/O structure to read/write fields NetCDF
+!! file(s).
+
+SUBROUTINE roms_fields_IO_create (self)
+
+  USE mod_param,   ONLY : MT, Ngrids
+  USE mod_ncparam, ONLY : NV, out_lib
+
+  CLASS (roms_fields), intent(inout) :: self        !< Fields object
+
+  integer                            :: i, k
+
+  ! Allocate I/O structure.
+
+  IF (.not.allocated(self%IO)) THEN
+ 
+    allocate ( self%IO(Ngrids) )
+
+    ! Allocate array variables in the structure.
+
+    DO i = 1, Ngrids
+      allocate ( self%IO(i)%Nrec(Nfiles) )
+      allocate ( self%IO(i)%time_min(Nfiles) )
+      allocate ( self%IO(i)%time_max(Nfiles) )
+      allocate ( self%IO(i)%Vid(NV) )
+      allocate ( self%IO(1)%Tid(MT) )
+#if defined PIO_LIB
+      allocate ( self%IO(i)%pioVar(NV) )
+      allocate ( self%IO(i)%pioTrc(MT) )
+#endif
+      allocate ( self%IO(i)%files(Nfiles) )
+    END DO
+
+    ! Initialize.
+
+    DO i = 1, Ngrids
+      self%IO(i)%IOtype=out_lib                  ! file IO type
+      self%IO(i)%Nfiles=Nfiles                   ! number of multi-files
+      self%IO(i)%Fcount=1                        ! multi-file counter
+      self%IO(i)%load=1                          ! filename load counter
+      self%IO(i)%Rindex=0                        ! time index
+      self%IO(i)%ncid=-1                         ! closed NetCDF state
+
+      DO k=1,NV
+        self%IO(i)%Vid(k)=-1                     ! NetCDF variables IDs
+#if defined PIO_LIB
+        self%IO(i)%pioVar(k)%vd%varID=-1         ! PIO variables IDs
+        self%IO(i)%pioVar(k)%dkind=-1            ! PIO variables data kind
+        self%IO(i)%pioVar(i)%gtype=0             ! PIO variables C-grid type
+#endif
+      END DO
+
+      DO k=1,MT
+        self%IO(i)%Tid(k)=-1                     ! NetCDF tracers IDs
+#if defined PIO_LIB
+        self%IO(i)%pioTrc(k)%vd%varID=-1         ! PIO tracers IDs
+        self%IO(i)%pioTrc(k)%dkind=-1            ! PIO tracers data kind
+        self%IO(i)%pioTrc(k)%gtype=0             ! PIO tracers C-grid type
+#endif
+      END DO
+
+      DO k=1,Nfiles
+        self%IO(i)%Nrec(k)=0                     ! record counter
+        self%IO(i)%time_min(k)=0.0_kind_real     ! starting time
+        self%IO(i)%time_max(k)=0.0_kind_real     ! ending time
+      END DO
+
+#if defined PIO_LIB
+      self%IO(i)%pioFile%fh=-1                   ! closed file PIO handler
+#endif
+      self%IO(i)%label='ROMS-JEDI State Fields'  ! structure label
+    END DO
+
+  END IF
+
+END SUBROUTINE roms_fields_IO_create
+
+! ------------------------------------------------------------------------------
 !> Set ROMS I/O metadata structure. It is used to create output NetCDF files.
 
-SUBROUTINE roms_fields_IOmetadata (fld, metadata)
+SUBROUTINE roms_fields_IO_metadata (fld, metadata)
 
   CLASS (roms_fields),                     intent(inout) :: fld
   TYPE (roms_field_metadata), allocatable, intent(inout) :: metadata(:)
@@ -965,7 +1365,7 @@ SUBROUTINE roms_fields_IOmetadata (fld, metadata)
 
   END IF
 
-END SUBROUTINE roms_fields_IOmetadata
+END SUBROUTINE roms_fields_IO_metadata
 
 ! ------------------------------------------------------------------------------
 !> Set all fields to unity.
@@ -1003,7 +1403,7 @@ END SUBROUTINE roms_fields_zeros
 SUBROUTINE roms_fields_add (self, rhs)
 
   CLASS (roms_fields), intent(inout) :: self     !< LHS Fields object
-  CLASS (roms_fields), intent(   in) :: rhs      !< RHS Fields object
+  CLASS (roms_fields), intent(in   ) :: rhs      !< RHS Fields object
 
   integer                            :: i
 
@@ -1025,7 +1425,7 @@ END SUBROUTINE roms_fields_add
 SUBROUTINE roms_fields_sub (self, rhs)
 
   CLASS (roms_fields), intent(inout) :: self     !< LHS Fields object
-  CLASS (roms_fields), intent(   in) :: rhs      !< RHS Fields object
+  CLASS (roms_fields), intent(in   ) :: rhs      !< RHS Fields object
 
   integer                            :: i
 
@@ -1046,10 +1446,10 @@ END SUBROUTINE roms_fields_sub
 
 SUBROUTINE roms_fields_mul (self, c)
 
-  CLASS (roms_fields), intent(inout) :: self     !< Fields object
-  real (kind=kind_real),  intent(in) :: c        !< multiplication constant
+  CLASS (roms_fields),   intent(inout) :: self   !< Fields object
+  real (kind=kind_real), intent(in   ) :: c      !< multiplication constant
 
-  integer                            :: i
+  integer                              :: i
 
   DO i = 1, SIZE(self%fields)
     self%fields(i)%val = c * self%fields(i)%val
@@ -1066,13 +1466,13 @@ END SUBROUTINE roms_fields_mul
 
 SUBROUTINE roms_fields_rms (self, prms)
 
-  CLASS (roms_fields),   intent(in ) :: self     !< Fields object
-  real (kind=kind_real), intent(out) :: prms     !< Fields root-mean square
+  CLASS (roms_fields), target, intent(in ) :: self   !< Fields object
+  real (kind=kind_real),       intent(out) :: prms   !< Fields root-mean square
 
-  integer                            :: i, j, k, n
-  real (kind=kind_real)              :: norm, psum
-  real (kind=kind_real)              :: my_norm, my_psum
-  TYPE (roms_field), pointer         :: field
+  integer                                  :: i, j, k, n
+  real (kind=kind_real)                    :: norm, psum
+  real (kind=kind_real)                    :: my_norm, my_psum
+  TYPE (roms_field), pointer               :: field
 
   ! Compute fields RMS.
 
@@ -1117,12 +1517,12 @@ END SUBROUTINE roms_fields_rms
 
 SUBROUTINE roms_fields_axpy (self, c, rhs)
 
-  CLASS (roms_fields),   intent(inout) :: self   !< LHS Fields object
-  real (kind=kind_real), intent(   in) :: c      !< multiplication constant
-  CLASS (roms_fields),   intent(   in) :: rhs    !< RHS Fields object
+  CLASS (roms_fields), target, intent(inout) :: self  !< LHS Fields object
+  real (kind=kind_real),       intent(in   ) :: c     !< multiplication constant
+  CLASS (roms_fields),         intent(in   ) :: rhs   !< RHS Fields object
 
-  integer                              :: i
-  TYPE (roms_field),           pointer :: f_rhs, f_lhs
+  integer                                    :: i
+  TYPE (roms_field),                 pointer :: f_rhs, f_lhs
 
   ! Make sure fields are correct shape.
 
@@ -1143,13 +1543,13 @@ END SUBROUTINE roms_fields_axpy
 
 SUBROUTINE roms_fields_dotprod (fld1, fld2, zprod)
 
-  CLASS (roms_fields),    intent( in) :: fld1    !< Fields set 1 object
-  CLASS (roms_fields),    intent( in) :: fld2    !< Fields set 2 object
-  real (kind=kind_real),  intent(out) :: zprod   !< Fields dot-product
+  CLASS (roms_fields), target, intent(in ) :: fld1    !< Fields set 1 object
+  CLASS (roms_fields), target, intent(in ) :: fld2    !< Fields set 2 object
+  real (kind=kind_real),       intent(out) :: zprod   !< Fields dot-product
 
-  integer                             :: i, j, k, n
-  real (kind=kind_real)               :: my_zprod
-  TYPE (roms_field), pointer          :: field1, field2
+  integer                                  :: i, j, k, n
+  real (kind=kind_real)                    :: my_zprod
+  TYPE (roms_field), pointer               :: field1, field2
 
   ! Make sure fields have same name, size, and shape.
 
@@ -1192,11 +1592,11 @@ END SUBROUTINE roms_fields_dotprod
 
 SUBROUTINE roms_fields_gpnorm (fld, nf, pstat)
 
-  CLASS (roms_fields),   intent(   in) :: fld            !> Fields object
-  integer,               intent(   in) :: nf             !> number of fields
+  CLASS (roms_fields),   intent(in   ) :: fld            !> Fields object
+  integer,               intent(in   ) :: nf             !> number of fields
   real (kind=kind_real), intent(inout) :: pstat(3, nf)   !> [min, max, average]
 
-  logical                              :: mask(fld%geom%Istr:fld%geom%Iend, &
+  logical                              :: mask(fld%geom%Istr:fld%geom%Iend,    &
                                                fld%geom%Jstr:fld%geom%Jend)
   integer                              :: Istr, Iend, Jstr, Jend, n
   real (kind=kind_real)                :: my_water_cells, water_cells
@@ -1225,7 +1625,7 @@ SUBROUTINE roms_fields_gpnorm (fld, nf, pstat)
     END IF
     my_water_cells = COUNT(mask)
 
-    CALL fld%geom%f_comm%allreduce (my_water_cells, water_cells, &
+    CALL fld%geom%f_comm%allreduce (my_water_cells, water_cells,               &
                                     fckit_mpi_sum())
 
     ! Calculate global min/max/mean.
@@ -1246,13 +1646,13 @@ END SUBROUTINE roms_fields_gpnorm
 
 SUBROUTINE roms_fields_colocate (self, gtype)
 
-  CLASS (roms_fields),    intent(inout) :: self    !< Fields object
-  character (len=1),      intent(   in) :: gtype   !< C-grid; 'r', 'u', or 'v'
+  CLASS (roms_fields), target, intent(inout) :: self    !< Fields object
+  character (len=1),           intent(in   ) :: gtype   !< 'r', 'u', or 'v'
 
-  TYPE (roms_field),            pointer :: field
-  TYPE (roms_interp_type)               :: interp
-  real(kind=kind_real),     allocatable :: val(:,:,:)
-  integer                               :: i
+  TYPE (roms_field), pointer                 :: field
+  TYPE (roms_interp_type)                    :: interp
+  real(kind=kind_real), allocatable          :: val(:,:,:)
+  integer                                    :: i
 
   ! Apply interpolation to all fields, when necessary.
 
@@ -1283,7 +1683,7 @@ SUBROUTINE roms_fields_colocate (self, gtype)
     self%fields(i)%metadata%gtype = gtype
  
     SELECT CASE (gtype)
-      CASE ('r')
+      CASE ('r', 'w')
         self%fields(i)%lon => self%geom%lonr
         self%fields(i)%lat => self%geom%latr
       CASE ('u')
@@ -1307,8 +1707,8 @@ END SUBROUTINE roms_fields_colocate
 
 SUBROUTINE roms_fields_serial_size (self, geom, vec_size)
 
-  CLASS (roms_fields),   intent( in) :: self       !< Fields object
-  TYPE (roms_geom),      intent( in) :: geom       !< Geometry
+  CLASS (roms_fields),   intent(in ) :: self       !< Fields object
+  TYPE (roms_geom),      intent(in ) :: geom       !< Geometry
   integer,               intent(out) :: vec_size   !< state vector length
 
   integer                            :: i
@@ -1327,9 +1727,9 @@ END SUBROUTINE roms_fields_serial_size
 
 SUBROUTINE roms_fields_serialize (self, geom, vec_size, vec)
 
-  CLASS (roms_fields),    intent( in) :: self          !< Fields object
-  TYPE (roms_geom),       intent( in) :: geom          !< Geometry
-  integer,                intent( in) :: vec_size      !< state vector length
+  CLASS (roms_fields),    intent(in ) :: self          !< Fields object
+  TYPE (roms_geom),       intent(in ) :: geom          !< Geometry
+  integer,                intent(in ) :: vec_size      !< state vector length
   real (kind=kind_real),  intent(out) :: vec(vec_size) !< state vector
 
   integer                             :: i, ic, np
@@ -1351,9 +1751,9 @@ END SUBROUTINE roms_fields_serialize
 SUBROUTINE roms_fields_deserialize (self, geom, vec_size, vec, ic)
 
   CLASS (roms_fields),   intent(inout) :: self          !< Fields object
-  TYPE (roms_geom),      intent(   in) :: geom          !< Geometry
-  integer,               intent(   in) :: vec_size      !< state vector length
-  real (kind=kind_real), intent(   in) :: vec(vec_size) !< state vector
+  TYPE (roms_geom),      intent(in   ) :: geom          !< Geometry
+  integer,               intent(in   ) :: vec_size      !< state vector length
+  real (kind=kind_real), intent(in   ) :: vec(vec_size) !< state vector
   integer,               intent(inout) :: ic            !< unpack vector length
 
   integer                              :: i, np
@@ -1375,11 +1775,11 @@ END SUBROUTINE roms_fields_deserialize
 
 SUBROUTINE roms_fields_read (self, f_conf, vdate)
 
-  USE mod_ncparam,    ONLY : inp_lib, io_nf90, io_pio
+  USE mod_ncparam, ONLY : inp_lib, io_nf90, io_pio
 
-  CLASS (roms_fields),        intent(inout) :: self    !< Fields object
-  TYPE (fckit_configuration), intent(   in) :: f_conf  !< configuration
-  TYPE (datetime),            intent(inout) :: vdate   !< Date and Time
+  CLASS (roms_fields), target, intent(inout) :: self    !< Fields object
+  TYPE (fckit_configuration),  intent(in   ) :: f_conf  !< configuration
+  TYPE (datetime),             intent(inout) :: vdate   !< Date and Time
 
   integer                                   :: InpRec, LocalPET
   real (kind=kind_real)                     :: romsDateNumber, romsTime
@@ -1422,17 +1822,17 @@ SUBROUTINE roms_fields_read (self, f_conf, vdate)
   SELECT CASE (inp_lib)
 
     CASE (io_nf90)
-      CALL roms_fields_read_nf90 (self, InpRec, TRIM(ncname),                &
+      CALL roms_fields_read_nf90 (self, InpRec, TRIM(ncname),                  &
                                   DateString, romsDateNumber)
 
 #if defined PIO_LIB
     CASE (io_pio)
-      CALL roms_fields_read_pio (self, InpRec, TRIM(ncname),                 &
+      CALL roms_fields_read_pio (self, InpRec, TRIM(ncname),                   &
                                  DateString, romsDateNumber)
 #endif
 
     CASE DEFAULT
-      WRITE (text,'(a,i0)')                                                  &
+      WRITE (text,'(a,i0)')                                                    &
             'roms_fields::read: Ilegal input type, io_type = ', inp_lib
       CALL abor1_ftn (TRIM(text))
 
@@ -1445,28 +1845,27 @@ END SUBROUTINE roms_fields_read
 
 SUBROUTINE roms_fields_write (self, f_conf, vdate)
 
-  USE mod_param,       ONLY : Ngrids
-  USE mod_ncparam,     ONLY : io_nf90, io_pio
+  USE mod_param,    ONLY : Ngrids
+  USE mod_ncparam,  ONLY : io_nf90, io_pio
 
-  CLASS (roms_fields),        intent(inout) :: self    !< Fields set
-  TYPE (fckit_configuration), intent(   in) :: f_conf  !< Configuration
-  TYPE (datetime),            intent(inout) :: vdate   !< DateTime
+  CLASS (roms_fields), target, intent(inout) :: self    !< Fields set
+  TYPE (fckit_configuration),  intent(in   ) :: f_conf  !< Configuration
+  TYPE (datetime),             intent(inout) :: vdate   !< DateTime
 
-  integer, parameter                        :: max_length = 800
-  integer, parameter                        :: Nfiles = 1
+  integer, parameter                         :: max_length = 800
 
-  TYPE (datetime)                           :: rdate
-  TYPE (duration)                           :: frequency, policy, step
-  integer                                   :: LocalPET, Nrecs, model, ng
-  integer                                   :: frequency_sec, policy_sec
-  integer                                   :: step_sec
-  integer, save                             :: out_rec
-  real (kind=kind_real)                     :: romsTime(Ngrids), romsDateNumber
-  character (len=256)                       :: text
-  character(len=max_length)                 :: filename
-  character (len=:), allocatable            :: Fpolicy, iniDate, ioFrequency
+  TYPE (datetime)                            :: rdate
+  TYPE (duration)                            :: frequency, policy, step
+  integer                                    :: LocalPET, Nrecs, model, ng
+  integer                                    :: frequency_sec, policy_sec
+  integer                                    :: step_sec
+  integer, save                              :: out_rec
+  real (kind=kind_real)                      :: romsTime(Ngrids), romsDateNumber
+  character (len=256)                        :: text
+  character(len=max_length)                  :: filename
+  character (len=:), allocatable             :: Fpolicy, iniDate, ioFrequency
 
-  character (len=*), parameter              :: MyFile =                      &
+  character (len=*), parameter               :: MyFile =                       &
      &  __FILE__//", roms_fields_write"
 
   ! Initialize.
@@ -1481,17 +1880,17 @@ SUBROUTINE roms_fields_write (self, f_conf, vdate)
   ! initial date.
 
   IF (.not.f_conf%get("file_policy", Fpolicy)) THEN
-    CALL abor1_ftn ("roms_fields::write: Cannot find 'file_policy'"//        &
+    CALL abor1_ftn ("roms_fields::write: Cannot find 'file_policy'" //         &
                     " in YAML configuration")
   END IF
 
   IF (.not.f_conf%get("data_frequency", ioFrequency)) THEN
-    CALL abor1_ftn ("roms_fields::write: Cannot find 'data_frequency'"//     &
+    CALL abor1_ftn ("roms_fields::write: Cannot find 'data_frequency'" //      &
                     " in YAML configuration")
   END IF
 
   IF (.not.f_conf%get("date", iniDate)) THEN
-    CALL abor1_ftn ("roms_fields::write: Cannot find 'date'"//               &
+    CALL abor1_ftn ("roms_fields::write: Cannot find 'date'" //                &
                     " in YAML configuration")
   END IF
 
@@ -1505,44 +1904,43 @@ SUBROUTINE roms_fields_write (self, f_conf, vdate)
   policy_sec    = duration_seconds(policy)
   frequency_sec = duration_seconds(frequency)
 
-  ! Number of time records in output file.
+  ! Number of time records in the output file.
 
   Nrecs = policy_sec/frequency_sec
   IF (policy_sec .eq. frequency_sec) Nrecs = 1
 
   ! Initialize record counter. This routine is called twice by "State.cc" with
-  ! the same "vdate" as the initialization date "rdate", weird. The time record
-  ! counter is reset to zero in the second call to properly create files every
-  ! policy_sec intervals.
+  ! the same "vdate" as the initialization date "iniDate", weird.  The time
+  ! record counter is reset to zero in the second call to create files properly
+  ! every "policy_sec" intervals.
 
   IF (step_sec .eq. 0) out_rec = 0
 
-  ! Create output NetCDF according to specified policy: a new file is created
-  ! every 'policy_sec' intervals.
+  ! Create output NetCDF file according to specified policy: a new file is
+  ! created every "policy_sec" intervals.
 
   IF (MOD(step_sec, policy_sec) .eq. 0 .and. (out_rec .eq. 0)) THEN
 
     ! Generate output NetCDF filename.
 
     filename = roms_gen_filename(f_conf, max_length, vdate)
-
-    ! Allocate/initialize ROMS T_IO type structure. The output structure is
-    ! allocated on the first call. However, its field values are updated on
-    ! each to the provide Nfiles=1 and filename.
-
-    CALL roms_IOstruct (ng, Nfiles, filename, Soutput)
+    self%IO(ng)%name = TRIM(filename)
 
     ! Set IO fields metadata.
 
-    CALL self%IOmetadata (metadata)
+    CALL self%IO_metadata (metadata)
 
-    ! Create output NetCDF.
+    ! Create output NetCDF. Initialize I/O structure counters.
 
-    CALL roms_create_ncfile (ng, model, LocalPET, Soutput, metadata)
+    self%IO(ng)%Fcount=1
+    self%IO(ng)%load=1
+    self%IO(ng)%Rindex=0
+
+    CALL roms_create_ncfile (ng, model, LocalPET, self%IO, metadata)
 
     IF (LocalPET .eq. 0) THEN
-      PRINT '(3a)', "roms_fields::write: created NetCDF file: '",           &
-                    TRIM(Soutput(ng)%name), "'"
+      PRINT '(3a)', "roms_fields::write: created NetCDF file: '",              &
+                    TRIM(self%IO(ng)%name), "'"
     END IF
 
   END IF
@@ -1555,20 +1953,20 @@ SUBROUTINE roms_fields_write (self, f_conf, vdate)
   ! Write out all fields using either the standard NetCDF library or the
   ! Parallel I/O (PIO) library.
 
-  SELECT CASE (Soutput(ng)%IOtype)
+  SELECT CASE (self%IO(ng)%IOtype)
 
     CASE (io_nf90)
-      CALL roms_fields_write_nf90 (self, Soutput, romsTime)
+      CALL roms_fields_write_nf90 (self, self%IO, romsTime)
 
 #if defined PIO_LIB
     CASE (io_pio)
-      CALL roms_fields_write_pio (self, Soutput, romsTime)
+      CALL roms_fields_write_pio (self, self%IO, romsTime)
 #endif
 
     CASE DEFAULT
       WRITE (text,'(a,i0)') &
-                  'roms_fields::write: Ilegal output type, io_type = ',      &
-                  Soutput(ng)%IOtype
+                  'roms_fields::write: Ilegal output type, io_type = ',        &
+                  self%IO(ng)%IOtype
       CALL abor1_ftn (TRIM(text))
 
   END SELECT
@@ -1578,7 +1976,7 @@ SUBROUTINE roms_fields_write (self, f_conf, vdate)
   ! If last time record, close output NetCDF file.
 
   IF (out_rec .eq. Nrecs) THEN
-    CALL roms_close_ncfile (ng, model, Soutput)
+    CALL roms_close_ncfile (ng, model, self%IO)
     out_rec = 0    
   END IF
 
@@ -1591,61 +1989,147 @@ SUBROUTINE roms_fields_write (self, f_conf, vdate)
 END SUBROUTINE roms_fields_write
 
 ! ------------------------------------------------------------------------------
+!> Writes fields into output file using the standard NetCDF or PIO libraries. It
+!  used for debugging, like writing out OOPS generated increment fields.
+
+SUBROUTINE roms_fields_write_debug (self, filename, vdate)
+
+  USE mod_param,    ONLY : Ngrids
+  USE mod_ncparam,  ONLY : io_nf90, io_pio
+
+  CLASS (roms_fields), intent(inout) :: self            !< Fields set
+  character (len=*),   intent(in   ) :: filename        !< Configuration
+  TYPE (datetime),     intent(in   ) :: vdate           !< DateTime
+
+  integer                            :: LocalPET, model, ng
+  real (kind=kind_real)              :: romsTime(Ngrids), romsDateNumber
+  character (len=256)                :: text
+
+  character (len=*), parameter       :: MyFile =                               &
+     &  __FILE__//", roms_fields_write_debug"
+
+  ! Initialize.
+
+  LocalPET = self%geom%f_comm%rank()   ! PET rank
+
+  romsTime = 0.0_kind_real             ! ROMS time
+  model    = self%geom%model           ! ROMS numerical kernel
+  ng       = self%geom%ng              ! nested grid number
+
+  ! Create output NetCDF file.
+
+  self%IO(ng)%name = TRIM(filename)
+
+  ! Set IO fields metadata.
+
+  CALL self%IO_metadata (metadata)
+
+  ! Create output NetCDF. Initialize I/O structure counters.
+
+  self%IO(ng)%Fcount=1
+  self%IO(ng)%load=1
+  self%IO(ng)%Rindex=0
+
+  CALL roms_create_ncfile (ng, model, LocalPET, self%IO, metadata)
+
+  IF (LocalPET .eq. 0) THEN
+    PRINT '(3a)', "roms_fields::write_debug: created NetCDF file: '",          &
+                  TRIM(self%IO(ng)%name), "'"
+  END IF
+
+  ! Set ROMS time from JEDI date in seconds since reference time and date
+  ! number.
+
+  CALL roms_date2time (LocalPET, vdate, romsTime(ng), romsDateNumber)
+
+  ! Write out all fields using either the standard NetCDF library or the
+  ! Parallel I/O (PIO) library.
+
+  SELECT CASE (self%IO(ng)%IOtype)
+
+    CASE (io_nf90)
+      CALL roms_fields_write_nf90 (self, self%IO, romsTime)
+
+#if defined PIO_LIB
+    CASE (io_pio)
+      CALL roms_fields_write_pio (self, self%IO, romsTime)
+#endif
+
+    CASE DEFAULT
+      WRITE (text,'(a,i0)') &
+                  'roms_fields::write_debug: Ilegal output type, io_type = ',  &
+                  self%IO(ng)%IOtype
+      CALL abor1_ftn (TRIM(text))
+
+  END SELECT
+
+  ! If last time record, close output NetCDF file.
+
+  CALL roms_close_ncfile (ng, model, self%IO)
+
+END SUBROUTINE roms_fields_write_debug
+
+! ------------------------------------------------------------------------------
 !> Read fields from input file using standard NetCDF library.
 
 SUBROUTINE roms_fields_read_nf90 (self, InpRec, ncname, DateString, DateNumber)
 
-  USE mod_ncparam,    ONLY : r2dvar, r3dvar, u3dvar, v3dvar, io_nf90
+  USE mod_ncparam,    ONLY : io_nf90
   USE mod_iounits,    ONLY : stdout
-  USE mod_netcdf,     ONLY : netcdf_open, netcdf_close, netcdf_inq_var,      &
-                             var_Dsize
+  USE mod_netcdf,     ONLY : netcdf_open, netcdf_close, netcdf_inq_var, var_id
   USE mod_scalars,    ONLY : NoError, exit_flag
   USE netcdf,         ONLY : nf90_noerr
   USE nf_fread2d_mod, ONLY : nf_fread2d
   USE nf_fread3d_mod, ONLY : nf_fread3d
 
-  CLASS (roms_fields),        intent(inout) :: self       !< Fields set
-  integer,                    intent(in   ) :: InpRec     !< time record to read
-  character (len=*),          intent(in   ) :: ncname     !< NetCDF filename
-  character (len=*),          intent(in   ) :: DateString !< ISO8601 DateTime
-  real (kind=kind_real),      intent(in   ) :: DateNumber !< Fields datenum
+  CLASS (roms_fields), target, intent(inout) :: self       !< Fields set
+  integer,                     intent(in   ) :: InpRec     !< Record to read
+  character (len=*),           intent(in   ) :: ncname     !< NetCDF filename
+  character (len=*),           intent(in   ) :: DateString !< ISO8601 DateTime
+  real (kind=kind_real),       intent(in   ) :: DateNumber !< Fields datenum
 
-  integer                                   :: LocalPET, lstr, lend
-  integer                                   :: i, model, ng, nvdims
-  integer                                   :: ncid, varid
-  integer                                   :: LBi, UBi, LBj, UBj, LBk, UBk
-  integer                                   :: Im, Jm, Km, nx, ny, nz
-  integer, dimension(4)                     :: Vsize
-  real (kind=kind_real)                     :: Fmin, Fmax, scale
-  character (len=256)                       :: text
-  character (len=1024)                      :: Message
+  TYPE (roms_field), pointer                 :: field
+  TYPE (roms_geom), pointer                  :: geom
 
-  character (len=*), parameter :: MyFile =                                   &
+  integer                                    :: LocalPET, lstr, lend
+  integer                                    :: i, model, ng
+  integer                                    :: Cgrid, ncid, varid, vindex
+  integer                                    :: LBi, UBi, LBj, UBj, LBk, UBk
+  integer, dimension(4)                      :: Vsize
+  real (kind=kind_real)                      :: scale
+  character (len=1024)                       :: Message
+
+  character (len=*), parameter :: MyFile =                                     &
      &  __FILE__//", roms_fields_read_nf90"
 
   ! Initialize.
 
-  LocalPET = self%geom%f_comm%rank()   !> PET rank
+  geom => self%geom
 
-  model = self%geom%model              !> numerical kernel
-  ng    = MAX(1,self%geom%ng)          !> nested grid number
-  Im    = self%geom%Lm                 !> number of global interior I-points
-  Jm    = self%geom%Mm                 !> number of global interior J-points
-  Km    = self%geom%N                  !> number of vertical levels
-  scale = 1.0_kind_real
-  Vsize = 0
+  LocalPET = geom%f_comm%rank()        !> PET rank
+  model    = geom%model                !> numerical kernel
+  ng       = MAX(1, geom%ng)           !> nested grid number
+  scale    = 1.0_kind_real             !> scale factor for read variables
+  Vsize    = 0                         !> variable dimensions
 
   IF (LocalPET .eq. 0) THEN
     lstr = SCAN(ncname, '/', BACK=.TRUE.) + 1
     lend = LEN_TRIM(ncname)    
-    WRITE (stdout,10) 'State Fields,', TRIM(DateString), ng, DateNumber,     &
+    WRITE (stdout,10) 'State Fields,', TRIM(DateString), ng, DateNumber,       &
                       ncname(lstr:lend), InpRec
   END IF
 
   ! Open fields NetCDF file for reading.
 
   CALL netcdf_open (ng, model, ncname, 0, ncid)
-  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))            &
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
+    CALL abor1_ftn (TRIM(Message))
+
+  ! Inquire about all variables.
+
+  CALL netcdf_inq_var (ng, model, ncname,                                      &
+                       ncid = ncid)
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
     CALL abor1_ftn (TRIM(Message))
 
   ! Read in all fields. ROMS needs to be compiled with MASKING to use the
@@ -1653,199 +2137,130 @@ SUBROUTINE roms_fields_read_nf90 (self, InpRec, ncname, DateString, DateNumber)
 
   DO i = 1, SIZE(self%fields)
 
-    LBi = LBOUND(self%fields(i)%val, DIM=1)
-    UBi = UBOUND(self%fields(i)%val, DIM=1)
-    LBj = LBOUND(self%fields(i)%val, DIM=2)
-    UBj = UBOUND(self%fields(i)%val, DIM=2)
-    LBk = LBOUND(self%fields(i)%val, DIM=3)
-    UBk = UBOUND(self%fields(i)%val, DIM=3)
+    field => self%fields(i)
 
-    lstr = LEN_TRIM(ncname)
-    IF (allocated(self%fields(i)%InpNCname)) THEN
-      deallocate ( self%fields(i)%InpNCname )
-    END IF
-    allocate (character(LEN=lstr) :: self%fields(i)%InpNCname )
-    self%fields(i)%InpNCname = TRIM(ncname)
+    IF (field%io_has_var(geom, vindex)) THEN
 
-    lstr = MAX(21, LEN_TRIM(DateString))
-    IF (allocated(self%fields(i)%DateTimeString)) THEN
-      deallocate ( self%fields(i)%DateTimeString )
-    END IF
-    allocate (character(LEN=lstr) :: self%fields(i)%DateTimeString )
-    self%fields(i)%DateTimeString = TRIM(DateString)
+      Cgrid = field%metadata%Cgrid
 
-    self%fields(i)%InpRec     = InpRec
-    self%fields(i)%InpNCid    = ncid
-    self%fields(i)%DateNumber = DateNumber
+      LBi = LBOUND(field%val, DIM=1)
+      UBi = UBOUND(field%val, DIM=1)
+      LBj = LBOUND(field%val, DIM=2)
+      UBj = UBOUND(field%val, DIM=2)
+      LBk = LBOUND(field%val, DIM=3)
+      UBk = UBOUND(field%val, DIM=3)
 
-    ! Inquire variable about dimensions.
+      lstr = LEN_TRIM(ncname)
+      IF (allocated(field%InpNCname)) THEN
+        deallocate ( field%InpNCname )
+      END IF
+      allocate (character(LEN=lstr) :: field%InpNCname )
+      field%InpNCname = TRIM(ncname)
 
-    CALL netcdf_inq_var (ng, model, ncname,                                  &
-                         ncid = ncid,                                        &
-                         myVarName = self%fields(i)%metadata%io_name,        &
-                         VarID = varid,                                      &
-                         nVarDim = nvdims)
-    IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))          &
-      CALL abor1_ftn (TRIM(Message))
+      lstr = MAX(21, LEN_TRIM(DateString))
+      IF (allocated(field%DateTimeString)) THEN
+        deallocate ( field%DateTimeString )
+      END IF
+      allocate (character(LEN=lstr) :: field%DateTimeString )
+      field%DateTimeString = TRIM(DateString)
 
-    nx = var_Dsize(1)
-    ny = var_Dsize(2)
-    nz = var_Dsize(3)
+      field%InpRec     = InpRec
+      field%InpNCid    = ncid
+      field%DateNumber = DateNumber
 
-    SELECT CASE (self%fields(i)%name)
+      varid = var_id(vindex)                             ! NetCDF variable ID
 
-      CASE ('ssh')                               !> free-surface
+      SELECT CASE (field%name)
 
-        IF ((nx.ne.Im+2).or.(ny.ne.Jm+2)) THEN
+        CASE ('ssh', 'u2docn', 'v2docn',                                       &
+              'DU_avg1', 'DV_avg1', 'DU_avg2', 'DV_avg2')      ! 2D variables
+
+          CALL nc_err (nf_fread2d(ng, model, ncname, ncid,                     &
+                                  field%metadata%io_name,                      &
+                                  varid, InpRec, Cgrid, Vsize,                 &
+                                  LBi, UBi, LBj, UBj,                          &
+                                  scale, field%MinValue, field%MaxValue,       &
+                                  field%mask,                                  &
+                                  field%val(:,:,1)),                           &
+                       nf90_noerr, io_nf90, __LINE__, MyFile)
+
           IF (LocalPET .eq. 0) THEN
-            WRITE (text,'(a,2(1x,i0))')                                      &
-                        'roms_fields::read: inconsitent dimensions for '//   &
-                        TRIM(self%fields(i)%metadata%io_name)//':',          &
-                        Im+2, Jm+2
-            CALL fckit_log%error (TRIM(text))
-            WRITE (text,'(a,2(1x,i0))')                                      &
-                        'roms_fields::read: expected    dimensions for '//   &
-                        TRIM(self%fields(i)%metadata%io_name)//':',          &
-                         nx, ny 
-            CALL fckit_log%error (TRIM(text))
+            WRITE (stdout,20) field%metadata%getval_name,                      &
+                              field%MinValue, field%MaxValue
           END IF
-        END IF
 
-        CALL nc_err (nf_fread2d(ng, model, ncname, ncid,                     &
-                                self%fields(i)%metadata%io_name,             &
-                                varid, InpRec, r2dvar, Vsize,                &
-                                LBi, UBi, LBj, UBj,                          &
-                                scale, Fmin, Fmax,                           &
-                                self%fields(i)%mask,                         &
-                                self%fields(i)%val(:,:,1)),                  &
-                     nf90_noerr, io_nf90, __LINE__, MyFile)
+        CASE ('uocn', 'vocn', 'tocn', 'socn',                                  &
+              'Kvocn', 'Ktocn', 'Ksocn')                       ! 3D variables
 
-        IF (LocalPET .eq. 0) THEN
-          WRITE (stdout,20) self%fields(i)%metadata%getval_name, Fmin, Fmax
-        END IF
+          CALL nc_err (nf_fread3d(ng, model, ncname, ncid,                     &
+                                  self%fields(i)%metadata%io_name,             &
+                                  varid, InpRec, Cgrid, Vsize,                 &
+                                  LBi, UBi, LBj, UBj, LBk, UBk,                &
+                                  scale, field%MinValue, field%MaxValue,       &
+                                  field%mask,                                  &
+                                  field%val),                                  &
+                       nf90_noerr, io_nf90, __LINE__, MyFile)
 
-      CASE ('uocn')                              !> 3D U-momentum component
-
-        IF ((nx.ne.Im+1).or.(ny.ne.Jm+2).or.(nz.ne.Km)) THEN
-          IF (self%geom%f_comm%rank() .eq. 0) THEN
-            WRITE (text,'(a,3(1x,i0))')                                      &
-                        'roms_fields::read: inconsitent dimensions for '//   &
-                        TRIM(self%fields(i)%metadata%io_name)//':',          &
-                        Im+1, Jm+2, Km
-            CALL fckit_log%error (TRIM(text))
-            WRITE (text,'(a,2(1x,i0))')                                      &
-                        'roms_fields::read: expected    dimensions for '//   &
-                        TRIM(self%fields(i)%metadata%io_name)//':',          &
-                        nx, ny, nz
-            CALL fckit_log%error (TRIM(text))
+          IF (LocalPET .eq. 0) THEN
+            WRITE (stdout,20) field%metadata%getval_name,                      &
+                              field%MinValue, field%MaxValue
           END IF
-        END IF
 
-        CALL nc_err (nf_fread3d(ng, model, ncname, ncid,                     &
-                                self%fields(i)%metadata%io_name,             &
-                                varid, InpRec, u3dvar, Vsize,                &
-                                LBi, UBi, LBj, UBj, LBk, UBk,                &
-                                scale, Fmin, Fmax,                           &
-                                self%fields(i)%mask,                         &
-                                self%fields(i)%val),                         &
-                     nf90_noerr, io_nf90, __LINE__, MyFile)
+      END SELECT
 
-        IF (LocalPET .eq. 0) THEN
-          WRITE (stdout,20) self%fields(i)%metadata%getval_name, Fmin, Fmax
-        END IF
+      IF (.FALSE. .and. (LocalPET .eq. 0)) THEN
+        PRINT '(a)',           '------------------'
+        PRINT '(2(a,i0))',     'ng     = ', ng, ', tile = ' , LocalPET
+        PRINT '(2(a,i0),a,a)', 'ncid   = ', ncid, ', varid  = ', varid,        &
+                               ', ncname = ', TRIM(ncname)
+        PRINT '(6a)',          'field  = ', field%metadata%io_name,            &
+                               ' :: ', field%metadata%name,                    &
+                               ' :: ', field%metadata%getval_name
+        PRINT '(a,3(i0,1x))',  'shape  = ', SHAPE(field%val)
+        PRINT '(a,6(i0,1x))',  'bounds = ', LBi, UBi, LBj, UBj, LBk, UBk
+      END IF
 
-      CASE ('vocn')                              !> 3D V-momentum component
+      ! Parallel exchange of halo points.
 
-        IF ((nx.ne.Im+2).or.(ny.ne.Jm+1).or.(nz.ne.Km)) THEN
-          IF (self%geom%f_comm%rank() .eq. 0) THEN
-            WRITE (text,'(a,3(1x,i0))')                                      &
-                        'roms_fields::read: inconsitent dimensions for '//   &
-                        TRIM(self%fields(i)%metadata%io_name)//':',          &
-                        Im+2, Jm+1, Km
-            CALL fckit_log%error (TRIM(text))
-            WRITE (text,'(a,2(1x,i0))')                                      &
-                        'roms_fields::read: expected    dimensions for '//   &
-                        TRIM(self%fields(i)%metadata%io_name)//':',          &
-                        nx, ny, nz
-            CALL fckit_log%error (TRIM(text))
-          END IF
-        END IF
+      CALL self%fields(i)%update_halo (geom)
 
-        CALL nc_err (nf_fread3d(ng, model, ncname, ncid,                     &
-                                self%fields(i)%metadata%io_name,             &
-                                varid, InpRec, v3dvar, Vsize,                &
-                                LBi, UBi, LBj, UBj, LBk, UBk,                &
-                                scale, Fmin, Fmax,                           &
-                                self%fields(i)%mask,                         &
-                                self%fields(i)%val),                         &
-                     nf90_noerr, io_nf90, __LINE__, MyFile)
+    ELSE
 
-        IF (LocalPET .eq. 0) THEN
-          WRITE (stdout,20) self%fields(i)%metadata%getval_name, Fmin, Fmax
-        END IF
+      ! An error is issued if required state vector variables are not found.
+      ! Secondary trajectory variables used to linearize the TLM and ADM
+      ! kernels will be processed elsewhere.
 
-      CASE ('tocn', 'socn')                    !> temperature or salinity
+      SELECT CASE (field%name)
 
-        IF ((nx.ne.Im+2).or.(ny.ne.Jm+2).or.(nz.ne.Km)) THEN
-          IF (self%geom%f_comm%rank() .eq. 0) THEN
-            WRITE (text,'(a,3(1x,i0))')                                      &
-                        'roms_fields::read: inconsitent dimensions for '//   &
-                        TRIM(self%fields(i)%metadata%io_name)//':',          &
-                        Im+2, Jm+2, Km
-            CALL fckit_log%error (TRIM(text))
-            WRITE (text,'(a,2(1x,i0))')                                      &
-                        'roms_fields::read: expected    dimensions for '//   &
-                        TRIM(self%fields(i)%metadata%io_name)//':',          &
-                        nx, ny, nz
-            CALL fckit_log%error (TRIM(text))
-          END IF
-        END IF
+        CASE ('ssh', 'uocn', 'vocn', 'tocn', 'socn')
 
-        CALL nc_err (nf_fread3d(ng, model, ncname, ncid,                     &
-                                self%fields(i)%metadata%io_name,             &
-                                varid, InpRec, r3dvar, Vsize,                &
-                                LBi, UBi, LBj, UBj, LBk, UBk,                &
-                                scale, Fmin, Fmax,                           &
-                                self%fields(i)%mask,                         &
-                                self%fields(i)%val),                         &
-                     nf90_noerr, io_nf90, __LINE__, MyFile)
+          WRITE (Message,'(6a)')                                               &
+                'roms_fields::read_nf90: Unable to find tate variable: ',      &
+                field%name, " - ", field%metadata%getval_name,                 &
+                ', file: ', TRIM(ncname)
+          CALL abor1_ftn (TRIM(Message))
 
-        IF (LocalPET .eq. 0) THEN
-          WRITE (stdout,20) self%fields(i)%metadata%getval_name, Fmin, Fmax
-        END IF
+        CASE ('Kvocn', 'Ktocn', 'Ksocn')
 
-      CASE DEFAULT
-  
-        WRITE (Message,'(4a)')                                               &
-              'roms_fields::read_nf90: Cannot find and option to read = ',   &
-              self%fields(i)%name, " - ", self%fields(i)%metadata%getval_name
-        CALL abor1_ftn (TRIM(Message))
+          field%val = 1.0E-5_kind_real         ! vertical mixing coefficients
+    
+        CASE DEFAULT
 
-    END SELECT
+          field%val = 0.0_kind_real
 
-    IF (.FALSE. .and. (LocalPET .eq. 0)) THEN
-      PRINT '(a)',           '------------------'
-      PRINT '(2(a,i0))',     'ng     = ', ng, ', tile = ' , LocalPET
-      PRINT '(2(a,i0),a,a)', 'ncid   = ', ncid, ', varid  = ', varid,        &
-                             ', ncname = ', TRIM(ncname)
-      PRINT '(6a)',          'field  = ', self%fields(i)%metadata%io_name,   &
-                             ' :: ', self%fields(i)%metadata%name,           &
-                             ' :: ', self%fields(i)%metadata%getval_name
-      PRINT '(a,3(i0,1x))',  'shape  = ', SHAPE(self%fields(i)%val)
-      PRINT '(a,6(i0,1x))',  'bounds = ', LBi, UBi, LBj, UBj, LBk, UBk
+      END SELECT
+
     END IF
-
-    CALL self%fields(i)%update_halo (self%geom)
 
   END DO
 
   ! Close NetCDF file.
 
   CALL netcdf_close (ng, model, ncid, ncname, .FALSE.)
-  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))            &
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
     CALL abor1_ftn (TRIM(Message))
 
-  10 FORMAT (/,1x,'ROMS_FIELDS::read_nf90 - ',a,t75,a,/,26x,                 &
+  10 FORMAT (/,1x,'ROMS_FIELDS::read_nf90 - ',a,t75,a,/,26x,                   &
              '(Grid=',i2.2,', datenum=',f0.4,', File: ',a,', Rec= ',i0,')')
   20 FORMAT (24x,'- ',a,/,27x,'(Min = ',1p,e15.8,' Max = ',1p,e15.8,')')
 
@@ -1856,62 +2271,74 @@ END SUBROUTINE roms_fields_read_nf90
 
 SUBROUTINE roms_fields_write_nf90 (self, S, romsTime)
 
-  USE mod_ncparam
+  USE dateclock_mod,   ONLY : datestr
+  USE mod_ncparam,     ONLY : idtime, Vname
   USE mod_iounits,     ONLY : T_IO
-  USE mod_netcdf,      ONLY : netcdf_put_fvar, netcdf_sync
-  USE mod_scalars,     ONLY : NoError, exit_flag
+  USE mod_netcdf,      ONLY : netcdf_inq_var, netcdf_put_fvar, netcdf_sync,    &
+                              var_id
+  USE mod_scalars,     ONLY : Rclock, NoError, exit_flag
   USE netcdf,          ONLY : nf90_noerr
   USE nf_fwrite2d_mod, ONLY : nf_fwrite2d
   USE nf_fwrite3d_mod, ONLY : nf_fwrite3d
 
-  CLASS (roms_fields),   intent(inout) :: self         !< Fields set
-  TYPE (T_IO),           intent(inout) :: S(:)         !< ROMS I/O structure
-  real (kind=kind_real)                :: romsTime(:)  !< ROMS time (seconds)
+  CLASS (roms_fields), target, intent(inout) :: self          !< Fields set
+  TYPE (T_IO),                 intent(inout) :: S(:)          !< ROMS I/O struc
+  real (kind=kind_real)                      :: romsTime(:)   !< ROMS time (s)
 
-  integer                              :: Fcount, LocalPET, lstr, lend
-  integer                              :: i, itrc, model, ng
-  integer                              :: LBi, UBi, LBj, UBj, LBk, UBk
-  real (kind=kind_real)                :: Fmin, Fmax, scale
-  character (len=1024)                 :: Message
+  TYPE (roms_field), pointer                 :: field
+  TYPE (roms_geom), pointer                  :: geom
+  integer                                    :: Fcount, LocalPET, lstr, lend
+  integer                                    :: Cgrid, varid, vindex
+  integer                                    :: i, model, ng
+  integer                                    :: LBi, UBi, LBj, UBj, LBk, UBk
+  real (kind=kind_real)                      :: DateNumber, scale
+  character (len=22)                         :: DateString
+  character (len=1024)                       :: Message
 
-  character (len=*), parameter         :: MyFile =                           &
+  character (len=*), parameter               :: MyFile =                       &
      &  __FILE__//", roms_fields_write_nf90"
 
   ! Initialize
 
-  LocalPET = self%geom%f_comm%rank()   !< PET rank
+  geom => self%geom
 
-  model = self%geom%model              !< ROMS numerical kernel
-  ng    = self%geom%ng                 !< nested grid number
-
-  LBi = self%geom%LBi
-  UBi = self%geom%UBi
-  LBj = self%geom%LBj
-  UBj = self%geom%UBj
-  LBk = self%geom%LBk
-  UBk = self%geom%UBk
+  LocalPET = geom%f_comm%rank()        !< PET rank
+  model    = geom%model                !< ROMS numerical kernel
+  ng       = geom%ng                   !< nested grid number
 
   IF (LdebugFields .and. (LocalPET .eq. 0)) THEN
     lstr = SCAN(S(ng)%name, '/', BACK=.TRUE.) + 1
     lend = LEN_TRIM(S(ng)%name)    
-    PRINT '(2a)', 'roms_fields::write_nf90 - writing state, File = ',        &
+    PRINT '(2a)', 'roms_fields::write_nf90 - writing state, File = ',          &
                   S(ng)%name(lstr:lend)
   END IF
 
   ! Set writing parameters.
 
-  scale  = 1.0_kind_real                    !< field scale
+  scale = 1.0_kind_real                     !< field scale
   S(ng)%Rindex = S(ng)%Rindex + 1           !< NetCDF time record
   Fcount=S(ng)%load                         !< filename load counter
   S(ng)%Nrec(Fcount)=S(ng)%Nrec(Fcount)+1   !< record counter per multi-file
 
   ! Write out ROMS time variable.
 
-  CALL netcdf_put_fvar (ng, model, S(ng)%name, TRIM(Vname(1,idtime)),        &
-                        romsTime(ng:), (/S(ng)%Rindex/), (/1/),              &
-                        ncid = S(ng)%ncid,                                   &
+  CALL netcdf_put_fvar (ng, model, S(ng)%name, TRIM(Vname(1,idtime)),          &
+                        romsTime(ng:), (/S(ng)%Rindex/), (/1/),                &
+                        ncid = S(ng)%ncid,                                     &
                         varid = S(ng)%Vid(idtime))
-  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))            &
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
+    CALL abor1_ftn (TRIM(Message))
+
+  ! Get output fields fractional "datenum".
+
+  DateNumber = Rclock%DateNumber(1) + romsTime(ng)/86400.0_kind_real
+  CALL datestr (DateNumber, .TRUE., DateString)
+
+  ! Inquire about all variables.
+
+  CALL netcdf_inq_var (ng, model, S(ng)%name,                                  &
+                       ncid = S(ng)%ncid)
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
     CALL abor1_ftn (TRIM(Message))
 
   ! Write out all fields. ROMS needs to be compiled with MASKING to use the
@@ -1919,89 +2346,86 @@ SUBROUTINE roms_fields_write_nf90 (self, S, romsTime)
 
   DO i = 1, SIZE(self%fields)
 
-    self%fields(i)%OutNCname = TRIM(S(ng)%name)
-    self%fields(i)%OutNCid   = S(ng)%ncid
-    self%fields(i)%OutRec    = S(ng)%Rindex
+    field => self%fields(i)
 
-    SELECT CASE (self%fields(i)%name)
+    IF (field%io_has_var(geom, vindex)) THEN
 
-      CASE ('ssh')                             !< free-surface
+      Cgrid = field%metadata%Cgrid
 
-        CALL nc_err (nf_fwrite2d(ng, model, S(ng)%ncid, S(ng)%Vid(idFsur),   &
-                                 S(ng)%Rindex, r2dvar,                       &
-                                 LBi, UBi, LBj, UBj, scale,                  &
-                                 self%fields(i)%mask,                        &
-                                 self%fields(i)%val(:,:,1),                  &
-                                 MinValue = Fmin,                            &
-                                 MaxValue = Fmax),                           &
-                     nf90_noerr, io_nf90, __LINE__, MyFile)
+      LBi = LBOUND(field%val, DIM=1)
+      UBi = UBOUND(field%val, DIM=1)
+      LBj = LBOUND(field%val, DIM=2)
+      UBj = UBOUND(field%val, DIM=2)
+      LBk = LBOUND(field%val, DIM=3)
+      UBk = UBOUND(field%val, DIM=3)
 
-        IF (LdebugFields .and. (LocalPET .eq. 0)) THEN
-          PRINT 10, self%fields(i)%name, Fmin, Fmax
-        END IF
+      field%OutNCname = TRIM(S(ng)%name)
+      field%OutNCid   = S(ng)%ncid
+      field%OutRec    = S(ng)%Rindex
 
-      CASE ('uocn')                            !< 3D U-momentum component
+      lstr = MAX(22, LEN_TRIM(DateString))
+      IF (allocated(field%DateTimeString)) THEN
+        deallocate ( field%DateTimeString )
+      END IF
+      allocate (character(LEN=lstr) :: field%DateTimeString )
+      field%DateTimeString = TRIM(DateString)
 
-        CALL nc_err (nf_fwrite3d(ng, model, S(ng)%ncid, S(ng)%Vid(idUvel),   &
-                                 S(ng)%Rindex, u3dvar,                       &
-                                 LBi, UBi, LBj, UBj, LBk, UBk, scale,        &
-                                 self%fields(i)%mask,                        &
-                                 self%fields(i)%val,                         &
-                                 MinValue = Fmin,                            &
-                                 MaxValue = Fmax),                           &
-                     nf90_noerr, io_nf90, __LINE__, MyFile)
+      field%DateNumber = DateNumber
 
-        IF (LdebugFields .and. (LocalPET .eq. 0)) THEN
-          PRINT 10, self%fields(i)%name, Fmin, Fmax
-        END IF
+      varid = var_id(vindex)                        ! NetCDF variable ID
 
-      CASE ('vocn')                            !< 3D V-momentum component
+      SELECT CASE (field%name)
 
-        CALL nc_err (nf_fwrite3d(ng, model, S(ng)%ncid, S(ng)%Vid(idVvel),   &
-                                 S(ng)%Rindex, v3dvar,                       &
-                                 LBi, UBi, LBj, UBj, LBk, UBk, scale,        &
-                                 self%fields(i)%mask,                        &
-                                 self%fields(i)%val,                         &
-                                 MinValue = Fmin,                            &
-                                 MaxValue = Fmax),                           &
-                     nf90_noerr, io_nf90, __LINE__, MyFile)
+        CASE ('ssh', 'u2docn', 'v2docn',                                       &
+              'DU_avg1', 'DV_avg1', 'DU_avg2', 'DV_avg2')      ! 2D variables
 
-        IF (LdebugFields .and. (LocalPET .eq. 0)) THEN
-          PRINT 10, self%fields(i)%name, Fmin, Fmax
-        END IF
+          CALL nc_err (nf_fwrite2d(ng, model, S(ng)%ncid, varid,               &
+                                   S(ng)%Rindex, Cgrid,                        &
+                                   LBi, UBi, LBj, UBj, scale,                  &
+                                   field%mask,                                 &
+                                   field%val(:,:,1),                           &
+                                   MinValue = field%MinValue,                  &
+                                   MaxValue = field%MaxValue),                 &
+                       nf90_noerr, io_nf90, __LINE__, MyFile)
 
-      CASE ('tocn', 'socn')                    !< potential temperature
+          IF (LdebugFields .and. (LocalPET .eq. 0)) THEN
+            PRINT 10, field%name, field%MinValue, field%MaxValue
+          END IF
 
-        itrc = roms_tracer_index(self%fields(i)%name)
+        CASE ('uocn', 'vocn', 'tocn', 'socn',                                  &
+              'Kvocn', 'Ktocn', 'Ksocn')                       ! 3D variables
 
-        CALL nc_err (nf_fwrite3d(ng, model, S(ng)%ncid, S(ng)%Tid(itrc),     &
-                                 S(ng)%Rindex, r3dvar,                       &
-                                 LBi, UBi, LBj, UBj, LBk, UBk, scale,        &
-                                 self%fields(i)%mask,                        &
-                                 self%fields(i)%val,                         &
-                                 MinValue = Fmin,                            &
-                                 MaxValue = Fmax),                           &
-                     nf90_noerr, io_nf90, __LINE__, MyFile)
+          CALL nc_err (nf_fwrite3d(ng, model, S(ng)%ncid, varid,               &
+                                   S(ng)%Rindex, Cgrid,                        &
+                                   LBi, UBi, LBj, UBj, LBk, UBk, scale,        &
+                                   field%mask,                                 &
+                                   field%val,                                  &
+                                   MinValue = field%MinValue,                  &
+                                   MaxValue = field%MaxValue),                 &
+                       nf90_noerr, io_nf90, __LINE__, MyFile)
 
-        IF (LdebugFields .and. (LocalPET .eq. 0)) THEN
-          PRINT 10, self%fields(i)%name, Fmin, Fmax
-        END IF
+          IF (LdebugFields .and. (LocalPET .eq. 0)) THEN
+            PRINT 10, field%name, field%MinValue, field%MaxValue
+          END IF
 
-      CASE DEFAULT
-  
-        WRITE (Message,'(4a)')                                               &
-              'roms_fields::write_pio: Cannot find and option to write = ',  &
-              self%fields(i)%name, " - ", self%fields(i)%metadata%getval_name
-        CALL abor1_ftn (TRIM(Message))
+      END SELECT
 
-    END SELECT
-    
+    ELSE
+
+      WRITE (Message,'(4a)')                                                   &
+             'roms_fields::write_nf90: Cannot find and option to write = ',    &
+             field%name, " - ", field%metadata%getval_name,                    &
+            ', file: ', TRIM(S(ng)%name)
+      CALL abor1_ftn (TRIM(Message))
+
+    END IF
+
   END DO
 
   ! Synchronize NetCDF to disk.
 
   CALL netcdf_sync (ng, model, S(ng)%name, S(ng)%ncid)
-  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))            &
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
     CALL abor1_ftn (TRIM(Message))
 
   10 FORMAT (2x,'- ',a,':',t13,'Min = ',1p,e15.8,',  Max = ',1p,e15.8)
@@ -2017,57 +2441,63 @@ SUBROUTINE roms_fields_read_pio (self, InpRec, ncname, DateString, DateNumber)
 
   USE mod_pio_netcdf
 
-  USE mod_ncparam,    ONLY : r2dvar, r3dvar, u3dvar, v3dvar, io_pio
+  USE mod_ncparam,    ONLY : io_pio, r2dvar, r3dvar, u2dvar, u3dvar,           &
+                                                     v2dvar, v3dvar, w3dvar
   USE mod_iounits,    ONLY : stdout
-  USE mod_netcdf,     ONLY : var_Dsize
   USE mod_scalars,    ONLY : NoError, exit_flag
   USE nf_fread2d_mod, ONLY : nf_fread2d
   USE nf_fread3d_mod, ONLY : nf_fread3d
 
-  CLASS (roms_fields),        intent(inout) :: self       !< Fields set
-  integer,                    intent(in   ) :: InpRec     !< time record to read
-  character (len=*),          intent(in   ) :: ncname     !< NetCDF filename
-  character (len=*),          intent(in   ) :: DateString !< ISO8601 DateTime
-  real (kind=kind_real)       intent(in   ) :: DateNumber !< Fields datenum
+  CLASS (roms_fields), target, intent(inout) :: self       !< Fields set
+  integer,                     intent(in   ) :: InpRec     !< Record to read
+  character (len=*),           intent(in   ) :: ncname     !< NetCDF filename
+  character (len=*),           intent(in   ) :: DateString !< ISO8601 DateTime
+  real (kind=kind_real)        intent(in   ) :: DateNumber !< Fields datenum
 
-  TYPE (IO_desc_t), pointer                 :: ioDesc
-  TYPE (My_VarDesc)                         :: pioVar
 
-  integer                                   :: LocalPET, lstr, lend
-  integer                                   :: fld_kind, i, model, ng, nvdims
-  integer                                   :: LBi, UBi, LBj, UBj, LBk, UBk
-  integer                                   :: Im, Jm, Km, nx, ny, nz
-  integer, dimension(4)                     :: Vsize
-  real (kind=kind_real)                     :: Fmin, Fmax, scale
-  character (len=256)                       :: text
-  character (len=1024)                      :: Message
+  TYPE (roms_field), pointer                 :: field
+  TYPE (roms_geom), pointer                  :: geom
+  TYPE (IO_desc_t), pointer                  :: ioDesc
+  TYPE (My_VarDesc)                          :: pioVar
 
-  character (len=*), parameter              :: MyFile =                      &
+  integer                                    :: LocalPET, i, lstr, lend, ng
+  integer                                    :: Cgrid, fld_kind, model, vindex
+  integer                                    :: LBi, UBi, LBj, UBj, LBk, UBk
+  integer, dimension(4)                      :: Vsize
+  real (kind=kind_real)                      :: scale
+  character (len=1024)                       :: Message
+
+  character (len=*), parameter               :: MyFile =                       &
      &  __FILE__//", roms_fields_read_pio"
 
   ! Initialize.
 
-  LocalPET = self%geom%f_comm%rank()   !< PET rank
+  geom => self%geom
 
-  model = self%geom%model              !< numerical kernel
-  ng    = MAX(1,self%geom%ng)          !< nested grid number
-  Im    = self%geom%Lm                 !< number of global interior I-points
-  Jm    = self%geom%Mm                 !< number of global interior J-points
-  Km    = self%geom%N                  !< number of vertical levels
-  scale = 1.0_kind_real
-  Vsize = 0
+  LocalPET = geom%f_comm%rank()        !< PET rank
+  model    = geom%model                !< numerical kernel
+  ng       = MAX(1, geom%ng)           !< nested grid number
+  scale    = 1.0_kind_real             !> scale factor for read variables
+  Vsize    = 0                         !> variable dimensions
 
   IF (LocalPET .eq. 0) THEN
     lstr = SCAN(ncname, '/', BACK=.TRUE.) + 1
     lend = LEN_TRIM(ncname)    
-    WRITE (stdout,10) 'State Fields,', TRIM(DateString), ng, DateNumber,     &
+    WRITE (stdout,10) 'State Fields,', TRIM(DateString), ng, DateNumber,       &
                       ncname(lstr:lend), InpRec
   END IF
 
   ! Open fields NetCDF file for reading.
 
   CALL pio_netcdf_open (ng, model, ncname, 0, pioFile)
-  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))            &
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
+    CALL abor1_ftn (TRIM(Message))
+
+  ! Inquire about all variables.
+
+  CALL pio_netcdf_inq_var (ng, model, ncname,                                  &
+                           piofile = pioFile)
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
     CALL abor1_ftn (TRIM(Message))
 
   ! Read in all fields. ROMS needs to be compiled with MASKING to use the
@@ -2075,233 +2505,186 @@ SUBROUTINE roms_fields_read_pio (self, InpRec, ncname, DateString, DateNumber)
 
   DO i = 1, SIZE(self%fields)
 
-    LBi = LBOUND(self%fields(i)%val, DIM=1)
-    UBi = UBOUND(self%fields(i)%val, DIM=1)
-    LBj = LBOUND(self%fields(i)%val, DIM=2)
-    UBj = UBOUND(self%fields(i)%val, DIM=2)
-    LBk = LBOUND(self%fields(i)%val, DIM=3)
-    UBk = UBOUND(self%fields(i)%val, DIM=3)
+    field => self%fields(i)
 
-    lstr = LEN_TRIM(ncname)
-    IF (allocated(self%fields(i)%InpNCname)) THEN
-      deallocate ( self%fields(i)%InpNCname )
+    IF (field%io_has_var(geom, vindex)) THEN
+
+      Cgrid = field%metadata%Cgrid
+
+      LBi = LBOUND(field%val, DIM=1)
+      UBi = UBOUND(field%val, DIM=1)
+      LBj = LBOUND(field%val, DIM=2)
+      UBj = UBOUND(field%val, DIM=2)
+      LBk = LBOUND(field%val, DIM=3)
+      UBk = UBOUND(field%val, DIM=3)
+
+      lstr = LEN_TRIM(ncname)
+      IF (allocated(field%InpNCname)) THEN
+        deallocate ( field%InpNCname )
+      END IF
+      allocate (character(LEN=lstr) :: field%InpNCname )
+      field%InpNCname = TRIM(ncname)
+
+      lstr = LEN_TRIM(DateString)
+      IF (allocated(field%DateTimeString)) THEN
+        deallocate ( field%DateTimeString )
+      END IF
+      allocate (character(LEN=lstr) :: field%DateTimeString )
+      field%DateTimeString = TRIM(DateString)
+
+      field%InpRec     = InpRec
+      field%InpNCid    = pioFile%fh
+      field%DateNumber = DateNumber
+
+      ! Set variable and IO descriptors.
+
+      fld_kind = KIND(field%val)
+
+      pioVar%vd    = var_desc(vindex)
+      pioVar%gtype = Cgrid
+
+      SELECT CASE (Cgrid)
+        CASE (r2dvar)
+          IF (fld_kind.eq.8) THEN
+            pioVar%dkind=PIO_double
+            ioDesc => ioDesc_dp_r2dvar(ng)
+          ELSE
+            pioVar%dkind=PIO_real
+            ioDesc => ioDesc_sp_r2dvar(ng)
+          END IF
+        CASE (u2dvar)
+          IF (fld_kind.eq.8) THEN
+            pioVar%dkind=PIO_double
+            ioDesc => ioDesc_dp_u2dvar(ng)
+          ELSE
+            pioVar%dkind=PIO_real
+            ioDesc => ioDesc_sp_u2dvar(ng)
+          END IF
+        CASE (v2dvar)
+          IF (fld_kind.eq.8) THEN
+            pioVar%dkind=PIO_double
+            ioDesc => ioDesc_dp_v2dvar(ng)
+          ELSE
+            pioVar%dkind=PIO_real
+            ioDesc => ioDesc_sp_v2dvar(ng)
+          END IF
+        CASE (r3dvar)
+          IF (fld_kind.eq.8) THEN
+            pioVar%dkind=PIO_double
+            ioDesc => ioDesc_dp_r3dvar(ng)
+          ELSE
+            pioVar%dkind=PIO_real
+            ioDesc => ioDesc_sp_r3dvar(ng)
+          END IF
+        CASE (u3dvar)
+          IF (fld_kind.eq.8) THEN
+            pioVar%dkind=PIO_double
+            ioDesc => ioDesc_dp_u3dvar(ng)
+          ELSE
+            pioVar%dkind=PIO_real
+            ioDesc => ioDesc_sp_u3dvar(ng)
+          END IF
+        CASE (w3dvar)
+          IF (fld_kind.eq.8) THEN
+            pioVar%dkind=PIO_double
+            ioDesc => ioDesc_dp_w3dvar(ng)
+          ELSE
+            pioVar%dkind=PIO_real
+            ioDesc => ioDesc_sp_w3dvar(ng)
+          END IF
+      END SELECT
+
+      ! Read in variable.
+      
+      SELECT CASE (field%name)
+
+        CASE ('ssh', 'u2docn', 'v2docn',                                       &
+              'DU_avg1', 'DV_avg1', 'DU_avg2', 'DV_avg2')      ! 2D variables
+
+          CALL nc_err (nf_fread2d(ng, model, ncname, pioFile,                  &
+                                  field%metadata%io_name,                      &
+                                  pioVar, InpRec, ioDesc, Vsize,               &
+                                  LBi, UBi, LBj, UBj,                          &
+                                  scale, field%MinValue, field%MaxValue,       &
+                                  field%mask,                                  &
+                                  field%val(:,:,1)),                           &
+                       PIO_noerr, io_pio, __LINE__, MyFile)
+
+          IF (LocalPET .eq. 0) THEN
+            WRITE (stdout,20) field%metadata%getval_name,                      &
+                              field%MinValue, field%MaxValue
+          END IF
+
+        CASE ('uocn', 'vocn', 'tocn', 'socn',                                  &
+              'Kvocn', 'Ktocn', 'Ksocn')                       ! 3D variables
+
+          CALL nc_err (nf_fread3d(ng, model, ncname, pioFile,                  &
+                                  field%metadata%io_name,                      &
+                                  pioVar, InpRec, ioDesc, Vsize,               &
+                                  LBi, UBi, LBj, UBj, LBk, UBk,                &
+                                  scale, field%MinValue, field%MaxValue,       &
+                                  field%mask,                                  &
+                                  field%val),                                  &
+                       PIO_noerr, io_pio, __LINE__, MyFile)
+
+          IF (LocalPET .eq. 0) THEN
+            WRITE (stdout,20) field%metadata%getval_name,                      &
+                              field%MinValue, field%MaxValue
+          END IF
+
+      END SELECT
+
+      IF (.FALSE. .and. (LocalPET .eq. 0)) THEN
+        PRINT '(a)',           '------------------'
+        PRINT '(2(a,i0))',     'ng     = ', ng, ', tile = ' , LocalPET
+        PRINT '(2(a,i0),a,a)', 'ncid   = ', ncid, ', varid  = ', varid,        &
+                               ', ncname = ', TRIM(ncname)
+        PRINT '(6a)',          'field  = ', field%metadata%io_name,            &
+                               ' :: ', field%metadata%name,                    &
+                               ' :: ', field%metadata%getval_name
+        PRINT '(a,3(i0,1x))',  'shape  = ', SHAPE(field%val)
+        PRINT '(a,6(i0,1x))',  'bounds = ', LBi, UBi, LBj, UBj, LBk, UBk
+      END IF
+
+      ! Parallel exchange of halo points.
+
+      CALL self%fields(i)%update_halo (geom)
+
+    ELSE
+
+      ! An error is issued if required state vector variables are not found.
+      ! Secondary trajectory variables used to linearize the TLM and ADM
+      ! kernels will be processed elsewhere.
+
+      SELECT CASE (field%name)
+
+        CASE ('ssh', 'uocn', 'vocn', 'tocn', 'socn')
+          WRITE (Message,'(4a)')                                               &
+                'roms_fields::write_pio: Cannot find and option to read = ',   &
+                field%name, " - ", field%metadata%getval_name
+          CALL abor1_ftn (TRIM(Message))
+
+        CASE ('Kvocn', 'Ktocn', 'Ksocn')
+
+          field%val = 1.0E-5_kind_real         ! vertical mixing coefficients
+
+        CASE DEFAULT
+
+          field%val = 0.0_kind_real
+
+      END SELECT
+
     END IF
-    allocate (character(LEN=lstr) :: self%fields(i)%InpNCname )
-    self%fields(i)%InpNCname = TRIM(ncname)
-
-    lstr = LEN_TRIM(DateString)
-    IF (allocated(self%fields(i)%DateTimeString)) THEN
-      deallocate ( self%fields(i)%DateTimeString )
-    END IF
-    allocate (character(LEN=lstr) :: self%fields(i)%DateTimeString )
-    self%fields(i)%DateTimeString = TRIM(DateString)
-
-    self%fields(i)%InpRec     = InpRec
-    self%fields(i)%InpNCid    = pioFile%fh
-    self%fields(i)%DateNumber = DateNumber
-
-    fld_kind = KIND(self%fields(i)%val)
-
-    ! Inquire variable about dimensions.
-
-    CALL pio_netcdf_inq_var (ng, model, ncname,                              &
-                             piofile = pioFile,                              &
-                             myVarName = self%fields(i)%metadata%io_name,    &
-                             pioVar = pioVar,                                &
-                             nVarDim = nvdims)
-    IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))          &
-      CALL abor1_ftn (TRIM(Message))
-
-    nx = var_Dsize(1)
-    ny = var_Dsize(2)
-    nz = var_Dsize(3)
-
-    SELECT CASE (self%fields(i)%name)
-
-      CASE ('ssh')                               !< free-surface
-
-        IF ((nx.ne.Im+2).or.(ny.ne.Jm+2)) THEN
-          IF (self%geom%f_comm%rank() .eq. 0) THEN
-            WRITE (text,'(a,2(1x,i0))')                                      &
-                        'roms_fields::read: inconsitent dimensions for '//   &
-                        TRIM(self%fields(i)%metadata%io_name)//':',          &
-                        Im+2, Jm+2
-            CALL fckit_log%error (TRIM(text))
-            WRITE (text,'(a,2(1x,i0))')                                      &
-                        'roms_fields::read: expected    dimensions for '//   &
-                        TRIM(self%fields(i)%metadata%io_name)//':',          &
-                        nx, ny 
-            CALL fckit_log%error (TRIM(text))
-          END IF
-        END IF
-
-        pioVar%gtype=r2dvar
-        IF (fld_kind.eq.8) THEN
-          pioVar%dkind=PIO_double
-          ioDesc => ioDesc_dp_r2dvar(ng)
-        ELSE
-          pioVar%dkind=PIO_real
-          ioDesc => ioDesc_sp_r2dvar(ng)
-        END IF
-        CALL nc_err (nf_fread2d(ng, model, ncname, pioFile,                  &
-                                self%fields(i)%metadata%io_name,             &
-                                pioVar, InpRec, ioDesc, Vsize,               &
-                                LBi, UBi, LBj, UBj,                          &
-                                scale, Fmin, Fmax,                           &
-                                self%fields(i)%mask,                         &
-                                self%fields(i)%val(:,:,1)),                  &
-                     PIO_noerr, io_pio, __LINE__, MyFile)
-
-        IF (LocalPET .eq. 0) THEN
-          WRITE (stdout,20) self%fields(i)%metadata%getval_name, Fmin, Fmax
-        END IF
-
-      CASE ('uocn')                              !< 3D U-momentum component
-
-        IF ((nx.ne.Im+1).or.(ny.ne.Jm+2).or.(nz.ne.Km)) THEN
-          IF (self%geom%f_comm%rank() .eq. 0) THEN
-            WRITE (text,'(a,3(1x,i0))')                                      &
-                        'roms_fields::read: inconsitent dimensions for '//   &
-                        TRIM(self%fields(i)%metadata%io_name)//':',          &
-                        Im+1, Jm+2, Km
-            CALL fckit_log%error (TRIM(text))
-            WRITE (text,'(a,2(1x,i0))')                                      &
-                        'roms_fields::read: expected    dimensions for '//   &
-                        TRIM(self%fields(i)%metadata%io_name)//':',          &
-                        nx, ny, nz
-            CALL fckit_log%error (TRIM(text))
-          END IF
-        END IF
-
-        pioVar%gtype=u3dvar
-        IF (fld_kind.eq.8) THEN
-          pioVar%dkind=PIO_double
-          ioDesc => ioDesc_dp_u3dvar(ng)
-        ELSE
-          pioVar%dkind=PIO_real
-          ioDesc => ioDesc_sp_u3dvar(ng)
-        END IF
-        CALL nc_err (nf_fread3d(ng, model, ncname, pioFile,                  &
-                                self%fields(i)%metadata%io_name,             &
-                                pioVar, InpRec, ioDesc, Vsize,               &
-                                LBi, UBi, LBj, UBj, LBk, UBk,                &
-                                scale, Fmin, Fmax,                           &
-                                self%fields(i)%mask,                         &
-                                self%fields(i)%val),                         &
-                     PIO_noerr, io_pio, __LINE__, MyFile)
-
-        IF (LocalPET .eq. 0) THEN
-          WRITE (stdout,20) self%fields(i)%metadata%getval_name, Fmin, Fmax
-        END IF
-
-      CASE ('vocn')                              !< 3D V-momentum component
-
-        IF ((nx.ne.Im+2).or.(ny.ne.Jm+1).or.(nz.ne.Km)) THEN
-          IF (self%geom%f_comm%rank() .eq. 0) THEN
-            WRITE (text,'(a,3(1x,i0))')                                      &
-                        'roms_fields::read: inconsitent dimensions for '//   &
-                        TRIM(self%fields(i)%metadata%io_name)//':',          &
-                        Im+2, Jm+1, Km
-            CALL fckit_log%error (TRIM(text))
-            WRITE (text,'(a,2(1x,i0))')                                      &
-                        'roms_fields::read: expected    dimensions for '//   &
-                        TRIM(self%fields(i)%metadata%io_name)//':',          &
-                        nx, ny, nz
-            CALL fckit_log%error (TRIM(text))
-          END IF
-        END IF
-
-        pioVar%gtype=v3dvar
-        IF (fld_kind.eq.8) THEN
-          pioVar%dkind=PIO_double
-          ioDesc => ioDesc_dp_v3dvar(ng)
-        ELSE
-          pioVar%dkind=PIO_real
-          ioDesc => ioDesc_sp_v3dvar(ng)
-        END IF
-        CALL nc_err (nf_fread3d(ng, model, ncname, pioVar,                   &
-                                self%fields(i)%metadata%io_name,             &
-                                pioVar, InpRec, ioDesc, Vsize,               &
-                                LBi, UBi, LBj, UBj, LBk, UBk,                &
-                                scale, Fmin, Fmax,                           &
-                                self%fields(i)%mask,                         &
-                                self%fields(i)%val),                         &
-                     PIO_noerr, io_pio, __LINE__, MyFile)
-
-        IF (LocalPET .eq. 0) THEN
-          WRITE (stdout,20) self%fields(i)%metadata%getval_name, Fmin, Fmax
-        END IF
-
-      CASE ('tocn', 'socn')                    !< tracers
-
-        IF ((nx.ne.Im+2).or.(ny.ne.Jm+2).or.(nz.ne.Km)) THEN
-          IF (self%geom%f_comm%rank() .eq. 0) THEN
-            WRITE (text,'(a,3(1x,i0))')                                      &
-                        'roms_fields::read: inconsitent dimensions for '//   &
-                        TRIM(self%fields(i)%metadata%io_name)//':',          &
-                        Im+2, Jm+2, Km
-            CALL fckit_log%error (TRIM(text))
-            WRITE (text,'(a,2(1x,i0))')                                      &
-                        'roms_fields::read: expected    dimensions for '//   &
-                        TRIM(self%fields(i)%metadata%io_name)//':',          &
-                        nx, ny, nz
-            CALL fckit_log%error (TRIM(text))
-          END IF
-        END IF
-
-        pioVar%gtype=r3dvar
-        IF (fld_kind.eq.8) THEN
-          pioVar%dkind=PIO_double
-          ioDesc => ioDesc_dp_r3dvar(ng)
-        ELSE
-          pioVar%dkind=PIO_real
-          ioDesc => ioDesc_sp_r3dvar(ng)
-        END IF
-        CALL nc_err (nf_fread3d(ng, model, ncname, pioFile,                  &
-                                self%fields(i)%metadata%io_name,             &
-                                pioVar, InpRec, ioDesc, Vsize,               &
-                                LBi, UBi, LBj, UBj, LBk, UBk,                &
-                                scale, Fmin, Fmax,                           &
-                                self%fields(i)%mask,                         &
-                                self%fields(i)%val),                         &
-                     PIO_noerr, io_pio, __LINE__, MyFile)
-
-        IF (LocalPET .eq. 0) THEN
-          WRITE (stdout,20) self%fields(i)%metadata%getval_name, Fmin, Fmax
-        END IF
-
-      CASE DEFAULT
-  
-        WRITE (Message,'(4a)')                                               &
-              'roms_fields::write_pio: Cannot find and option to read = ',   &
-              self%fields(i)%name, " - ", self%fields(i)%metadata%getval_name
-        CALL abor1_ftn (TRIM(Message))
-
-    END SELECT
-
-    IF (.FALSE. .and. (LocalPET .eq. 0)) THEN
-      PRINT '(a)',           '------------------'
-      PRINT '(2(a,i0))',     'ng     = ', ng, ', tile = ' , LocalPET
-      PRINT '(2(a,i0),a,a)', 'ncid   = ', ncid, ', varid  = ', varid,        &
-                             ', ncname = ', TRIM(ncname)
-      PRINT '(6a)',          'field  = ', self%fields(i)%metadata%io_name,   &
-                             ' :: ', self%fields(i)%metadata%name,           &
-                             ' :: ', self%fields(i)%metadata%getval_name
-      PRINT '(a,3(i0,1x))',  'shape  = ', SHAPE(self%fields(i)%val)
-      PRINT '(a,6(i0,1x))',  'bounds = ', LBi, UBi, LBj, UBj, LBk, UBk
-    END IF
-
-    CALL self%fields(i)%update_halo (self%geom)
 
   END DO
 
   ! Close NetCDF file.
 
   CALL pio_netcdf_close (ng, model, pioFile, ncname, .FALSE.)
-  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))            &
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
     CALL abor1_ftn (TRIM(Message))
 
-  10 FORMAT (/,1x,'ROMS_FIELDS::read_pio  - ',a,t75,a,/,26x,                 &
+  10 FORMAT (/,1x,'ROMS_FIELDS::read_pio  - ',a,t75,a,/,26x,                   &
              '(Grid=',i2.2,', datenum=',f0.4,', File: ',a,', Rec= ',i0,')')
   20 FORMAT (24x,'- ',a,/,27x,'(Min = ',1p,e15.8,' Max = ',1p,e15.8,')')
 
@@ -2313,63 +2696,75 @@ END SUBROUTINE roms_fields_read_pio
 SUBROUTINE roms_fields_write_pio (self, S, romsTime)
 
   USE mod_pio_netcdf
-
   USE mod_ncparam
+ 
+ USE dateclock_mod,    ONLY : datestr
   USE mod_iounits,     ONLY : T_IO
   USE mod_scalars,     ONLY : NoError, exit_flag
   USE nf_fwrite2d_mod, ONLY : nf_fwrite2d
   USE nf_fwrite3d_mod, ONLY : nf_fwrite3d
 
-  CLASS (roms_fields),   intent(inout) :: self          !< Fields set
-  TYPE (T_IO),           intent(inout) :: S(:)         !< ROMS I/O structure
-  real (kind=kind_real)                :: romsTime(:)  !< ROMS time (seconds)
+  CLASS (roms_fields), target, intent(inout) :: self         !< Fields set
+  TYPE (T_IO),                 intent(inout) :: S(:)         !< ROMS I/O struc
+  real (kind=kind_real)                      :: romsTime(:)  !< ROMS time (s)
 
-  integer                              :: Fcount, LocalPET, lstr, lend
-  integer                              :: i, model, ng
-  integer                              :: LBi, UBi, LBj, UBj, LBk, UBk
-  real (kind=kind_real)                :: Fmin, Fmax, scale
-  character (len=1024)                 :: Message
+  TYPE (roms_field), pointer                 :: field
+  TYPE (roms_geom), pointer                  :: geom
+  TYPE (IO_desc_t), pointer                  :: ioDesc
+  TYPE (My_VarDesc)                          :: pioVar
 
-  TYPE (IO_desc_t), pointer            :: ioDesc
+  integer                                    :: Fcount, LocalPET, lstr, lend
+  integer                                    :: Cgrid, fld_kind, vindex
+  integer                                    :: i, model, ng
+  integer                                    :: LBi, UBi, LBj, UBj, LBk, UBk
+  real (kind=kind_real)                      :: DateNumber, scale
+  character (len=22)                         :: DateString
+  character (len=1024)                       :: Message
 
-  character (len=*), parameter         :: MyFile =                           &
+  character (len=*), parameter               :: MyFile =                       &
      &  __FILE__//", roms_fields_write_pio"
 
   ! Initialize.
 
-  LocalPET = self%geom%f_comm%rank()   !< PET rank
+  geom => self%geom
 
-  model = self%geom%model              !< ROMS numerical kernel
-  ng    = self%geom%ng                 !< nested grid number
-
-  LBi = self%geom%LBi
-  UBi = self%geom%UBi
-  LBj = self%geom%LBj
-  UBj = self%geom%UBj
-  LBk = self%geom%LBk
-  UBk = self%geom%UBk
+  LocalPET = geom%f_comm%rank()        !< PET rank
+  model    = geom%model                !< ROMS numerical kernel
+  ng       = geom%ng                   !< nested grid number
 
   IF (LdebugFields .and. (LocalPET .eq. 0)) THEN
     lstr = SCAN(S(ng)%name, '/', BACK=.TRUE.) + 1
     lend = LEN_TRIM(S(ng)%name)    
-    PRINT '(2a)', 'roms_fields::write_pio - writing state, File = ',         &
+    PRINT '(2a)', 'roms_fields::write_pio - writing state, File = ',           &
                   S(ng)%name(lstr:lend)
   END IF
 
   ! Set writing parameters.
 
-  scale  = 1.0_kind_real                    !< field scale
+  scale = 1.0_kind_real                     !< field scale
   S(ng)%Rindex = S(ng)%Rindex + 1           !< NetCDF time record
   Fcount=S(ng)%load                         !< filename load counter
   S(ng)%Nrec(Fcount)=S(ng)%Nrec(Fcount)+1   !< record counter per multi-file
 
   ! Write out ROMS time variable.
 
-  CALL pio_netcdf_put_fvar (ng, model, S(ng)%name, TRIM(Vname(1,idtime)),    &
-                            romsTime(ng:), (/S(ng)%Rindex/), (/1/),          &
-                            pioFile = S(ng)pioFile,                          &
+  CALL pio_netcdf_put_fvar (ng, model, S(ng)%name, TRIM(Vname(1,idtime)),      &
+                            romsTime(ng:), (/S(ng)%Rindex/), (/1/),            &
+                            pioFile = S(ng)pioFile,                            &
                             pioVar = S(ng)%pioVar(idtime)%vd)
-  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))            &
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
+    CALL abor1_ftn (TRIM(Message))
+
+  ! Get output fields fractional "datenum".
+
+  DateNumber = Rclock%DateNumber(1) + romsTime(ng)/86400.0_kind_real
+  CALL datestr (DateNumber, .TRUE., DateString)
+
+ ! Inquire about all variables.
+
+  CALL pio_netcdf_inq_var (ng, model, S(ng)%ncname,                            &
+                           piofile = pioFile)
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
     CALL abor1_ftn (TRIM(Message))
 
   ! Write out all fields. ROMS needs to be compiled with MASKING to use the
@@ -2377,113 +2772,143 @@ SUBROUTINE roms_fields_write_pio (self, S, romsTime)
 
   DO i = 1, SIZE(self%fields)
 
-    self%fields(i)%OutNCname = TRIM(S(ng)%name)
-    self%fields(i)%OutNCid   = S(ng)%pioFile%fh
-    self%fields(i)%OutRec    = S(ng)%Rindex
+    field => self%fields(i)
 
-    SELECT CASE (self%fields(i)%name)
+    IF (field%io_has_var(geom, vindex)) THEN
 
-      CASE ('ssh')                             !< free-surface
+      Cgrid = field%metadata%Cgrid
 
-        IF (S(ng)%pioVar(idFsur)%dkind.eq.PIO_double) THEN
-          ioDesc => ioDesc_dp_r2dvar(ng)
-        ELSE
-          ioDesc => ioDesc_sp_r2dvar(ng)
-        END IF
-        CALL nc_err (nf_fwrite2d(ng, model, S(ng)%pioFile,                   &
-                                 S(ng)%pioVar(idFsur),                       &
-                                 S(ng)%Rindex, ioDesc,                       &
-                                 LBi, UBi, LBj, UBj, scale,                  &
-                                 self%fields(i)%mask,                        &
-                                 self%fields(i)%val(:,:,1),                  &
-                                 MinValue = Fmin,                            &
-                                 MaxValue = Fmax),                           &
-                     PIO_noerr, io_pio, __LINE__, MyFile)
+      LBi = LBOUND(field%val, DIM=1)
+      UBi = UBOUND(field%val, DIM=1)
+      LBj = LBOUND(field%val, DIM=2)
+      UBj = UBOUND(field%val, DIM=2)
+      LBk = LBOUND(field%val, DIM=3)
+      UBk = UBOUND(field%val, DIM=3)
 
-        IF (LdebugFields .and. (LocalPET .eq. 0)) THEN
-          PRINT 10, self%fields(i)%name, Fmin, Fmax
-        END IF
+      field%OutNCname = TRIM(S(ng)%name)
+      field%OutNCid   = S(ng)%pioFile%fh
+      field%OutRec    = S(ng)%Rindex
 
-      CASE ('uocn')                            !< 3D U-momentum component
+      lstr = MAX(22, LEN_TRIM(DateString))
+      IF (allocated(field%DateTimeString)) THEN
+        deallocate ( field%DateTimeString )
+      END IF
+      allocate (character(LEN=lstr) :: field%DateTimeString )
+      field%DateTimeString = TRIM(DateString)
 
-       IF (S(ng)%pioVar(idUvel)%dkind.eq.PIO_double) THEN
-          ioDesc => ioDesc_dp_u3dvar(ng)
-        ELSE
-          ioDesc => ioDesc_sp_u3dvar(ng)
-        END IF
-        CALL nc_err (nf_fwrite3d(ng, model, S(ng)%pioFile,                   &
-                                 S(ng)%pioVar(idUvel),                       &
-                                 S(ng)%Rindex, ioDesc,                       &
-                                 LBi, UBi, LBj, UBj, LBk, UBk, scale,        &
-                                 self%fields(i)%mask,                        &
-                                 self%fields(i)%val,                         &
-                                 MinValue = Fmin,                            &
-                                 MaxValue = Fmax),                           &
-                     PIO_noerr, io_pio, __LINE__, MyFile)
+      field%DateNumber = DateNumber
 
-        IF (LdebugFields .and. (LocalPET .eq. 0)) THEN
-          PRINT 10, self%fields(i)%name, Fmin, Fmax
-        END IF
+      ! Set variable and IO descriptors.
 
-      CASE ('vocn')                            !< 3D V-momentum component
+      fld_kind = PIO_FOUT
 
-        IF (S(ng)%pioVar(idVvel)%dkind.eq.PIO_double) THEN
-          ioDesc => ioDesc_dp_v3dvar(ng)
-        ELSE
-          ioDesc => ioDesc_sp_v3dvar(ng)
-        END IF
-        CALL nc_err (nf_fwrite3d(ng, model, S(ng)%ncid,                      &
-                                 S(ng)%pioVar(idVvel),                       &
-                                 S(ng)%Rindex, ioDesc,                       &
-                                 LBi, UBi, LBj, UBj, LBk, UBk, scale,        &
-                                 self%fields(i)%mask,                        &
-                                 self%fields(i)%val,                         &
-                                 MinValue = Fmin,                            &
-                                 MaxValue = Fmax),                           &
-                     PIO_noerr, io_pio, __LINE__, MyFile)
+      pioVar%vd    = var_desc(vindex)
+      pioVar%gtype = Cgrid
 
-        IF (LdebugFields .and. (LocalPET .eq. 0)) THEN
-          PRINT 10, self%fields(i)%name, Fmin, Fmax
-        END IF
+      SELECT CASE (Cgrid)
+        CASE (r2dvar)
+          IF (fld_kind.eq.PIO_double) THEN
+            pioVar%dkind=PIO_double
+            ioDesc => ioDesc_dp_r2dvar(ng)
+          ELSE
+            pioVar%dkind=PIO_real
+            ioDesc => ioDesc_sp_r2dvar(ng)
+          END IF
+        CASE (u2dvar)
+          IF (fld_kind.eq.PIO_double) THEN
+            pioVar%dkind=PIO_double
+            ioDesc => ioDesc_dp_u2dvar(ng)
+          ELSE
+            pioVar%dkind=PIO_real
+            ioDesc => ioDesc_sp_u2dvar(ng)
+          END IF
+        CASE (v2dvar)
+          IF (fld_kind.eq.PIO_double) THEN
+            pioVar%dkind=PIO_double
+            ioDesc => ioDesc_dp_v2dvar(ng)
+          ELSE
+            pioVar%dkind=PIO_real
+            ioDesc => ioDesc_sp_v2dvar(ng)
+          END IF
+        CASE (r3dvar)
+          IF (fld_kind.eq.PIO_double) THEN
+            pioVar%dkind=PIO_double
+            ioDesc => ioDesc_dp_r3dvar(ng)
+          ELSE
+            pioVar%dkind=PIO_real
+            ioDesc => ioDesc_sp_r3dvar(ng)
+          END IF
+        CASE (u3dvar)
+          IF (fld_kind.eq.PIO_double) THEN
+            pioVar%dkind=PIO_double
+            ioDesc => ioDesc_dp_u3dvar(ng)
+          ELSE
+            pioVar%dkind=PIO_real
+            ioDesc => ioDesc_sp_u3dvar(ng)
+          END IF
+        CASE (w3dvar)
+          IF (fld_kind.eq.PIO_double) THEN
+            pioVar%dkind=PIO_double
+            ioDesc => ioDesc_dp_w3dvar(ng)
+          ELSE
+            pioVar%dkind=PIO_real
+            ioDesc => ioDesc_sp_w3dvar(ng)
+          END IF
+      END SELECT
 
-      CASE ('tocn', 'socn')                    !< tracer-type variables
+      ! Write out variable.
 
-        itrc = roms_tracer_index(self%fields(i)%name)
+      SELECT CASE (field%name)
 
-        IF (S(ng)%pioTrc(itrc)%dkind.eq.PIO_double) THEN
-          ioDesc => ioDesc_dp_r3dvar(ng)
-        ELSE
-          ioDesc => ioDesc_sp_r3dvar(ng)
-        END IF
-        CALL nc_err (nf_fwrite3d(ng, model, S(ng)%ncid,                      &
-                                 S(ng)%pioTrc(itrc),                         &
-                                 S(ng)%Rindex, ioDesc,                       &
-                                 LBi, UBi, LBj, UBj, LBk, UBk, scale,        &
-                                 self%fields(i)%mask,                        &
-                                 self%fields(i)%val,                         &
-                                 MinValue = Fmin,                            &
-                                 MaxValue = Fmax),                           &
-                     PIO_noerr, io_pio, __LINE__, MyFile)
+        CASE ('ssh', 'u2docn', 'v2docn',                                       &
+              'DU_avg1', 'DV_avg1', 'DU_avg2', 'DV_avg2')      ! 2D variables
 
-        IF (LdebugFields .and. (LocalPET .eq. 0)) THEN
-          PRINT 10, self%fields(i)%name, Fmin, Fmax
-        END IF
+          CALL nc_err (nf_fwrite2d(ng, model, S(ng)%pioFile,                   &
+                                   pioVar, S(ng)%Rindex, ioDesc,               &
+                                   LBi, UBi, LBj, UBj, scale,                  &
+                                   field%mask,                                 &
+                                   field%val(:,:,1),                           &
+                                   MinValue = Fmin,                            &
+                                   MaxValue = Fmax),                           &
+                       PIO_noerr, io_pio, __LINE__, MyFile)
 
-      CASE DEFAULT
+          IF (LdebugFields .and. (LocalPET .eq. 0)) THEN
+            PRINT 10, field%name, Fmin, Fmax
+          END IF
+
+        CASE ('uocn', 'vocn', 'tocn', 'socn',                                  &
+              'Kvocn', 'Ktocn', 'Ksocn')                       ! 3D variables
+
+          CALL nc_err (nf_fwrite3d(ng, model, S(ng)%pioFile,                   &
+                                   pioVar, S(ng)%Rindex, ioDesc,               &
+                                   LBi, UBi, LBj, UBj, LBk, UBk, scale,        &
+                                   field%mask,                                 &
+                                   field%val,                                  &
+                                   MinValue = Fmin,                            &
+                                   MaxValue = Fmax),                           &
+                       PIO_noerr, io_pio, __LINE__, MyFile)
+
+          IF (LdebugFields .and. (LocalPET .eq. 0)) THEN
+            PRINT 10, field%name, Fmin, Fmax
+          END IF
+
+      END SELECT
+
+    ELSE
   
-        WRITE (Message,'(4a)')                                               &
-              'roms_fields::write_pio: Cannot find and option to write = ',  &
-              self%fields(i)%name, " - ", self%fields(i)%metadata%getval_name
-        CALL abor1_ftn (TRIM(Message))
+      WRITE (Message,'(4a)')                                                   &
+            'roms_fields::write_pio: Cannot find and option to write = ',      &
+            field%name, " - ", field%metadata%getval_name
+      CALL abor1_ftn (TRIM(Message))
 
-    END SELECT
+    END IF
     
   END DO
 
   ! Synchronize NetCDF to disk.
 
   CALL pio_netcdf_sync (ng, model, S(ng)%name, S(ng)%pioFile)
-  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))            &
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
     CALL abor1_ftn (TRIM(Message))
 
   10 FORMAT (2x,'- ',a,':',t13,'Min = ',1p,e15.8,',  Max = ',1p,e15.8)

@@ -112,6 +112,10 @@ namespace romsjedi {
     OOPS_CONCRETE_PARAMETERS(IncrementWriteParameters, WriteParametersBase)
 
    public:
+    oops::OptionalParameter<std::string> Bparameter{
+      "parameter",
+      "Background Error Covariance parameter",
+      this};
     oops::RequiredParameter<util::Duration> filePolicy{
       "file_policy",
       "State output new file creation policy time interval for "
@@ -183,6 +187,10 @@ namespace romsjedi {
 
   oops::LocalIncrement getLocal(const GeometryIterator &) const;
   void setLocal(const oops::LocalIncrement &, const GeometryIterator &);
+
+  /// Add or remove fields due to variable change
+
+  void updateFields(const oops::Variables &);
 
   /// ATLAS
 

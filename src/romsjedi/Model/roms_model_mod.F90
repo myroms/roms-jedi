@@ -20,7 +20,9 @@ MODULE roms_model_mod
 USE kinds,                      ONLY : kind_real
 
 USE iso_c_binding
-USE datetime_mod,               ONLY : datetime, datetime_create, datetime_set
+USE datetime_mod,               ONLY : datetime,                               &
+                                       datetime_create,                        &
+                                       datetime_set
 USE duration_mod
 USE fckit_configuration_module, ONLY : fckit_configuration
 USE fckit_mpi_module,           ONLY : fckit_mpi_comm
@@ -29,14 +31,15 @@ USE fckit_mpi_module,           ONLY : fckit_mpi_comm
 
 USE roms_kernel_mod
 USE mod_param,                  ONLY : BOUNDS, Ngrids, iNLM
-USE mod_scalars,                ONLY : NoError, exit_flag,                   &
-                                       itemp, isalt
+USE mod_scalars,                ONLY : NoError, exit_flag
 
 !> ROMS-JEDI interface module association.
 
 USE roms_geom_mod,              ONLY : roms_geom
 USE roms_fields_mod,            ONLY : roms_field
-USE roms_fieldsutils_mod,       ONLY : roms_date2time
+USE roms_fieldsutils_mod,       ONLY : date2string,                            & 
+                                       roms_date2time,                         &
+                                       roms_tracer_index
 USE roms_state_mod,             ONLY : roms_state
 
 implicit none
@@ -45,8 +48,6 @@ implicit none
 
 PRIVATE :: jedi2roms_state                 ! Load JEDI nonlinear state into ROMS
 PRIVATE :: roms2jedi_state                 ! Load ROMS nonlinear state into JEDI
-
-PRIVATE
 
 !> Fortran derived type to hold ROMS nodel kernel definition.
 
@@ -67,8 +68,10 @@ TYPE, PUBLIC :: roms_model
   integer :: IstrU, JstrV                  ! computational U- and V-indices
 
   real(kind=kind_real) :: dt               ! baroclinic timestep size (s)
+  real(kind=kind_real) :: INItime          ! Initial conditions time (s)
+  real(kind=kind_real) :: RunInterval      ! timestepping window interval (s)
+  real(kind=kind_real) :: SimulationPeriod ! total simulation period (s)
   real(kind=kind_real) :: time             ! current ROMS time (s)
-  real(kind=kind_real) :: RunInterval      ! timestepping interval (s)
 
   character (len=20)   :: iso_datetime     ! current ROMS ISO8601 date/time
   character (len=22)   :: roms_datetime    ! current ROMS date/time
@@ -84,12 +87,21 @@ TYPE, PUBLIC :: roms_model
 
 END TYPE roms_model
 
+PRIVATE
+
+! Set debugging switch.
+
+logical :: LdebugModel = .FALSE.
+
 ! Set switch to read ROMS standard input parameter file and allocate and
 ! initialize (first touch policy) variables and structures. It needs to be
-! done once for each simulation. Thus, "ROMS_initialize" overwrites the
-! switch with a .FALSE. value when such tasks are compleated.
+! done once for each simulation.
 
-logical, save :: LsetROMS = .TRUE.
+logical :: LsetROMS
+
+! MPI communicator.
+
+TYPE (fckit_mpi_comm) :: my_comm
 
 ! ------------------------------------------------------------------------------
 CONTAINS
@@ -109,7 +121,7 @@ SUBROUTINE roms_model_create (self, geom, f_conf)
   real (kind=kind_real)                     :: dtJEDI !> JEDI interval (seconds)
   character (len=:), allocatable            :: directory, filename, string
 
-  !> Get time step duration for YAML file and convert to seconds.  It can be
+  !> Get time step duration from YAML file and convert to seconds.  It can be
   !> a single ROMS timestep, dt(ng), as specified in ROMS standard input
   !> script or and integer factor of dt(ng).  
 
@@ -118,28 +130,37 @@ SUBROUTINE roms_model_create (self, geom, f_conf)
   deallocate (string)
   dtJEDI = duration_seconds(dtYAML)
 
+  !> Get simulation length period from YAML file and convert to seconds.  It is
+  !> used to overwrite ROMS internal stepping integration 'NTIMES' parameter set
+  !> in the standard input file.
+
+  CALL f_conf%get_or_die ("simulation length", string)
+  dtYAML = TRIM(string)
+  deallocate (string)
+  self%SimulationPeriod = duration_seconds(dtYAML)
+
   !> Set ROMS initial conditions NetCDF filename and record.
 
   IF (f_conf%has("initial condition")) THEN
     IF (.not.f_conf%get("fields_dir", directory)) THEN
-      CALL abor1_ftn ("roms_model::create - Cannot find: "//                 &
+      CALL abor1_ftn ("roms_model::create - Cannot find: "//                   &
                       '''initial condition.fields_dir''')
     END IF
 
     IF (.not.f_conf%get("initial condition.fields_filename", filename)) THEN
-      CALL abor1_ftn ("roms_model::create - Cannot find: "//                 &
+      CALL abor1_ftn ("roms_model::create - Cannot find: "//                   &
                       '''initial condition.fields_filename''')
     END IF
     self%roms_IniName = TRIM(directory)//TRIM(filename)
 
     IF (.not.f_conf%get("initial condition.fields_record", IniRec)) THEN
-      CALL abor1_ftn ("roms_model::create - Cannot find: "//                 &
+      CALL abor1_ftn ("roms_model::create - Cannot find: "//                   &
                       '''initial condition.fields_record''')
     END IF
     self%IniRec = IniRec
   END IF
 
-  !> Set ROMS time integration interval.
+  !> Set ROMS time integration interval. Usually, a single or few timesteps.
 
   self%RunInterval = dtJEDI
 
@@ -194,11 +215,6 @@ SUBROUTINE roms_model_delete (self)
 
   CALL ROMS_deallocate_arrays
 
-  !> Turn on ROMS allocate/initialize switch for next JEDI tasks, if any.
-  !> Unit tests perform several sequential and independent tasks.
-
-  LsetROMS = .TRUE.
-
 END SUBROUTINE roms_model_delete
 
 ! ------------------------------------------------------------------------------
@@ -206,21 +222,20 @@ END SUBROUTINE roms_model_delete
 !! because it is specific to a particular algorithm.  We need a generic JEDI
 !! initialization of ROMS with using the state object.
 
-SUBROUTINE roms_model_initialize (self, state)
+SUBROUTINE roms_model_initialize (self, state, vdate)
 
-  USE mod_ncparam,  ONLY : inp_lib, io_nf90, io_pio
-  USE mod_scalars,  ONLY : time
+  USE mod_ncparam,  ONLY : Ngrids
+  USE mod_scalars,  ONLY : INItime, dt, ntimes, time
   USE mod_stepping, ONLY : nnew
 
-  CLASS (roms_model), intent(inout) :: self
-  CLASS (roms_state), intent(in   ) :: state
+  CLASS (roms_model), intent(inout) :: self    !< ROMS NLM object
+  CLASS (roms_state), intent(inout) :: state   !< State fields object
+  TYPE (datetime),    intent(in   ) :: vdate   !< State valid DateTime
 
-  TYPE (roms_field), pointer        :: field
-  TYPE (datetime)                   :: Fdatetime
   integer                           :: LocalPET, MyComm, Tindex, ng
-  real (kind=kind_real)             :: romsDateNumber, romstime(Ngrids)
-  character (len=6), dimension(5)   :: extra_vars
-  character (len=256)               :: text
+  integer                           :: my_ntimes
+  real (kind=kind_real)             :: romsDateNumber, romsTime(Ngrids)
+  character (len=22)                :: CurrentDateString
 
   !> Get MPI communicator and PET rank. Get nested grid number.
 
@@ -228,72 +243,50 @@ SUBROUTINE roms_model_initialize (self, state)
   LocalPET = self%f_comm%rank()
   ng       = self%ng
 
-  !> ROMS-JEDI phase 1 initialization. Read in standard input parameters. Then,
-  !> allocate/initialize parameters and variables. Set stepping parameters.
+  !> Get JEDI state valid DateTime string.
 
+  CALL date2string (vdate, CurrentDateString, ISO=.FALSE.)
+
+  !> ROMS-JEDI phase 1 initialization. If appropriate, read in standard input
+  !> parameters. Then, allocate/initialize parameters and variables when switch
+  !> LsetROMS is on. It sets TLM time-stepping parameters.
+
+  LsetROMS = .TRUE.
   IF (allocated(BOUNDS)) LsetROMS = .FALSE.
 
-  CALL ROMS_initialize (LsetROMS,                                            &
-                        mpiCOMM = MyComm,                                    &
+  CALL ROMS_initialize (LsetROMS,                                              &
+                        mpiCOMM = MyComm,                                      &
                         kernel  = iNLM)
   IF (exit_flag .ne. NoError) THEN
     CALL abor1_ftn ("roms_model::initialize: Error in ROMS_initialize")
   END IF
 
-  !> Get initial state date-time and over-write ROMS time.
+  !> Reset ROMS total number of timesteps, if shorter simulation time period is
+  !> is specified in the YAML file.
 
-  IF (allocated(state%fields(1)%DateTimeString)) THEN
-    CALL datetime_create (state%fields(1)%DateTimeString, Fdatetime)
-    CALL roms_date2time (LocalPET, Fdatetime, romsTime(ng), romsDateNumber)
-    time(ng) = romsTime(ng)
+  my_ntimes = INT(self%SimulationPeriod/dt(ng))
+
+  IF (my_ntimes .ne. ntimes(ng)) THEN
+    IF (LocalPET .eq. 0)                                                       &
+      PRINT '(2(a,i0))', ' roms_model::initialize: Reset input parameter,'//   &
+                         ' NTIMES = ', ntimes(ng), ' to ', my_ntimes
+    ntimes(ng) = my_ntimes
   END IF
+
+  !> Get initial state date-time and over-write ROMS time.  Load initial
+  !> time (s). It is needed to set-up ROMS counters correctly.
+
+  CALL roms_date2time (LocalPET, vdate, romsTime(ng), romsDateNumber)
+
+  INItime(ng)  = romsTime(ng)                      ! ROMS initial time (s)
+  self%INItime = romsTime(ng)                      ! JEDI initial time (s)
+  time(ng)     = romsTime(ng)                      ! Current ROMS time (s)
 
   !> Load JEDI initial state fields into ROMS NLM arrays.
 
   Tindex = nnew(ng)                                  !> timestep index
 
-  CALL jedi2roms_state (ng, iNLM, Tindex, state)
-
-  !> Read in additional ROMS initial fields that are not part of the control
-  !> state like barotropic momentum components (ubar, vbar) and vertical
-  !> diffusion (AKt, AKs) and vicosity (AKv) coefficients from the turbulent
-  !> closure parameterizions, if found in the ROMS initial NetCDF file.
-  !> Notice that in sequential data assimilation cycles (time windows), the
-  !> AKt, AKs, and AKV values, from the privious cycle, are needed in the
-  !> prior to avoid spourious jumps in the trajectory due to ROMS three-time
-  !> level predictor/corrector timestepping algorithm.
-
-  extra_vars(1) = 'u2docn'        ! vertically-integrated U-velocity
-  extra_vars(2) = 'v2docn'        ! vertically-integrated V-velocity
-  extra_vars(3) = 'Ktocn '        ! temperature vertical diffusion coefficient
-  extra_vars(4) = 'Ksocn '        ! salinity vertical diffusion coefficient
-  extra_vars(5) = 'Kvocn '        ! vertical viscosity coefficient
-
-  field => state%fields(1)
-
-  SELECT CASE (inp_lib)
-
-    CASE (io_nf90)
-
-      CALL state%read_extrafields_nf90 (field%InpRec, Tindex, extra_vars,    &
-                                        TRIM(field%InpNCname),               &
-                                        TRIM(field%DateTimeString),          &
-                                        field%DateNumber)
-#if defined PIO_LIB
-    CASE (io_pio)
-      CALL state%read_extrafields_pio (field%InpRec, Tindex, extra_vars,     &
-                                       TRIM(field%InpNCname),                &
-                                       TRIM(field%DateTimeString),           &
-                                       field%DateNumber)
-#endif
-
-    CASE DEFAULT
-      WRITE (text,'(a,i0)')                                                  &
-                  'roms_model::initialize: Ilegal input type, io_type = ',   &
-                  inp_lib
-      CALL abor1_ftn (TRIM(text))
-
-  END SELECT
+  CALL jedi2roms_state (ng, iNLM, Tindex, state, CurrentDateString)
 
   !> ROMS-JEDI phase 2 initialization. Compleate the initialization using
   !> the state fields loaded above. Compute depths, density, and horizontal
@@ -312,38 +305,57 @@ END SUBROUTINE roms_model_initialize
 SUBROUTINE roms_model_step (self, state, geom, vdate)
 
   USE dateclock_mod, ONLY : time_iso8601
-  USE mod_scalars,   ONLY : time, time_code
+  USE mod_scalars,   ONLY : time4jedi
   USE mod_stepping,  ONLY : nnew
 
   CLASS (roms_model), intent(inout) :: self    !< ROMS NLM object
   CLASS (roms_state), intent(inout) :: state   !< State fields object
   TYPE (roms_geom),   intent(inout) :: geom    !< geometry object
-  TYPE (datetime),    intent(inout) :: vdate   !< Valid datetime after step
+  TYPE (datetime),    intent(inout) :: vdate   !< Valid DateTime after step
 
-  TYPE (roms_field), pointer        :: field
   integer                           :: Tindex, ng
 
+  !> Initialize.
+
+  ng = self%ng
+
   !> Advance ROMS NLM kernel for the specified RunInterval in seconds.
-  !> It needs to be a multiple of the baroclinic timestep.
+  !> It needs to be a multiple of the baroclinic timestep.  In OOPS, the
+  !> RunInterval is usually a single ROMS timestep.
 
   CALL ROMS_run (self%RunInterval, kernel=iNLM)
   IF (exit_flag .ne. NoError) THEN
     CALL abor1_ftn ("roms_model::step Error while calling ROMS_run")
   END IF
 
-  !> Update state fields with current ROMS NLM values.
+  !> Reset valid date/time current NLM step interval.
+  !>
+  !> ROMS has a predictor/corrector three-time levels timestep. Also, the I/O
+  !> is delayed for the half timestep. Therefore, we need to reset the JEDI
+  !> state valid DateTime back one timestep to account for the delayed I/O and
+  !> initial conditions modification.
+  !>
+  !> Notice that in the first timestep, NL ROMS updates the initial state
+  !> lateral boundary conditions and recomputes vertically integrated momentum
+  !> in timelevel "nstp". And, then, it advances the solution to timelevel
+  !> "nnew". Thus, delaying the NL ROMS DateTime allows to overwrite JEDI
+  !> initial conditions and the timestepping is increased by the half timestep
+  !> needed by NL ROMS to compleate the solution. ROMS has the 'time4jedi'
+  !> to avoid any confusion to its regular clock that it is advanced at the
+  !> end of the timestep.
 
-  ng = self%ng
-  Tindex = nnew(ng)
-
-  CALL roms2jedi_state (ng, iNLM, Tindex, state, geom)
-
-  !> Set valid datetime after step.
-
-  self%time = time(ng)
-  self%roms_datetime = time_code(ng)
+  self%time = time4jedi(ng)
   CALL time_iso8601 (self%time, self%iso_datetime)
   CALL datetime_set (self%iso_datetime, vdate)
+  CALL date2string (vdate, self%roms_datetime, ISO=.FALSE.)
+
+  !> Update state fields with current ROMS NLM values. In ROMS, the time-level
+  !> rolling indices are updated at the beginning of the timestepping. Thus,
+  !> "nnew" is the correct time level for the state exchage here.
+
+  Tindex = nnew(ng)
+
+  CALL roms2jedi_state (ng, iNLM, Tindex, state, geom, TRIM(self%roms_datetime))
 
 END SUBROUTINE roms_model_step
 
@@ -374,27 +386,49 @@ SUBROUTINE roms_model_finalize (self, state)
 END SUBROUTINE roms_model_finalize
 
 ! ------------------------------------------------------------------------------
-!> It loads JEDI nonlinear state fields into ROMS field structure.
+!> It loads JEDI nonlinear state fields into ROMS fields structures.
 
-SUBROUTINE jedi2roms_state (ng, kernel, Tindex, state)
+SUBROUTINE jedi2roms_state (ng, kernel, Tindex, state, DateString)
 
-  USE mod_coupling, ONLY : COUPLING
   USE mod_ocean,    ONLY : OCEAN
+  USE mod_scalars,  ONLY : jic, time
 
-  integer,           intent(in) :: ng       !< nested grid number
-  integer,           intent(in) :: kernel   !< ROMS kernel identifier
-  integer,           intent(in) :: Tindex   !< ROMS time level index
-  TYPE (roms_state), intent(in) :: state    !< State fields object
+  integer,                   intent(in) :: ng          !< nested grid number
+  integer,                   intent(in) :: kernel      !< ROMS kernel identifier
+  integer,                   intent(in) :: Tindex      !< ROMS time level index
+  TYPE (roms_state), target, intent(in) :: state       !< State fields object
+  character (len=*),         intent(in) :: DateString  !< State valid DateTime
 
-  TYPE (roms_field), pointer    :: field
-  integer                       :: i
+  TYPE (roms_field), pointer            :: field
+  integer                               :: i, itrc
+  real (kind=kind_real)                 :: fstats(3)
+  character (len=22)                    :: DateTimeStr
+
+  ! Set ROMS date/time string.
+
+  IF (LdebugModel) CALL time_string  (time(ng), DateTimeStr)
 
   ! Load NLROMS state into JEDI state object.
 
   ROMS_KERNEL : IF (kernel .eq. iNLM) THEN
 
+  ! Set ROMS DateTimeString
+
+    IF (LdebugModel .and. (my_comm%rank() .eq. 0))                             &
+      PRINT 10, 'JEDI2ROMS_STATE: Loading JEDI statefield into NL ROMS',       &
+                SIZE(state%fields), MAX(0,jic(ng)-1), Tindex, TRIM(DateString)
+
     DO i=1, SIZE(state%fields)
+
       field => state%fields(i)
+
+      IF (LdebugModel) THEN
+        CALL field%stats (fstats)
+        IF (my_comm%rank() .eq. 0)                                             &
+          PRINT 20, field%metadata%getval_name, field%metadata%io_name,        &
+                    fstats(1), fstats(2), INT(fstats(3),KIND=8)
+      END IF
+
       SELECT CASE (field%name)
          CASE ('ssh')                                   !> free-surface
            OCEAN(ng)%zeta(:,:,Tindex) = field%val(:,:,1)
@@ -402,59 +436,110 @@ SUBROUTINE jedi2roms_state (ng, kernel, Tindex, state)
            OCEAN(ng)%u(:,:,:,Tindex) = field%val
          CASE ('vocn')                                  !> 3D V-momentum
            OCEAN(ng)%v(:,:,:,Tindex) = field%val
-         CASE ('tocn')                                  !> potential temperature
-           OCEAN(ng)%t(:,:,:,Tindex,itemp) = field%val
-         CASE ('socn')                                  !> salinity
-           OCEAN(ng)%t(:,:,:,Tindex,isalt) = field%val
+         CASE ('tocn', 'socn')                          !> tracers
+           itrc = roms_tracer_index(field%name)
+           OCEAN(ng)%t(:,:,:,Tindex,itrc) = field%val
          CASE DEFAULT
-           CALL abor1_ftn ("roms2jedi_state: Cannot find option for field: "// &
-                           TRIM(field%name))
+           ! Only fields relevant to state vector are loaded.
       END SELECT
     END DO
 
   END IF ROMS_KERNEL
+
+  10 FORMAT (2x,a,', Nfields = ',i2,', timestep = ',i5.5,',timelevel = ',i0,   &
+             ', date: ',a)
+  20 FORMAT (19x,'- ',a,': ',a,/,22x,'(Min = ',1p,e15.8,' Max = ',1p,e15.8,    &
+             ')',t93,'Checksum = ',i0)
 
 END SUBROUTINE jedi2roms_state
 
 ! ------------------------------------------------------------------------------
 !> It loads ROMS nonlinear state fields into JEDI state object.
 
-SUBROUTINE roms2jedi_state (ng, kernel, Tindex, state, geom)
+SUBROUTINE roms2jedi_state (ng, kernel, Tindex, state, geom, DateString)
 
-  USE mod_coupling, ONLY : COUPLING
-  USE mod_grid,     ONLY : GRID
-  USE mod_ocean,    ONLY : OCEAN
+  USE dateclock_mod, ONLY : time_string
+  USE mod_coupling,  ONLY : COUPLING
+  USE mod_grid,      ONLY : GRID
+  USE mod_mixing,    ONLY : MIXING
+  USE mod_ocean,     ONLY : OCEAN
+  USE mod_scalars,   ONLY : jic, time4jedi
 
-  integer,           intent(in   ) :: ng       !< nested grid number
-  integer,           intent(in   ) :: kernel   !< ROMS kernel identifier
-  integer,           intent(in   ) :: Tindex   !< ROMS time level index
-  TYPE (roms_state), intent(inout) :: state    !< State fields object
-  TYPE (roms_geom),  intent(inout) :: geom     !< geometry object
+  integer,                   intent(in   ) :: ng         !< nested grid number
+  integer,                   intent(in   ) :: kernel     !< ROMS kernel ID
+  integer,                   intent(in   ) :: Tindex     !< ROMS time index
+  TYPE (roms_state), target, intent(inout) :: state      !< State fields object
+  TYPE (roms_geom),          intent(inout) :: geom       !< geometry object
+  character (len=*),         intent(in   ) :: DateString !< State valid DateTime
 
-  TYPE (roms_field), pointer       :: field
-  integer                          :: i, j, k
+  TYPE (roms_field), pointer               :: field
+  integer                                  :: Is, Ie, Js, Je
+  integer                                  :: i, itrc, j, k
+  real (kind=kind_real)                    :: fstats(3)
+  character (len=22)                       :: DateTimeStr
+
+  ! Set ROMS DateTimeString
+
+  IF (LdebugModel) CALL time_string  (time4jedi(ng), DateTimeStr)
 
   ! Load NLROMS state into JEDI state object.
 
   ROMS_KERNEL : IF (kernel .eq. iNLM) THEN
 
+    IF (LdebugModel .and. (my_comm%rank() .eq. 0))                             &
+      PRINT 10, 'ROMS2JEDI_STATE: Loading NL ROMS prediction into JEDI',       &
+                SIZE(state%fields), jic(ng)-1, Tindex, TRIM(DateString)
+
     DO i=1, SIZE(state%fields)
+
       field => state%fields(i)
+
+      Is = field%Istr
+      Ie = field%Iend
+      Js = field%Jstr
+      Je = field%Jend
+
       SELECT CASE (field%name)
+
         CASE ('ssh')                                    !> free-surface
-          field%val(:,:,1) = COUPLING(ng)%Zt_avg1
+          field%val(Is:Ie,Js:Je,1) = OCEAN(ng)%zeta(Is:Ie,Js:Je,Tindex)
+        CASE ('u2docn')                                 !> 2D U-momentum
+          field%val(Is:Ie,Js:Je,1) = OCEAN(ng)%ubar(Is:Ie,Js:Je,Tindex)
+        CASE ('v2docn')                                 !> 2D V-momentum
+          field%val(Is:Ie,Js:Je,1) = OCEAN(ng)%vbar(Is:Ie,Js:Je,Tindex)
+        CASE ('DU_avg1')                                !> averaged 2D U-flux
+          field%val(Is:Ie,Js:Je,1) = COUPLING(ng)%DU_avg1(Is:Ie,Js:Je)
+        CASE ('DV_avg1')                                !> averaged 2D V-flux
+          field%val(Is:Ie,Js:Je,1) = COUPLING(ng)%DV_avg1(Is:Ie,Js:Je)
+        CASE ('DU_avg2')                                !> U-flux 3D coupling
+          field%val(Is:Ie,Js:Je,1) = COUPLING(ng)%DU_avg2(Is:Ie,Js:Je)
+        CASE ('DV_avg2')                                !> V-flux 3D coupling
+          field%val(Is:Ie,Js:Je,1) = COUPLING(ng)%DV_avg2(Is:Ie,Js:Je)
         CASE ('uocn')                                   !> 3D U-momentum
-          field%val = OCEAN(ng)%u(:,:,:,Tindex)
+          field%val(Is:Ie,Js:Je,:) = OCEAN(ng)%u(Is:Ie,Js:Je,:,Tindex)
         CASE ('vocn')                                   !> 3D V-momentum
-          field%val = OCEAN(ng)%v(:,:,:,Tindex)
-        CASE ('tocn')                                   !> potential temperature
-          field%val = OCEAN(ng)%t(:,:,:,Tindex,itemp)
-        CASE ('socn')                                   !> salinity
-          field%val = OCEAN(ng)%t(:,:,:,Tindex,isalt)
+          field%val(Is:Ie,Js:Je,:) = OCEAN(ng)%v(Is:Ie,Js:Je,:,Tindex)
+        CASE ('tocn', 'socn')                           !> tracers
+          itrc = roms_tracer_index(field%name)
+          field%val(Is:Ie,Js:Je,:) = OCEAN(ng)%t(Is:Ie,Js:Je,:,Tindex,itrc)
+        CASE ('Ktocn', 'Ksocn')                         !> vertical diffusion
+          itrc = roms_tracer_index(field%name)
+          field%val(Is:Ie,Js:Je,:) = MIXING(ng)%Akt(Is:Ie,Js:Je,:,itrc)
+        CASE ('Kvocn')                                  !> vertical viscosity
+          field%val(Is:Ie,Js:Je,:) = MIXING(ng)%Akt(Is:Ie,Js:Je,:,itrc)
         CASE DEFAULT
-          CALL abor1_ftn ("roms2jedi_state: Cannot find option for field: "// &
+          CALL abor1_ftn (" roms2jedi_state: Cannot find option for field: "// &
                           TRIM(field%name))
+
       END SELECT
+
+      IF (LdebugModel) THEN
+        CALL field%stats (fstats)
+        IF (my_comm%rank() .eq. 0)                                             &
+          PRINT 20, field%metadata%getval_name, field%metadata%io_name,        &
+                    fstats(1), fstats(2), INT(fstats(3),KIND=8)
+      END IF
+
     END DO
 
   END IF ROMS_KERNEL
@@ -476,6 +561,11 @@ SUBROUTINE roms2jedi_state (ng, kernel, Tindex, state, geom)
       END DO
     END DO
   END DO
+
+  10 FORMAT (2x,a,', Nfields = ',i2,', timestep = ',i5.5,',timelevel = ',i0,   &
+             ', date: ',a)
+  20 FORMAT (19x,'- ',a,': ',a,/,22x,'(Min = ',1p,e15.8,' Max = ',1p,e15.8,    &
+             ')',t93,'Checksum = ',i0)
 
 END SUBROUTINE roms2jedi_state
 

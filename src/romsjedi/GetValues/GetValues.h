@@ -38,7 +38,6 @@ namespace oops {
 
 namespace romsjedi {
   class Geometry;
-  class Model2GeoVaLs;
   class State;
 }
 
@@ -56,7 +55,7 @@ namespace romsjedi {
    public:
     typedef AnalyticInitParameters AnalyticParameters_;
 
-    static const std::string classname() {return "roms::GetValues";}
+    static const std::string classname() {return "romsjedi::GetValues";}
 
     // Constructors and Destructors.
     GetValues(const Geometry &,
@@ -70,18 +69,14 @@ namespace romsjedi {
                      const util::DateTime & t2,
                      ufo::GeoVaLs &) const;
 
-    // Read interpolated GeoVaLs at observation location.
-    void getValuesFromFile(const ufo::Locations &,
-                           const oops::Variables &,
-                           ufo::GeoVaLs &) const;
-
    private:
     void print(std::ostream &) const;
     F90getval keyGetValues_;
     ufo::Locations locs_;
     std::shared_ptr<const Geometry> geom_;
-    std::unique_ptr<Model2GeoVaLs> model2geovals_;
   };
 }  // namespace romsjedi
+
+// -----------------------------------------------------------------------------
 
 #endif  // ROMSJEDI_GETVALUES_GETVALUES_H_

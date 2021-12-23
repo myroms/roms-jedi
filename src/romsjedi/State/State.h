@@ -140,7 +140,7 @@ namespace romsjedi {
      typedef StateParameters Parameters_;
      typedef StateWriteParameters WriteParameters_;
 
-      static const std::string classname() {return "roms::State";}
+      static const std::string classname() {return "romsjedi::State";}
 
       /// Constructor, destructor
       State(const Geometry &, const oops::Variables &,
@@ -154,6 +154,9 @@ namespace romsjedi {
 
       /// Needed by PseudoModel
       void updateTime(const util::Duration & dt) {time_ += dt;}
+
+      /// Add or remove fields due to variable change
+      void updateFields(const oops::Variables &);
 
       /// Rotations
       void rotate2north(const oops::Variables &, const oops::Variables &) const;

@@ -38,7 +38,8 @@ namespace romsjedi {
 
 // ----------------------------------------------------------------------------
 
-  Model::Model(const Geometry & resol, const ModelParameters & params)
+  Model::Model(const Geometry & resol,
+               const ModelParameters & params)
     : keyConfig_(0),
       tstep_(params.tstep),
       geom_(new Geometry(resol)),
@@ -62,17 +63,24 @@ namespace romsjedi {
 // ----------------------------------------------------------------------------
 
   void Model::initialize(State & xx) const {
-  roms_model_initialize_f90(keyConfig_, xx.toFortran());
+  util::DateTime * dtp = &xx.validTime();
+  roms_model_initialize_f90(keyConfig_,
+                            xx.toFortran(),
+                            &dtp);
   oops::Log::debug() << "Model::initialize" << std::endl;
   }
 
 // ----------------------------------------------------------------------------
 
-  void Model::step(State & xx, const ModelBias &) const {
+  void Model::step(State & xx,
+                   const ModelBias &) const {
     xx.validTime() += tstep_;
     Log::trace() << "Model::Time: " << xx.validTime() << std::endl;
     util::DateTime * dtp = &xx.validTime();
-    roms_model_step_f90(keyConfig_, xx.toFortran(), geom_->toFortran(), &dtp);
+    roms_model_step_f90(keyConfig_,
+                        xx.toFortran(),
+                        geom_->toFortran(),
+                        &dtp);
     oops::Log::debug() << "Model::step" << std::endl;
   }
 

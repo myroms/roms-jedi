@@ -1,0 +1,40 @@
+# ROMS is configured with the JEDI driver and includes the NLM, TLM, and ADM kernels
+# for the US West Coast WC13 test application
+
+state geometry:
+  project_dir: jediroms_wc13/JEDI/
+  roms_stdinp: roms_wc13_20040103.in
+  fields metadata: Data/fields_metadata.yaml
+  ng: 1                                        # ROMS nested grid number
+
+increment geometry:
+  project_dir: jediroms_wc13/JEDI/
+  roms_stdinp: roms_wc13_20040103.in
+  fields metadata: Data/fields_metadata.yaml
+  ng: 1                                        # ROMS nested grid number
+
+state1:
+  fields_dir: jediroms_wc13/Data/
+  fields_filename: wc13_roms_ini_20040103.nc   # initial fields for 2004-01-03T00:00:00Z
+  fields_record: 1
+  state variables: [ssh, uocn, vocn, tocn, socn]
+  date: &initial_date 2004-01-03T00:00:00Z
+
+state2:
+  fields_dir: jediroms_wc13/Data/
+  fields_filename: wc13_roms_ini_20040103.nc   # initial fields for 2004-01-03T00:00:00Z
+  fields_record: 2
+  state variables: [ssh, uocn, vocn, tocn, socn]
+  date: *initial_date
+
+output:                                        # state1 - state2
+  data_dir: Data/diff
+  data_frequency: &frequency PT2H              # 'data frequency' can be any value
+  date: *initial_date
+  file_policy: *frequency                      # single file
+  forecast length: *frequency                  # 'forecast length'
+  prefix: wc13_roms
+  exp: nlm
+  type: diffstates
+
+

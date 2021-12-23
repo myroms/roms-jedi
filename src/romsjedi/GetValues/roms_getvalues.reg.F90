@@ -3,7 +3,8 @@
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 !
-! Hernan G. Arango, Rutgers University, Jun 2021
+!! \author  Hernan G. Arango (Rutgers University)
+!! \date    June 2021
 
 MODULE roms_getvalues_reg
 

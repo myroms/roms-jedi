@@ -6,6 +6,7 @@ geometry:
   roms_stdinp: roms_wc13_20040103.in
   fields metadata: Data/fields_metadata.yaml
   ng: 1                                        # ROMS nested grid number
+  iterator dimension: 2
 
 inc variables: [ssh, tocn, socn]
 

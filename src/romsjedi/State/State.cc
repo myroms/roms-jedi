@@ -38,7 +38,8 @@ namespace romsjedi {
     : time_(vt), vars_(vars), geom_(new Geometry(geom))
   {
     roms_state_create_f90(keyFlds_, geom_->toFortran(), vars_);
-    Log::trace() << "State::State created." << std::endl;
+    Log::debug() << classname() << ":State created " << vars_
+                 << std::endl;
   }
 
 // -----------------------------------------------------------------------------
@@ -52,12 +53,14 @@ namespace romsjedi {
     oops::Variables vars(vars_);
     roms_state_create_f90(keyFlds_, geom_->toFortran(), vars);
     if (params.FieldsFileName.value() != boost::none) {
-      Log::trace() << "State::Read State from file." << std::endl;
+      Log::trace() << classname() << " Read State from file"
+                   << std::endl;
       roms_state_read_file_f90(toFortran(),
                                params.toConfiguration(),
                                &dtp);
     } else if (params.analyticInit.value() != boost::none) {
-      Log::trace() << "State::Generate State analytically." << std::endl;
+      Log::trace() << classname() << " Generated State analytically"
+                   << std::endl;
       roms_state_analytic_f90(toFortran(),
                               params.toConfiguration(),
                               &dtp);
@@ -71,7 +74,8 @@ namespace romsjedi {
   {
     roms_state_create_f90(keyFlds_, geom_->toFortran(), vars_);
     roms_state_change_resol_f90(toFortran(), other.keyFlds_);
-    Log::trace() << "State::State created by interpolation." << std::endl;
+    Log::trace() << classname() << " State created by interpolation"
+                 << std::endl;
   }
 
 // -----------------------------------------------------------------------------
@@ -81,14 +85,14 @@ namespace romsjedi {
   {
     roms_state_create_f90(keyFlds_, geom_->toFortran(), vars_);
     roms_state_copy_f90(toFortran(), other.toFortran());
-    Log::trace() << "State::State copied." << std::endl;
+    Log::trace() << classname() << " State copied" << std::endl;
   }
 
 // -----------------------------------------------------------------------------
 
   State::~State() {
     roms_state_delete_f90(toFortran());
-    Log::trace() << "State::State destructed." << std::endl;
+    Log::trace() << classname() << " State destructed" << std::endl;
   }
 
 // -----------------------------------------------------------------------------
@@ -97,8 +101,25 @@ namespace romsjedi {
 
   State & State::operator=(const State & rhs) {
     time_ = rhs.time_;
+    vars_ = rhs.variables();
     roms_state_copy_f90(toFortran(), rhs.toFortran());
     return *this;
+  }
+
+// -----------------------------------------------------------------------------
+/// Add or remove fields
+// -----------------------------------------------------------------------------
+
+  void State::updateFields(const oops::Variables & Vars) {
+    vars_ = Vars;
+    Log::trace() << classname() << ":updateFields starting"
+                 << std::endl;
+    Log::debug() << classname() << ":updateFields Variables to process: "
+                 << Vars << std::endl;
+    roms_state_update_fields_f90(toFortran(),
+                                 vars_);
+    Log::trace() << classname() << ":updateFields done"
+                 << std::endl;
   }
 
 // -----------------------------------------------------------------------------
@@ -107,18 +128,18 @@ namespace romsjedi {
 
   void State::rotate2north(const oops::Variables & u,
                            const oops::Variables & v) const {
-    Log::trace() << "State::State rotate from logical to geographical North."
-                 << std::endl;
     roms_state_rotate2north_f90(toFortran(), u, v);
+    Log::trace() << classname() << ":rotate2north done"
+                 << std::endl;
   }
 
 // -----------------------------------------------------------------------------
 
   void State::rotate2grid(const oops::Variables & u,
                           const oops::Variables & v) const {
-    Log::trace() << "State::State rotate from geographical to logical North."
-                 << std::endl;
     roms_state_rotate2grid_f90(toFortran(), u, v);
+    Log::trace() << classname() << ":rotate2grid done"
+                 << std::endl;
   }
 
 // -----------------------------------------------------------------------------
@@ -139,32 +160,40 @@ namespace romsjedi {
 // -----------------------------------------------------------------------------
 
   void State::read(const Parameters_ & params) {
-    Log::trace() << "State::State read started." << std::endl;
+    Log::trace() << classname() << ":read starting"
+                 << std::endl;
     util::DateTime * dtp = &time_;
     roms_state_read_file_f90(toFortran(),
                              params.toConfiguration(),
                              &dtp);
-    Log::trace() << "State::State read done." << std::endl;
+    Log::trace() << classname() <<":read done"
+                 << std::endl;
   }
 
 // -----------------------------------------------------------------------------
 
   void State::analytic_init(const Parameters_ & params) {
     util::DateTime * dtp = &time_;
-    Log::trace() << "State::Analytical initialization started." << std::endl;
+    Log::trace() << classname() << ":analytic_init starting"
+                 << std::endl;
     roms_state_analytic_f90(toFortran(),
                             params.toConfiguration(),
                             &dtp);
-    Log::trace() << "State::Analytical initialization done." << std::endl;
+    Log::trace() << classname() << ":analytic_init done"
+                 << std::endl;
   }
 
 // -----------------------------------------------------------------------------
 
   void State::write(const WriteParameters_ & params) const {
     const util::DateTime * dtp = &time_;
+    Log::trace() << classname() << ":write starting"
+                 << std::endl;
     roms_state_write_file_f90(toFortran(),
                               params.toConfiguration(),
                               &dtp);
+    Log::trace() << classname() <<":write done"
+                 << std::endl;
   }
 
 // -----------------------------------------------------------------------------
@@ -259,17 +288,21 @@ namespace romsjedi {
 // -----------------------------------------------------------------------------
 
   void State::logtrans(const oops::Variables & trvar) const {
-    Log::trace() << "State::State apply logarithmic transformation."
+    Log::trace() << classname() << ":logtrans starting"
                  << std::endl;
     roms_state_logtrans_f90(toFortran(), trvar);
+    Log::trace() << classname() << ":logtrans done"
+                 << std::endl;
   }
 
 // -----------------------------------------------------------------------------
 
   void State::expontrans(const oops::Variables & trvar) const {
-    Log::trace() << "State::State apply exponential transformation."
-    << std::endl;
+    Log::trace() << classname() << ":expontrans starting"
+                 << std::endl;
     roms_state_expontrans_f90(toFortran(), trvar);
+    Log::trace() << classname() << ":expontrans done"
+                 << std::endl;
   }
 
 // -----------------------------------------------------------------------------

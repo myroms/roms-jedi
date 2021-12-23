@@ -15,7 +15,7 @@
  */
 
 #include "eckit/config/Configuration.h"
-#include "eckit/geometry/Point2.h"
+#include "eckit/geometry/Point3.h"
 #include "oops/util/Logger.h"
 
 #include "romsjedi/Geometry/Geometry.h"
@@ -28,61 +28,83 @@ namespace romsjedi {
 
 // -----------------------------------------------------------------------------
 
-GeometryIterator::GeometryIterator(const GeometryIterator& iter) {
-  roms_geom_iter_clone_f90(keyIter_, iter.toFortran());
-}
+  GeometryIterator::GeometryIterator(const GeometryIterator& iter) {
+    roms_geomIterator_clone_f90(keyIter_,
+                                iter.toFortran());
+  }
 
 // -----------------------------------------------------------------------------
 
-GeometryIterator::GeometryIterator(const Geometry& geom,
-                                   const int & iindex, const int & jindex) {
-  roms_geom_iter_setup_f90(keyIter_, geom.toFortran(), iindex, jindex);
-}
+  GeometryIterator::GeometryIterator(const Geometry& geom,
+                                     const int & Iindex,
+                                     const int & Jindex,
+                                     const int & Kindex) {
+    roms_geomIterator_setup_f90(keyIter_,
+                                geom.toFortran(),
+                                Iindex, Jindex, Kindex);
+  }
 
 // -----------------------------------------------------------------------------
 
-GeometryIterator::~GeometryIterator() {
-  roms_geom_iter_delete_f90(keyIter_);
-}
+  GeometryIterator::~GeometryIterator() {
+    roms_geomIterator_delete_f90(keyIter_);
+  }
 
 // -----------------------------------------------------------------------------
 
-bool GeometryIterator::operator==(const GeometryIterator & other) const {
-  int equals = 0;
-  roms_geom_iter_equals_f90(keyIter_, other.toFortran(), equals);
-  return (equals == 1);
-}
+  bool GeometryIterator::operator==(const GeometryIterator & other) const {
+    int equals = 0;
+    roms_geomIterator_equals_f90(keyIter_,
+                                 other.toFortran(),
+                                 equals);
+    return (equals == 1);
+  }
 
 // -----------------------------------------------------------------------------
 
-bool GeometryIterator::operator!=(const GeometryIterator & other) const {
-  int equals = 0;
-  roms_geom_iter_equals_f90(keyIter_, other.toFortran(), equals);
-  return (equals == 0);
-}
+  bool GeometryIterator::operator!=(const GeometryIterator & other) const {
+    int equals = 0;
+    roms_geomIterator_equals_f90(keyIter_,
+                                 other.toFortran(),
+                                 equals);
+    return (equals == 0);
+  }
 
 // -----------------------------------------------------------------------------
 
-eckit::geometry::Point2 GeometryIterator::operator*() const {
-  double lat, lon;
-  roms_geom_iter_current_f90(keyIter_, lon, lat);
-  return eckit::geometry::Point2(lon, lat);
-}
+  eckit::geometry::Point3 GeometryIterator::operator*() const {
+    double lat, lon, depth;
+    roms_geomIterator_current_f90(keyIter_,
+                                  lon, lat, depth);
+    return eckit::geometry::Point3(lon, lat, depth);
+  }
 
 // -----------------------------------------------------------------------------
 
 GeometryIterator& GeometryIterator::operator++() {
-  roms_geom_iter_next_f90(keyIter_);
+  roms_geomIterator_next_f90(keyIter_);
   return *this;
 }
 
 // -----------------------------------------------------------------------------
 
-void GeometryIterator::print(std::ostream & os) const {
-  double lat, lon;
-  roms_geom_iter_current_f90(keyIter_, lon, lat);
-  os << "GeometryIterator, lat/lon: " << lat << " / " << lon << std::endl;
-}
+  int GeometryIterator::iteratorDimension() const {
+    int dimension;
+    roms_geomIterator_dimension_f90(keyIter_,
+                                    dimension);
+    return dimension;
+  }
+
+
+// -----------------------------------------------------------------------------
+
+  void GeometryIterator::print(std::ostream & os) const {
+    double lat, lon, depth;
+    roms_geomIterator_current_f90(keyIter_,
+                                  lon, lat, depth);
+    os << "GeometryIterator, lat/lon/depth: " << lat << " / " << lon
+                                              << " / " << depth  << std::endl;
+  }
 
 // -----------------------------------------------------------------------------
 

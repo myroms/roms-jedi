@@ -44,7 +44,7 @@ namespace romsjedi {
   class LinearGetValues : public util::Printable,
                           private util::ObjectCounter<LinearGetValues> {
    public:
-    static const std::string classname() {return "roms::LinearGetValues";}
+    static const std::string classname() {return "romsjedi::LinearGetValues";}
 
     // Constructor, Destructor
     LinearGetValues(const Geometry &, const ufo::Locations &,
@@ -63,19 +63,19 @@ namespace romsjedi {
                        const util::DateTime & t2,
                        ufo::GeoVaLs & geovals) const; // NOLINT
 
-    void fillGeoVaLsAD(Increment & inc,   // NOLINT
+    void fillGeoVaLsAD(Increment & inc,  // NOLINT
                        const util::DateTime & t1,
                        const util::DateTime & t2,
                        const ufo::GeoVaLs & geovals) const;
 
    private:
     void print(std::ostream &) const;
-    F90getval keyLinearGetValues_;
+    F90lingetval keyLinearGetValues_;
     ufo::Locations locs_;
     std::shared_ptr<const Geometry> geom_;
-    std::unique_ptr<Model2GeoVaLs> model2geovals_;
-    std::unique_ptr<LinearModel2GeoVaLs> linearmodel2geovals_;
   };
 }  // namespace romsjedi
+
+// -----------------------------------------------------------------------------
 
 #endif  // ROMSJEDI_GETVALUES_LINEARGETVALUES_H_

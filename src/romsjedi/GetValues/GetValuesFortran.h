@@ -35,13 +35,17 @@ namespace util {
   class Duration;
 }
 
+// -----------------------------------------------------------------------------
+
 namespace romsjedi {
 
   extern "C" {
     void roms_getvalues_create_f90(F90getval &,
                                    const F90geom &,
                                    const ufo::Locations &);
+
     void roms_getvalues_delete_f90(F90getval &);
+
     void roms_getvalues_fill_geovals_f90(const F90getval &,
                                          const F90geom &,
                                          const F90flds &,
@@ -49,20 +53,9 @@ namespace romsjedi {
                                          const util::DateTime &,
                                          const ufo::Locations &,
                                          const F90goms &);
-    void roms_getvalues_fill_geovals_tl_f90(const F90getval &,
-                                            const F90geom &,
-                                            const F90flds &,
-                                            const util::DateTime &,
-                                            const util::DateTime &,
-                                            const ufo::Locations &,
-                                            const F90goms &);
-    void roms_getvalues_fill_geovals_ad_f90(const F90getval &,
-                                            const F90geom &,
-                                            const F90flds &,
-                                            const util::DateTime &,
-                                            const util::DateTime &,
-                                            const ufo::Locations &,
-                                            const F90goms &);
   }
 }  // namespace romsjedi
+
+// -----------------------------------------------------------------------------
+
 #endif  // ROMSJEDI_GETVALUES_GETVALUESFORTRAN_H_

@@ -17,6 +17,8 @@
 !! \author  Hernan G. Arango (Rutgers University)
 !! \date    July 2021
 
+!------------------------------------------------------------------------------
+
 MODULE roms_getvalues_mod
 
 USE iso_c_binding
@@ -53,7 +55,11 @@ TYPE, PUBLIC :: roms_getvalues
 
   PROCEDURE :: get_interp      => roms_getvalues_getinterp
   PROCEDURE :: fill_geovals    => roms_getvalues_fillgeovals
-  PROCEDURE :: fill_geovals_ad => roms_getvalues_fillgeovals_ad
+
+  ! Generic interfaces.
+
+  GENERIC   :: fill_geovals_tl => fill_geovals
+  GENERIC   :: set_trajectory  => fill_geovals
 
 END TYPE roms_getvalues
 
@@ -328,131 +334,6 @@ SUBROUTINE roms_getvalues_fillgeovals (self, geom, fld, t1, t2, locs, geovals)
   geovals%linit = .TRUE.
 
 END SUBROUTINE roms_getvalues_fillgeovals
-
-!------------------------------------------------------------------------------
-
-SUBROUTINE roms_getvalues_fillgeovals_ad (self, geom, incr, t1, t2, locs,    &
-                                          geovals)
-
-  CLASS (roms_getvalues), intent(inout) :: self      !< GetValues object
-  TYPE (roms_geom),       intent(in   ) :: geom      !< geometry object
-  CLASS (roms_fields),    intent(inout) :: incr      !< fields object
-  TYPE (datetime),        intent(in   ) :: t1        !< start of time window
-  TYPE (datetime),        intent(in   ) :: t2        !< end of time window
-  TYPE (ufo_locations),   intent(in   ) :: locs      !< observation locations
-  TYPE (ufo_geovals),     intent(in   ) :: geovals   !< GeoVaLs object
-
-  logical (c_bool),         allocatable :: time_mask(:)
-  logical                               :: masked
-  integer                               :: N, i, ival, ivar, k, nval
-  integer                               :: ni, nj, ns
-  integer                               :: interp_index = -1
-  integer                               :: Istr, Iend, Jstr, Jend
-  real (kind=kind_real),    allocatable :: gom_window(:,:)
-  real (kind=kind_real),    allocatable :: gom_window_ival(:)
-  real (kind=kind_real),    allocatable :: incr3d(:,:,:), incr3d_un(:)
-  TYPE (roms_field),            pointer :: ad_field
-
-  ! Starting and ending indices for the compute domain tile (no halo).
-
-  Istr = geom%Istr
-  Iend = geom%Iend
-  Jstr = geom%Jstr
-  Jend = geom%Jend
-  N    = geom%N                         ! number of vertical levels in ROMS
-
-  ! Get mask for locations in this time window.
-
-  allocate ( time_mask(locs%nlocs()) )
-  CALL locs%get_timemask (t1, t2, time_mask)
-  allocate ( gom_window_ival(locs%nlocs()) )
-
-  DO ivar = 1, geovals%nvar
-
-    ! Set number of vertical levels or categories (nval). Notice that the GeoVaLs
-    ! are in terms of the UFO standard name and not ROMS internal name.
-
-    CALL incr%get (geovals%variables(ivar), ad_field)
-    nval = ad_field%N
-
-    ! Allocate temporary GeoVaLs and 3D field for the current time window.
-
-    allocate ( gom_window(nval,locs%nlocs()) )
-    allocate ( incr3d(Istr:Iend,Jstr:Jend,1:nval) )
-    incr3d = 0.0_kind_real
-    gom_window = 0.0_kind_real
-
-    ! Determine if this variable should use the masked grid.
-
-    masked = ad_field%metadata%masked
-
-    ! Apply backward (adjoint) interpolation: Observations ---> Model
-
-    IF (masked) THEN
-      ns = COUNT(incr%geom%rmask(Istr:Iend,Jstr:Jend) > 0.0_kind_real)
-    ELSE
-      ni = Iend - Istr + 1
-      nj = Jend - Jstr + 1
-      ns = ni * nj
-    END IF
-    IF (.not.allocated(incr3d_un)) allocate ( incr3d_un(ns) )
-
-    interp_index = self%get_interp(geom, ad_field%metadata%gtype, masked, locs)
-
-    DO ival = 1, nval                          ! level by level         
-
-      ! Fill GeoVaLs values according to time window. Flip the GeoVaLs vertical
-      ! levels back such that level=1 correspond to ROMS level=N. Recall that
-      ! ROMS has a vertical enumeration such that level=1 is adjacent to the
-      ! bathymetry.
-
-      IF (nval .gt. 1) THEN
-        k = (N - ival) + 1                     ! 3D state field
-      ELSE
-        k = ival                               ! 2D state field
-      END IF
-
-      DO i = 1, locs%nlocs()
-        IF (time_mask(i)) THEN
-          gom_window(k, i) = geovals%geovals(ivar)%vals(ival, i)
-        END IF
-      END DO
-      gom_window_ival = gom_window(k,1:locs%nlocs())
-
-      ! Adjoint horizontal interpolation. Notice that we use the flipped
-      ! vertical levels for ROMS adjoint state fields.
-
-      IF (masked) THEN
-        incr3d_un = PACK(incr3d(Istr:Iend,Jstr:Jend,k),                      &
-                         MASK=ad_field%mask(Istr:Iend,Jstr:Jend) > 0.0)
-        CALL self%horiz_interp(interp_index)%apply_ad (incr3d_un,            &
-                                                       gom_window_ival)
-        incr3d(Istr:Iend,Jstr:Jend,k) = UNPACK(incr3d_un,                    &
-                    MASK=ad_field%mask(Istr:Iend,Jstr:Jend) > 0.0,           &
-                    FIELD=incr3d(Istr:Iend,Jstr:Jend,k))
-      ELSE
-        incr3d_un = RESHAPE(incr3d(Istr:Iend,Jstr:Jend,k), (/ns/))
-        CALL self%horiz_interp(interp_index)%apply_ad (incr3d_un(1:ns),      &
-                                                       gom_window_ival)
-        incr3d(Istr:Iend,Jstr:Jend,k) = RESHAPE(incr3d_un(1:ns),(/ni,nj/))
-      END IF
-
-    END DO
-
-    ad_field%val(Istr:Iend,Jstr:Jend,1:nval) =                               &
-                                  ad_field%val(Istr:Iend,Jstr:Jend,1:nval) + &
-                                  incr3d(Istr:Iend,Jstr:Jend,1:nval)
-
-    ! Deallocate temporary arrays.
-
-    deallocate (incr3d)
-    deallocate (gom_window)
-
-  END DO
-
-  deallocate (gom_window_ival)
-
-END SUBROUTINE roms_getvalues_fillgeovals_ad
 
 !------------------------------------------------------------------------------
 

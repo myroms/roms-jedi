@@ -7,10 +7,14 @@ geometry:
   fields metadata: Data/fields_metadata.yaml
   ng: 1                                        # ROMS nested grid number
 
+forecast length: &ForecastLength PT96H         # 96 hours (4 days) window ending on 2004-01-07T00:00:00Z
+                                               # or other smaller interval
+
 model:
   name: ROMS
   model variables: [ssh, uocn, vocn, tocn, socn]
   tstep: PT1800S                               # WC13 has a 30 minutes timestep
+  simulation length: *ForecastLength
 
 initial condition:
   fields_dir: jediroms_wc13/Data/
@@ -19,18 +23,16 @@ initial condition:
   state variables: [ssh, uocn, vocn, tocn, socn]
   date: &initial_date 2004-01-03T00:00:00Z
 
-forecast length: &forecast_length PT96H        # 96 hours (4 days) window ending on 2004-01-07T00:00:00Z
-
 output:
   file_policy: PT98H                           # single output file with 49 records (see NOTES)
   frequency: &frequency PT2H                   # write output data every 2 hours
   data_frequency: *frequency
-  data_dir: Data
+  data_dir: Data/forecast
   prefix: wc13_roms
   exp: nlm
   type: fct
   date: *initial_date                          # alias to initial date
-  forecast length: *forecast_length            # alias to forecast length
+  forecast length: *ForecastLength             # alias to forecast length
 
 # NOTES:
 #
@@ -44,3 +46,8 @@ output:
 #   policy logic.
 #
 # * Output files are of the form: "prefix_exp_type_date.nc".
+#
+# * The WC13 application is configured to run for 96 hours (4-days). However, it is possible to
+#   use a smaller interval for the 'forecast length' provided that it is an integer multiple the
+#   timestep (1800 s). Then, ROMS internal parameters are changed to the desired interval via
+#   the 'simulation length' property.

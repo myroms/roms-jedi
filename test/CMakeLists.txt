@@ -7,6 +7,7 @@
 
 list( APPEND romsjedi_test_input
   testinput/errorcovariance.yaml
+  testinput/diffstates.yaml
   testinput/forecast_roms.yaml
   testinput/geometry.yaml
   testinput/geometryiterator.yaml
@@ -19,6 +20,8 @@ list( APPEND romsjedi_test_input
   testinput/makeobs_4d.yaml
   testinput/makeobs_4d_perturbed.yaml
   testinput/model.yaml
+  testinput/parameters_bump_cor_nicas.yaml
+  testinput/parameters_bump_cov_nicas.yaml
   testinput/state.yaml
   )
 
@@ -59,26 +62,37 @@ set( romsjedi_test_ref
   testref/makeobs_4d.test
   testref/makeobs_4d_perturbed.test
   testref/parameters_bump_cor_nicas.test
-  testref/parameters_bump_cov_lct.test
+  testref/parameters_bump_cov_nicas.test
 )
 
 # Tests data files
 
 set( romsjedi_data_files
   Data/fields_metadata.yaml
-  Data/Obs/wc13_adt_20040103.nc4
-  Data/Obs/wc13_salt_20040103.nc4
-  Data/Obs/wc13_sst_20040103.nc4
-  Data/Obs/wc13_temp_20040103.nc4
+  Data/obs/wc13_adt_20040103.nc4
+  Data/obs/wc13_temp_20040103.nc4
+  Data/obs/wc13_salt_20040103.nc4
+  Data/obs/wc13_sst_20040103.nc4
+  Data/obs/wc13_sss_20040103.nc4
+  Data/obs/wc13_usur_20040103.nc4
+  Data/obs/wc13_vsur_20040103.nc4
 )
 
 # Create input/output directories for the tests and symlinks for all files
 
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/Obs)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/bump)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/diff)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/forecast)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/hofx)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/increment)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/makeobs)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/obs)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/roms)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testinput)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testoutput)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testref)
+
 foreach(FILENAME ${romsjedi_data_files} ${romsjedi_test_input} ${romsjedi_test_ref})
   execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
     ${CMAKE_CURRENT_SOURCE_DIR}/${FILENAME}
@@ -110,6 +124,13 @@ ecbuild_add_test(
  LIBS          romsjedi )
 
 ecbuild_add_test(
+  TARGET       test_romsjedi_state
+  MPI          2
+  SOURCES      executables/TestState.cc
+  ARGS         testinput/state.yaml
+  LIBS         romsjedi )
+
+ecbuild_add_test(
   TARGET       test_romsjedi_getvalues
   MPI          2
   SOURCES      executables/TestGetValues.cc
@@ -131,11 +152,47 @@ ecbuild_add_test(
 #  LIBS         romsjedi )
 
 ecbuild_add_test(
-  TARGET       test_romsjedi_state
+  TARGET       test_romsjedi_model
   MPI          2
-  SOURCES      executables/TestState.cc
-  ARGS         testinput/state.yaml
+  SOURCES      executables/TestModel.cc
+  ARGS         testinput/model.yaml
   LIBS         romsjedi )
+
+ecbuild_add_test(
+  TARGET       test_romsjedi_linearmodel
+  MPI          2
+  SOURCES      executables/TestLinearModel.cc
+  ARGS         testinput/linearmodel.yaml
+  LIBS         romsjedi )
+
+ecbuild_add_test(
+  TARGET       test_romsjedi_errorcovariance
+  MPI          2
+  SOURCES      executables/TestErrorCovariance.cc
+  ARGS         testinput/errorcovariance.yaml
+  LIBS         romsjedi )
+
+#ecbuild_add_test(
+#  TARGET       test_romsjedi_modelauxcontrol
+#  SOURCES      executables/TestModelAuxControl.cc
+#  ARGS         testinput/modelaux.yaml
+#  LIBS         romsjedi )
+
+#ecbuild_add_test(
+#  TARGET       test_romsjedi_modelauxcovariance
+#  SOURCES      executables/TestModelAuxCovariance.cc
+#  ARGS         testinput/modelaux.yaml
+#  LIBS         romsjedi )
+
+#ecbuild_add_test(
+#  TARGET       test_romsjedi_modelauxincrement
+#  SOURCES      executables/TestModelAuxIncrement.cc
+#  ARGS         testinput/modelaux.yaml
+#  LIBS         romsjedi )
+
+#================================================================================
+# Tests using the maind ROMS-JEDI applications
+#================================================================================
 
 ecbuild_add_test(
   TARGET       test_romsjedi_hofx_nomodel
@@ -166,6 +223,13 @@ ecbuild_add_test(
   TEST_DEPENDS test_romsjedi_hofx_4d )
 
 ecbuild_add_test(
+  TARGET       test_romsjedi_diffstates
+  MPI          2
+  COMMAND      romsjedi_diffstates.x
+  ARGS         testinput/diffstates.yaml
+  LIBS         romsjedi )
+
+ecbuild_add_test(
   TARGET       test_romsjedi_forecast_roms
   MPI          2
   COMMAND      romsjedi_forecast.x
@@ -173,38 +237,8 @@ ecbuild_add_test(
   LIBS         romsjedi )
 
 ecbuild_add_test(
-  TARGET       test_romsjedi_model
+  TARGET       test_bump_parameters_cor_nicas
   MPI          2
-  SOURCES      executables/TestModel.cc
-  ARGS         testinput/model.yaml
+  COMMAND      romsjedi_error_covariance_training.x
+  ARGS         testinput/parameters_bump_cor_nicas.yaml
   LIBS         romsjedi )
-
-#ecbuild_add_test(
-#  TARGET       test_romsjedi_modelauxcontrol
-#  SOURCES      executables/TestModelAuxControl.cc
-#  ARGS         testinput/modelaux.yaml
-#  LIBS         romsjedi )
-
-#ecbuild_add_test(
-#  TARGET       test_romsjedi_errorcovariance
-#  SOURCES      executables/TestErrorCovariance.cc
-#  ARGS         testinput/errorcovariance.yaml
-#  LIBS         romsjedi )
-
-#ecbuild_add_test(
-#  TARGET       test_romsjedi_modelauxcovariance
-#  SOURCES      executables/TestModelAuxCovariance.cc
-#  ARGS         testinput/modelaux.yaml
-#  LIBS         romsjedi )
-
-#ecbuild_add_test(
-#  TARGET       test_romsjedi_modelauxincrement
-#  SOURCES      executables/TestModelAuxIncrement.cc
-#  ARGS         testinput/modelaux.yaml
-#  LIBS         romsjedi )
-
-#ecbuild_add_test(
-#  TARGET       test_romsjedi_linearmodel
-#  SOURCES      executables/TestLinearModel.cc
-#  ARGS         testinput/linearmodel.yaml
-#  LIBS         romsjedi )

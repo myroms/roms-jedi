@@ -8,8 +8,8 @@ geometry:
   ng: 1                                        # ROMS nested grid number
 
 state variables: &geovals [sea_surface_height_above_geoid,
-                           sea_water_zonal_velocity,
-                           sea_water_meridional_velocity,
+                           sea_water_eastward_velocity,
+                           sea_water_northward_velocity,
                            sea_water_potential_temperature,
                            sea_water_practical_salinity,
                            sea_floor_depth_below_sea_surface,

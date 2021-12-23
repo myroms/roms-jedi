@@ -55,6 +55,10 @@ namespace romsjedi {
       "tstep",
       "Model time step",
       this};
+    oops::RequiredParameter<util::Duration> SimulationLength{
+      "simulation length",
+      "Model simulation length period",
+      this};
   };
 
   // ROMS NLM Model Class

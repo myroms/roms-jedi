@@ -64,6 +64,8 @@ TYPE :: roms_geom
   integer :: Istr,  Iend,  Jstr,  Jend        ! computational I- and J-indices range, RHO-points
   integer :: IstrU, JstrV                     ! computational starting U- and V-indices
 
+  integer :: iterator_dimension               ! iterator dimenson (2D or 3D)
+
   real (kind_real), allocatable  :: f_r(:,:)       ! Coriolis parameter (1/s), RHO-points
   real (kind_real), allocatable  :: f_u(:,:)       ! Coriolis parameter (1/s), U-points
   real (kind_real), allocatable  :: f_v(:,:)       ! Coriolis parameter (1/s), V-points
@@ -182,6 +184,11 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
 
   CALL f_conf%get_or_die("ng", ng)
   self%ng = ng
+
+  ! Get iterator dimension from configuration YAML file.
+
+  IF (.not.f_conf%get("iterator dimension", self%iterator_dimension))       &
+    self%iterator_dimension = 2
 
   ! ROMS initialization: read input script, allocate, initialize, and set grid.
 
@@ -437,6 +444,10 @@ SUBROUTINE roms_geom_clone (self, other)
   self%IstrU = other%IstrU
   self%JstrV = other%JstrV
 
+  ! Iterator dimension.
+
+  self%iterator_dimension = other%iterator_dimension
+
   ! Clone geometry arrays.
 
   CALL roms_geom_allocate (self)
@@ -518,38 +529,38 @@ SUBROUTINE roms_geom_allocate (self)
   LBk = self%LBk
   UBk = self%UBk
 
-  allocate (self%f_r(LBi:UBi, LBj:UBj));            self%f_r = 0.0_kind_real
-  allocate (self%f_u(LBi:UBi, LBj:UBj));            self%f_u = 0.0_kind_real
-  allocate (self%f_v(LBi:UBi, LBj:UBj));            self%f_v = 0.0_kind_real
+  allocate (self%f_r(LBi:UBi, LBj:UBj));          self%f_r = 0.0_kind_real
+  allocate (self%f_u(LBi:UBi, LBj:UBj));          self%f_u = 0.0_kind_real
+  allocate (self%f_v(LBi:UBi, LBj:UBj));          self%f_v = 0.0_kind_real
 
-  allocate (self%h_r(LBi:UBi, LBj:UBj));            self%h_r = 0.0_kind_real
-  allocate (self%h_u(LBi:UBi, LBj:UBj));            self%h_u = 0.0_kind_real
-  allocate (self%h_v(LBi:UBi, LBj:UBj));            self%h_v = 0.0_kind_real
+  allocate (self%h_r(LBi:UBi, LBj:UBj));          self%h_r = 0.0_kind_real
+  allocate (self%h_u(LBi:UBi, LBj:UBj));          self%h_u = 0.0_kind_real
+  allocate (self%h_v(LBi:UBi, LBj:UBj));          self%h_v = 0.0_kind_real
 
-  allocate (self%lonr(LBi:UBi, LBj:UBj));           self%lonr = 0.0_kind_real
-  allocate (self%latr(LBi:UBi, LBj:UBj));           self%latr = 0.0_kind_real
-  allocate (self%lonu(LBi:UBi, LBj:UBj));           self%lonu = 0.0_kind_real
-  allocate (self%latu(LBi:UBi, LBj:UBj));           self%latu = 0.0_kind_real
-  allocate (self%lonv(LBi:UBi, LBj:UBj));           self%lonv = 0.0_kind_real
-  allocate (self%latv(LBi:UBi, LBj:UBj));           self%latv = 0.0_kind_real
+  allocate (self%lonr(LBi:UBi, LBj:UBj));         self%lonr = 0.0_kind_real
+  allocate (self%latr(LBi:UBi, LBj:UBj));         self%latr = 0.0_kind_real
+  allocate (self%lonu(LBi:UBi, LBj:UBj));         self%lonu = 0.0_kind_real
+  allocate (self%latu(LBi:UBi, LBj:UBj));         self%latu = 0.0_kind_real
+  allocate (self%lonv(LBi:UBi, LBj:UBj));         self%lonv = 0.0_kind_real
+  allocate (self%latv(LBi:UBi, LBj:UBj));         self%latv = 0.0_kind_real
 
-  allocate (self%angler(LBi:UBi, LBj:UBj));         self%angler = 0.0_kind_real
-  allocate (self%angleu(LBi:UBi, LBj:UBj));         self%angleu = 0.0_kind_real
-  allocate (self%anglev(LBi:UBi, LBj:UBj));         self%anglev = 0.0_kind_real
+  allocate (self%angler(LBi:UBi, LBj:UBj));       self%angler = 0.0_kind_real
+  allocate (self%angleu(LBi:UBi, LBj:UBj));       self%angleu = 0.0_kind_real
+  allocate (self%anglev(LBi:UBi, LBj:UBj));       self%anglev = 0.0_kind_real
 
-  allocate (self%cell_area(LBi:UBi, LBj:UBj));      self%cell_area = 0.0_kind_real
+  allocate (self%cell_area(LBi:UBi, LBj:UBj));    self%cell_area = 0.0_kind_real
 
-  allocate (self%CosAngler(LBi:UBi, LBj:UBj));      self%CosAngler = 0.0_kind_real
-  allocate (self%SinAngler(LBi:UBi, LBj:UBj));      self%SinAngler = 0.0_kind_real
+  allocate (self%CosAngler(LBi:UBi, LBj:UBj));    self%CosAngler = 0.0_kind_real
+  allocate (self%SinAngler(LBi:UBi, LBj:UBj));    self%SinAngler = 0.0_kind_real
 
-  allocate (self%rmask(LBi:UBi, LBj:UBj));          self%rmask = 0.0_kind_real
-  allocate (self%umask(LBi:UBi, LBj:UBj));          self%umask = 0.0_kind_real
-  allocate (self%vmask(LBi:UBi, LBj:UBj));          self%vmask = 0.0_kind_real
+  allocate (self%rmask(LBi:UBi, LBj:UBj));        self%rmask = 0.0_kind_real
+  allocate (self%umask(LBi:UBi, LBj:UBj));        self%umask = 0.0_kind_real
+  allocate (self%vmask(LBi:UBi, LBj:UBj));        self%vmask = 0.0_kind_real
 
-  allocate (self%z_r(LBi:UBi, LBj:UBj, LBk:UBk));   self%z_r = 0.0_kind_real
-  allocate (self%z_u(LBi:UBi, LBj:UBj, LBk:UBk));   self%z_u = 0.0_kind_real
-  allocate (self%z_v(LBi:UBi, LBj:UBj, LBk:UBk));   self%z_v = 0.0_kind_real
-  allocate (self%z_w(LBi:UBi, LBj:UBj,   0:UBk));   self%z_w = 0.0_kind_real
+  allocate (self%z_r(LBi:UBi, LBj:UBj, LBk:UBk)); self%z_r = 0.0_kind_real
+  allocate (self%z_u(LBi:UBi, LBj:UBj, LBk:UBk)); self%z_u = 0.0_kind_real
+  allocate (self%z_v(LBi:UBi, LBj:UBj, LBk:UBk)); self%z_v = 0.0_kind_real
+  allocate (self%z_w(LBi:UBi, LBj:UBj,   0:UBk)); self%z_w = 0.0_kind_real
 
 END SUBROUTINE roms_geom_allocate
 
@@ -650,12 +661,13 @@ SUBROUTINE roms_geom_fill_atlas_fieldset (self, afieldset)
 END SUBROUTINE roms_geom_fill_atlas_fieldset
 
 ! ------------------------------------------------------------------------------
-!> Copy a structured field from an ATLAS fieldset
+!> Convert an ATLAS fieldset (dx_atlas) to a ROMS-JEDI structured field (dx).
 
-SUBROUTINE roms_geom_atlas2struct (self, dx_struct, dx_atlas)
+SUBROUTINE roms_geom_atlas2struct (self, dx, dx_atlas)
 
   CLASS (roms_geom),     intent(in   ) :: self            !< Geometry object
-  real (kind=kind_real), intent(inout) :: dx_struct(:,:)  !< structured field
+  real (kind=kind_real), intent(inout) :: dx(self%LBi:,                      &
+                                             self%LBj:)   !< structured field
   TYPE (atlas_fieldset), intent(inout) :: dx_atlas        !< ATLAS fieldset
 
   TYPE (atlas_field)                   :: afield
@@ -679,8 +691,8 @@ SUBROUTINE roms_geom_atlas2struct (self, dx_struct, dx_atlas)
 
   afield = dx_atlas%field('var')
   CALL afield%data (r_ptr)
-  dx_struct(Istr:Iend, Jstr:Jend) = UNPACK(r_ptr, fmask,                     &
-                                           dx_struct(Istr:Iend, Jstr:Jend))
+  dx(Istr:Iend, Jstr:Jend) = UNPACK(r_ptr, fmask,                            &
+                                    dx(Istr:Iend, Jstr:Jend))
   CALL afield%final ()
 
   deallocate ( fmask )
@@ -688,13 +700,14 @@ SUBROUTINE roms_geom_atlas2struct (self, dx_struct, dx_atlas)
 END SUBROUTINE roms_geom_atlas2struct
 
 ! ------------------------------------------------------------------------------
-!> Copy a structured field into an ATLAS fieldset.
+!> Convert a ROMS-JEDI structured field (dx) to an ATLAS fieldset (dx_atlas).
 
-SUBROUTINE roms_geom_struct2atlas (self, dx_struct, dx_atlas)
+SUBROUTINE roms_geom_struct2atlas (self, dx, dx_atlas)
 
-  CLASS (roms_geom),     intent(in ) :: self              !< Geometry object
-  real (kind=kind_real), intent(in ) :: dx_struct(:,:)    !< structured field
-  TYPE (atlas_fieldset), intent(out) :: dx_atlas          !< ATLAS fieldset
+  CLASS (roms_geom),     intent(in   ) :: self            !< Geometry object
+  real (kind=kind_real), intent(inout) :: dx(self%LBi:,                      &
+                                             self%LBj:)   !< Structured field
+  TYPE (atlas_fieldset), intent(out  ) :: dx_atlas        !< ATLAS fieldset
 
   TYPE (atlas_field)                 :: afield
   integer                            :: Istr, Iend, Jstr, Jend
@@ -718,7 +731,7 @@ SUBROUTINE roms_geom_struct2atlas (self, dx_struct, dx_atlas)
 
   CALL dx_atlas%add (afield)
   CALL afield%data (r_ptr)
-  r_ptr = PACK(dx_struct(Istr:Iend,Jstr:Jend), .TRUE.)
+  r_ptr = PACK(dx(Istr:Iend,Jstr:Jend), .TRUE.)
   CALL afield%final ()
 
 END SUBROUTINE roms_geom_struct2atlas

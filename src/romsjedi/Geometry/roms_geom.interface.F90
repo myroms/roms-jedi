@@ -26,36 +26,21 @@ use oops_variables_mod
 
 use roms_fields_metadata_mod
 USE roms_geom_mod,              ONLY : roms_geom
+USE roms_geom_reg,              ONLY : roms_geom_registry
 
 implicit none
 
 PRIVATE
 
-PUBLIC :: roms_geom_registry
-
-#define LISTED_TYPE roms_geom
-
-!> Linked list interface - defines registry_t type
-
-#include "oops/util/linkedList_i.f"
-
-!> Global registry
-
-TYPE (registry_t) :: roms_geom_registry
-
 ! ------------------------------------------------------------------------------
 CONTAINS
 ! ------------------------------------------------------------------------------
 
-!> Linked list implementation
-
-#include "oops/util/linkedList_c.f"
-
 ! ------------------------------------------------------------------------------
 !> Setup geometry object
 
-SUBROUTINE c_roms_geom_setup (c_key_self, c_conf, c_comm)                    &
-                       BIND (c, name='roms_geom_setup_f90')
+SUBROUTINE roms_geom_setup_c (c_key_self, c_conf, c_comm)                      &
+                        BIND (c, name='roms_geom_setup_f90')
 
   integer (c_int),     intent(inout) :: c_key_self
   TYPE (c_ptr), value, intent(in   ) :: c_conf
@@ -69,12 +54,12 @@ SUBROUTINE c_roms_geom_setup (c_key_self, c_conf, c_comm)                    &
 
   CALL self%init (fckit_configuration(c_conf), fckit_mpi_comm(c_comm))
 
-END SUBROUTINE c_roms_geom_setup
+END SUBROUTINE roms_geom_setup_c
 
 ! ------------------------------------------------------------------------------
 !> Clone geometry object
 
-SUBROUTINE c_roms_geom_clone (c_key_self, c_key_other)                       &
+SUBROUTINE roms_geom_clone_c (c_key_self, c_key_other)                         &
                         BIND (c, name='roms_geom_clone_f90')
 
   integer (c_int), intent(inout) :: c_key_self
@@ -88,12 +73,12 @@ SUBROUTINE c_roms_geom_clone (c_key_self, c_key_other)                       &
 
   CALL self%clone (other)
 
-END SUBROUTINE c_roms_geom_clone
+END SUBROUTINE roms_geom_clone_c
 
 ! ------------------------------------------------------------------------------
 !> Geometry destructor
 
-SUBROUTINE c_roms_geom_delete (c_key_self)                                   &
+SUBROUTINE roms_geom_delete_c (c_key_self)                                     &
                          BIND (c, name='roms_geom_delete_f90')
 
   integer(c_int), intent(inout) :: c_key_self
@@ -104,16 +89,17 @@ SUBROUTINE c_roms_geom_delete (c_key_self)                                   &
   CALL self%end ()
   CALL roms_geom_registry%remove (c_key_self)
 
-END SUBROUTINE c_roms_geom_delete
+END SUBROUTINE roms_geom_delete_c
 
 ! ------------------------------------------------------------------------------
 !> Get begin and end of local tile geometry
 
-SUBROUTINE c_roms_geom_start_end (c_key_self, Istr, Iend, Jstr, Jend)        &
+SUBROUTINE roms_geom_start_end_c (c_key_self, Istr, Iend, Jstr, Jend,          &
+                                  Kstr, Kend)                                  &
                             BIND (c, name='roms_geom_start_end_f90')
 
   integer (c_int), intent(in ) :: c_key_self
-  integer (c_int), intent(out) :: Istr, Iend, Jstr, Jend
+  integer (c_int), intent(out) :: Istr, Iend, Jstr, Jend, kstr, Kend
 
   TYPE (roms_geom), pointer    :: self
 
@@ -123,15 +109,17 @@ SUBROUTINE c_roms_geom_start_end (c_key_self, Istr, Iend, Jstr, Jend)        &
   Iend = self%Iend
   Jstr = self%Jstr
   Jend = self%Jend
+  Kstr = 1
+  Kend = self%N
 
-END SUBROUTINE c_roms_geom_start_end
+END SUBROUTINE roms_geom_start_end_c
 
 ! ------------------------------------------------------------------------------
 !> Get geometry information
 
-SUBROUTINE c_roms_geom_info (c_key_self, nx, ny, nz, tile,                   &
-                             LBi, UBi, LBj, UBj,                             &
-                             Istr, Iend, Jstr, Jend)                         &
+SUBROUTINE roms_geom_info_c (c_key_self, nx, ny, nz, tile,                     &
+                             LBi, UBi, LBj, UBj,                               &
+                             Istr, Iend, Jstr, Jend)                           &
                       BIND (c, name='roms_geom_info_f90')
 
   integer (c_int), intent(in ) :: c_key_self
@@ -160,13 +148,13 @@ SUBROUTINE c_roms_geom_info (c_key_self, nx, ny, nz, tile,                   &
   Jstr = self%Jstr
   Jend = self%Jend
 
-END SUBROUTINE c_roms_geom_info
+END SUBROUTINE roms_geom_info_c
 
 ! ------------------------------------------------------------------------------
 
-SUBROUTINE c_roms_geom_get_num_levels (c_key_self, c_vars,                   &
-                                       c_levels_size, c_levels)              &
-                                BIND (c, name='roms_geom_get_num_levels_f90')
+SUBROUTINE roms_geom_get_num_levels_c (c_key_self, c_vars,                     &
+                                       c_levels_size, c_levels)                &
+                                 BIND (c, name='roms_geom_get_num_levels_f90')
 
   integer (c_int),     intent(in ) :: c_key_self
   TYPE (c_ptr), value, intent(in ) :: c_vars
@@ -197,19 +185,19 @@ SUBROUTINE c_roms_geom_get_num_levels (c_key_self, c_vars,                   &
           c_levels(i) = self%N
         END IF
       CASE DEFAULT
-        CALL abor1_ftn ('c_roms_geo_get_num_levels: Unknown "levels" ' //    &
+        CALL abor1_ftn ('c_roms_geo_get_num_levels: Unknown "levels" ' //      &
                         field%levels)
     END SELECT
 
   END DO
 
-END SUBROUTINE c_roms_geom_get_num_levels
+END SUBROUTINE roms_geom_get_num_levels_c
 
 ! ------------------------------------------------------------------------------
 !> Set ATLAS functionspace pointer
 
-SUBROUTINE c_roms_geom_set_atlas_functionspace_pointer (c_key_self,          &
-                                                        c_afunctionspace)    &
+SUBROUTINE roms_geom_set_atlas_functionspace_pointer_c (c_key_self,            &
+                                                        c_afunctionspace)      &
            BIND (c, name='roms_geom_set_atlas_functionspace_pointer_f90')
 
   integer (c_int),     intent(in) :: c_key_self        !< Key to Geometry object
@@ -221,12 +209,12 @@ SUBROUTINE c_roms_geom_set_atlas_functionspace_pointer (c_key_self,          &
 
   self%afunctionspace = atlas_functionspace_pointcloud(c_afunctionspace)
 
-END SUBROUTINE c_roms_geom_set_atlas_functionspace_pointer
+END SUBROUTINE roms_geom_set_atlas_functionspace_pointer_c
 
 ! ------------------------------------------------------------------------------
 !> Set ATLAS **lonlat** fieldset.
 
-SUBROUTINE c_roms_geom_set_atlas_lonlat (c_key_self, c_afieldset)            &
+SUBROUTINE roms_geom_set_atlas_lonlat_c (c_key_self, c_afieldset)              &
            BIND (c, name='roms_geom_set_atlas_lonlat_f90')
 
   integer (c_int),     intent(in) :: c_key_self        !< Key to Geometry object
@@ -240,13 +228,13 @@ SUBROUTINE c_roms_geom_set_atlas_lonlat (c_key_self, c_afieldset)            &
 
   CALL self%set_atlas_lonlat (afieldset)
 
-END SUBROUTINE c_roms_geom_set_atlas_lonlat
+END SUBROUTINE roms_geom_set_atlas_lonlat_c
 
 ! ------------------------------------------------------------------------------
 !> Fill ATLAS fieldset with cell area, vertical level units, am geographical
 !! mask.
 
-SUBROUTINE c_roms_geom_fill_atlas_fieldset (c_key_self, c_afieldset)         &
+SUBROUTINE roms_geom_fill_atlas_fieldset_c (c_key_self, c_afieldset)           &
            BIND (c, name='roms_geom_fill_atlas_fieldset_f90')
 
   integer (c_int),    intent(in) :: c_key_self      !< Key to Geometry object
@@ -260,7 +248,7 @@ SUBROUTINE c_roms_geom_fill_atlas_fieldset (c_key_self, c_afieldset)         &
 
   CALL self%fill_atlas_fieldset (afieldset)
 
-END SUBROUTINE c_roms_geom_fill_atlas_fieldset
+END SUBROUTINE roms_geom_fill_atlas_fieldset_c
 
 ! ------------------------------------------------------------------------------
 

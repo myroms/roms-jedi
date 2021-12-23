@@ -23,21 +23,26 @@
 namespace romsjedi {
 
   extern "C" {
-    void roms_geom_iter_setup_f90(F90iter &,
-                                  const F90geom &,
-                                  const int &,
-                                  const int &);
-    void roms_geom_iter_clone_f90(F90iter &,
-                                  const F90iter &);
-    void roms_geom_iter_delete_f90(F90iter &);
-    void roms_geom_iter_equals_f90(const F90iter &,
-                                   const F90iter &,
-                                   int &);
-    void roms_geom_iter_current_f90(const F90iter &,
-                                    double &,
-                                    double &);
-    void roms_geom_iter_next_f90(const F90iter &);
+    void roms_geomIterator_setup_f90(F90iter &,
+                                     const F90geom &,
+                                     const int &,
+                                     const int &,
+                                     const int &);
+    void roms_geomIterator_clone_f90(F90iter &,
+                                     const F90iter &);
+    void roms_geomIterator_delete_f90(F90iter &);
+    void roms_geomIterator_equals_f90(const F90iter &,
+                                      const F90iter &,
+                                      int &);
+    void roms_geomIterator_current_f90(const F90iter &,
+                                       double &,
+                                       double &,
+                                       double &);
+    void roms_geomIterator_next_f90(const F90iter &);
+    void roms_geomIterator_dimension_f90(const F90iter &,
+                                         int &);
   }
+
 }  // namespace romsjedi
 
 #endif  // ROMSJEDI_GEOMETRYITERATOR_GEOMETRYITERATORFORTRAN_H_

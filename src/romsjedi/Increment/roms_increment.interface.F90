@@ -26,12 +26,13 @@ USE ufo_geovals_mod_c,          ONLY : ufo_geovals_registry
 USE ufo_geovals_mod,            ONLY : ufo_geovals
 
 USE roms_geom_mod,              ONLY : roms_geom
-USE roms_geom_mod_c,            ONLY : roms_geom_registry
-USE roms_geom_iter_mod,         ONLY : roms_geom_iter, roms_geom_iter_registry
-USE roms_increment_mod
-USE roms_increment_reg
-USE roms_state_mod
-USE roms_state_reg
+USE roms_geom_reg,              ONLY : roms_geom_registry
+USE roms_geomIterator_mod,      ONLY : roms_geomIterator
+USE roms_geomIterator_reg,      ONLY : roms_geomIterator_registry
+USE roms_increment_mod,         ONLY : roms_increment
+USE roms_increment_reg,         ONLY : roms_increment_registry
+USE roms_state_mod,             ONLY : roms_state
+USE roms_state_reg,             ONLY : roms_state_registry
 
 implicit none
 
@@ -516,44 +517,44 @@ SUBROUTINE roms_increment_rms_c (c_key_fld, prms)                            &
 END SUBROUTINE roms_increment_rms_c
 
 ! ------------------------------------------------------------------------------
-!> Gets increment values at specified grid points (Geometry Iterator).
+!> Gets increment values at specified grid points (GeometryIterator).
 
 SUBROUTINE roms_increment_getpoint_c (c_key_fld, c_key_iter, values,         &
                                       values_len)                            &
                                 BIND (c, name='roms_increment_getpoint_f90')
 
-  integer (c_int), intent(in   ) :: c_key_fld       !< Increment object pointer
-  integer (c_int), intent(in   ) :: c_key_iter      !< Geom Iterator pointer
-  integer (c_int), intent(in   ) :: values_len
-  real (c_double), intent(inout) :: values(values_len)
+  integer (c_int),    intent(in   ) :: c_key_fld       !< Increment object
+  integer (c_int),    intent(in   ) :: c_key_iter      !< GeometryIterator
+  integer (c_int),    intent(in   ) :: values_len
+  real (c_double),    intent(inout) :: values(values_len)
 
-  TYPE (roms_increment), pointer :: fld
-  TYPE (roms_geom_iter), pointer :: iter
+  TYPE (roms_increment),    pointer :: fld
+  TYPE (roms_geomIterator), pointer :: iter
 
   CALL roms_increment_registry%get (c_key_fld, fld)
-  CALL roms_geom_iter_registry%get (c_key_iter, iter)
+  CALL roms_geomIterator_registry%get (c_key_iter, iter)
 
   CALL fld%getpoint (iter, values)
 
 END SUBROUTINE roms_increment_getpoint_c
 
 ! ------------------------------------------------------------------------------
-!> Sets grid points (Geometry Iterator) for which increment values are needed.
+!> Sets grid points (GeometryIterator) for which increment values are needed.
 
 SUBROUTINE roms_increment_setpoint_c (c_key_fld, c_key_iter, values,         &
                                       values_len)                            &
                                 BIND (c, name='roms_increment_setpoint_f90')
 
-  integer (c_int), intent(inout) :: c_key_fld       !< Increment object pointer
-  integer (c_int), intent(in   ) :: c_key_iter      !< Geom Iterator pointer
-  integer (c_int), intent(in   ) :: values_len
-  real (c_double), intent(in   ) :: values(values_len)
+  integer (c_int),    intent(inout) :: c_key_fld          !< Increment object
+  integer (c_int),    intent(in   ) :: c_key_iter         !< GeomtryIterator
+  integer (c_int),    intent(in   ) :: values_len
+  real (c_double),    intent(in   ) :: values(values_len)
 
-  TYPE (roms_increment), pointer :: fld
-  TYPE (roms_geom_iter), pointer :: iter
+  TYPE (roms_increment),    pointer :: fld
+  TYPE (roms_geomIterator), pointer :: iter
 
   CALL roms_increment_registry%get (c_key_fld, fld)
-  CALL roms_geom_iter_registry%get (c_key_iter, iter)
+  CALL roms_geomIterator_registry%get (c_key_iter, iter)
 
   CALL fld%setpoint (iter, values)
 
@@ -654,6 +655,25 @@ SUBROUTINE roms_increment_deserialize_c (c_key_self, c_key_geom, c_vec_size, &
   c_index=idx
 
 END SUBROUTINE roms_increment_deserialize_c
+
+! ------------------------------------------------------------------------------
+!> Add or remove fields because of VariableChange object elsewhere.
+
+SUBROUTINE roms_increment_update_fields_c (c_key_self, c_vars)                 &
+                          BIND (c, name='roms_increment_update_fields_f90')
+
+  integer (c_int),     intent(inout) :: c_key_self  !< State fields pointer
+  TYPE (c_ptr), value, intent(in   ) :: c_vars      !< List of variables
+
+  TYPE (roms_increment), pointer     :: self
+  TYPE (oops_variables)              :: vars
+
+  CALL roms_increment_registry%get (c_key_self, self)
+
+  vars = oops_variables(c_vars)
+  CALL self%update_fields (vars)
+
+END SUBROUTINE roms_increment_update_fields_c
 
 ! ------------------------------------------------------------------------------
 

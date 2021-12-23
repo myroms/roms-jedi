@@ -60,9 +60,9 @@ namespace romsjedi {
 
     /// Serialize and deserialize
 
-    size_t serialSize() {return 0;}
-    void serialize(std::vector<double> &) const {}
-    void deserialize(const std::vector<double> &, size_t &) {}
+    size_t serialSize() const override {return 0;}
+    void serialize(std::vector<double> &) const override {}
+    void deserialize(const std::vector<double> &, size_t &) override {}
 
     /// I/O and diagnostics
 

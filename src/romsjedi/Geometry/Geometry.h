@@ -14,10 +14,14 @@
 #include <string>
 #include <vector>
 
+#include "atlas/field.h"
+#include "atlas/functionspace.h"
+#include "eckit/config/Configuration.h"
+#include "eckit/config/LocalConfiguration.h"
 #include "eckit/mpi/Comm.h"
-
 #include "oops/util/ObjectCounter.h"
 #include "oops/util/Printable.h"
+#include "oops/util/parameters/OptionalParameter.h"
 #include "oops/util/parameters/Parameter.h"
 #include "oops/util/parameters/Parameters.h"
 #include "oops/util/parameters/RequiredParameter.h"
@@ -29,18 +33,6 @@
 
 // Forward declarations
 
-namespace atlas {
-  class FieldSet;
-  class FunctionSpace;
-  namespace functionspace {
-    class PointCloud;
-  }
-}
-
-namespace eckit {
-  class Configuration;
-}
-
 namespace oops {
   class Variables;
 }
@@ -49,7 +41,7 @@ namespace romsjedi {
   class GeometryIterator;
 }
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 namespace romsjedi {
 
@@ -67,6 +59,8 @@ namespace romsjedi {
       "fields metadata", "ROMS-JEDI fields metadata file", this};
     oops::RequiredParameter<int> ng{
       "ng", "ROMS nested grid number", this};
+    oops::OptionalParameter<int> iteratorDimension{
+      "iterator dimension", "Dimension of geometry iteractor", this};
   };
 
   // Geometry class
@@ -76,7 +70,7 @@ namespace romsjedi {
    public:
     typedef GeometryParameters Parameters_;
 
-    static const std::string classname() {return "roms::Geometry";}
+    static const std::string classname() {return "romsjedi::Geometry";}
 
     // constructors and destructor
 
@@ -89,6 +83,7 @@ namespace romsjedi {
 
     GeometryIterator begin() const;
     GeometryIterator end() const;
+    int IteratorDimension() const;
     std::vector<size_t> variableSizes(const oops::Variables & vars) const;
     std::vector<double> verticalCoord(std::string &) const;
 
@@ -108,5 +103,7 @@ namespace romsjedi {
     std::unique_ptr<atlas::FieldSet> atlasFieldSet_;
   };
 }  // namespace romsjedi
+
+// -----------------------------------------------------------------------------
 
 #endif  // ROMSJEDI_GEOMETRY_GEOMETRY_H_

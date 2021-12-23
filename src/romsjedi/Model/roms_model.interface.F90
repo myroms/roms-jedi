@@ -16,16 +16,17 @@
 MODULE roms_model_mod_c
 
 USE iso_c_binding
+
 USE datetime_mod
 USE duration_mod
 USE fckit_configuration_module,  ONLY : fckit_configuration
 
-USE roms_geom_mod_c,             ONLY : roms_geom_registry
 USE roms_geom_mod,               ONLY : roms_geom
+USE roms_geom_reg,               ONLY : roms_geom_registry
 USE roms_model_mod,              ONLY : roms_model
-USE roms_model_reg
-USE roms_state_mod
-USE roms_state_reg
+USE roms_model_reg,              ONLY : roms_model_registry
+USE roms_state_mod,              ONLY : roms_state
+USE roms_state_reg,              ONLY : roms_state_registry
 
 implicit none
 
@@ -36,7 +37,7 @@ CONTAINS
 ! ------------------------------------------------------------------------------
 !> Binding interface to create ROMS NLM kernel object.
 
-SUBROUTINE roms_model_create_c (c_conf, c_key_geom, c_key_self)              &
+SUBROUTINE roms_model_create_c (c_conf, c_key_geom, c_key_self)                &
                           BIND (c, name='roms_model_create_f90')
 
   integer (c_int),     intent(inout) :: c_key_self   !< Model object pointer
@@ -61,7 +62,7 @@ END SUBROUTINE roms_model_create_c
 ! ------------------------------------------------------------------------------
 !> Binding interface to delete ROMS NLM kernel object.
 
-SUBROUTINE roms_model_delete_c (c_key_self)                                  &
+SUBROUTINE roms_model_delete_c (c_key_self)                                    &
                           BIND (c, name='roms_model_delete_f90')
 
   integer (c_int), intent(inout) :: c_key_self
@@ -77,19 +78,22 @@ END SUBROUTINE roms_model_delete_c
 ! ------------------------------------------------------------------------------
 !> Binding interface to initialize ROMS NLM kernel object.
 
-SUBROUTINE roms_model_initialize_c (c_key_self, c_key_state)                 &
+SUBROUTINE roms_model_initialize_c (c_key_self, c_key_state, c_dt)             &
                               BIND (c, name='roms_model_initialize_f90')
 
   integer (c_int), intent(in) :: c_key_self      !< Model object pointer
   integer (c_int), intent(in) :: c_key_state     !< State object pointer
+  TYPE (c_ptr),    intent(in) :: c_dt            !< State valid dateTime pointer
 
   TYPE (roms_model), pointer  :: self
   TYPE (roms_state), pointer  :: state
+  TYPE (datetime)             :: fdate
 
   CALL roms_state_registry%get (c_key_state, state)
   CALL roms_model_registry%get (c_key_self, self)
+  CALL c_f_datetime (c_dt, fdate)
 
-  CALL self%initialize (state)
+  CALL self%initialize (state, fdate)
 
 END SUBROUTINE roms_model_initialize_c
 

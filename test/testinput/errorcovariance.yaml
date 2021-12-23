@@ -8,14 +8,26 @@ geometry:
   ng: 1                                        # ROMS nested grid number
 
 covariance test:
-  tolerance: 1e-12
   testinverse: false
+  tolerance: 1e-12
 
-analysis variables: &vars [ssh, uocn, vocn, tocn, socn]
+analysis variables: &avars [ssh, tocn, socn]
 
 background:
-  state variables: *vars
-  date: 2004-01-03T00:00:00Z
+  fields_dir: jediroms_wc13/Data/
+  fields_filename: wc13_roms_ini_20040103.nc   # initial fields for 2004-01-03T00:00:00Z
+  fields_record: 1
+  state variables: [ssh, uocn, vocn, tocn, socn]
+  date: &date 2004-01-03T00:00:00Z
 
 background error:
-  covariance model: romsCovar
+  covariance model: romsjedi-ID
+  analysis variables: *avars
+  date: *date
+  bump:
+    datadir: Data/bump
+    strategy: specific_univariate
+    write_nicas_local: 1
+  correlation:
+  - name: ocn
+    variables: *avars

@@ -35,7 +35,8 @@ namespace romsjedi {
                                F90model &);
     void roms_model_delete_f90(F90model &);
     void roms_model_initialize_f90(const F90model &,
-                                   const F90flds &);
+                                   const F90flds &,
+                                   util::DateTime * const *);
     void roms_model_step_f90(const F90model &,
                              const F90flds &,
                              const F90geom &,

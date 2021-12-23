@@ -19,12 +19,10 @@
 #include "oops/util/Logger.h"
 
 #include "romsjedi/Geometry/Geometry.h"
-#include "romsjedi/GetValues/GetValuesFortran.h"
+#include "romsjedi/GetValues/LinearGetValuesFortran.h"
 #include "romsjedi/GetValues/LinearGetValues.h"
 #include "romsjedi/Increment/Increment.h"
 #include "romsjedi/State/State.h"
-#include "romsjedi/VariableChanges/Model2GeoVaLs/Model2GeoVaLs.h"
-#include "romsjedi/VariableChanges/Model2GeoVaLs/LinearModel2GeoVaLs.h"
 
 #include "ufo/GeoVaLs.h"
 #include "ufo/Locations.h"
@@ -37,14 +35,13 @@ namespace romsjedi {
 
   LinearGetValues::LinearGetValues(const Geometry & geom,
                                    const ufo::Locations & locs,
-                                   const eckit::Configuration &config)
-    : locs_(locs), geom_(new Geometry(geom)),
-    model2geovals_(new Model2GeoVaLs(geom, config)) {
+                                   const eckit::Configuration & config)
+    : locs_(locs), geom_(new Geometry(geom)) {
     oops::Log::trace() << "LinearGetValues::LinearGetValues starting"
                        << std::endl;
-    roms_getvalues_create_f90(keyLinearGetValues_,
-                              geom.toFortran(),
-                              locs);
+    roms_lineargetvalues_create_f90(keyLinearGetValues_,
+                                    geom.toFortran(),
+                                    locs);
     oops::Log::trace() << "LinearGetValues::LinearGetValues done"
                        << std::endl;
   }
@@ -56,7 +53,7 @@ namespace romsjedi {
   LinearGetValues::~LinearGetValues() {
     oops::Log::trace() << "LinearGetValues::~LinearGetValues starting"
                        << std::endl;
-    roms_getvalues_delete_f90(keyLinearGetValues_);
+    roms_lineargetvalues_delete_f90(keyLinearGetValues_);
     oops::Log::trace() << "LinearGetValues::~LinearGetValues done"
                        << std::endl;
   }
@@ -71,28 +68,11 @@ namespace romsjedi {
                                       ufo::GeoVaLs & geovals) {
     oops::Log::trace() << "LinearGetValues::setTrajectory starting"
                        << std::endl;
-    std::unique_ptr<State> varChangeState;
-    const State * state_ptr;
-
-    // Do variable change if it has not already been done.
-    if ( geovals.getVars() <= state.variables() ) {
-      state_ptr = &state;
-    } else {
-      varChangeState.reset(new State(*geom_, geovals.getVars(),
-                                     state.validTime()));
-      model2geovals_->changeVar(state, *varChangeState);
-      state_ptr = varChangeState.get();
-    }
-
-    eckit::LocalConfiguration conf;
-    linearmodel2geovals_.reset(new LinearModel2GeoVaLs(state, state,
-                                                       *geom_, conf));
-
-    roms_getvalues_fill_geovals_f90(keyLinearGetValues_,
-                                    geom_->toFortran(),
-                                    state.toFortran(),
-                                    t1, t2, locs_,
-                                    geovals.toFortran());
+    roms_lineargetvalues_set_trajectory_f90(keyLinearGetValues_,
+                                            geom_->toFortran(),
+                                            state.toFortran(),
+                                            t1, t2, locs_,
+                                            geovals.toFortran());
     oops::Log::trace() << "LinearGetValues::setTrajectory done"
                        << std::endl;
   }
@@ -107,13 +87,11 @@ namespace romsjedi {
                                       ufo::GeoVaLs & geovals) const {
     oops::Log::trace() << "LinearGetValues::fillGeoVaLsTL starting"
                        << std::endl;
-    Increment incrGeovals(*geom_, geovals.getVars(), incr.validTime());
-    linearmodel2geovals_->multiply(incr, incrGeovals);
-    roms_getvalues_fill_geovals_tl_f90(keyLinearGetValues_,
-                                       geom_->toFortran(),
-                                       incrGeovals.toFortran(),
-                                       t1, t2, locs_,
-                                       geovals.toFortran());
+    roms_lineargetvalues_fill_geovals_tl_f90(keyLinearGetValues_,
+                                             geom_->toFortran(),
+                                             incr.toFortran(),
+                                             t1, t2, locs_,
+                                             geovals.toFortran());
     oops::Log::trace() << "LinearGetValues::fillGeoVaLsTL done"
                        << std::endl;
   }
@@ -128,13 +106,11 @@ namespace romsjedi {
                                       const ufo::GeoVaLs & geovals) const {
     oops::Log::trace() << "LinearGetValues::fillGeoVaLsAD starting"
                        << std::endl;
-    Increment incrGeovals(*geom_, geovals.getVars(), incr.validTime());
-    roms_getvalues_fill_geovals_ad_f90(keyLinearGetValues_,
-                                       geom_->toFortran(),
-                                       incrGeovals.toFortran(),
-                                       t1, t2, locs_,
-                                       geovals.toFortran());
-    linearmodel2geovals_->multiplyAD(incrGeovals, incr);
+    roms_lineargetvalues_fill_geovals_ad_f90(keyLinearGetValues_,
+                                             geom_->toFortran(),
+                                             incr.toFortran(),
+                                             t1, t2, locs_,
+                                             geovals.toFortran());
     oops::Log::trace() << "LinearGetValues::fillGeoVaLsAD done"
                        << std::endl;
   }

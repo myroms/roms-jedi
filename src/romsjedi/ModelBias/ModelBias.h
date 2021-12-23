@@ -25,7 +25,6 @@
 #include <string>
 
 #include "eckit/memory/NonCopyable.h"
-
 #include "oops/util/ObjectCounter.h"
 #include "oops/util/Printable.h"
 
@@ -47,10 +46,10 @@ namespace romsjedi {
   // Model Error for ROMS
 
   class ModelBias : public util::Printable,
-                    private boost::noncopyable,
+                    private eckit::NonCopyable,
                     private util::ObjectCounter<ModelBias> {
    public:
-    static const std::string classname() {return "soca::ModelBias";}
+    static const std::string classname() {return "romsjedi::ModelBias";}
 
     ModelBias(const Geometry &, const eckit::Configuration &) {}
     ModelBias(const Geometry &, const ModelBias &) {}

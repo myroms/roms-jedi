@@ -1,4 +1,4 @@
-# (C) COPYRIGHT 2018-2019 UCAR
+# (C) COPYRIGHT 2018-2021 UCAR
 #
 # THIS SOFTWARE IS LICENSED UNDER THE TERMS OF THE APACHE LICENCE VERSION 2.0
 # WHICH CAN BE OBTAINED AT HTTP://WWW.APACHE.ORG/LICENSES/LICENSE-2.0.
@@ -8,7 +8,7 @@
 #
 
 cmake_minimum_required( VERSION 3.12)
-project( roms-jedi VERSION 0.0.0 LANGUAGES C CXX Fortran )
+project( roms-jedi VERSION 1.0.0 LANGUAGES C CXX Fortran )
 
 find_package( ecbuild 3.3.2 QUIET)
 include( ecbuild_bundle )

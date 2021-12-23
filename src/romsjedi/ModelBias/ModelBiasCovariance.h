@@ -13,7 +13,6 @@
 
 #include "eckit/config/LocalConfiguration.h"
 #include "eckit/memory/NonCopyable.h"
-
 #include "oops/util/ObjectCounter.h"
 #include "oops/util/Printable.h"
 
@@ -30,7 +29,7 @@ namespace romsjedi {
 namespace romsjedi {
 
   class ModelBiasCovariance : public util::Printable,
-                              private boost::noncopyable,
+                              private eckit::NonCopyable,
                               private util::ObjectCounter<ModelBiasCovariance> {
    public:
     static const std::string classname()
@@ -44,7 +43,8 @@ namespace romsjedi {
 
 /// Linear algebra operators
 
-    void linearize(const ModelBias &, const Geometry &) {}
+    void linearize(const ModelBias &,
+                   const Geometry &) {}
     void multiply(const ModelBiasIncrement &,
                   ModelBiasIncrement &) const {}
     void inverseMultiply(const ModelBiasIncrement &,

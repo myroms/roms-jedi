@@ -1,0 +1,12 @@
+roms_target_sources(
+    LinearModel.cc
+    LinearModel.h
+    LinearModelFortran.h
+    TrajectoryFortran.h
+    roms_linearModel.interface.F90
+    roms_linearModel.reg.F90
+    roms_linearModel_mod.F90
+    roms_trajectory.interface.F90
+    roms_trajectory.reg.F90
+    roms_trajectory_mod.F90
+)

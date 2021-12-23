@@ -48,12 +48,12 @@ running some of the basic JEDI applications, as well as the available data assim
    installed) and its build directory **`ROMS_BUILD_DIR`** or **`ROMS_BUILDG_DIR`** at the command line
    or in your login script. Also, ROMS needs **`NF_CONFIG`** for the location of the NetCDF Fortran
    utility for compiling and linking.  We also like to define the **`MPIRUN`** environmental variable
-   to specify the **MPI** executable in a particulat computer (say, **`srun`**, **`mpirun`**, etc.).
+   to specify the **MPI** executable in a particular computer (say, **`srun`**, **`mpirun`**, etc.).
    We need the full path for **`ctest`** to work.
    ```
    setenv ROMS_HOME       <root_dir>
    setenv ROMS_BUILD_DIR  ${ROMS_HOME}/jediroms_wc13/JEDI/CBuild_roms         (Release build type)
-   setenv ROMS_BUILDG_DIR ${ROMS_HOME}/jediroms_wc13/JEDI/CBuild_romsG        (debug build type) 
+   setenv ROMS_BUILDG_DIR ${ROMS_HOME}/jediroms_wc13/JEDI/CBuild_romsG        (debug build type)
    setenv NF_CONFIG       ${NETCDF}/bin/nf-config
    setenv MPIRUN          /opt/slurm/bin/srun                                 (orion SLURM)
    ```
@@ -70,6 +70,8 @@ running some of the basic JEDI applications, as well as the available data assim
    cd jediroms_wc13/JEDI                          !> ROMS-JEDI application directory
    cbuild_roms.sh -j 10                           !> CMake script to compile ROMS (default ifort)
    ```
+   It is advisable to keep the **`roms_src`** repository up to date.  If changes are found, you need to recompile
+   and generate an updated **`libROMS.so`** shared library.
 
 -  Setup the **`ROMS-JEDI`** build directory. For simplicity, and unlike other current JEDI projects, the bundle
    **`CMakeLists.txt`** is actually present in this repository at **`bundle`** sub-directory instead of in a separate
@@ -110,15 +112,18 @@ running some of the basic JEDI applications, as well as the available data assim
 ### Implemend and Tested ROMS-JEDI Classes:
 
 -  AnalyticInit
+-  ErrorCovariance
 -  Geometry
 -  GeometryIterator
 -  GetValues
 -  Fields
 -  Increment
+-  LinearModel:  Need to address a couple of technical issues with the TL/AD increment exchange with OOPS
+-  LinearVariableChange
 -  Model
 -  ModelBias
 -  State
--  VariableChanges
+-  VariableChange
 
 ## JEDI Applications
 

@@ -208,15 +208,40 @@ namespace romsjedi {
                         const GeometryIterator & iter) const {
     int nx, ny, nz, nf;
     roms_increment_sizes_f90(toFortran(), nx, ny, nz, nf);
-
+    eckit::geometry::Point3 p3 = *iter;
     std::vector<int> varlens(vars_.size());
 
-    // Needs to be modified for non-nz variable names
-
-    for (int ii = 0; ii < vars_.size(); ii++) {
-      if (vars_[ii] == "ssh") varlens[ii] = 1;
-      else
-          varlens[ii] = nz;
+    int iteratorDimension = geom_->IteratorDimension();
+    switch (iteratorDimension) {
+    case (3) :
+      if (p3[2] == 0.0) {
+      // 2D Variables
+        for (int ii = 0; ii < vars_.size(); ii++) {
+          if (vars_[ii] == "ssh")  varlens[ii]=1;
+          else
+              varlens[ii] = 0;
+        }
+      } else {
+      // 3D variables
+        for (int ii = 0; ii < vars_.size(); ii++) {
+          if (vars_[ii] == "tocn") varlens[ii]=nz;
+          else if (vars_[ii] == "socn") varlens[ii]=nz;
+          else if (vars_[ii] == "uocn") varlens[ii]=nz;
+          else if (vars_[ii] == "vocn") varlens[ii]=nz;
+          else
+              varlens[ii] = 0;
+        }
+      }
+    default :
+      for (int ii = 0; ii < vars_.size(); ii++) {
+        if (vars_[ii] == "ssh") varlens[ii]=1;
+        else if (vars_[ii] == "tocn") varlens[ii]=nz;
+        else if (vars_[ii] == "socn") varlens[ii]=nz;
+        else if (vars_[ii] == "uocn") varlens[ii]=nz;
+        else if (vars_[ii] == "vocn") varlens[ii]=nz;
+        else
+            varlens[ii] = 0;
+      }
     }
 
     int lenvalues = std::accumulate(varlens.begin(), varlens.end(), 0);
@@ -235,6 +260,20 @@ namespace romsjedi {
     const std::vector<double> vals = values.getVals();
     roms_increment_setpoint_f90(toFortran(), iter.toFortran(), vals[0],
                                 vals.size());
+  }
+
+// -----------------------------------------------------------------------------
+
+  void Increment::updateFields(const oops::Variables & Vars) {
+    vars_ = Vars;
+    Log::trace() << classname() << " updateFields starting"
+                 << std::endl;
+    Log::debug() << classname() << " Vars in: " << Vars
+                 << std::endl;
+    roms_increment_update_fields_f90(toFortran(),
+                                     vars_);
+    Log::trace() << classname() << " updateFields done"
+                 << std::endl;
   }
 
 // -----------------------------------------------------------------------------

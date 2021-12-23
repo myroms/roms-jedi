@@ -119,11 +119,11 @@ SUBROUTINE roms_analytic_geovals (self, locs, method, T0, S0, U0, V0)
         CASE ('socn', 'sea_water_practical_salinity',                    &
               'sss',  'sea_surface_salinity')
           value = S0
-        CASE ('uocn', 'sea_water_zonal_velocity',                        &
-              'usur', 'surface_sea_water_zonal_velocity')
+        CASE ('uocn', 'sea_water_eastward_velocity',                     &
+              'usur', 'surface_eastward_sea_water_velocity')
           value = U0
-        CASE ('vocn', 'sea_water_meridional_velocity',                   &
-              'vsur', 'surface_sea_water_meridional_velocity')
+        CASE ('vocn', 'sea_water_northward_velocity',                    &
+              'vsur', 'surface_northward_sea_water_velocity')
           value = V0
         CASE ('ssh', 'sea_surface_height_above_geoid')
           value = 0.0_kind_real

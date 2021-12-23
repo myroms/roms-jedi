@@ -7,35 +7,32 @@
 !! \brief   C++ interface to Fortran **GetValues** interpolation at observation
 !!          locations
 !!
-!! \details This inteface include methods to generate analytic, nonlinear,
-!!          and tangent linear state **GeoVaLs** at observation locations.
-!!          It also performs tha adjoint of the **GeoVaLs** interpolation.
+!! \details This interface include methods to generate nonlinear **GeoVaLs**
+!!          at the observation locations.
 !!
 !! \author  Hernan G. Arango (Rutgers University)
 !! \date    July 2021
 
- MODULE roms_getvalue_mod_c
+MODULE roms_getvalue_mod_c
 
 USE iso_c_binding
 
-USE duration_mod
-USE oops_variables_mod
-
 USE datetime_mod,               ONLY : datetime, c_f_datetime
+USE duration_mod
 USE fckit_configuration_module, ONLY : fckit_configuration
-
-USE roms_geom_mod,              ONLY : roms_geom
-USE roms_geom_mod_c,            ONLY : roms_geom_registry
-USE roms_getvalues_mod
-USE roms_getvalues_reg
-USE roms_state_mod
-USE roms_state_reg
-USE roms_increment_mod
-USE roms_increment_reg
-
+USE oops_variables_mod
 USE ufo_geovals_mod_c,          ONLY : ufo_geovals_registry
 USE ufo_geovals_mod,            ONLY : ufo_geovals
 USE ufo_locations_mod
+
+USE roms_geom_mod,              ONLY : roms_geom
+USE roms_geom_reg,              ONLY : roms_geom_registry
+USE roms_getvalues_mod,         ONLY : roms_getvalues
+USE roms_getvalues_reg,         ONLY : roms_getvalues_registry
+USE roms_state_mod,             ONLY : roms_state
+USE roms_state_reg,             ONLY : roms_state_registry
+USE roms_increment_mod,         ONLY : roms_increment
+USE roms_increment_reg,         ONLY : roms_increment_registry
 
 implicit none
 
@@ -138,84 +135,6 @@ SUBROUTINE roms_getvalues_fill_geovals_c (c_key_self, c_key_geom,            &
 
 END SUBROUTINE roms_getvalues_fill_geovals_c
 
-! ------------------------------------------------------------------------------
-!> Interpolates tangent linear model at observation locations.
-
-SUBROUTINE roms_getvalues_fill_geovals_tl_c (c_key_self, c_key_geom,         &
-                                             c_key_incr, c_t1, c_t2,         &
-                                             c_locs, c_key_geovals)          &
-                          BIND (c, name='roms_getvalues_fill_geovals_tl_f90')
-
-  integer (c_int),     intent(in) :: c_key_self     !< Key to self
-  integer (c_int),     intent(in) :: c_key_geom     !< Key to geometry
-  integer (c_int),     intent(in) :: c_key_incr     !< Key to increment
-  TYPE (c_ptr), value, intent(in) :: c_t1           !< Key to time window start
-  TYPE (c_ptr), value, intent(in) :: c_t2           !< Key to time window end
-  TYPE (c_ptr), value, intent(in) :: c_locs         !< Key to UFO obs locations
-  integer (c_int),     intent(in) :: c_key_geovals  !< Key to UFO GeoVaLs object
-
-  TYPE (roms_getvalues),  pointer :: self
-  TYPE (roms_geom),       pointer :: geom
-  TYPE (roms_increment),  pointer :: incr
-  TYPE (datetime)                 :: t1
-  TYPE (datetime)                 :: t2
-  TYPE (ufo_locations),   pointer :: locs
-  TYPE (ufo_geovals),     pointer :: geovals
-
-! Get objects.
-
-  CALL roms_getvalues_registry%get (c_key_self, self)
-  CALL roms_geom_registry%get (c_key_geom, geom)
-  CALL roms_increment_registry%get (c_key_incr, incr)
-  CALL c_f_datetime (c_t1, t1)
-  CALL c_f_datetime (c_t2, t2)
-  locs = ufo_locations(c_locs)
-  CALL ufo_geovals_registry%get (c_key_geovals, geovals)
-
-! Call method.
-
-  CALL self%fill_geovals(geom, incr, t1, t2, locs, geovals)
-
-END SUBROUTINE roms_getvalues_fill_geovals_tl_c
-
-! ------------------------------------------------------------------------------
-!> Interpolates adjoint model at observation locations
-
-SUBROUTINE roms_getvalues_fill_geovals_ad_c (c_key_self, c_key_geom,         &
-                                             c_key_incr, c_t1, c_t2,         &
-                                             c_locs, c_key_geovals)          &
-                          BIND (c, name='roms_getvalues_fill_geovals_ad_f90')
-
-  integer (c_int),     intent(in) :: c_key_self     !< Key to self
-  integer (c_int),     intent(in) :: c_key_geom     !< Key to geometry
-  integer (c_int),     intent(in) :: c_key_incr     !< Key to increment
-  TYPE (c_ptr), value, intent(in) :: c_t1           !< Key to time window start
-  TYPE (c_ptr), value, intent(in) :: c_t2           !< Key to time window end
-  TYPE (c_ptr), value, intent(in) :: c_locs         !< Key to UFO obs locations
-  integer (c_int),     intent(in) :: c_key_geovals  !< Key to UFO GeoVaLs object
-
-  TYPE (roms_getvalues),  pointer :: self
-  TYPE (roms_geom),       pointer :: geom
-  TYPE (roms_increment),  pointer :: incr
-  TYPE (datetime)                 :: t1
-  TYPE (datetime)                 :: t2
-  TYPE (ufo_locations),   pointer :: locs
-  TYPE (ufo_geovals),     pointer :: geovals
-
-! Get objects.
-
-  CALL roms_getvalues_registry%get (c_key_self, self)
-  CALL roms_geom_registry%get (c_key_geom, geom)
-  CALL roms_increment_registry%get (c_key_incr, incr)
-  CALL c_f_datetime (c_t1, t1)
-  CALL c_f_datetime (c_t2, t2)
-  locs = ufo_locations(c_locs)
-  CALL ufo_geovals_registry%get (c_key_geovals, geovals)
-
-! Call method.
-
-  CALL self%fill_geovals_ad (geom, incr, t1, t2, locs, geovals)
-
-END SUBROUTINE roms_getvalues_fill_geovals_ad_c
+!------------------------------------------------------------------------------
 
 END MODULE roms_getvalue_mod_c

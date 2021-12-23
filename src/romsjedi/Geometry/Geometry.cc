@@ -5,7 +5,6 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-
 #include "atlas/field.h"
 #include "atlas/functionspace.h"
 #include "atlas/grid.h"
@@ -19,7 +18,7 @@
 
 namespace romsjedi {
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
   Geometry::Geometry(const GeometryParameters & params,
                      const eckit::mpi::Comm & comm) : comm_(comm) {
@@ -43,7 +42,7 @@ namespace romsjedi {
     roms_geom_fill_atlas_fieldset_f90(keyGeom_, atlasFieldSet_->get());
   }
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
   Geometry::Geometry(const Geometry & other)
     : comm_(other.comm_) {
@@ -59,30 +58,43 @@ namespace romsjedi {
     }
   }
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
   Geometry::~Geometry() {
     roms_geom_delete_f90(keyGeom_);
   }
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
   GeometryIterator Geometry::begin() const {
     // return start of the geometry on this mpi tile
-    int istr, iend, jstr, jend, nk;
-    roms_geom_start_end_f90(keyGeom_, istr, iend, jstr, jend, nk);
-    return GeometryIterator(*this, istr, jstr);
+    int istr, iend, jstr, jend, kstr, kend;
+    roms_geom_start_end_f90(keyGeom_,
+                            istr, iend, jstr, jend, kstr, kend);
+    if (IteratorDimension() == 3) kstr = 0;
+    return GeometryIterator(*this, istr, jstr, kstr);
   }
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
   GeometryIterator Geometry::end() const {
     // return end of the geometry on this mpi tile
     // decided to return index out of bounds for the iterator loops to work
-    return GeometryIterator(*this, -1, -1);
+    return GeometryIterator(*this, -1, -1, -1);
   }
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+
+  int Geometry::IteratorDimension() const {
+    // return dimesnion of the iterator
+    // if 2, iterator is over vertical columns
+    // if 3, iterator is over 3D points
+    int rv;
+    roms_geomIterator_dimension_f90(keyGeom_, rv);
+    return rv;
+  }
+
+// -----------------------------------------------------------------------------
 
   std::vector<size_t> Geometry::variableSizes(const oops::Variables & vars)
        const {
@@ -91,7 +103,7 @@ namespace romsjedi {
     return lvls;
   }
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
   void Geometry::print(std::ostream & os) const {
     int nx, ny, nz;
@@ -108,7 +120,7 @@ namespace romsjedi {
                       << ", Jstr = " << Jstr << ", Jend = " << Jend;
   }
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
   std::vector<double> Geometry::verticalCoord(std::string &) const {
     util::abor1_cpp("Geometry::verticalCoord() needs to be implemented.",
@@ -116,6 +128,18 @@ namespace romsjedi {
     return {};
   }
 
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+
+  atlas::FunctionSpace * Geometry::atlasFunctionSpace() const {
+    return atlasFunctionSpace_.get();
+  }
+
+// -----------------------------------------------------------------------------
+
+  atlas::FieldSet * Geometry::atlasFieldSet() const {
+    return atlasFieldSet_.get();
+  }
+
+// -----------------------------------------------------------------------------
 
 }  // namespace romsjedi

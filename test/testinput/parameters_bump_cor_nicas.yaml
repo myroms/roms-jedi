@@ -1,0 +1,75 @@
+# ROMS is configured with the JEDI driver and includes the NLM, TLM, and ADM kernels
+# for the US West Coast WC13 test application.
+#
+# It Computes and writes Error Coveriance spatial decorrelation parameters for BUMP.
+
+geometry:
+  project_dir: jediroms_wc13/JEDI/
+  roms_stdinp: roms_wc13_20040103.in
+  fields metadata: Data/fields_metadata.yaml
+  ng: 1                                           # ROMS nested grid number
+
+input variables: &rho_vars [ssh, tocn, socn]
+
+background:
+  fields_dir: jediroms_wc13/Data/
+  fields_filename: wc13_roms_ini_20040103.nc   
+  fields_record: 1                                # initial fields
+  state variables: [ssh, uocn, vocn, tocn, socn]
+  date: &date 2004-01-03T00:00:00Z                # initial fields date
+
+bump:
+  datadir: Data/bump                              # BUMP data directory
+  forced_radii: true                              # Force NICAS length-scales
+  method: cor                                     # Compute correlation parameters
+  new_nicas: true                                 # Run NICAS driver
+  resol: 6.0                                      # NICAS subgrid resolution
+
+  grids:
+  - prefix: wc13_bump_parameters_2d               # NetCDF-4 filename prefix: 2D correlations
+    variables: [ssh]
+    rh:                                           # Homogeneous horizontal correlation radius (m)
+      ssh: [50.0e3]
+    rv:                                           # Homogeneous vertical correlation radius (m)
+      ssh: [0.0]
+
+  - prefix: wc13_bump_parameters_3d               # NetCDF-4 filename prefix: 3D correlations
+    variables: [tocn, socn]
+    rh:                                           # Homogeneous horizontal correlation radius (m)
+      tocn: [50.0e3]
+      socn: [50.0e3]
+    rv:                                           # Homogeneous vertical correlation radius (m)
+      tocn: [500]
+      socn: [500]
+  strategy: specific_univariate                   # NICAS multivariate strategy
+  verbosity: main
+  write_nicas_local: true
+
+  output:                                         # Write horizontal correlations NetCDF file
+  - parameter: cor_rh
+    data_dir: Data/bump
+    data_frequency: &frequency PT2H
+    file_policy: *frequency
+    forecast length: *frequency
+    prefix: wc13_inc
+    exp: bump_parameters
+    type: cor_rh
+    date: *date
+  - parameter: cor_rv                             # Write vertical correlations NetCDF file
+    data_dir: Data/bump
+    data_frequency: &frequency PT2H
+    file_policy: *frequency
+    forecast length: *frequency
+    prefix: wc13_inc
+    exp: bump_parameters
+    type: cor_rv
+    date: *date
+
+# NOTES:
+#
+# * Currently, BUMP and ATLAS does not support staggered grids. Thus, the Error
+#   Covariance convolutions is limited to RHO-points.
+#
+# * In the 'ouput' token the 'data_frequency' valuecan be any interval provided that
+#   the values for 'file policy' and 'forecast length' are the same. As a result,
+#   a single output file is created with one time-record.

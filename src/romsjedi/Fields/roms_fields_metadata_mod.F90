@@ -34,7 +34,9 @@ TYPE :: roms_field_metadata
 
   logical                        :: masked              !< if interpolating, apply land mask?
 
-  character (len=1)              :: gtype               !< C-grid type: 'r', 'u' or 'v'
+  integer                        :: Cgrid               !< ROMS C-grid classification
+
+  character (len=1)              :: gtype               !< C-grid type: 'r', 'u', 'v' oe 'w'
   character (len=:), allocatable :: levels              !< "surface", or "full_ocn"
   character (len=:), allocatable :: name                !< ROMS internal field name
   character (len=:), allocatable :: getval_name         !< UFO variable name
@@ -52,8 +54,6 @@ END TYPE roms_field_metadata
 
 TYPE :: roms_fields_metadata
 
-! PRIVATE
-
   TYPE (roms_field_metadata), allocatable :: metadata(:)
 
   CONTAINS
@@ -70,13 +70,16 @@ CONTAINS
 
 SUBROUTINE roms_fields_metadata_create (self, filename)
 
+  USE mod_ncparam, ONLY : r2dvar, r3dvar, u2dvar, u3dvar, v2dvar, v3dvar, w3dvar
+
   CLASS (roms_fields_metadata), intent(inout) :: self
   character (len=:), allocatable              :: filename
 
   TYPE (fckit_configuration)                  :: conf
   TYPE (fckit_Configuration), allocatable     :: conf_list(:)
 
-  logical                                     :: bool
+  logical                                     :: bool, is3d
+  integer                                     :: Cgrid, Nfields
   integer                                     :: i, j, lstr
   character (len=:), allocatable              :: str
 
@@ -85,9 +88,10 @@ SUBROUTINE roms_fields_metadata_create (self, filename)
   conf = fckit_yamlconfiguration(fckit_pathname(filename))
   CALL conf%get_or_die ("", conf_list)
 
-  allocate ( self%metadata(size(conf_list)))
+  Nfields = SIZE(conf_list)
+  allocate ( self%metadata(Nfields) )
 
-  DO i=1, SIZE(self%metadata)
+  DO i=1, Nfields
 
     CALL conf_list(i)%get_or_die ("name", self%metadata(i)%name)
 
@@ -164,10 +168,42 @@ SUBROUTINE roms_fields_metadata_create (self, filename)
 
   END DO
 
+  ! Determine ROMS C-grid classification flag. It facilitates compact I/O 
+  ! processing in NetCDF files.
+
+  DO i = 1, Nfields
+
+    SELECT CASE (self%metadata(i)%levels)
+      CASE ('full_ocn')                             ! 3D field, full r-column
+        is3d = .TRUE.
+      CASE ('wfull_ocn')                            ! 3D field, full w-column
+        is3d = .TRUE.
+      CASE ('1', 'surface')                         ! 2D field
+        is3d = .FALSE.
+    END SELECT
+
+    SELECT CASE (self%metadata(i)%gtype)
+      CASE ('r')                                    ! RHO-points variable
+        Cgrid = r2dvar
+        IF (is3d) Cgrid = r3dvar
+      CASE ('u')                                    ! U-points variable
+        Cgrid = u2dvar 
+        IF (is3d) Cgrid = u3dvar
+      CASE ('v')                                    ! V-points variable
+        Cgrid = v2dvar 
+        IF (is3d) Cgrid = v3dvar
+      CASE ('w')                                    ! W-poits variable
+        Cgrid = w3dvar
+    END SELECT
+
+    self%metadata(i)%Cgrid = Cgrid
+
+  END DO
+
   ! Check for duplicates entries.
 
-  DO i = 1, SIZE(self%metadata)
-    DO j = i+1, SIZE(self%metadata)
+  DO i = 1, Nfields
+    DO j = i+1, Nfields
       IF ((self%metadata(i)%name .eq.                                        &
            self%metadata(j)%name) .or.                                       &
           (self%metadata(i)%name .eq.                                        &
