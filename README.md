@@ -1,5 +1,7 @@
 # ROMS interface to JEDI
 
+![roms-jedi logo](https://www.myroms.org/trac/roms_jedi_600px.png)
+
 The following instructions should have the steps needed to implement an interface capable of
 running some of the basic JEDI applications, as well as the available data assimilation drivers.
 
