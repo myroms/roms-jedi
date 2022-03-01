@@ -1237,19 +1237,33 @@ SUBROUTINE roms_fields_analytic (self, f_conf, vdate)
       field => self%fields(n)
   
       SELECT CASE (field%name)
-        CASE ('tocn', 'sea_water_potential_temperature',                       &
-              'sst',  'sea_surface_temperature')
+        CASE ('tocn',                                                          &
+              'sea_water_potential_temperature',                               &
+              'sst', 'SST',                                                    &
+              'sea_surface_temperature')
           field%val = T0
-        CASE ('socn', 'sea_water_practical_salinity',                          &
-              'sss',  'sea_surface_salinity')
+        CASE ('socn',                                                          &
+              'sea_water_practical_salinity',                                  &
+              'sss', 'SSS',                                                    &
+              'sea_surface_salinity')
           field%val = S0
-        CASE ('uocn', 'sea_water_eastward_velocity',                           &
-              'usur', 'surface_eastward_sea_water_velocity')
+        CASE ('uocn',                                                          &
+              'eastward_sea_water_velocity',                                   &
+              'sea_water_x_velocity',                                          &
+              'usur',                                                          &
+              'surface_eastward_sea_water_velocity',                           &
+              'sea_water_surface_x_velocity')
           field%val = U0
-        CASE ('vocn', 'sea_water_northward_velocity',                          &
-              'vsur', 'surface_northward_sea_water_velocity')
+        CASE ('vocn',                                                          &
+              'northward_sea_water_velocity',                                  &
+              'sea_water_y_velocity',                                          &
+              'vsur',                                                          &
+              'surface_northward_sea_water_velocity',                          &
+              'sea_water_surface_y_velocity')
           field%val = V0
-        CASE ('ssh', 'sea_surface_height_above_geoid')
+        CASE ('ssh', 'SSH',                                                    &
+              'sea_surface_height_above_geoid',                                &
+              'sea_surface_elevation_anomaly')
           field%val = 0.0_kind_real
       END SELECT
 

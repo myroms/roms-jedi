@@ -1,5 +1,5 @@
 # --------------------------------------------------------------------------------------------------
-# Field metadata for SOCA. Each field can contain the following information:
+# Field metadata (CF 1.10) for ROMS-JEDI. Each field can contain the following information:
 #
 # name:                 Internal name used by ROMS code and config files
 # gtype:                C-grid location: 'r', 'u', or 'v' (Default: 'r')
@@ -13,7 +13,7 @@
 
 
 # --------------------------------------------------------------------------------------------------
-# Ocean state variables
+# Ocean state variables.
 # --------------------------------------------------------------------------------------------------
 
 - name: 'tocn'
@@ -33,19 +33,35 @@
   io name: 'salt'
   property: 'positive_definite'
 
-- name: 'uocn'
-  gtype: 'u'
+- name: 'uocn'                                # standard name for UFO/IODA observations is
+  gtype: 'u'                                  # 'eastward_sea_water_velocity'
   levels: 'full_ocn'
-  getval name: 'sea_water_eastward_velocity'
+  getval name: 'eastward_sea_water_velocity'
   getval name surface: 'surface_eastward_sea_water_velocity'
   io file: 'ocn'
   io name: 'u'
 
-- name: 'vocn'
-  gtype: 'v'
+- name: 'vocn'                                # standard name for UFO/IODA observations is 
+  gtype: 'v'                                  # 'northward_sea_water_velocity'
   levels: 'full_ocn'
-  getval name: 'sea_water_northward_velocity'
+  getval name: 'northward_sea_water_velocity'
   getval name surface: 'surface_northward_sea_water_velocity'
+  io file: 'ocn'
+  io name: 'v'
+
+- name: 'uvel'                                # ROMS grids are usually rotated and native variable
+  gtype: 'u'                                  # standard name is 'sea_water_x_velocity'
+  levels: 'full_ocn'
+  getval name: 'sea_water_x_velocity'
+  getval name surface: 'sea_water_surface_x_velocity'
+  io file: 'ocn'
+  io name: 'u'
+
+- name: 'vvel'                                # ROMS grids are usually rotated and native variable
+  gtype: 'v'                                  # standard name is 'sea_water_y_velocity'
+  levels: 'full_ocn'
+  getval name: 'sea_water_y_velocity'
+  getval name surface: 'sea_water_surface_y_velocity'
   io file: 'ocn'
   io name: 'v'
 
@@ -63,14 +79,14 @@
   gtype: 'r'
   masked: 'false'
   levels: 'full_ocn'
-  getval name: 'level_depth'
+  getval name: 'model_level_depth_at_cell_center'
   io file: 'ocn'
   io name: 'z_rho'
 
 - name: 'hocn'
   gtype: 'r'
   masked: 'false'
-  getval name: 'sea_floor_depth_below_sea_surface'
+  getval name: 'sea_floor_depth'
   io file: 'ocn'
   io name: 'h'
 
@@ -81,58 +97,58 @@
 
 - name: 'u2docn'
   gtype: 'u'
-  getval name: 'sea_water_zonal_vertically_integrated_velocity'
+  getval name: 'barotropic_sea_water_x_velocity'
   io file: 'ocn'
   io name: 'ubar'
 
 - name: 'v2docn'
   gtype: 'v'
-  getval name: 'sea_water_meridional_vertically_integrated_velocity'
+  getval name: 'barotropic_sea_water_y_velocity'
   io file: 'ocn'
   io name: 'vbar'
 
 - name: 'DU_avg1'
   gtype: 'u'
-  getval name: 'time_averaged_barotropic_zonal_momentum_flux'
+  getval name: 'sea_water_time_average_of_barotropic_x_velocity_flux'
   io file: 'ocn'
   io name: 'DU_avg1'
 
 - name: 'DV_avg1'
   gtype: 'v'
-  getval name: 'time_averaged_barotropic_meridional_momentum_flux'
+  getval name: 'sea_water_time_average_of_barotropic_y_velocity_flux'
   io file: 'ocn'
   io name: 'DV_avg1'
 
 - name: 'DU_avg2'
   gtype: 'u'
-  getval name: 'time_averaged_barotropic_zonal_momentum_flux_3D_coupling'
+  getval name: 'sea_water_correct_barotropic_x_velocity_flux_for_coupling'
   io file: 'ocn'
   io name: 'DU_avg2'
 
 - name: 'DV_avg2'
   gtype: 'v'
-  getval name: 'time_averaged_barotropic_meridional_momentum_flux_3D_coupling'
+  getval name: 'sea_water_correct_barotropic_y_velocity_flux_for_coupling'
   io file: 'ocn'
   io name: 'DV_avg2'
 
 - name: 'Ktocn'
   gtype: 'w'
   levels: 'wfull_ocn'
-  getval name: 'sea_water_temperature_vertical_diffusion_coefficient'
+  getval name: 'vertical_diffusion_coefficient_of_temperature_in_sea_water'
   io file: 'ocn'
   io name: 'AKt'
 
 - name: 'Ksocn'
   gtype: 'w'
   levels: 'wfull_ocn'
-  getval name: 'sea_water_salinity_vertical_diffusion_coefficient'
+  getval name: 'vertical_diffusion_coefficient_of_salinity_in_sea_water'
   io file: 'ocn'
   io name: 'AKs'
 
 - name: 'Kvocn'
   gtype: 'w'
   levels: 'wfull_ocn'
-  getval name: 'sea_water_vertical_viscosity_coefficient'
+  getval name: 'vertical_viscosity_coefficient_of_sea_wate'
   io file: 'ocn'
   io name: 'AKv'
 
@@ -148,63 +164,60 @@
 
 - name: 'Uwind'
   gtype: 'r'
-  getval name: 'near_surface_zonal_wind_component'
+  getval name: 'surface_eastward_wind'
   io file: 'ocn'
   io name: 'Uwind'
 
 - name: 'Vwind'
   gtype: 'r'
-  getval name: 'near_surface_meridional_wind_component'
+  getval name: 'surface_northward_wind'
   io file: 'ocn'
   io name: 'Uwind'
 
 - name: 'sustr'
   gtype: 'u'
-  getval name: 'surface_zonal_wind_stress'
+  getval name: 'surface_downward_x_stress'
   io file: 'ocn'
   io name: 'sustr'
 
 - name: 'svstr'
   gtype: 'v'
-  getval name: 'surface_meridional_wind_stress'
+  getval name: 'surface_downward_y_stress'
   io file: 'ocn'
   io name: 'svstr'
 
 - name: 'shflux'
   gtype: 'r'
-  getval name: 'surface_net_heat_flux'
+  getval name: 'surface_downward_heat_flux_in_sea_water'
   io file: 'ocn'
   io name: 'shflux'
 
 - name: 'ssflux'
   gtype: 'r'
-  getval name: 'kinematic_surface_net_salt_flux'
+  getval name: 'salt_flux_into_sea_water'
   io file: 'ocn'
   io name: 'shflux'
 
 - name: 'latent'
   gtype: 'r'
-  getval name: 'surface_net_latent_heat_flux'
+  getval name: 'surface_upward_latent_heat_flux'
   io file: 'ocn'
   io name: 'latent'
 
 - name: 'sensible'
   gtype: 'r'
-  getval name: 'surface_net_sensible_heat_flux'
+  getval name: 'surface_upward_sensible_heat_flux'
   io file: 'ocn'
   io name: 'sensible'
 
 - name: 'lwrad'
   gtype: 'r'
-  getval name: 'surface_net_longwave_radiation_flux'
+  getval name: 'surface_net_downward_longwave_flux'
   io file: 'ocn'
   io name: 'lwrad'
 
 - name: 'swrad'
   gtype: 'r'
-  getval name: 'surface_solar_shortwave_radiation_flux'
+  getval name: 'net_downward_shortwave_flux_at_sea_water_surface'
   io file: 'ocn'
   io name: 'swrad'
-
-
-

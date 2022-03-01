@@ -32,7 +32,7 @@ observations:
         obsfile: Data/makeobs/wc13_truth_adt.nc4
       obsdatain:
         obsfile: Data/obs/wc13_adt_20040103.nc4
-      simulated variables: [obs_absolute_dynamic_topography]
+      simulated variables: [absolute_dynamic_topography]
     obs operator:
       name: ADT
     obs error:
@@ -122,8 +122,8 @@ observations:
         obs errors: [1.0, 1.0]
       obsdataout:
         obsfile: Data/makeobs/wc13_truth_uv.nc4
-      simulated variables: [sea_water_eastward_velocity,
-                            sea_water_northward_velocity]
+      simulated variables: [eastward_sea_water_velocity,
+                            northward_sea_water_velocity]
     obs operator:
       name: Identity
 

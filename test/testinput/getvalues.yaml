@@ -8,12 +8,12 @@ geometry:
   ng: 1                                        # ROMS nested grid number
 
 state variables: &geovals [sea_surface_height_above_geoid,
-                           sea_water_eastward_velocity,
-                           sea_water_northward_velocity,
+                           eastward_sea_water_velocity,
+                           northward_sea_water_velocity,
                            sea_water_potential_temperature,
                            sea_water_practical_salinity,
-                           sea_floor_depth_below_sea_surface,
-                           level_depth]
+                           sea_floor_depth,
+                           model_level_depth_at_cell_center]
 
 getvalues test:
   state generate:

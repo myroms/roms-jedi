@@ -113,19 +113,32 @@ SUBROUTINE roms_analytic_geovals (self, locs, method, T0, S0, U0, V0)
     DO ivar = 1, nvar
 
       SELECT CASE (TRIM(self%variables(ivar)))
-        CASE ('tocn', 'sea_water_potential_temperature',                 &
-              'sst',  'sea_surface_temperature')
+        CASE ('tocn',                                                        &
+              'sea_water_potential_temperature',                             &
+              'sst', 'SST',                                                  &
+              'sea_surface_temperature')
           value = T0
-        CASE ('socn', 'sea_water_practical_salinity',                    &
-              'sss',  'sea_surface_salinity')
+        CASE ('socn',                                                        &
+              'sea_water_practical_salinity',                                &
+              'sss', 'SSS',                                                  &
+              'sea_surface_salinity')
           value = S0
-        CASE ('uocn', 'sea_water_eastward_velocity',                     &
-              'usur', 'surface_eastward_sea_water_velocity')
+        CASE ('uocn',                                                        &
+              'eastward_sea_water_velocity',                                 &
+              'sea_water_x_velocity',                                        &
+              'usur',                                                        &
+              'surface_eastward_sea_water_velocity')
           value = U0
-        CASE ('vocn', 'sea_water_northward_velocity',                    &
-              'vsur', 'surface_northward_sea_water_velocity')
+        CASE ('vocn',                                                        &
+              'northward_sea_water_velocity',                                &
+              'sea_water_y_velocity',                                        &
+              'vsur',                                                        &
+              'surface_northward_sea_water_velocity',                        &
+              'sea_water_surface_y_velocity')
           value = V0
-        CASE ('ssh', 'sea_surface_height_above_geoid')
+        CASE ('ssh', 'SSH',                                                  &
+              'sea_surface_height_above_geoid',                              &
+              'sea_surface_elevation_anomaly')
           value = 0.0_kind_real
       END SELECT
 

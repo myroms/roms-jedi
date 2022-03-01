@@ -124,38 +124,56 @@ FUNCTION ana_fields (name, mask, lon, lat, z, h, Tb, Sb, Ub, Vb)             &
   ! Analytical initialization.
 
   SELECT CASE (TRIM(name))
-    CASE ('tocn', 'sea_water_potential_temperature',                         &
-          'sst',  'sea_surface_temperature')
+    CASE ('tocn',                                                            &
+          'sea_water_potential_temperature',                                 &
+          'sst', 'SST',                                                      &
+          'sea_surface_temperature')
       fac1=COS(lon*deg2rad)*COS(lat*deg2rad)/dscale
       fac2=-0.5_kind_real*U0*dscale*f*SQRT(pi)/(Tcoef*g*h)
       fac3=(fac2*erf(fac1)+T0)*(1.0_kind_real+z/h)
       value=fac3*mask
-    CASE ('socn', 'sea_water_practical_salinity',                            &
-          'sss',  'sea_surface_salinity')
+    CASE ('socn',                                                            &
+          'sea_water_practical_salinity',                                    &
+          'sss', 'SSS',                                                      &
+          'sea_surface_salinity')
       fac1=COS(lon*deg2rad)*COS(lat*deg2rad)/dscale
       fac2=-0.5*U0*dscale*f*SQRT(pi)/(Scoef*g*h)
       fac3=S0+(0.03_kind_real*fac1/fac2)*(2.0_kind_real-EXP(z/500.0_kind_real))
       value=fac3*mask
-    CASE ('uocn', 'sea_water_eastward_velocity',                             &
-          'usur', 'surface_eastward_sea_water_velocity')
+    CASE ('uocn',                                                            &
+          'eastward_sea_water_velocity',                                     &
+          'sea_water_x_velocity',                                            & 
+          'usur',                                                            &
+          'surface_eastward_sea_water_velocity',                             &
+          'sea_water_surface_x_velocity')
       fac1=SIN(lon*deg2rad)*COS(lat*deg2rad)/dscale
       fac2=z/h
       fac3=U0*(0.5_kind_real+fac2+(0.5*fac2*fac2))*EXP(-fac1*fac1)
       value=fac3*mask
-    CASE ('vocn', 'sea_water_northward_velocity',                            &
-          'vsur', 'surface_northward_sea_water_velocity')
+    CASE ('vocn',                                                            &
+          'northward_sea_water_velocity',                                    &
+          'sea_water_y_velocity',                                            & 
+          'vsur',                                                            &
+          'surface_northward_sea_water_velocity',                            &
+          'sea_water_surface_y_velocity')
       fac1=COS(lon*deg2rad)*SIN(lat*deg2rad)/dscale
       fac2=z/h
       fac3=-V0*(0.5_kind_real+fac2+(0.5*fac2*fac2))*EXP(-fac1*fac1)
       value=fac3*mask
-    CASE ('ssh', 'sea_surface_height_above_geoid')
+    CASE ('ssh', 'SSH',                                                      &
+          'sea_surface_height_above_geoid',                                  &
+          'sea_surface_elevation_anomaly')
       fac1=COS(lon*deg2rad)*SIN(lat*deg2rad)/dscale
       fac2=-U0*dscale*f*SQRT(pi)/(12.0_kind_real*g)
       fac3=1.0E+5*fac2*erf(fac1);
       value=fac3*mask
-    CASE ('hocn', 'sea_floor_depth_below_sea_surface')
+    CASE ('hocn',                                                            &
+          'sea_floor_depth_below_sea_surface',                               &
+          'sea_floor_depth')
       value=h
-    CASE ('zocn', 'level_depth')
+    CASE ('zocn',                                                            &
+          'model_level_depth_at_cell_center',                                &
+          'level_depth')
       value=z
   END SELECT
 
