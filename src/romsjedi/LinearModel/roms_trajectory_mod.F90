@@ -1,4 +1,4 @@
-! (C) Copyright 2017-2020 UCAR
+! (C) Copyright 2017-2022 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -20,8 +20,8 @@ USE kinds,                ONLY : kind_real
 USE datetime_mod,         ONLY : datetime
 USE fckit_mpi_module,     ONLY : fckit_mpi_comm
 
-USE roms_fields_mod,      ONLY : roms_field,                                   &
-                                 roms_fields
+USE roms_field_mod,       ONLY : roms_field
+USE roms_fields_mod,      ONLY : roms_fields
 USE roms_fieldsutils_mod, ONLY : date2string
 USE roms_state_mod,       ONLY : roms_state
 
@@ -113,10 +113,7 @@ SUBROUTINE roms_trajectory_construct (self, state)
 
     self%fields(i)%name     =  state%fields(i)%name
     self%fields(i)%metadata =  state%geom%fieldsinfo%get(self%fields(i)%name)
-    self%fields(i)%Istr     =  state%fields(i)%Istr
-    self%fields(i)%Iend     =  state%fields(i)%Iend
-    self%fields(i)%Jstr     =  state%fields(i)%Jstr
-    self%fields(i)%Jend     =  state%fields(i)%Jend
+    self%fields(i)%bounds   =  state%fields(i)%bounds
     self%fields(i)%N        =  state%fields(i)%N
     self%fields(i)%angle    => state%fields(i)%angle
     self%fields(i)%lon      => state%fields(i)%lon
@@ -227,7 +224,7 @@ SUBROUTINE roms_trajectory_set (self, state, vdate)
   ! Copy trajectory fields from state object.
 
   IF (LdebugTrajectory .and. (my_comm%rank() .eq. 0))                          &
-    PRINT 10, 'ROMS_TRAJECTORY::set: Processing fields',                       &
+    PRINT 10, 'ROMS_DEBUG roms_trajectory::set: Processing fields',            &
               MAX(0,jic(ng)-1), nnew(ng), TRIM(self%DateTimeStr),              &
               self%romsTime/86400.0_kind_real
 

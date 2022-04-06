@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2019-2021 UCAR
+ * (C) Copyright 2019-2022 UCAR
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -13,8 +13,6 @@
 #include "romsjedi/ErrorCovariance/ErrorCovariance.h"
 #include "romsjedi/Geometry/Geometry.h"
 #include "romsjedi/GeometryIterator/GeometryIterator.h"
-#include "romsjedi/GetValues/GetValues.h"
-#include "romsjedi/GetValues/LinearGetValues.h"
 #include "romsjedi/Increment/Increment.h"
 #include "romsjedi/LinearVariableChange/LinearVariableChange.h"
 #include "romsjedi/ModelBias/ModelBias.h"
@@ -35,9 +33,7 @@ namespace romsjedi {
     typedef romsjedi::ErrorCovariance      Covariance;
     typedef romsjedi::Geometry             Geometry;
     typedef romsjedi::GeometryIterator     GeometryIterator;
-    typedef romsjedi::GetValues            GetValues;
     typedef romsjedi::Increment            Increment;
-    typedef romsjedi::LinearGetValues      LinearGetValues;
     typedef romsjedi::LinearVariableChange LinearVariableChange;
     typedef romsjedi::ModelBias            ModelAuxControl;
     typedef romsjedi::ModelBiasCovariance  ModelAuxCovariance;

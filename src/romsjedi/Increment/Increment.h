@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2017-2020 UCAR.
+ * (C) Copyright 2017-2022 UCAR.
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -26,8 +26,8 @@
 #include "atlas/field.h"
 
 #include "oops/base/LocalIncrement.h"
-#include "oops/base/Variables.h"
 #include "oops/util/DateTime.h"
+#include "oops/util/dot_product.h"
 #include "oops/util/Duration.h"
 #include "oops/util/ObjectCounter.h"
 #include "oops/util/Printable.h"
@@ -47,9 +47,8 @@ namespace eckit {
   class Configuration;
 }
 
-namespace ufo {
-  class GeoVaLs;
-  class Locations;
+namespace oops {
+  class Variables;
 }
 
 namespace romsjedi {
@@ -160,10 +159,13 @@ namespace romsjedi {
 
   /// Constructor, destructor
 
-  Increment(const Geometry &, const oops::Variables &,
+  Increment(const Geometry &,
+            const oops::Variables &,
             const util::DateTime &);
-  Increment(const Geometry &, const Increment &);
-  Increment(const Increment &, const bool);
+  Increment(const Geometry &,
+            const Increment &);
+  Increment(const Increment &,
+            const bool);
   Increment(const Increment &);
   virtual ~Increment();
 
@@ -177,7 +179,9 @@ namespace romsjedi {
   Increment & operator+=(const Increment &);
   Increment & operator-=(const Increment &);
   Increment & operator*=(const double &);
-  void axpy(const double &, const Increment &, const bool check = true);
+  void axpy(const double &,
+            const Increment &,
+            const bool check = true);
   double dot_product_with(const Increment &) const;
   void schur_product_with(const Increment &);
   void random();
@@ -186,7 +190,8 @@ namespace romsjedi {
   /// Getpoint/Setpoint
 
   oops::LocalIncrement getLocal(const GeometryIterator &) const;
-  void setLocal(const oops::LocalIncrement &, const GeometryIterator &);
+  void setLocal(const oops::LocalIncrement &,
+                const GeometryIterator &);
 
   /// Add or remove fields due to variable change
 
@@ -197,6 +202,10 @@ namespace romsjedi {
   void setAtlas(atlas::FieldSet *) const;
   void toAtlas(atlas::FieldSet *) const;
   void fromAtlas(atlas::FieldSet *);
+  void getFieldSet(const oops::Variables &,
+                   atlas::FieldSet &) const;
+  void getFieldSetAD(const oops::Variables &,
+                     const atlas::FieldSet &);
 
   /// I/O and diagnostics
 
@@ -212,7 +221,8 @@ namespace romsjedi {
 
   size_t serialSize() const;
   void serialize(std::vector<double> &) const;
-  void deserialize(const std::vector<double> &, size_t &);
+  void deserialize(const std::vector<double> &,
+                   size_t &);
 
   /// Utilities
 

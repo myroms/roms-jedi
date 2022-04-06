@@ -30,13 +30,16 @@ USE ufo_geovals_mod,                ONLY : ufo_geovals
 USE ufo_locations_mod
 USE unstructured_interpolation_mod, ONLY : unstrc_interp
 
+USE mod_ncparam,                    ONLY : r2dvar, u2dvar, v2dvar
+
 USE roms_geom_mod,                  ONLY : roms_geom
-USE roms_fields_mod,                ONLY : roms_fields, roms_field
-USE roms_state_mod ,                ONLY : roms_state
+USE roms_field_mod,                 ONLY : roms_field
+USE roms_fields_mod,                ONLY : roms_fields
+USE roms_state_mod,                 ONLY : roms_state
 
 implicit none
 
-PRIVATE
+!------------------------------------------------------------------------------
 
 TYPE, PUBLIC :: roms_getvalues
   
@@ -62,6 +65,10 @@ TYPE, PUBLIC :: roms_getvalues
   GENERIC   :: set_trajectory  => fill_geovals
 
 END TYPE roms_getvalues
+
+!------------------------------------------------------------------------------
+
+PRIVATE
 
 logical :: LdebugGetValues = .FALSE.
 
@@ -119,16 +126,28 @@ FUNCTION roms_getvalues_getinterp (self, geom, gtype, masked, locs)           &
   SELECT CASE (gtype)
     CASE ('r')
       interp_index = 1
+      Istr =  geom%bounds(r2dvar)%IstrD
+      Iend =  geom%bounds(r2dvar)%IendD
+      Jstr =  geom%bounds(r2dvar)%JstrD
+      Jend =  geom%bounds(r2dvar)%JendD
       lon  => geom%lonr
       lat  => geom%latr
       mask => geom%rmask
     CASE ('u')
       interp_index = 2
+      Istr =  geom%bounds(u2dvar)%IstrD
+      Iend =  geom%bounds(u2dvar)%IendD
+      Jstr =  geom%bounds(u2dvar)%JstrD
+      Jend =  geom%bounds(u2dvar)%JendD
       lon  => geom%lonu
       lat  => geom%latu
       mask => geom%umask
     CASE ('v')
       interp_index = 3
+      Istr =  geom%bounds(v2dvar)%IstrD
+      Iend =  geom%bounds(v2dvar)%IendD
+      Jstr =  geom%bounds(v2dvar)%JstrD
+      Jend =  geom%bounds(v2dvar)%JendD
       lon  => geom%lonv
       lat  => geom%latv
       mask => geom%vmask
@@ -140,13 +159,6 @@ FUNCTION roms_getvalues_getinterp (self, geom, gtype, masked, locs)           &
   ! If appropriate, compute horizontal interpolation weigths.
 
   COMPUTE_WEIGHTS : IF (.not. self%horiz_interp_init(interp_index)) THEN
-
-    ! Starting and ending indices for compute domain tile (no halo).
-
-    Istr = geom%Istr
-    Iend = geom%Iend
-    Jstr = geom%Jstr
-    Jend = geom%Jend
 
     ! Get observations (lon,lat) locations.
 
@@ -224,12 +236,12 @@ SUBROUTINE roms_getvalues_fillgeovals (self, geom, fld, t1, t2, locs, geovals)
   TYPE (roms_field),            pointer :: fldptr
   character (len=40)                    :: DateString(2)
 
-  ! Starting and ending indices for the compute domain tile (no halo).
+  ! Starting and ending RHO-cell indices for the compute domain tile (no halo).
 
-  Istr = geom%Istr
-  Iend = geom%Iend
-  Jstr = geom%Jstr
-  Jend = geom%Jend
+  Istr = geom%bounds(r2dvar)%IstrD
+  Iend = geom%bounds(r2dvar)%IendD
+  Jstr = geom%bounds(r2dvar)%JstrD
+  Jend = geom%bounds(r2dvar)%JendD
   N    = geom%N                         ! number of vertical levels in ROMS
 
   ! Get mask for locations in this time window.

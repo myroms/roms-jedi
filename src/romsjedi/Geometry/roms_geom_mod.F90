@@ -1,4 +1,4 @@
-! (C) Copyright 2017-2021 UCAR
+! (C) Copyright 2017-2022 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -21,93 +21,136 @@ MODULE roms_geom_mod
 
 USE kinds,                      ONLY : kind_real
 
-USE atlas_module,               ONLY : atlas_functionspace_pointcloud,       &
-                                       atlas_field,                          &
-                                       atlas_fieldset,                       &
-                                       atlas_geometry,                       &
-                                       atlas_indexkdtree,                    &
-                                       atlas_integer,                        &
+USE atlas_module,               ONLY : atlas_functionspace,                    &
+                                       atlas_field,                            &
+                                       atlas_fieldset,                         &
+                                       atlas_geometry,                         &
+                                       atlas_indexkdtree,                      &
+                                       atlas_integer,                          &
                                        atlas_real
 
 USE fckit_configuration_module, ONLY : fckit_configuration
 USE fckit_mpi_module,           ONLY : fckit_mpi_comm
 USE fckit_log_module
 
-USE roms_fields_metadata_mod
+USE mod_ncparam,                ONLY : p2dvar, r2dvar, u2dvar, v2dvar
+
+USE roms_fields_metadata_mod,   ONLY : roms_fields_metadata
 
 implicit none
 
-PRIVATE
-PUBLIC  :: roms_geom
+! ------------------------------------------------------------------------------
+!> ROMS application horizontal domain decomposition.
+! ------------------------------------------------------------------------------
 
-!> Geometry data structure
+TYPE, PUBLIC :: roms_tile
 
-TYPE :: roms_geom
+  ! Starting and ending Computational indices in the I- and J-directions.
 
-  TYPE (atlas_functionspace_pointcloud) :: afunctionspace
+  integer :: IstrC, IendC, JstrC, JendC 
+
+  ! Starting and ending Data indices in the I- and J-directions used for I/O.
+  ! It includes computational plus lateral physical boundary points.
+
+  integer :: IstrD, IendD, JstrD, JendD 
+
+  ! Starting and ending Halo indices in the I- and J-directions used for
+  ! parallel exchanges. It includes computational, lateral physical boundary,
+  ! and halo points. Depending of the kernel algorithm, ROMS can be configured
+  ! with 2 or 3 halo points.
+
+  integer :: IstrH, IendH, JstrH, JendH
+ 
+END TYPE roms_tile
+
+! ------------------------------------------------------------------------------
+!> ROMS application Geometry object.
+! ------------------------------------------------------------------------------
+
+TYPE, PUBLIC :: roms_geom
+
+  TYPE (roms_tile) :: bounds(4)              ! C-grid tile indices range
+
+  logical :: EWperiodic                      ! East-West periodicity switch
+  logical :: NSperiodic                      ! North-South periodicity switch
+
+  integer :: model                           ! kernel ID (iNLM, iTLM, iADM)
+  integer :: ng                              ! nested grid number
+  integer :: Lm, Mm                          ! global number of I- and J-points
+  integer :: tile                            ! domain parallel partition tile
+
+  integer :: NghostPoints                    ! number of tile halo points
+  integer :: LBi, UBi, LBj, UBj, LBk, UBk    ! array(i,j,k) allocation bounds
+  integer :: N                               ! number of vertical levels
+
+  integer :: iterator_dimension              ! iterator dimenson (2D or 3D)
+
+  character (len=:), allocatable :: roms_stdinp    ! standard input filename
+  character (len=:), allocatable :: project_dir    ! project directory
+
+  ! Grid cell center (RHO-points) properties:
+
+  real (kind_real), allocatable  :: angler(:,:)    ! XI-axis and EAST (radians)
+  real (kind_real), allocatable  :: CosAngler(:,:) ! COS(angler)
+  real (kind_real), allocatable  :: SinAngler(:,:) ! SIN(angler)
+
+  real (kind_real), allocatable  :: cell_area(:,:) ! cell area (m2)
+
+  real (kind_real), allocatable  :: f_r(:,:)       ! Coriolis parameter (1/s)
+  real (kind_real), allocatable  :: h_r(:,:)       ! bathymetry (m; positive)
+
+  real (kind_real), allocatable  :: lonr(:,:)      ! longitude (degrees east)
+  real (kind_real), allocatable  :: latr(:,:)      ! latitude (degrees north)
+  real (kind_real), allocatable  :: z_r(:,:,:)     ! RHO-depths (m, negative)
+  real (kind_real), allocatable  :: z_w(:,:,:)     ! W-depths (m, negative)
+
+  real (kind_real), allocatable  :: rmask(:,:)     ! mask,  0=land 1=ocean
+
+  ! Grid left and right cell faces (U-points) properties:
+
+  real (kind_real), allocatable  :: angleu(:,:)    ! XI-axis and EAST (radians)
+
+  real (kind_real), allocatable  :: f_u(:,:)       ! Coriolis parameter (1/s)
+  real (kind_real), allocatable  :: h_u(:,:)       ! bathymetry (m; positive)
+
+  real (kind_real), allocatable  :: lonu(:,:)      ! longitude (degrees east)
+  real (kind_real), allocatable  :: latu(:,:)      ! latitude (degrees north)
+  real (kind_real), allocatable  :: z_u(:,:,:)     ! depths (m, negative)
+
+  real (kind_real), allocatable  :: umask(:,:)     ! mask,  0=land 1=ocean
+
+  ! Grid lower and upper cell faces (V-points) properties:
+
+  real (kind_real), allocatable  :: anglev(:,:)    ! XI-axis and EAST (radians)
+
+  real (kind_real), allocatable  :: f_v(:,:)       ! Coriolis parameter (1/s)
+  real (kind_real), allocatable  :: h_v(:,:)       ! bathymetry (m; positive)
+
+  real (kind_real), allocatable  :: lonv(:,:)      ! longitude (degrees east)
+  real (kind_real), allocatable  :: latv(:,:)      ! latitude (degrees north)
+  real (kind_real), allocatable  :: z_v(:,:,:)     ! depths (m, negative)
+
+  real (kind_real), allocatable  :: vmask(:,:)     ! mask,  0=land 1=ocean
+
+  ! ATLAS FunctionSpace defining how a Field is represented in the grid domain
+  ! (RHO-cell) for computational points and computational points plus tile halo.
+
+  TYPE (atlas_functionspace) :: afunctionspace
+  TYPE (atlas_functionspace) :: afunctionspace_halo
+
+  ! Fortran and C/C++ interoperability toolkit: MPI coomunicator object
+
   TYPE (fckit_mpi_comm)                 :: f_comm
+
+  ! ROMS-JEDI state variables metadata.
+
   TYPE (roms_fields_metadata)           :: fieldsinfo
-
-  logical :: EWperiodic                       ! East-West periodicity switch
-  logical :: NSperiodic                       ! North-South periodicity switch
-
-  integer :: model                            ! numerical kernel (iNLM, iTLM, iADM)
-  integer :: ng                               ! nested grid number
-  integer :: Lm, Mm                           ! grid global number of I- and J-points
-  integer :: tile                             ! domain parallel partition tile
-
-  integer :: NghostPoints                     ! number of tile partition ghost points
-  integer :: LBi, UBi, LBj, UBj, LBk, UBk     ! array(i,j,k) allocation bounds
-  integer :: N                                ! number of vertical levels at RHO-, U-, V-points
-
-  integer :: IstrR, IendR, JstrR, JendR       ! tiled RHO-cell full indices range
-  integer :: Istr,  Iend,  Jstr,  Jend        ! computational I- and J-indices range, RHO-points
-  integer :: IstrU, JstrV                     ! computational starting U- and V-indices
-
-  integer :: iterator_dimension               ! iterator dimenson (2D or 3D)
-
-  real (kind_real), allocatable  :: f_r(:,:)       ! Coriolis parameter (1/s), RHO-points
-  real (kind_real), allocatable  :: f_u(:,:)       ! Coriolis parameter (1/s), U-points
-  real (kind_real), allocatable  :: f_v(:,:)       ! Coriolis parameter (1/s), V-points
-
-  real (kind_real), allocatable  :: h_r(:,:)       ! bathymetry (m; positive), RHO-points
-  real (kind_real), allocatable  :: h_u(:,:)       ! bathymetry (m; positive), U-points
-  real (kind_real), allocatable  :: h_v(:,:)       ! bathymetry (m; positive), V-points
-
-  real (kind_real), allocatable  :: lonr(:,:)      ! longitude, RHO-points
-  real (kind_real), allocatable  :: lonu(:,:)      ! longitude, U-points
-  real (kind_real), allocatable  :: lonv(:,:)      ! longitude, V-points
-
-  real (kind_real), allocatable  :: latr(:,:)      ! latitude, RHO-points
-  real (kind_real), allocatable  :: latu(:,:)      ! latitude, U-points
-  real (kind_real), allocatable  :: latv(:,:)      ! latitude, V-points
-
-  real (kind_real), allocatable  :: cell_area(:,:) ! RHO-points cell area (m2)
-
-  real (kind_real), allocatable  :: angler(:,:)    ! XI-axis and EAST RHO-angle (radians)
-  real (kind_real), allocatable  :: angleu(:,:)    ! XI-axis and EAST U-angle (radians)
-  real (kind_real), allocatable  :: anglev(:,:)    ! XI-axis and EAST V-angle (radians)
-
-  real (kind_real), allocatable  :: CosAngler(:,:) ! cosine of curvilinear angle, cos(angler)
-  real (kind_real), allocatable  :: SinAngler(:,:) ! sine of curvilinear angle, sin(angler)
-
-  real (kind_real), allocatable  :: z_r(:,:,:)     ! depths at RHO-points (m, negative)
-  real (kind_real), allocatable  :: z_u(:,:,:)     ! depths at U-points (m, negative)
-  real (kind_real), allocatable  :: z_v(:,:,:)     ! depths at V-points (m, negative)
-  real (kind_real), allocatable  :: z_w(:,:,:)     ! depths at W-points (m, negative)
-
-  real (kind_real), allocatable  :: rmask(:,:)     ! RHO-points mask, 0=land 1=ocean
-  real (kind_real), allocatable  :: umask(:,:)     ! U-points mask,   0=land 1=ocean
-  real (kind_real), allocatable  :: vmask(:,:)     ! V-points mask,   0=land 1=ocean
-
-  character (len=:), allocatable :: roms_stdinp    ! ROMS standard input filename
-  character (len=:), allocatable :: project_dir    ! ROMS project directory
 
   CONTAINS
 
-  PROCEDURE :: init                 => roms_geom_init
-  PROCEDURE :: end                  => roms_geom_end
+  PROCEDURE :: create               => roms_geom_create
   PROCEDURE :: clone                => roms_geom_clone
+  PROCEDURE :: delete               => roms_geom_delete
 
   PROCEDURE :: set_atlas_lonlat     => roms_geom_set_atlas_lonlat
   PROCEDURE :: fill_atlas_fieldset  => roms_geom_fill_atlas_fieldset
@@ -115,6 +158,10 @@ TYPE :: roms_geom
   PROCEDURE :: struct2atlas         => roms_geom_struct2atlas
 
 END TYPE roms_geom
+
+! ------------------------------------------------------------------------------
+
+PRIVATE
 
 !> Switch for printing fields information during debugging
 
@@ -127,7 +174,7 @@ CONTAINS
 ! ------------------------------------------------------------------------------
 !> Setup geometry object by calling "ROMS_initialize".
 
-SUBROUTINE roms_geom_init (self, f_conf, f_comm)
+SUBROUTINE roms_geom_create (self, f_conf, f_comm)
 
   USE mod_param
   USE mod_grid
@@ -136,12 +183,12 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
 
   USE roms_kernel_mod, ONLY : ROMS_initialize
 
-  CLASS (roms_geom),          intent(out) :: self
-  TYPE (fckit_configuration), intent(in)  :: f_conf
-  TYPE (fckit_mpi_comm),      intent(in)  :: f_comm
+  CLASS (roms_geom),          intent(out) :: self         !< Geometry object
+  TYPE (fckit_configuration), intent(in)  :: f_conf       !< Configuration
+  TYPE (fckit_mpi_comm),      intent(in)  :: f_comm       !< MPI communicator
 
   logical, save                           :: first
-  integer                                 :: i, j, k, lstr, ng, tile
+  integer                                 :: cgrid, i, j, k, lstr, ng, tile
   integer                                 :: MyComm
   character (len=:), allocatable          :: flds_meta, project_dir, roms_stdinp
 
@@ -187,7 +234,7 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
 
   ! Get iterator dimension from configuration YAML file.
 
-  IF (.not.f_conf%get("iterator dimension", self%iterator_dimension))       &
+  IF (.not.f_conf%get("iterator dimension", self%iterator_dimension))          &
     self%iterator_dimension = 2
 
   ! ROMS initialization: read input script, allocate, initialize, and set grid.
@@ -196,8 +243,8 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
 
   IF (.not.allocated(BOUNDS)) THEN       ! it is only called once
     first = .TRUE.
-    CALL ROMS_initialize (first,                                             &
-                          mpiCOMM = MyComm,                                  &
+    CALL ROMS_initialize (first,                                               &
+                          mpiCOMM = MyComm,                                    &
                           kernel  = iNLM)
     IF (exit_flag .ne. NoError) THEN
       CALL abor1_ftn ("geom_init: Error while calling ROMS_initialize")
@@ -205,6 +252,84 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
   END IF
 
   ! Domain decomposition ranges and indices.
+
+  DO cgrid = 1, 4
+
+    SELECT CASE (cgrid)
+
+      CASE (p2dvar)  ! PSI-points: cell corners
+
+        self%bounds(cgrid)%IstrC = BOUNDS(ng)%IstrU(tile)
+        self%bounds(cgrid)%IendC = BOUNDS(ng)%Iend (tile)
+        self%bounds(cgrid)%JstrC = BOUNDS(ng)%JstrV(tile)
+        self%bounds(cgrid)%JendC = BOUNDS(ng)%Jend (tile)
+
+        self%bounds(cgrid)%IstrD = BOUNDS(ng)%Istr (tile)
+        self%bounds(cgrid)%IendD = BOUNDS(ng)%IendR(tile)
+        self%bounds(cgrid)%JstrD = BOUNDS(ng)%Jstr (tile)
+        self%bounds(cgrid)%JendD = BOUNDS(ng)%JendR(tile)
+
+        self%bounds(cgrid)%IstrH = BOUNDS(ng)%Imin(p2dvar,1,tile)
+        self%bounds(cgrid)%IendH = BOUNDS(ng)%Imax(p2dvar,1,tile)
+        self%bounds(cgrid)%JstrH = BOUNDS(ng)%Jmin(p2dvar,1,tile)
+        self%bounds(cgrid)%JendH = BOUNDS(ng)%Jmax(p2dvar,1,tile)
+
+      CASE (r2dvar)  ! RHO-points: cell center
+
+        self%bounds(cgrid)%IstrC = BOUNDS(ng)%Istr(tile)
+        self%bounds(cgrid)%IendC = BOUNDS(ng)%Iend(tile)
+        self%bounds(cgrid)%JstrC = BOUNDS(ng)%Jstr(tile)
+        self%bounds(cgrid)%JendC = BOUNDS(ng)%Jend(tile)
+
+        self%bounds(cgrid)%IstrD = BOUNDS(ng)%IstrR(tile)
+        self%bounds(cgrid)%IendD = BOUNDS(ng)%IendR(tile)
+        self%bounds(cgrid)%JstrD = BOUNDS(ng)%JstrR(tile)
+        self%bounds(cgrid)%JendD = BOUNDS(ng)%JendR(tile)
+
+        self%bounds(cgrid)%IstrH = BOUNDS(ng)%Imin(r2dvar,1,tile)
+        self%bounds(cgrid)%IendH = BOUNDS(ng)%Imax(r2dvar,1,tile)
+        self%bounds(cgrid)%JstrH = BOUNDS(ng)%Jmin(r2dvar,1,tile)
+        self%bounds(cgrid)%JendH = BOUNDS(ng)%Jmax(r2dvar,1,tile)
+
+      CASE (u2dvar)  ! U-points: left and right cell faces
+
+        self%bounds(cgrid)%IstrC = BOUNDS(ng)%IstrU(tile)
+        self%bounds(cgrid)%IendC = BOUNDS(ng)%Iend (tile)
+        self%bounds(cgrid)%JstrC = BOUNDS(ng)%Jstr (tile)
+        self%bounds(cgrid)%JendC = BOUNDS(ng)%Jend (tile)
+
+        self%bounds(cgrid)%IstrD = BOUNDS(ng)%Istr (tile)
+        self%bounds(cgrid)%IendD = BOUNDS(ng)%IendR(tile)
+        self%bounds(cgrid)%JstrD = BOUNDS(ng)%JstrR(tile)
+        self%bounds(cgrid)%JendD = BOUNDS(ng)%JendR(tile)
+
+        self%bounds(cgrid)%IstrH = BOUNDS(ng)%Imin(u2dvar,1,tile)
+        self%bounds(cgrid)%IendH = BOUNDS(ng)%Imax(u2dvar,1,tile)
+        self%bounds(cgrid)%JstrH = BOUNDS(ng)%Jmin(u2dvar,1,tile)
+        self%bounds(cgrid)%JendH = BOUNDS(ng)%Jmax(u2dvar,1,tile)
+
+      CASE (v2dvar)  ! V-points: lower and upper cell faces
+
+        self%bounds(cgrid)%IstrC = BOUNDS(ng)%Istr (tile)
+        self%bounds(cgrid)%IendC = BOUNDS(ng)%Iend (tile)
+        self%bounds(cgrid)%JstrC = BOUNDS(ng)%JstrV(tile)
+        self%bounds(cgrid)%JendC = BOUNDS(ng)%Jend (tile)
+
+        self%bounds(cgrid)%IstrD = BOUNDS(ng)%IstrR(tile)
+        self%bounds(cgrid)%IendD = BOUNDS(ng)%IendR(tile)
+        self%bounds(cgrid)%JstrD = BOUNDS(ng)%Jstr (tile)
+        self%bounds(cgrid)%JendD = BOUNDS(ng)%JendR(tile)
+
+        self%bounds(cgrid)%IstrH = BOUNDS(ng)%Imin(v2dvar,1,tile)
+        self%bounds(cgrid)%IendH = BOUNDS(ng)%Imax(v2dvar,1,tile)
+        self%bounds(cgrid)%JstrH = BOUNDS(ng)%Jmin(v2dvar,1,tile)
+        self%bounds(cgrid)%JendH = BOUNDS(ng)%Jmax(v2dvar,1,tile)
+
+    END SELECT
+
+  END DO
+
+  ! Other domain parameters.
 
   self%model = iNLM                      ! ROMS numerical kernel
 
@@ -224,19 +349,6 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
   self%N   = N(ng)                       ! number of vertical levels
   self%LBk = 1                           ! lower bound K-dimension
   self%UBk = N(ng)                       ! upper bound K-dimension
-
-  self%IstrR = BOUNDS(ng)%IstrR(tile)    ! full range I-starting (RHO-points)
-  self%IendR = BOUNDS(ng)%IendR(tile)    ! full range I-ending   (RHO-points)
-  self%JstrR = BOUNDS(ng)%JstrR(tile)    ! full range J-starting (RHO-points)
-  self%JendR = BOUNDS(ng)%JendR(tile)    ! full range J-ending   (RHO-points)
-
-  self%Istr = BOUNDS(ng)%Istr(tile)      ! full range I-starting (PSI-, U-points)
-  self%Iend = BOUNDS(ng)%Iend(tile)      ! full range I-ending   (PSI-points)
-  self%Jstr = BOUNDS(ng)%Jstr(tile)      ! full range J-starting (PSI-, V-points)
-  self%Jend = BOUNDS(ng)%Jend(tile)      ! full range J-ending   (PSI-points)
-
-  self%IstrU = BOUNDS(ng)%IstrU(tile)    ! computational I-starting (U-points)
-  self%JstrV = BOUNDS(ng)%JstrV(tile)    ! computational J-starting (V-points)
 
   ! Allocate geometry arrays and initialize from ROMS GRID structure.
 
@@ -258,9 +370,9 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
 
   ! Area at RHO-points. Compute over tile extend to avoid dividing by zero.
 
-  DO j=self%JstrR,self%JendR
-    DO i=self%IstrR,self%IendR
-      self%cell_area(i,j) = (1.0_kind_real/GRID(ng)%pm(i,j))*                &
+  DO j = self%bounds(r2dvar)%JstrD, self%bounds(r2dvar)%JendD
+    DO i = self%bounds(r2dvar)%IstrD, self%bounds(r2dvar)%IendD
+      self%cell_area(i,j) = (1.0_kind_real/GRID(ng)%pm(i,j))*                  &
                             (1.0_kind_real/GRID(ng)%pn(i,j))
     END DO
   END DO
@@ -269,13 +381,14 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
 
   self%angler = GRID(ng)%angler
 
-  DO j=self%Jstr-1,self%Jend+1
-    DO i=self%IstrU-1,self%Iend+1
+  DO j = self%bounds(u2dvar)%JstrC-1, self%bounds(u2dvar)%JendC+1
+    DO i = self%bounds(u2dvar)%IstrC-1, self%bounds(u2dvar)%IendC+1
       self%angleu(i,j) = 0.5_kind_real*(self%angler(i-1,j)+self%angler(i,j))
     END DO
   END DO
-  DO j=self%JstrV-1,self%Jend+1
-    DO i=self%Istr-1,self%Iend+1
+
+  DO j = self%bounds(v2dvar)%JstrC-1, self%bounds(v2dvar)%JendC+1
+    DO i = self%bounds(v2dvar)%IstrC-1, self%bounds(v2dvar)%IendC+1
       self%anglev(i,j) = 0.5_kind_real*(self%angler(i,j-1)+self%angler(i,j))
     END DO
   END DO
@@ -284,13 +397,14 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
 
   self%f_r = GRID(ng)%f
 
-  DO j=self%Jstr-1,self%Jend+1
-    DO i=self%IstrU-1,self%Iend+1
+  DO j = self%bounds(u2dvar)%JstrC-1, self%bounds(u2dvar)%JendC+1
+    DO i = self%bounds(u2dvar)%IstrC-1, self%bounds(u2dvar)%IendC+1
       self%f_u(i,j) = 0.5_kind_real*(self%f_r(i-1,j)+self%f_r(i,j))
     END DO
   END DO
-  DO j=self%JstrV-1,self%Jend+1
-    DO i=self%Istr-1,self%Iend+1
+
+  DO j = self%bounds(v2dvar)%JstrC-1, self%bounds(v2dvar)%JendC+1
+    DO i = self%bounds(v2dvar)%IstrC-1, self%bounds(v2dvar)%IendC+1
       self%f_v(i,j) = 0.5_kind_real*(self%f_r(i,j-1)+self%f_r(i,j))
     END DO
   END DO
@@ -299,13 +413,14 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
 
   self%h_r = GRID(ng)%h
 
-  DO j=self%Jstr-1,self%Jend+1
-    DO i=self%IstrU-1,self%Iend+1
+  DO j = self%bounds(u2dvar)%JstrC-1, self%bounds(u2dvar)%JendC+1
+    DO i = self%bounds(u2dvar)%IstrC-1, self%bounds(u2dvar)%IendC+1
       self%h_u(i,j) = 0.5_kind_real*(self%h_r(i-1,j)+self%H_r(i,j))
     END DO
   END DO
-  DO j=self%JstrV-1,self%Jend+1
-    DO i=self%Istr-1,self%Iend+1
+
+  DO j = self%bounds(v2dvar)%JstrC-1, self%bounds(v2dvar)%JendC+1
+    DO i = self%bounds(v2dvar)%IstrC-1, self%bounds(v2dvar)%IendC+1
       self%h_v(i,j) = 0.5_kind_real*(self%h_r(i,j-1)+self%h_r(i,j))
     END DO
   END DO
@@ -316,13 +431,14 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
   self%z_w = GRID(ng)%z_w
 
   DO k=1,self%N
-    DO j=self%Jstr-1,self%Jend+1
-      DO i=self%IstrU-1,self%Iend+1
+    DO j = self%bounds(u2dvar)%JstrC-1, self%bounds(u2dvar)%JendC+1
+      DO i = self%bounds(u2dvar)%IstrC-1, self%bounds(u2dvar)%IendC+1
         self%z_u(i,j,k) = 0.5_kind_real*(self%z_r(i-1,j,k)+self%z_r(i,j,k))
       END DO
     END DO
-    DO j=self%JstrV-1,self%Jend+1
-      DO i=self%Istr-1,self%Iend+1
+
+    DO j = self%bounds(v2dvar)%JstrC-1, self%bounds(v2dvar)%JendC+1
+      DO i = self%bounds(v2dvar)%IstrC-1, self%bounds(v2dvar)%IendC+1
         self%z_v(i,j,k) = 0.5_kind_real*(self%z_r(i,j-1,k)+self%z_r(i,j,k))
       END DO
     END DO
@@ -331,31 +447,37 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
   ! Report.
 
   IF (LdebugGeometry) THEN
-    PRINT '(a,12(a,i0),a,3(i0,1x))', 'roms_geom::init: ',                    &
-                                      ' tile = ', self%tile,                 &             
-                                      ', ng = ', self%ng,                    &
-                                      ', LBi = ', self%LBi,                  &
-                                      ', UBi = ', self%UBi,                  &
-                                      ', LBj = ', self%LBj,                  &
-                                      ', UBj = ', self%UBj,                  &
-                                      ', LBk = ', self%LBk,                  &
-                                      ', UBk = ', self%UBk,                  &
-                                      ', Istr = ', self%Istr,                &
-                                      ', Iend = ', self%Iend,                &
-                                      ', Jstr = ', self%Jstr,                &
-                                      ', Jend = ', self%Jend,                &
-                                      ', SHAPE = ', SHAPE(self%z_r)
+    PRINT 10, 'ROMS_DEBUG roms_geom::create: tile = ', self%tile,              &
+              ', ng = ', self%ng,                                              &
+              ', SHAPE = ', SHAPE(self%z_r),                                   &
+              '  LBi   = ', self%LBi,                                          &
+              ', UBi   = ', self%UBi,                                          &
+              ', LBj   = ', self%LBj,                                          &
+              ', UBj   = ', self%UBj,                                          &
+              '  IstrR = ', self%bounds(2)%IstrD,                              &
+              ', IendR = ', self%bounds(2)%IendD,                              &
+              ', JstrR = ', self%bounds(2)%JstrD,                              &
+              ', JendR = ', self%bounds(2)%JendD,                              &
+              '  IstrH = ', self%bounds(2)%IstrH,                              &
+              ', IendH = ', self%bounds(2)%IendH,                              &
+              ', JstrH = ', self%bounds(2)%JstrH,                              &
+              ', JendH = ', self%bounds(2)%JendH,                              &
+              '  Istr  = ', self%bounds(2)%IstrC,                              &
+              ', Iend  = ', self%bounds(2)%IendC,                              &
+              ', Jstr  = ', self%bounds(2)%JstrC,                              &
+              ', Jend  = ', self%bounds(2)%JendC
+ 10 FORMAT (a,i3, a,i0, a,3(i0,1x),4(/,t38,4(a,i4)))
     CALL self%f_comm%barrier()
   END IF
 
-END SUBROUTINE roms_geom_init
+END SUBROUTINE roms_geom_create
 
 ! ------------------------------------------------------------------------------
 !> Geometry object destructor: deallocate all arrays.
 
-SUBROUTINE roms_geom_end (self)
+SUBROUTINE roms_geom_delete (self)
 
-  CLASS (roms_geom), intent(out)  :: self
+  CLASS (roms_geom), intent(out)  :: self                 !< Geometry object
 
   IF (allocated(self%f_r))        deallocate (self%f_r)
   IF (allocated(self%f_u))        deallocate (self%f_u)
@@ -390,15 +512,20 @@ SUBROUTINE roms_geom_end (self)
   IF (allocated(self%z_v))        deallocate (self%z_v)
   IF (allocated(self%z_w))        deallocate (self%z_w)
 
-END SUBROUTINE roms_geom_end
+  CALL self%afunctionspace%final ()
+  CALL self%afunctionspace_halo%final ()
+
+END SUBROUTINE roms_geom_delete
 
 ! ------------------------------------------------------------------------------
 !> Clone geometry object, self = other.
 
 SUBROUTINE roms_geom_clone (self, other)
 
-  CLASS (roms_geom), intent(inout) :: self
-  CLASS (roms_geom), intent(in   ) :: other
+  CLASS (roms_geom), intent(inout) :: self                !< LHS Geometry object
+  CLASS (roms_geom), intent(in   ) :: other               !< RHS Geometry object
+
+  integer                          :: cgrid
 
   ! Clone communicator.
 
@@ -406,13 +533,26 @@ SUBROUTINE roms_geom_clone (self, other)
 
   ! Clone object parameters, domain bounds, and range indices.
 
+  DO cgrid = 1, 4
+    self%bounds(cgrid)%IstrC = other%bounds(cgrid)%IstrC
+    self%bounds(cgrid)%IendC = other%bounds(cgrid)%IendC
+    self%bounds(cgrid)%JstrC = other%bounds(cgrid)%JstrC
+    self%bounds(cgrid)%JendC = other%bounds(cgrid)%JendC
+
+    self%bounds(cgrid)%IstrD = other%bounds(cgrid)%IstrD
+    self%bounds(cgrid)%IendD = other%bounds(cgrid)%IendD
+    self%bounds(cgrid)%JstrD = other%bounds(cgrid)%JstrD
+    self%bounds(cgrid)%JendD = other%bounds(cgrid)%JendD
+
+    self%bounds(cgrid)%IstrH = other%bounds(cgrid)%IstrH
+    self%bounds(cgrid)%IendH = other%bounds(cgrid)%IendH
+    self%bounds(cgrid)%JstrH = other%bounds(cgrid)%JstrH
+    self%bounds(cgrid)%JendH = other%bounds(cgrid)%JendH
+  END DO
+
   self%ng   = other%ng
   self%tile = other%tile
   self%NghostPoints = other%NghostPoints
-
-  self%project_dir = other%project_dir
-  self%roms_stdinp = other%roms_stdinp
-  self%fieldsinfo  = other%fieldsinfo
 
   self%model = other%model
 
@@ -431,18 +571,9 @@ SUBROUTINE roms_geom_clone (self, other)
   self%LBk = other%LBk
   self%UBk = other%UBk
 
-  self%IstrR = other%IstrR
-  self%IendR = other%IendR
-  self%JstrR = other%JstrR
-  self%JendR = other%JendR
-
-  self%Istr  = other%Istr
-  self%Iend  = other%Iend
-  self%Jstr  = other%Jstr
-  self%Jend  = other%Jend
-
-  self%IstrU = other%IstrU
-  self%JstrV = other%JstrV
+  self%project_dir = other%project_dir
+  self%roms_stdinp = other%roms_stdinp
+  self%fieldsinfo  = other%fieldsinfo
 
   ! Iterator dimension.
 
@@ -489,23 +620,31 @@ SUBROUTINE roms_geom_clone (self, other)
 
   CALL other%fieldsinfo%clone (self%fieldsinfo)
 
+  ! Clone ATLAS function space.
+
+  self%afunctionspace = atlas_functionspace(                                   &
+                        other%afunctionspace%c_ptr() )
+
+  self%afunctionspace_halo = atlas_functionspace(                              &
+                             other%afunctionspace_halo%c_ptr() )
+
   ! Report.
 
   IF (LdebugGeometry) THEN
-    PRINT '(a,12(a,i0),a,3(i0,1x))', 'roms_geom::clone: ',                   &
-                                    ' tile = ', self%tile,                   &
-                                    ', ng = ', self%ng,                      &
-                                    ', LBi = ', self%LBi,                    &
-                                    ', UBi = ', self%UBi,                    &
-                                    ', LBj = ', self%LBj,                    &
-                                    ', UBj = ', self%UBj,                    &
-                                    ', LBk = ', self%LBk,                    &
-                                    ', UBk = ', self%UBk,                    &
-                                    ', Istr = ', self%Istr,                  &
-                                    ', Iend = ', self%Iend,                  &
-                                    ', Jstr = ', self%Jstr,                  &
-                                    ', Jend = ', self%Jend,                  &
-                                    ', SHAPE = ', SHAPE(self%z_r)
+    PRINT '(a,12(a,i0),a,3(i0,1x))', 'ROMS_DEBUG roms_geom::clone: ',          &
+                                     ' tile = ', self%tile,                    &
+                                     ', ng = ', self%ng,                       &
+                                     ', LBi = ', self%LBi,                     &
+                                     ', UBi = ', self%UBi,                     &
+                                     ', LBj = ', self%LBj,                     &
+                                     ', UBj = ', self%UBj,                     &
+                                     ', LBk = ', self%LBk,                     &
+                                     ', UBk = ', self%UBk,                     &
+                                     ', Istr = ', self%bounds(2)%IstrC,        &
+                                     ', Iend = ', self%bounds(2)%IendC,        &
+                                     ', Jstr = ', self%bounds(2)%JstrC,        &
+                                     ', Jend = ', self%bounds(2)%JendC,        &
+                                     ', SHAPE = ', SHAPE(self%z_r)
     CALL self%f_comm%barrier() 
   END IF
 
@@ -516,7 +655,7 @@ END SUBROUTINE roms_geom_clone
 
 SUBROUTINE roms_geom_allocate (self)
 
-  CLASS (roms_geom), intent(inout) :: self
+  CLASS (roms_geom), intent(inout) :: self                !< Geometry object
 
   integer :: LBi, UBi, LBj, UBj, LBk, UBk
 
@@ -567,34 +706,66 @@ END SUBROUTINE roms_geom_allocate
 ! ------------------------------------------------------------------------------
 !> Set ATLAS **lonlat** fieldset at density points.
 
-SUBROUTINE roms_geom_set_atlas_lonlat (self, afieldset)
+SUBROUTINE roms_geom_set_atlas_lonlat (self, afieldset, include_halo)
 
-  CLASS (roms_geom),     intent(inout) :: self        !< Geometry object
-  TYPE (atlas_fieldset), intent(inout) :: afieldset   !< ATLAS fieldset
+  CLASS (roms_geom),     intent(inout) :: self            !< Geometry object
+  TYPE (atlas_fieldset), intent(inout) :: afieldset       !< ATLAS fieldset
+  logical,               intent(in   ) :: include_halo    !< tile range switch
 
-  TYPE (atlas_field)                   :: afield
-  integer                              :: Istr, Iend, Jstr, Jend
+  TYPE (atlas_field)                   :: afield, afield_halo
+  integer                              :: cgrid
+  integer                              :: IstrD, IendD, JstrD, JendD
+  integer                              :: IstrH, IendH, JstrH, JendH
   real (kind_real), pointer            :: r_ptr(:,:)
 
-  ! Create lon/lat fields at RHO (density) points. Currently, ATLAS allows a
-  ! single function space which is problematic with staggered C-grids. That
-  ! is, ATLAS assumes that all the variables are at the same location.
+  ! Create lon/lat fields at RHO (density) data points (computational plus
+  ! boundary points). Currently, ATLAS allows a single FunctionSpace which
+  ! is problematic with staggered C-grids. That is, ATLAS assumes that all
+  ! the variables are at
+  ! the same location.
 
-  Istr = self%IstrR
-  Iend = self%IendR
-  Jstr = self%JstrR
-  Jend = self%JendR
+  cgrid = r2dvar
 
-  afield = atlas_field(name="lonlat",                                        &
-                       kind=atlas_real(kind_real),                           &
-                       shape=(/2,(Iend-Istr+1)*(Jend-Jstr+1)/))
+  IstrD = self%bounds(cgrid)%IstrD
+  IendD = self%bounds(cgrid)%IendD
+  JstrD = self%bounds(cgrid)%JstrD
+  JendD = self%bounds(cgrid)%JendD
+
+  afield = atlas_field(name="lonlat",                                          &
+                       kind=atlas_real(kind_real),                             &
+                       shape=(/2,(IendD-IstrD+1)*(JendD-JstrD+1)/))
 
   CALL afield%data (r_ptr)
 
-  r_ptr(1,:) = PACK(self%lonr(Istr:Iend,Jstr:Jend), .TRUE.)
-  r_ptr(2,:) = PACK(self%latr(Istr:Iend,Jstr:Jend), .TRUE.)
+  r_ptr(1,:) = PACK(self%lonr(IstrD:IendD, JstrD:JendD), .TRUE.)
+  r_ptr(2,:) = PACK(self%latr(IstrD:IendD, JstrD:JendD), .TRUE.)
 
   CALL afieldset%add (afield)
+
+  ! Add object that includes (lon,lat) of the computational grid plus tile
+  ! halo points. At the domain edges, it also include the boundary point.
+
+  IF (include_halo) THEN
+
+    nullify (r_ptr)
+
+    IstrH = self%bounds(cgrid)%IstrH
+    IendH = self%bounds(cgrid)%IendH
+    JstrH = self%bounds(cgrid)%JstrH
+    JendH = self%bounds(cgrid)%JendH
+
+    afield_halo = atlas_field(name="lonlat_including_halo",                    &
+                              kind=atlas_real(kind_real),                      &
+                              shape=(/2,(IendH-IstrH+1)*(JendH-JstrH+1)/))
+
+    CALL afield_halo%data (r_ptr)
+                          
+    r_ptr(1,:) = PACK(self%lonr(IstrH:IendH, JstrH:JendH), .TRUE.)
+    r_ptr(2,:) = PACK(self%latr(IstrH:IendH, JstrH:JendH), .TRUE.)
+
+    CALL afieldset%add (afield_halo)
+
+  END IF
 
 END SUBROUTINE roms_geom_set_atlas_lonlat
 
@@ -604,12 +775,12 @@ END SUBROUTINE roms_geom_set_atlas_lonlat
 
 SUBROUTINE roms_geom_fill_atlas_fieldset (self, afieldset)
 
-  CLASS (roms_geom),     intent(inout) :: self         !< Geometry object
-  TYPE (atlas_fieldset), intent(inout) :: afieldset    !< ATLAS fieldset
+  CLASS (roms_geom),     intent(inout) :: self            !< Geometry object
+  TYPE (atlas_fieldset), intent(inout) :: afieldset       !< ATLAS fieldset
 
   TYPE (atlas_field)                   :: afield
-  integer                              :: Istr, Iend, Jstr, Jend, N
-  integer                              :: k
+  integer                              :: IstrD, IendD, JstrD, JendD, N
+  integer                              :: cgrid, k
   integer, pointer                     :: i_ptr(:,:)
   real (kind_real), pointer            :: r_ptr_1(:), r_ptr_2(:,:)
 
@@ -617,26 +788,28 @@ SUBROUTINE roms_geom_fill_atlas_fieldset (self, afieldset)
   ! problematic with staggered C-grids. That is, ATLAS assumes that all
   ! the variables are at the same location.
 
-  Istr = self%IstrR
-  Iend = self%IendR
-  Jstr = self%JstrR
-  Jend = self%JendR
-  N    = self%N
+  cgrid = r2dvar
+
+  IstrD = self%bounds(cgrid)%IstrD
+  IendD = self%bounds(cgrid)%IendD
+  JstrD = self%bounds(cgrid)%JstrD
+  JendD = self%bounds(cgrid)%JendD
+  N     = self%N
 
   ! Add grid cell area at RHO-points.
 
-  afield = self%afunctionspace%create_field(name='area',                     &
-                                            kind=atlas_real(kind_real),      &
+  afield = self%afunctionspace%create_field(name='area',                       &
+                                            kind=atlas_real(kind_real),        &
                                             levels=0)
   CALL afield%data (r_ptr_1)
-  r_ptr_1 = PACK(self%cell_area(Istr:Iend,Jstr:Jend), .TRUE.)
+  r_ptr_1 = PACK(self%cell_area(IstrD:IendD, JstrD:JendD), .TRUE.)
   CALL afieldset%add (afield)
   CALL afield%final ()
 
   ! Add vertical level unit.
 
-  afield = self%afunctionspace%create_field(name='vunit',                    &
-                                            kind=atlas_real(kind_real),      &
+  afield = self%afunctionspace%create_field(name='vunit',                      &
+                                            kind=atlas_real(kind_real),        &
                                             levels=N)
 
   CALL afield%data (r_ptr_2)
@@ -648,12 +821,12 @@ SUBROUTINE roms_geom_fill_atlas_fieldset (self, afieldset)
 
   ! Add geographical land/sea mask at RHO-points.
 
-  afield = self%afunctionspace%create_field(name='gmask',                    &
-                                            kind=atlas_integer(KIND(0)),     &
+  afield = self%afunctionspace%create_field(name='gmask',                      &
+                                            kind=atlas_integer(KIND(0)),       &
                                             levels=N)
   CALL afield%data (i_ptr)
   DO k = 1,self%N
-    i_ptr(k,:) = INT(PACK(self%rmask(Istr:Iend,Jstr:Jend), .TRUE.))
+    i_ptr(k,:) = INT(PACK(self%rmask(IstrD:IendD, JstrD:JendD), .TRUE.))
   END DO
   CALL afieldset%add (afield)
   CALL afield%final ()
@@ -666,33 +839,36 @@ END SUBROUTINE roms_geom_fill_atlas_fieldset
 SUBROUTINE roms_geom_atlas2struct (self, dx, dx_atlas)
 
   CLASS (roms_geom),     intent(in   ) :: self            !< Geometry object
-  real (kind=kind_real), intent(inout) :: dx(self%LBi:,                      &
+  real (kind=kind_real), intent(inout) :: dx(self%LBi:,                        &
                                              self%LBj:)   !< structured field
   TYPE (atlas_fieldset), intent(inout) :: dx_atlas        !< ATLAS fieldset
 
   TYPE (atlas_field)                   :: afield
   logical, allocatable                 :: fmask(:,:)
-  integer                              :: Istr, Iend, Jstr, Jend
+  integer                              :: IstrD, IendD, JstrD, JendD
+  integer                              :: cgrid
   real (kind_real), pointer            :: r_ptr(:)
 
   ! Initialize. Currently, ATLAS allows a single function space which is
   ! problematic with staggered C-grids. That is, ATLAS assumes that all
   ! the variables are at the same location.
 
-  Istr = self%IstrR
-  Iend = self%IendR
-  Jstr = self%JstrR
-  Jend = self%JendR
+  cgrid = r2dvar
 
-  allocate ( fmask(Istr:Iend, Jstr:Jend) )
+  IstrD = self%bounds(cgrid)%IstrD
+  IendD = self%bounds(cgrid)%IendD
+  JstrD = self%bounds(cgrid)%JstrD
+  JendD = self%bounds(cgrid)%JendD
+
+  allocate ( fmask(IstrD:IendD, JstrD:JendD) )
   fmask = .TRUE.
 
   ! Unpack field from ATLAS.
 
   afield = dx_atlas%field('var')
   CALL afield%data (r_ptr)
-  dx(Istr:Iend, Jstr:Jend) = UNPACK(r_ptr, fmask,                            &
-                                    dx(Istr:Iend, Jstr:Jend))
+  dx(IstrD:IendD, JstrD:JendD) = UNPACK(r_ptr, fmask,                          &
+                                        dx(IstrD:IendD, JstrD:JendD))
   CALL afield%final ()
 
   deallocate ( fmask )
@@ -705,33 +881,36 @@ END SUBROUTINE roms_geom_atlas2struct
 SUBROUTINE roms_geom_struct2atlas (self, dx, dx_atlas)
 
   CLASS (roms_geom),     intent(in   ) :: self            !< Geometry object
-  real (kind=kind_real), intent(inout) :: dx(self%LBi:,                      &
+  real (kind=kind_real), intent(inout) :: dx(self%LBi:,                        &
                                              self%LBj:)   !< Structured field
   TYPE (atlas_fieldset), intent(out  ) :: dx_atlas        !< ATLAS fieldset
 
   TYPE (atlas_field)                 :: afield
-  integer                            :: Istr, Iend, Jstr, Jend
+  integer                            :: IstrD, IendD, JstrD, JendD
+  integer                            :: cgrid
   real (kind_real), pointer          :: r_ptr(:)
 
   ! Initialize. Currently, ATLAS allows a single function space which is
   ! problematic with staggered C-grids. That is, ATLAS assumes that all
   ! the variables are at the same location.
 
-  Istr = self%IstrR
-  Iend = self%IendR
-  Jstr = self%JstrR
-  Jend = self%JendR
+  cgrid = r2dvar
+
+  IstrD = self%bounds(cgrid)%IstrD
+  IendD = self%bounds(cgrid)%IendD
+  JstrD = self%bounds(cgrid)%JstrD
+  JendD = self%bounds(cgrid)%JendD
 
   ! Add structured field to ATLAS.
 
   dx_atlas = atlas_fieldset()
-  afield = self%afunctionspace%create_field('var',                           &
-                                            kind=atlas_real(kind_real),      &
+  afield = self%afunctionspace%create_field('var',                             &
+                                            kind=atlas_real(kind_real),        &
                                             levels=0)
 
   CALL dx_atlas%add (afield)
   CALL afield%data (r_ptr)
-  r_ptr = PACK(dx(Istr:Iend,Jstr:Jend), .TRUE.)
+  r_ptr = PACK(dx(IstrD:IendD, JstrD:JendD), .TRUE.)
   CALL afield%final ()
 
 END SUBROUTINE roms_geom_struct2atlas

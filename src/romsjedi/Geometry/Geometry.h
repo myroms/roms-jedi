@@ -1,8 +1,16 @@
 /*
- * (C) Copyright 2019-2020 UCAR
+ * (C) Copyright 2019-2022 UCAR
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+*!
+ * \brief   **Geometry** C++ class to set up ROMS-JEDI application
+ *
+ * \details These C++ functions creates/clones/destroys the Geometry object
+ *          for a particular ROMS-JEDI application.
+ *
+ * \author  Hernan G. Arango (Rutgers University)
+ * \date    April 2021
  */
 
 #ifndef ROMSJEDI_GEOMETRY_GEOMETRY_H_
@@ -84,6 +92,7 @@ namespace romsjedi {
     GeometryIterator begin() const;
     GeometryIterator end() const;
     int IteratorDimension() const;
+
     std::vector<size_t> variableSizes(const oops::Variables & vars) const;
     std::vector<double> verticalCoord(std::string &) const;
 
@@ -91,15 +100,25 @@ namespace romsjedi {
     const int& toFortran() const {return keyGeom_;}
     const eckit::mpi::Comm & getComm() const {return comm_;}
 
-    atlas::FunctionSpace * atlasFunctionSpace() const;
-    atlas::FieldSet * atlasFieldSet() const;
+    atlas::FunctionSpace * atlasFunctionSpace() const {
+           return atlasFunctionSpace_.get();}
+    atlas::FunctionSpace * atlasFunctionSpaceIncludingHalo() const {
+           return atlasFunctionSpaceIncludingHalo_.get();}
+    atlas::FieldSet * atlasFieldSet() const {
+           return atlasFieldSet_.get();}
+    void latlon(std::vector<double> &,
+                std::vector<double> &,
+                const bool) const;
 
    private:
     Geometry & operator=(const Geometry &);
     void print(std::ostream &) const;
     int keyGeom_;
     const eckit::mpi::Comm & comm_;
-    std::unique_ptr<atlas::functionspace::PointCloud> atlasFunctionSpace_;
+    std::unique_ptr<atlas::functionspace::PointCloud>
+                   atlasFunctionSpace_;
+    std::unique_ptr<atlas::functionspace::PointCloud>
+                   atlasFunctionSpaceIncludingHalo_;
     std::unique_ptr<atlas::FieldSet> atlasFieldSet_;
   };
 }  // namespace romsjedi

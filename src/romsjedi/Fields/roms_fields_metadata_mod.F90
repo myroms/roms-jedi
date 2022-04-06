@@ -1,4 +1,4 @@
-! (C) Copyright 2021-2021 UCAR
+! (C) Copyright 2021-2022 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -21,22 +21,17 @@ USE fckit_pathname_module,      ONLY : fckit_pathname
 
 implicit none
 
-PRIVATE
-
-PUBLIC  :: roms_field_metadata
-PUBLIC  :: roms_fields_metadata
-
 ! ------------------------------------------------------------------------------
 !> Structure holds user configurable metadata associated with a single field
 ! ------------------------------------------------------------------------------
 
-TYPE :: roms_field_metadata
+TYPE, PUBLIC :: roms_field_metadata
 
   logical                        :: masked              !< if interpolating, apply land mask?
 
   integer                        :: Cgrid               !< ROMS C-grid classification
 
-  character (len=1)              :: gtype               !< C-grid type: 'r', 'u', 'v' oe 'w'
+  character (len=1)              :: gtype               !< C-grid type: 'r', 'u', 'v' or 'w'
   character (len=:), allocatable :: levels              !< "surface", or "full_ocn"
   character (len=:), allocatable :: name                !< ROMS internal field name
   character (len=:), allocatable :: getval_name         !< UFO variable name
@@ -52,7 +47,7 @@ END TYPE roms_field_metadata
 !  (state, increment, derived)
 ! ------------------------------------------------------------------------------
 
-TYPE :: roms_fields_metadata
+TYPE, PUBLIC :: roms_fields_metadata
 
   TYPE (roms_field_metadata), allocatable :: metadata(:)
 
@@ -63,6 +58,8 @@ TYPE :: roms_fields_metadata
   PROCEDURE :: get    => roms_fields_metadata_get
 
 END TYPE roms_fields_metadata
+
+PRIVATE
 
 ! ------------------------------------------------------------------------------
 CONTAINS

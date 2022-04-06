@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2020-2021 UCAR
+ * (C) Copyright 2020-2022 UCAR
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -103,17 +103,20 @@ namespace romsjedi {
     void roms_increment_set_atlas_f90(const F90flds &,
                                       const F90geom &,
                                       const oops::Variables &,
-                                      atlas::field::FieldSetImpl *);
+                                      atlas::field::FieldSetImpl *,
+                                      const bool &);
 
     void roms_increment_to_atlas_f90(const F90flds &,
                                      const F90geom &,
                                      const oops::Variables &,
-                                     atlas::field::FieldSetImpl *);
+                                     atlas::field::FieldSetImpl *,
+                                     const bool &);
 
     void roms_increment_from_atlas_f90(const F90flds &,
                                        const F90geom &,
                                        const oops::Variables &,
-                                       atlas::field::FieldSetImpl *);
+                                       const atlas::field::FieldSetImpl *,
+                                       const bool &);
 
     void roms_increment_gpnorm_f90(const F90flds &,
                                    const int &,

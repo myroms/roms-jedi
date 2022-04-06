@@ -1,8 +1,17 @@
 /*
- * (C) Copyright 2019-2021 UCAR
+ * (C) Copyright 2019-2022 UCAR
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+
+ *!
+ * \brief   Sets ROMS-JEDI application Geometry object.
+ *
+ * \details These C++ functions creates/clones/destroys the Geometry object
+ *          for a particular ROMS-JEDI application.
+ *
+ * \author  Hernan G. Arango (Rutgers University)
+ * \date    April 2021
  */
 
 #include "atlas/field.h"
@@ -19,39 +28,68 @@
 namespace romsjedi {
 
 // -----------------------------------------------------------------------------
+/// Geometry constructor.
 
   Geometry::Geometry(const GeometryParameters & params,
                      const eckit::mpi::Comm & comm) : comm_(comm) {
-    // Geometry constructor
-    roms_geom_setup_f90(keyGeom_, params.toConfiguration(), &comm);
+    roms_geom_create_f90(keyGeom_,
+                         params.toConfiguration(),
+                         &comm);
 
     // Set ATLAS lon/lat field
+
     atlasFieldSet_.reset(new atlas::FieldSet());
-    roms_geom_set_atlas_lonlat_f90(keyGeom_, atlasFieldSet_->get());
-    atlas::Field atlasField = atlasFieldSet_->field("lonlat");
+    const bool include_halo = true;
+    roms_geom_set_atlas_lonlat_f90(keyGeom_,
+                                   atlasFieldSet_->get(),
+                                   include_halo);
+    const atlas::Field atlasField = atlasFieldSet_->field("lonlat");
 
     // Create ATLAS function space
-    atlasFunctionSpace_.reset(new atlas::functionspace::PointCloud(atlasField));
+
+    atlasFunctionSpace_.reset(new atlas::functionspace::
+                              PointCloud(atlasField));
+    ASSERT(include_halo);
+
+    // Create ATLAS function space with halo
+
+    const atlas::Field atlasFieldIncludingHalo = atlasFieldSet_->field(
+                                                 "lonlat_including_halo");
+    atlasFunctionSpaceIncludingHalo_.reset(new atlas::functionspace::
+                                      PointCloud(atlasFieldIncludingHalo));
 
     // Set ATLAS function space pointer in Fortran
+
     roms_geom_set_atlas_functionspace_pointer_f90(keyGeom_,
-                                                  atlasFunctionSpace_->get());
+                                      atlasFunctionSpace_->get(),
+                                      atlasFunctionSpaceIncludingHalo_->get());
 
     // Fill ATLAS fieldset
+
     atlasFieldSet_.reset(new atlas::FieldSet());
-    roms_geom_fill_atlas_fieldset_f90(keyGeom_, atlasFieldSet_->get());
+    roms_geom_fill_atlas_fieldset_f90(keyGeom_,
+                                      atlasFieldSet_->get());
   }
 
 // -----------------------------------------------------------------------------
+/// Geometry cloning.
 
   Geometry::Geometry(const Geometry & other)
     : comm_(other.comm_) {
-    roms_geom_clone_f90(keyGeom_, other.keyGeom_);
+    roms_geom_clone_f90(keyGeom_,
+                        other.keyGeom_);
+
     atlasFunctionSpace_.reset(new atlas::functionspace::PointCloud(
                               other.atlasFunctionSpace_->lonlat()));
+    atlasFunctionSpaceIncludingHalo_.reset(new atlas::functionspace::PointCloud(
+                             other.atlasFunctionSpaceIncludingHalo_->lonlat()));
+
     roms_geom_set_atlas_functionspace_pointer_f90(keyGeom_,
-                                                  atlasFunctionSpace_->get());
+                                      atlasFunctionSpace_->get(),
+                                      atlasFunctionSpaceIncludingHalo_->get());
+
     atlasFieldSet_.reset(new atlas::FieldSet());
+
     for (int jfield = 0; jfield < other.atlasFieldSet_->size(); ++jfield) {
       atlas::Field atlasField = other.atlasFieldSet_->field(jfield);
       atlasFieldSet_->add(atlasField);
@@ -59,15 +97,16 @@ namespace romsjedi {
   }
 
 // -----------------------------------------------------------------------------
+/// Geometry destructor.
 
   Geometry::~Geometry() {
     roms_geom_delete_f90(keyGeom_);
   }
 
 // -----------------------------------------------------------------------------
+/// It returns START of the geometry on "this" mpi tile.
 
   GeometryIterator Geometry::begin() const {
-    // return start of the geometry on this mpi tile
     int istr, iend, jstr, jend, kstr, kend;
     roms_geom_start_end_f90(keyGeom_,
                             istr, iend, jstr, jend, kstr, kend);
@@ -76,34 +115,62 @@ namespace romsjedi {
   }
 
 // -----------------------------------------------------------------------------
+/// It return END of the geometry on "this" mpi tile.
 
   GeometryIterator Geometry::end() const {
-    // return end of the geometry on this mpi tile
-    // decided to return index out of bounds for the iterator loops to work
     return GeometryIterator(*this, -1, -1, -1);
   }
 
 // -----------------------------------------------------------------------------
+/// It returns dimension of the iterator
+///   If 2, iterator is over vertical columns
+///   If 3, iterator is over 3D points
 
   int Geometry::IteratorDimension() const {
-    // return dimesnion of the iterator
-    // if 2, iterator is over vertical columns
-    // if 3, iterator is over 3D points
     int rv;
     roms_geomIterator_dimension_f90(keyGeom_, rv);
     return rv;
   }
 
 // -----------------------------------------------------------------------------
+/// It gets the number of vertical level for each field in the variable list.
 
   std::vector<size_t> Geometry::variableSizes(const oops::Variables & vars)
        const {
     std::vector<size_t> lvls(vars.size());
-    roms_geom_get_num_levels_f90(toFortran(), vars, lvls.size(), lvls.data());
+    roms_geom_get_num_levels_f90(toFortran(),
+                                 vars,
+                                 lvls.size(),
+                                 lvls.data());
     return lvls;
   }
 
+
 // -----------------------------------------------------------------------------
+/// It returns the latitudes/longitudes according to the halo switch.
+
+void Geometry::latlon(std::vector<double> & lats,
+                      std::vector<double> & lons,
+                      const bool halo) const {
+  const atlas::functionspace::PointCloud * fspace;
+  if (halo) {
+    fspace = atlasFunctionSpaceIncludingHalo_.get();
+  } else {
+    fspace = atlasFunctionSpace_.get();
+  }
+  const auto lonlat = atlas::array::make_view<double, 2>(fspace->lonlat());
+  const size_t npts = fspace->size();
+  lats.resize(npts);
+  lons.resize(npts);
+  for (size_t jj = 0; jj < npts; ++jj) {
+    lats[jj] = lonlat(jj, 1);
+    lons[jj] = lonlat(jj, 0);
+    if (lons[jj] < 0.0) lons[jj] += 360.0;
+  }
+}
+
+// -----------------------------------------------------------------------------
+/// It prints Geometry information.
 
   void Geometry::print(std::ostream & os) const {
     int nx, ny, nz;
@@ -126,18 +193,6 @@ namespace romsjedi {
     util::abor1_cpp("Geometry::verticalCoord() needs to be implemented.",
                     __FILE__, __LINE__);
     return {};
-  }
-
-// -----------------------------------------------------------------------------
-
-  atlas::FunctionSpace * Geometry::atlasFunctionSpace() const {
-    return atlasFunctionSpace_.get();
-  }
-
-// -----------------------------------------------------------------------------
-
-  atlas::FieldSet * Geometry::atlasFieldSet() const {
-    return atlasFieldSet_.get();
   }
 
 // -----------------------------------------------------------------------------

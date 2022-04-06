@@ -1,4 +1,4 @@
-! (C) Copyright 2020-2021 UCAR
+! (C) Copyright 2020-2022 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -45,7 +45,7 @@ CONTAINS
 ! ------------------------------------------------------------------------------
 !>  Creates an increment object.
 
-SUBROUTINE roms_increment_create_c (c_key_self, c_key_geom, c_vars)          &
+SUBROUTINE roms_increment_create_c (c_key_self, c_key_geom, c_vars)            &
                               BIND (c, name='roms_increment_create_f90')
 
   integer (c_int),     intent(inout) :: c_key_self  !< Increment object pointer
@@ -70,7 +70,7 @@ SUBROUTINE roms_increment_create_c (c_key_self, c_key_geom, c_vars)          &
 ! ------------------------------------------------------------------------------
 !>  Deletes increment object.
 
-SUBROUTINE roms_increment_delete_c (c_key_self)                              &
+SUBROUTINE roms_increment_delete_c (c_key_self)                                &
                               BIND (c, name='roms_increment_delete_f90')
 
   integer (c_int), intent(inout) :: c_key_self      !< Increment object pointer
@@ -86,7 +86,7 @@ END SUBROUTINE roms_increment_delete_c
 ! ------------------------------------------------------------------------------
 !>  Set increment fields to unity.
 
-SUBROUTINE roms_increment_ones_c (c_key_self)                                &
+SUBROUTINE roms_increment_ones_c (c_key_self)                                  &
                             BIND (c, name='roms_increment_ones_f90')
 
   integer (c_int),    intent(in) :: c_key_self      !< Increment object pointer
@@ -116,7 +116,7 @@ END SUBROUTINE roms_increment_zero_c
 ! ------------------------------------------------------------------------------
 !>  Initialize increment with a Dirac delta function.
 
-SUBROUTINE roms_increment_dirac_c (c_key_self, c_conf)                       &
+SUBROUTINE roms_increment_dirac_c (c_key_self, c_conf)                         &
                              BIND (c, name='roms_increment_dirac_f90')
 
   integer (c_int),     intent(in) :: c_key_self     !< Increment object pointer
@@ -132,7 +132,7 @@ END SUBROUTINE roms_increment_dirac_c
 ! ------------------------------------------------------------------------------
 !>  Set increments to random values with a normal distribution.
 
-SUBROUTINE roms_increment_random_c (c_key_self)                              &
+SUBROUTINE roms_increment_random_c (c_key_self)                                &
                               BIND (c, name='roms_increment_random_f90')
 
   integer (c_int),    intent(in) :: c_key_self      !< Increment object pointer
@@ -147,7 +147,7 @@ END SUBROUTINE roms_increment_random_c
 ! ------------------------------------------------------------------------------
 !>  Copy increment fields from RHS to SELF.
 
-SUBROUTINE roms_increment_copy_c (c_key_self, c_key_rhs)                     &
+SUBROUTINE roms_increment_copy_c (c_key_self, c_key_rhs)                       &
                             BIND (c, name='roms_increment_copy_f90')
 
   integer (c_int),    intent(in) :: c_key_self      !< Increment object pointer
@@ -166,7 +166,7 @@ END SUBROUTINE roms_increment_copy_c
 ! ------------------------------------------------------------------------------
 !>  Add RHS increment fields to SELF.
 
-SUBROUTINE roms_increment_self_add_c (c_key_self, c_key_rhs)                 &
+SUBROUTINE roms_increment_self_add_c (c_key_self, c_key_rhs)                   &
                                 BIND (c, name='roms_increment_self_add_f90')
 
   integer (c_int),    intent(in) :: c_key_self      !< Increment object pointer
@@ -185,7 +185,7 @@ END SUBROUTINE roms_increment_self_add_c
 ! ------------------------------------------------------------------------------
 !>  Perform a Shur product between SELF and RHS increment objects.
 
-SUBROUTINE roms_increment_self_schur_c (c_key_self, c_key_rhs)               &
+SUBROUTINE roms_increment_self_schur_c (c_key_self, c_key_rhs)                 &
                                   BIND (c, name='roms_increment_self_schur_f90')
 
   integer (c_int),    intent(in) :: c_key_self      !< Increment object pointer
@@ -204,7 +204,7 @@ END SUBROUTINE roms_increment_self_schur_c
 ! ------------------------------------------------------------------------------
 !>  Subtract two set of increments (SELF - RHS).
 
-SUBROUTINE roms_increment_self_sub_c (c_key_self, c_key_rhs)                 &
+SUBROUTINE roms_increment_self_sub_c (c_key_self, c_key_rhs)                   &
                                 BIND (c, name='roms_increment_self_sub_f90')
 
   integer (c_int),    intent(in) :: c_key_self      !< Increment object pointer
@@ -223,7 +223,7 @@ END SUBROUTINE roms_increment_self_sub_c
 ! ------------------------------------------------------------------------------
 !>  Multiply increment fields by a constant.
 
-SUBROUTINE roms_increment_self_mul_c (c_key_self, c_zz)                      &
+SUBROUTINE roms_increment_self_mul_c (c_key_self, c_zz)                        &
                                 BIND (c, name='roms_increment_self_mul_f90')
 
   integer (c_int),    intent(in) :: c_key_self      !< Increment object pointer
@@ -242,7 +242,7 @@ END SUBROUTINE roms_increment_self_mul_c
 ! ------------------------------------------------------------------------------
 !  Adds to increment fields the procduct of state fields time constant.
 
-SUBROUTINE roms_increment_accumul_c (c_key_self, c_zz, c_key_rhs)            &
+SUBROUTINE roms_increment_accumul_c (c_key_self, c_zz, c_key_rhs)              &
                                BIND (c, name='roms_increment_accumul_f90')
 
   integer (c_int),    intent(in) :: c_key_self      !< Increment object pointer
@@ -265,7 +265,7 @@ END SUBROUTINE roms_increment_accumul_c
 ! ------------------------------------------------------------------------------
 !>  Adds two increment fields (multiplying the RHS first by a constant).
 
-SUBROUTINE roms_increment_axpy_c (c_key_self, c_zz, c_key_rhs)               &
+SUBROUTINE roms_increment_axpy_c (c_key_self, c_zz, c_key_rhs)                 &
                             BIND (c, name='roms_increment_axpy_f90')
 
   integer (c_int),    intent(in) :: c_key_self      !< Increment object pointer
@@ -287,7 +287,7 @@ END SUBROUTINE roms_increment_axpy_c
 ! ------------------------------------------------------------------------------
 !> Computes the global dot-product sum of two sets of increment fields.
 
-SUBROUTINE roms_increment_dot_prod_c (c_key_fld1, c_key_fld2, c_prod)        &
+SUBROUTINE roms_increment_dot_prod_c (c_key_fld1, c_key_fld2, c_prod)          &
                                 BIND (c, name='roms_increment_dot_prod_f90')
 
   integer (c_int), intent(in   ) :: c_key_fld1      !< Field 1 object pointer 
@@ -309,7 +309,7 @@ END SUBROUTINE roms_increment_dot_prod_c
 ! ------------------------------------------------------------------------------
 !> Computes the increment fields by subracting state fields (x1 - x2).
 
-SUBROUTINE roms_increment_diff_incr_c (c_key_lhs, c_key_x1, c_key_x2)        &
+SUBROUTINE roms_increment_diff_incr_c (c_key_lhs, c_key_x1, c_key_x2)          &
                                  BIND (c, name='roms_increment_diff_incr_f90')
 
   integer (c_int),    intent(in) :: c_key_lhs       !< Increment object pointer
@@ -331,7 +331,7 @@ END SUBROUTINE roms_increment_diff_incr_c
 !> Interpolates increment object between geometries.
 !! TODO: implement the spatial interpolation.
 
-SUBROUTINE roms_increment_change_resol_c (c_key_fld, c_key_rhs)               &
+SUBROUTINE roms_increment_change_resol_c (c_key_fld, c_key_rhs)                 &
                               BIND (c, name='roms_increment_change_resol_f90')
 
   integer (c_int),    intent(in) :: c_key_fld       !< Increment object pointer
@@ -342,8 +342,8 @@ SUBROUTINE roms_increment_change_resol_c (c_key_fld, c_key_rhs)               &
   CALL roms_increment_registry%get (c_key_fld, fld)
   CALL roms_increment_registry%get (c_key_rhs, rhs)
 
-  IF ((SIZE(fld%geom%lonr,1) .eq. SIZE(rhs%geom%lonr,1)) .and.               &
-      (SIZE(fld%geom%latr,2) .eq. SIZE(rhs%geom%latr,2)) .and.               &
+  IF ((SIZE(fld%geom%lonr,1) .eq. SIZE(rhs%geom%lonr,1)) .and.                 &
+      (SIZE(fld%geom%latr,2) .eq. SIZE(rhs%geom%latr,2)) .and.                 &
       (fld%geom%N .eq. rhs%geom%N)) THEN
     CALL fld%copy (rhs)
   ELSE
@@ -355,87 +355,96 @@ END SUBROUTINE roms_increment_change_resol_c
 ! ------------------------------------------------------------------------------
 !> Defines increment fields in the ATLAS object.
 
-SUBROUTINE roms_increment_set_atlas_c (c_key_self, c_key_geom, c_vars,       &
-                                       c_afieldset)                          &
+SUBROUTINE roms_increment_set_atlas_c (c_key_self, c_key_geom, c_vars,         &
+                                       c_afieldset, c_include_halo)            &
                                  BIND (c, name='roms_increment_set_atlas_f90')
 
-  integer (c_int),     intent(in) :: c_key_self
-  integer (c_int),     intent(in) :: c_key_geom
-  TYPE (c_ptr), value, intent(in) :: c_vars
-  TYPE (c_ptr), value, intent(in) :: c_afieldset
+  integer (c_int),     intent(in) :: c_key_self     !< Increment fields pointer
+  integer (c_int),     intent(in) :: c_key_geom     !< Geometry pointer
+  TYPE (c_ptr), value, intent(in) :: c_vars         !< List of Varaibles
+  TYPE (c_ptr), value, intent(in) :: c_afieldset    !< ATLAS FieldSet
+  logical,             intent(in) :: c_include_halo !< tile halo switch
 
   TYPE (roms_increment), pointer  :: self
   TYPE (roms_geom),      pointer  :: geom
   TYPE (oops_variables)           :: vars
   TYPE (atlas_fieldset)           :: afieldset
+  logical                         :: include_halo
 
   CALL roms_increment_registry%get (c_key_self, self)
   CALL roms_geom_registry%get (c_key_geom, geom)
 
   vars = oops_variables(c_vars)
   afieldset = atlas_fieldset(c_afieldset)
+  include_halo = c_include_halo
 
-  CALL self%set_atlas (geom, vars, afieldset)
+  CALL self%set_atlas (geom, vars, afieldset, include_halo)
 
 END SUBROUTINE roms_increment_set_atlas_c
 
 ! ------------------------------------------------------------------------------
 !> Loads increment object data into ATLAS object.
 
-SUBROUTINE roms_increment_to_atlas_c (c_key_self, c_key_geom, c_vars,        &
-                                      c_afieldset)                           &
+SUBROUTINE roms_increment_to_atlas_c (c_key_self, c_key_geom, c_vars,          &
+                                      c_afieldset, c_include_halo)             &
                                 BIND (c, name='roms_increment_to_atlas_f90')
 
-  integer (c_int),     intent(in) :: c_key_self
-  integer (c_int),     intent(in) :: c_key_geom
-  TYPE (c_ptr), value, intent(in) :: c_vars
-  TYPE (c_ptr), value, intent(in) :: c_afieldset
+  integer (c_int),     intent(in) :: c_key_self     !< Increment fields pointer
+  integer (c_int),     intent(in) :: c_key_geom     !< Geometry pointer
+  TYPE (c_ptr), value, intent(in) :: c_vars         !< List of Variables
+  TYPE (c_ptr), value, intent(in) :: c_afieldset    !< ATLAS FieldSet
+  logical,             intent(in) :: c_include_halo !< tile halo switch
 
   TYPE (roms_increment), pointer  :: self
   TYPE (roms_geom),  pointer      :: geom
   TYPE (oops_variables)           :: vars
   TYPE (atlas_fieldset)           :: afieldset
+  logical                         :: include_halo
 
   CALL roms_increment_registry%get (c_key_self, self)
   CALL roms_geom_registry%get (c_key_geom, geom)
 
   vars = oops_variables(c_vars)
   afieldset = atlas_fieldset(c_afieldset)
+  include_halo = c_include_halo
 
-  CALL self%to_atlas (geom, vars, afieldset)
+  CALL self%to_atlas (geom, vars, afieldset, include_halo)
 
 END SUBROUTINE roms_increment_to_atlas_c
 
 ! ------------------------------------------------------------------------------
 !> Fills increment object with data from the ATLAS object.
 
-SUBROUTINE roms_increment_from_atlas_c (c_key_self, c_key_geom, c_vars,      &
-                                        c_afieldset)                         &
+SUBROUTINE roms_increment_from_atlas_c (c_key_self, c_key_geom, c_vars,        &
+                                        c_afieldset, c_include_halo)           &
                                   BIND (c, name='roms_increment_from_atlas_f90')
 
-  integer (c_int),     intent(in) :: c_key_self
-  integer (c_int),     intent(in) :: c_key_geom
-  TYPE (c_ptr), value, intent(in) :: c_vars
-  TYPE (c_ptr), value, intent(in) :: c_afieldset
+  integer (c_int),     intent(in) :: c_key_self     !< Increment field pointer
+  integer (c_int),     intent(in) :: c_key_geom     !< Geometry pointer
+  TYPE (c_ptr), value, intent(in) :: c_vars         !< List of Variables
+  TYPE (c_ptr), value, intent(in) :: c_afieldset    !< ATLAS FieldSet
+  logical,             intent(in) :: c_include_halo !< tile halo switch
 
   TYPE (roms_increment), pointer  :: self
   TYPE (roms_geom),  pointer      :: geom
   TYPE (oops_variables)           :: vars
   TYPE (atlas_fieldset)           :: afieldset
+  logical                         :: include_halo
 
   CALL roms_increment_registry%get (c_key_self, self)
   CALL roms_geom_registry%get (c_key_geom, geom)
 
   vars = oops_variables(c_vars)
   afieldset = atlas_fieldset(c_afieldset)
+  include_halo = c_include_halo
 
-  CALL self%from_atlas (geom, vars, afieldset)
+  CALL self%from_atlas (geom, vars, afieldset, include_halo)
 
 END SUBROUTINE roms_increment_from_atlas_c
 
 ! ------------------------------------------------------------------------------
 
-SUBROUTINE roms_increment_read_file_c (c_key_fld, c_conf, c_dt)              &
+SUBROUTINE roms_increment_read_file_c (c_key_fld, c_conf, c_dt)                &
                                  BIND (c, name='roms_increment_read_file_f90')
 
   integer (c_int),     intent(in   ) :: c_key_fld   !< Fields object pointer
@@ -453,7 +462,7 @@ END SUBROUTINE roms_increment_read_file_c
 
 ! ------------------------------------------------------------------------------
 
-SUBROUTINE roms_increment_write_file_c (c_key_fld, c_conf, c_dt)             &
+SUBROUTINE roms_increment_write_file_c (c_key_fld, c_conf, c_dt)               &
                                   BIND (c, name='roms_increment_write_file_f90')
 
   integer (c_int),     intent(in) :: c_key_fld      !< Fields object pointer
@@ -472,7 +481,7 @@ END SUBROUTINE roms_increment_write_file_c
 ! ------------------------------------------------------------------------------
 !> Calculates increment statistics for each field.
 
-SUBROUTINE roms_increment_gpnorm_c (c_key_fld, kf, pstat)                    &
+SUBROUTINE roms_increment_gpnorm_c (c_key_fld, kf, pstat)                      &
                               BIND (c, name='roms_increment_gpnorm_f90')
 
   integer (c_int),    intent(in) :: c_key_fld       !< Fields object pointer
@@ -500,7 +509,7 @@ END SUBROUTINE roms_increment_gpnorm_c
 ! ------------------------------------------------------------------------------
 !> Computes the RMS for all fields in the increment object.
 
-SUBROUTINE roms_increment_rms_c (c_key_fld, prms)                            &
+SUBROUTINE roms_increment_rms_c (c_key_fld, prms)                              &
                            BIND (c, name='roms_increment_rms_f90')
 
   integer (c_int), intent(in   ) :: c_key_fld       !< Fields object pointer
@@ -519,8 +528,8 @@ END SUBROUTINE roms_increment_rms_c
 ! ------------------------------------------------------------------------------
 !> Gets increment values at specified grid points (GeometryIterator).
 
-SUBROUTINE roms_increment_getpoint_c (c_key_fld, c_key_iter, values,         &
-                                      values_len)                            &
+SUBROUTINE roms_increment_getpoint_c (c_key_fld, c_key_iter, values,           &
+                                      values_len)                              &
                                 BIND (c, name='roms_increment_getpoint_f90')
 
   integer (c_int),    intent(in   ) :: c_key_fld       !< Increment object
@@ -541,8 +550,8 @@ END SUBROUTINE roms_increment_getpoint_c
 ! ------------------------------------------------------------------------------
 !> Sets grid points (GeometryIterator) for which increment values are needed.
 
-SUBROUTINE roms_increment_setpoint_c (c_key_fld, c_key_iter, values,         &
-                                      values_len)                            &
+SUBROUTINE roms_increment_setpoint_c (c_key_fld, c_key_iter, values,           &
+                                      values_len)                              &
                                 BIND (c, name='roms_increment_setpoint_f90')
 
   integer (c_int),    intent(inout) :: c_key_fld          !< Increment object
@@ -563,7 +572,7 @@ END SUBROUTINE roms_increment_setpoint_c
 ! ------------------------------------------------------------------------------
 !  Computes the increment object spatial dimensions and number of fields. 
 
-SUBROUTINE roms_incrementnum_c (c_key_fld, nx, ny, nz, nf)                   &
+SUBROUTINE roms_incrementnum_c (c_key_fld, nx, ny, nz, nf)                     &
                           BIND (c, name='roms_increment_sizes_f90')
 
   integer (c_int),      intent(in   ) :: c_key_fld      !< Fields object pointer
@@ -583,7 +592,7 @@ END SUBROUTINE roms_incrementnum_c
 ! ------------------------------------------------------------------------------
 !> Computes the number of elements in the packed increment vector.
 
-SUBROUTINE roms_increment_serial_size_c (c_key_self, c_key_geom, c_vec_size) &
+SUBROUTINE roms_increment_serial_size_c (c_key_self, c_key_geom, c_vec_size)   &
                                  BIND (c, name='roms_increment_serial_size_f90')
 
   integer (c_int),    intent(in ) :: c_key_self     !< Increment object pointer
@@ -606,8 +615,8 @@ END SUBROUTINE roms_increment_serial_size_c
 ! ------------------------------------------------------------------------------
 !> Packs the increment object into a vector.
 
-SUBROUTINE roms_increment_serialize_c (c_key_self, c_key_geom, c_vec_size,   &
-                                       c_vec)                                &
+SUBROUTINE roms_increment_serialize_c (c_key_self, c_key_geom, c_vec_size,     &
+                                       c_vec)                                  &
                                  BIND (c, name='roms_increment_serialize_f90')
 
   integer (c_int),    intent(in ) :: c_key_self     !< Increment object pointer
@@ -631,8 +640,8 @@ END SUBROUTINE roms_increment_serialize_c
 ! ------------------------------------------------------------------------------
 !> Unpacks the all fields in the increment vector.
 
-SUBROUTINE roms_increment_deserialize_c (c_key_self, c_key_geom, c_vec_size, &
-                                         c_vec, c_index)                     &
+SUBROUTINE roms_increment_deserialize_c (c_key_self, c_key_geom, c_vec_size,   &
+                                         c_vec, c_index)                       &
                                  BIND (c, name='roms_increment_deserialize_f90')
 
   integer (c_int),    intent(in   ) :: c_key_self   !< Increment object pointer

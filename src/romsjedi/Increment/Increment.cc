@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2017-2021 UCAR
+ * (C) Copyright 2017-2022 UCAR
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -16,13 +16,19 @@
  * \date    October 2021
  */
 
+#include <algorithm>
 #include <iomanip>
+#include <ios>
+#include <iostream>
 #include <numeric>
+#include <sstream>
+#include <string>
 #include <vector>
+
+#include "atlas/field.h"
 
 #include "eckit/exception/Exceptions.h"
 
-#include "oops/base/LocalIncrement.h"
 #include "oops/base/Variables.h"
 #include "oops/util/DateTime.h"
 #include "oops/util/Duration.h"
@@ -34,7 +40,6 @@
 #include "romsjedi/Geometry/Geometry.h"
 #include "romsjedi/GeometryIterator/GeometryIterator.h"
 #include "romsjedi/Increment/Increment.h"
-#include "romsjedi/Increment/IncrementFortran.h"
 #include "romsjedi/State/State.h"
 
 using oops::Log;
@@ -46,61 +51,98 @@ namespace romsjedi {
   Increment::Increment(const Geometry & geom,
                        const oops::Variables & vars,
                        const util::DateTime & vt)
-    : time_(vt), vars_(vars), geom_(new Geometry(geom))
+    : time_(vt),
+      vars_(vars),
+      geom_(new Geometry(geom))
   {
-    roms_increment_create_f90(keyFlds_, geom_->toFortran(), vars_);
+    Log::trace() << classname() << ":Increment create from geom/vars starting"
+                 << std::endl;
+    roms_increment_create_f90(keyFlds_,
+                              geom_->toFortran(),
+                              vars_);
+
     roms_increment_zero_f90(toFortran());
-    Log::trace() << "Increment constructed." << std::endl;
+    Log::trace() << classname() << ":Increment constructed"
+                 << std::endl;
   }
 
 // -----------------------------------------------------------------------------
 
   Increment::Increment(const Geometry & geom,
                        const Increment & other)
-    : time_(other.time_), vars_(other.vars_), geom_(new Geometry(geom))
+    : time_(other.time_),
+      vars_(other.vars_),
+      geom_(new Geometry(geom))
   {
-    roms_increment_create_f90(keyFlds_, geom_->toFortran(), vars_);
-    roms_increment_change_resol_f90(toFortran(), other.keyFlds_);
-    Log::trace() << "Increment constructed from other." << std::endl;
+    Log::trace() << classname() << ":Increment create from other starting"
+                 << std::endl;
+    roms_increment_create_f90(keyFlds_,
+                              geom_->toFortran(),
+                              vars_);
+
+    roms_increment_change_resol_f90(toFortran(),
+                                    other.keyFlds_);
+    Log::trace() << classname() << ":Increment constructed from other"
+                 << std::endl;
   }
 
 // -----------------------------------------------------------------------------
 
   Increment::Increment(const Increment & other,
                        const bool copy)
-    : time_(other.time_), vars_(other.vars_), geom_(new Geometry(*other.geom_))
+    : time_(other.time_),
+      vars_(other.vars_),
+      geom_(new Geometry(*other.geom_))
   {
-    roms_increment_create_f90(keyFlds_, geom_->toFortran(), vars_);
+    Log::trace() << classname() << ":Increment create from bool copy starting"
+                 << std::endl;
+    roms_increment_create_f90(keyFlds_,
+                              geom_->toFortran(),
+                              vars_);
+
     if (copy) {
-      roms_increment_copy_f90(toFortran(), other.toFortran());
+      roms_increment_copy_f90(toFortran(),
+                              other.toFortran());
     } else {
       roms_increment_zero_f90(toFortran());
     }
-    Log::trace() << "Increment copy-created." << std::endl;
+    Log::trace() << classname() << ":Increment copy-created"
+                 << std::endl;
   }
 
 // -----------------------------------------------------------------------------
 
   Increment::Increment(const Increment & other)
-    : time_(other.time_), vars_(other.vars_), geom_(new Geometry(*other.geom_))
+    : time_(other.time_),
+      vars_(other.vars_),
+      geom_(new Geometry(*other.geom_))
   {
-    roms_increment_create_f90(keyFlds_, geom_->toFortran(), vars_);
-    roms_increment_copy_f90(toFortran(), other.toFortran());
-    Log::trace() << "Increment copy-created." << std::endl;
+    Log::trace() << classname() << ":Increment create copy from other starting"
+                 << std::endl;
+    roms_increment_create_f90(keyFlds_,
+                              geom_->toFortran(),
+                              vars_);
+
+    roms_increment_copy_f90(toFortran(),
+                            other.toFortran());
+    Log::trace() << classname() << ":Increment copy-created"
+                 << std::endl;
   }
 
 // -----------------------------------------------------------------------------
 
   Increment::~Increment() {
     roms_increment_delete_f90(toFortran());
-    Log::trace() << "Increment destructed" << std::endl;
+    Log::trace() << classname() << ":Increment destructed"
+                 << std::endl;
   }
 
 // -----------------------------------------------------------------------------
 /// Basic operators
 // -----------------------------------------------------------------------------
 
-  void Increment::diff(const State & x1, const State & x2) {
+  void Increment::diff(const State & x1,
+                       const State & x2) {
     ASSERT(this->validTime() == x1.validTime());
     ASSERT(this->validTime() == x2.validTime());
     State x1_at_geomres(*geom_, x1);
@@ -114,7 +156,8 @@ namespace romsjedi {
 
   Increment & Increment::operator=(const Increment & rhs) {
     time_ = rhs.time_;
-    roms_increment_copy_f90(toFortran(), rhs.toFortran());
+    roms_increment_copy_f90(toFortran(),
+                            rhs.toFortran());
     return *this;
   }
 
@@ -122,7 +165,8 @@ namespace romsjedi {
 
   Increment & Increment::operator+=(const Increment & dx) {
     ASSERT(this->validTime() == dx.validTime());
-    roms_increment_self_add_f90(toFortran(), dx.toFortran());
+    roms_increment_self_add_f90(toFortran(),
+                                dx.toFortran());
     return *this;
   }
 
@@ -130,14 +174,16 @@ namespace romsjedi {
 
   Increment & Increment::operator-=(const Increment & dx) {
     ASSERT(this->validTime() == dx.validTime());
-    roms_increment_self_sub_f90(toFortran(), dx.toFortran());
+    roms_increment_self_sub_f90(toFortran(),
+                                dx.toFortran());
     return *this;
   }
 
 // -----------------------------------------------------------------------------
 
   Increment & Increment::operator*=(const double & zz) {
-    roms_increment_self_mul_f90(toFortran(), zz);
+    roms_increment_self_mul_f90(toFortran(),
+                                zz);
     return *this;
   }
 
@@ -158,7 +204,8 @@ namespace romsjedi {
   void Increment::dirac(const DiracParameters_ & params) {
     roms_increment_dirac_f90(toFortran(),
                              params.toConfiguration());
-    Log::trace() << "Increment dirac initialized" << std::endl;
+    Log::trace() << classname() << ":dirac initialized"
+                 << std::endl;
   }
 
 // -----------------------------------------------------------------------------
@@ -170,29 +217,38 @@ namespace romsjedi {
 
 // -----------------------------------------------------------------------------
 
-  void Increment::axpy(const double & zz, const Increment & dx,
+  void Increment::axpy(const double & zz,
+                       const Increment & dx,
                        const bool check) {
     ASSERT(!check || validTime() == dx.validTime());
-    roms_increment_axpy_f90(toFortran(), zz, dx.toFortran());
+    roms_increment_axpy_f90(toFortran(),
+                            zz,
+                            dx.toFortran());
   }
 
 // -----------------------------------------------------------------------------
 
-  void Increment::accumul(const double & zz, const State & xx) {
-    roms_increment_accumul_f90(toFortran(), zz, xx.toFortran());
+  void Increment::accumul(const double & zz,
+                          const State & xx) {
+    roms_increment_accumul_f90(toFortran(),
+                               zz,
+                               xx.toFortran());
   }
 
 // -----------------------------------------------------------------------------
 
   void Increment::schur_product_with(const Increment & dx) {
-    roms_increment_self_schur_f90(toFortran(), dx.toFortran());
+    roms_increment_self_schur_f90(toFortran(),
+                                  dx.toFortran());
   }
 
 // -----------------------------------------------------------------------------
 
   double Increment::dot_product_with(const Increment & other) const {
     double zz;
-    roms_increment_dot_prod_f90(toFortran(), other.toFortran(), zz);
+    roms_increment_dot_prod_f90(toFortran(),
+                                other.toFortran(),
+                                zz);
     return zz;
   }
 
@@ -207,7 +263,9 @@ namespace romsjedi {
   oops::LocalIncrement Increment::getLocal(
                         const GeometryIterator & iter) const {
     int nx, ny, nz, nf;
-    roms_increment_sizes_f90(toFortran(), nx, ny, nz, nf);
+    roms_increment_sizes_f90(toFortran(),
+                             nx, ny, nz, nf);
+
     eckit::geometry::Point3 p3 = *iter;
     std::vector<int> varlens(vars_.size());
 
@@ -247,7 +305,9 @@ namespace romsjedi {
     int lenvalues = std::accumulate(varlens.begin(), varlens.end(), 0);
     std::vector<double> values(lenvalues);
 
-    roms_increment_getpoint_f90(keyFlds_, iter.toFortran(), values[0],
+    roms_increment_getpoint_f90(keyFlds_,
+                                iter.toFortran(),
+                                values[0],
                                 values.size());
 
     return oops::LocalIncrement(vars_, values, varlens);
@@ -258,7 +318,9 @@ namespace romsjedi {
   void Increment::setLocal(const oops::LocalIncrement & values,
                            const GeometryIterator & iter) {
     const std::vector<double> vals = values.getVals();
-    roms_increment_setpoint_f90(toFortran(), iter.toFortran(), vals[0],
+    roms_increment_setpoint_f90(toFortran(),
+                                iter.toFortran(),
+                                vals[0],
                                 vals.size());
   }
 
@@ -266,13 +328,13 @@ namespace romsjedi {
 
   void Increment::updateFields(const oops::Variables & Vars) {
     vars_ = Vars;
-    Log::trace() << classname() << " updateFields starting"
+    Log::trace() << classname() << ":updateFields starting"
                  << std::endl;
     Log::debug() << classname() << " Vars in: " << Vars
                  << std::endl;
     roms_increment_update_fields_f90(toFortran(),
                                      vars_);
-    Log::trace() << classname() << " updateFields done"
+    Log::trace() << classname() << ":updateFields done"
                  << std::endl;
   }
 
@@ -281,22 +343,72 @@ namespace romsjedi {
 // -----------------------------------------------------------------------------
 
   void Increment::setAtlas(atlas::FieldSet * afieldset) const {
-    roms_increment_set_atlas_f90(toFortran(), geom_->toFortran(), vars_,
-                                 afieldset->get());
+    const bool include_halo = false;
+    Log::trace() << classname() << ":setAtlas starting"
+                 << std::endl;
+    roms_increment_set_atlas_f90(toFortran(),
+                                 geom_->toFortran(),
+                                 vars_,
+                                 afieldset->get(),
+                                 include_halo);
+    Log::trace() << classname() << ":setAtlas done"
+                 << std::endl;
   }
 
 // -----------------------------------------------------------------------------
 
   void Increment::toAtlas(atlas::FieldSet * afieldset) const {
-    roms_increment_to_atlas_f90(toFortran(), geom_->toFortran(), vars_,
-                                afieldset->get());
-}
+    const bool include_halo = false;
+    Log::trace() << classname() << ":toAtlas starting"
+                 << std::endl;
+    roms_increment_to_atlas_f90(toFortran(),
+                                geom_->toFortran(),
+                                vars_,
+                                afieldset->get(),
+                                include_halo);
+    Log::trace() << classname() << ":toAtlas done"
+                 << std::endl;
+  }
 
 // -----------------------------------------------------------------------------
 
   void Increment::fromAtlas(atlas::FieldSet * afieldset) {
-    roms_increment_from_atlas_f90(toFortran(), geom_->toFortran(), vars_,
-                                  afieldset->get());
+    const bool include_halo = false;
+    Log::trace() << classname() << ":fromAtlas starting"
+                 << std::endl;
+    roms_increment_from_atlas_f90(toFortran(),
+                                  geom_->toFortran(),
+                                  vars_,
+                                  afieldset->get(),
+                                  include_halo);
+    Log::trace() << classname() << ":fromAtlas done"
+                 << std::endl;
+  }
+
+// -----------------------------------------------------------------------------
+
+  void Increment::getFieldSet(const oops::Variables & vars,
+                              atlas::FieldSet & fset) const {
+  const bool include_halo = true;
+  roms_increment_set_atlas_f90(toFortran(),
+                               geom_->toFortran(),
+                               vars, fset.get(),
+                               include_halo);
+  roms_increment_to_atlas_f90(toFortran(),
+                              geom_->toFortran(),
+                              vars, fset.get(),
+                              include_halo);
+  }
+
+// -----------------------------------------------------------------------------
+
+  void Increment::getFieldSetAD(const oops::Variables & vars,
+                                const atlas::FieldSet & fset) {
+  const bool include_halo = true;
+  roms_increment_from_atlas_f90(toFortran(),
+                                geom_->toFortran(),
+                                vars, fset.get(),
+                                include_halo);
   }
 
 // -----------------------------------------------------------------------------
@@ -324,9 +436,14 @@ namespace romsjedi {
   void Increment::print(std::ostream & os) const {
     os << std::endl << "  Valid time: " << validTime();
     int n0, nf;
-    roms_increment_sizes_f90(keyFlds_, n0, n0, n0, nf);
+    roms_increment_sizes_f90(keyFlds_,
+                             n0, n0, n0, nf);
+
     std::vector<double> zstat(3*nf);
-    roms_increment_gpnorm_f90(keyFlds_, nf, zstat[0]);
+    roms_increment_gpnorm_f90(keyFlds_,
+                              nf,
+                              zstat[0]);
+
     for (int jj = 0; jj < nf; ++jj) {
       os << std::endl << std::right << std::setw(7) << vars_[jj]
          << "   min="  <<  std::fixed << std::setw(12) <<
@@ -342,7 +459,10 @@ namespace romsjedi {
 
   double Increment::norm() const {
     double zz = 0.0;
-    roms_increment_rms_f90(toFortran(), zz);
+    roms_increment_rms_f90(toFortran(),
+                           zz);
+    Log::debug() << classname() << ":norm = " << zz
+                 << std::endl;
     return zz;
   }
 
@@ -361,17 +481,11 @@ namespace romsjedi {
 // -----------------------------------------------------------------------------
 
   size_t Increment::serialSize() const {
-    // Field
-
     size_t nn;
-    roms_increment_serial_size_f90(toFortran(), geom_->toFortran(), nn);
-
-    // Magic factor
-
+    roms_increment_serial_size_f90(toFortran(),
+                                   geom_->toFortran(),
+                                   nn);
     nn += 1;
-
-    // Date and time
-
     nn += time_.serialSize();
     return nn;
   }
@@ -383,10 +497,15 @@ namespace romsjedi {
     // Serialize the field
 
     size_t nn;
-    roms_increment_serial_size_f90(toFortran(), geom_->toFortran(), nn);
+    roms_increment_serial_size_f90(toFortran(),
+                                   geom_->toFortran(),
+                                   nn);
+
     std::vector<double> vect_field(nn, 0);
     vect.reserve(vect.size() + nn + 1 + time_.serialSize());
-    roms_increment_serialize_f90(toFortran(), geom_->toFortran(), nn,
+    roms_increment_serialize_f90(toFortran(),
+                                 geom_->toFortran(),
+                                 nn,
                                  vect_field.data());
     vect.insert(vect.end(), vect_field.begin(), vect_field.end());
 
@@ -404,8 +523,11 @@ namespace romsjedi {
                               size_t & index) {
     // Deserialize the field
 
-    roms_increment_deserialize_f90(toFortran(), geom_->toFortran(),
-                                   vect.size(), vect.data(), index);
+    roms_increment_deserialize_f90(toFortran(),
+                                   geom_->toFortran(),
+                                   vect.size(),
+                                   vect.data(),
+                                   index);
 
     // Use magic value to validate deserialization
 

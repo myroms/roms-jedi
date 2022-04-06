@@ -20,11 +20,14 @@ USE kinds,                      ONLY : kind_real
 
 USE fckit_configuration_module, ONLY : fckit_configuration
 
-USE roms_geom_mod,              ONLY : roms_geom
+USE roms_geom_mod,              ONLY : roms_geom,                              &
+                                       roms_tile
 USE roms_increment_mod,         ONLY : roms_increment
 USE roms_state_mod,             ONLY : roms_state
 
 implicit none
+
+!-------------------------------------------------------------------------------
 
 TYPE, PUBLIC :: roms_lvc_model2geovals
 
@@ -34,9 +37,7 @@ TYPE, PUBLIC :: roms_lvc_model2geovals
   integer :: LBi, UBi, LBj, UBj, LBk, UBk  ! array(i,j,k) allocation bounds
   integer :: N                             ! number of vertical levels
 
-  integer :: IstrR, IendR, JstrR, JendR    ! tile RHO-cell full indices range
-  integer :: Istr,  Iend,  Jstr,  Jend     ! computational RHO-indices
-  integer :: IstrU, JstrV                  ! computational U- and V-indices
+  TYPE (roms_tile) :: bounds(4)            ! tile indices range
 
   CONTAINS
 
@@ -46,6 +47,8 @@ TYPE, PUBLIC :: roms_lvc_model2geovals
   PROCEDURE :: multiplyAD => roms_lvc_model2geovals_multiplyAD
 
 END TYPE roms_lvc_model2geovals
+
+!-------------------------------------------------------------------------------
 
 PRIVATE
 
@@ -78,18 +81,7 @@ SUBROUTINE roms_lvc_model2geovals_create (self, geom, bg, fg, conf)
   self%LBk = 1                          ! lower bound K-dimension
   self%UBk = geom%N                     ! upper bound K-dimension
 
-  self%IstrR = geom%IstrR               ! full range I-starting (RHO-points)
-  self%IendR = geom%IendR               ! full range I-ending   (RHO-points)
-  self%JstrR = geom%JstrR               ! full range J-starting (RHO-points)
-  self%JendR = geom%JendR               ! full range J-ending   (RHO-points)
-
-  self%Istr = geom%Istr                 ! full range I-starting (PSI-, U-points)
-  self%Iend = geom%Iend                 ! full range I-ending   (PSI-points)
-  self%Jstr = geom%Jstr                 ! full range J-starting (PSI-, V-points)
-  self%Jend = geom%Jend                 ! full range J-ending   (PSI-points)
-
-  self%IstrU = geom%IstrU               ! computational I-starting (U-points)
-  self%JstrV = geom%JstrV               ! computational J-starting (V-points)
+  self%bounds = geom%bounds             ! tile indices range
 
   ! TODO: If background trajectory is required, get needed fields from state.
 

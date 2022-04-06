@@ -41,7 +41,7 @@ else
   ${MPIrun} ../../bin/romsjedi_hofx.x testinput/makeobs_4d.yaml
   ${MPIrun} ../../bin/romsjedi_hofx.x testinput/makeobs_4d_perturbed.yaml
   ${MPIrun} test_romsjedi_increment testinput/increment.yaml
-  ${MPIrun} ../../romsjedi_diffstates.x testinput/diffstates.yaml
+  ${MPIrun} ../../bin/romsjedi_diffstates.x testinput/diffstates.yaml
   ${MPIrun} test_romsjedi_model testinput/model.yaml
   ${MPIrun} ../../bin/romsjedi_forecast.x testinput/forecast_roms.yaml
   ${MPIrun} ../../bin/romsjedi_error_covariance_training.x testinput/parameters_bump_cor_nicas.yaml

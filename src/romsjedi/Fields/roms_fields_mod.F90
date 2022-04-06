@@ -1,10 +1,10 @@
-! (C) Copyright 2017-2021 UCAR
+! (C) Copyright 2017-2022 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://Qwww.apache.org/licenses/LICENSE-2.0.
 !
 !>
-!! \brief   Field/Fields class for ROMS state vector
+!! \brief   **Fields Class** for ROMS state vector
 !!
 !! \details This class includes several routines used to create, destroy, get,
 !!          check, operate, manipulate, read, and write each field in the state
@@ -16,83 +16,62 @@
 
 MODULE roms_fields_mod
 
+USE atlas_module,               ONLY : atlas_field,                            &
+                                       atlas_fieldset,                         &
+                                       atlas_metadata,                         &
+                                       atlas_real
 USE datetime_mod
 USE duration_mod
 USE fckit_configuration_module, ONLY : fckit_configuration
-USE fckit_log_module,           ONLY : log, fckit_log
+USE fckit_log_module,           ONLY : fckit_log
 USE fckit_mpi_module,           ONLY : fckit_mpi_comm,                         &
                                        fckit_mpi_min,                          &
                                        fckit_mpi_max,                          &
                                        fckit_mpi_sum
-USE kinds,                      ONLY : kind_real
-USE oops_variables_mod
 
-USE roms_interpolate_mod
-USE roms_fields_metadata_mod
+USE kinds,                      ONLY : kind_real
+
+USE oops_variables_mod,         ONLY : oops_variables
+
+USE roms_interpolate_mod,       ONLY : roms_interp_type,                       &
+                                       roms_interp_delete,                     &
+                                       BilinearMethod
+
+! ROMS modules association.
+
+USE dateclock_mod,              ONLY : datestr
+USE mod_iounits,                ONLY : T_IO, stdout
+USE mod_ncparam,                ONLY : NV, Vname, idtime, inp_lib,             &
+                                       io_nf90, io_pio, out_lib,               &
+                                       r2dvar, r3dvar, u2dvar, u3dvar,         &
+                                       v2dvar, v3dvar, w3dvar
+USE mod_netcdf,                 ONLY : netcdf_open, netcdf_close,              &
+                                       netcdf_inq_var, netcdf_put_fvar,        &
+                                       netcdf_sync, var_id
+USE mod_param,                  ONLY : MT, Ngrids, iADM, iNLM
+USE mod_scalars,                ONLY : NoError, Rclock, exit_flag
+USE mp_exchange_mod,            ONLY : ad_mp_exchange2d, ad_mp_exchange3d,     &
+                                       mp_exchange2d, mp_exchange3d
+USE nf_fread2d_mod,             ONLY : nf_fread2d
+USE nf_fread3d_mod,             ONLY : nf_fread3d
+USE nf_fwrite2d_mod,            ONLY : nf_fwrite2d
+USE nf_fwrite3d_mod,            ONLY : nf_fwrite3d
+
+! ROMS-JEDI interface module association.
+
+USE roms_field_mod,             ONLY : roms_field
+USE roms_fields_metadata_mod,   ONLY : roms_field_metadata
 USE roms_fieldsutils_mod
 USE roms_geom_mod,              ONLY : roms_geom
 
-USE mod_iounits,                ONLY : T_IO
-USE mod_scalars,                ONLY : NoError, exit_flag
-
 implicit none
-
-PUBLIC  :: roms_field
-PUBLIC  :: roms_fields
-
-! ------------------------------------------------------------------------------
-!> Structure holds all data and metadata related to a single field variable.
-! ------------------------------------------------------------------------------
-
-TYPE :: roms_field
-
-  integer                            :: Istr, Iend           !< tile I-range
-  integer                            :: Jstr, Jend           !< tile J-range
-  integer                            :: N                    !< number of levels
-  integer                            :: InpNCid, OutNCid     !< NetCDF file IDs
-  integer                            :: InpRec, OutRec       !< NetCDF records
-
-  real (kind=kind_real)              :: CheckSum             !< field checksum
-  real (kind=kind_real)              :: DateNumber           !< Matlab datenum
-  real (kind=kind_real)              :: MinValue             !< field min value
-  real (kind=kind_real)              :: MaxValue             !< field max value
-
-  real (kind=kind_real)              :: spval = 1.0E+37_kind_real
- 
-  real (kind=kind_real),     pointer :: angle(:,:) => null() !< field grid angle
-  real (kind=kind_real),     pointer :: lon(:,:)   => null() !< field lon
-  real (kind=kind_real),     pointer :: lat(:,:)   => null() !< field lat
-  real (kind=kind_real),     pointer :: mask(:,:)  => null() !< field mask
-  real (kind=kind_real), allocatable :: val(:,:,:)           !< field data
-
-  character (len=:),     allocatable :: name                 !< internal name
-
-  character (len=:),     allocatable :: DateTimeString       !< field ISO8601
-  character (len=:),     allocatable :: InpNCname            !< input NetCDF
-  character (len=:),     allocatable :: OutNCname            !< output NetCDF
-  
-  TYPE (roms_field_metadata)         :: metadata             !< metadata from
-                                                             !< YAML config file
-  CONTAINS
-  
-  PROCEDURE :: copy            => roms_field_copy
-  PROCEDURE :: delete          => roms_field_delete
-
-  PROCEDURE :: check_congruent => roms_field_check_congruent
-  PROCEDURE :: update_halo     => roms_field_update_halo
-  PROCEDURE :: stencil_interp  => roms_field_stencil_interp
-
-  PROCEDURE :: io_has_var      => roms_field_io_has_var
-  PROCEDURE :: stats           => roms_field_stats
-
-END TYPE roms_field
 
 ! ------------------------------------------------------------------------------
 !> Structure to holds a collection of roms_field types, and the public routines
 !  to manipulate them. Represents all the fields of a given state or increment.
 ! ------------------------------------------------------------------------------
 
-TYPE :: roms_fields
+TYPE, PUBLIC :: roms_fields
 
   TYPE (roms_geom),  pointer     :: geom => null()    !< Geometry
   TYPE (roms_field), allocatable :: fields(:)         !< Fields set
@@ -106,6 +85,12 @@ TYPE :: roms_fields
   PROCEDURE :: create          => roms_fields_create
   PROCEDURE :: copy            => roms_fields_copy
   PROCEDURE :: delete          => roms_fields_delete
+
+  ! ATLAS.
+
+  PROCEDURE :: set_atlas       => roms_fields_set_atlas
+  PROCEDURE :: to_atlas        => roms_fields_to_atlas
+  PROCEDURE :: from_atlas      => roms_fields_from_atlas
 
   ! Field getters and checkers.
 
@@ -152,6 +137,8 @@ TYPE :: roms_fields
 
 END TYPE roms_fields
 
+! ------------------------------------------------------------------------------
+
 PRIVATE
 
 ! Switch for printing fields information during debugging.
@@ -172,540 +159,6 @@ TYPE (fckit_mpi_comm) :: my_comm
 
 ! ------------------------------------------------------------------------------
 CONTAINS
-! ------------------------------------------------------------------------------
-
-! ------------------------------------------------------------------------------
-! ROMS routines for a single field:
-! ------------------------------------------------------------------------------
-
-! ------------------------------------------------------------------------------
-!> Copy a field from RHS to SELF. SELF must be allocated first. The pointers
-!  (mask, lat, lon) will be different, but should NOT be changed to point to
-!  RHS pointers. Bad things will happen.
-
-SUBROUTINE roms_field_copy (self, rhs)
-
-  CLASS (roms_field), intent(inout) :: self      !< LHS Field object
-  TYPE (roms_field),  intent(in   ) :: rhs       !< RHS Field object
-
-  integer                           :: lstr
-  integer                           :: LBi, UBi, LBj, UBj, N
-
-  IF (LdebugFields .and. (my_comm%rank() .eq. 0)) THEN
-    PRINT '(9a,5(a,i0))', ' roms_field::copy: Processing RHS - ',              &
-                          ' name = ', rhs%name,                                & 
-                          ', metadata%name ', rhs%metadata%name,               &
-                          ', getval_name ', rhs%metadata%getval_name,          &
-                          ', getval_name_surface = ',                          &
-                          rhs%metadata%getval_name_surface,                    &
-                          ', LBi = ', LBOUND(rhs%val,DIM=1),                   &
-                          ', UBi = ', UBOUND(rhs%val,DIM=1),                   &
-                          ', LBj = ', LBOUND(rhs%val,DIM=2),                   &
-                          ', UBj = ', UBOUND(rhs%val,DIM=2),                   &
-                          ', N = ',   UBOUND(rhs%val,DIM=3)
-  END IF
-
-  ! Sometimes, fields are transformed by the variable change operator that
-  ! may change the size of the level dimension.  For example, we can extract
-  ! and operate on a particular level like the surface value to pass SST, SSS,
-  ! or other fields.  In such a case, deallocate/allocate "self" to the correct
-  ! third dimension of "rhs"
-
-  IF ((rhs%name .eq. rhs%metadata%getval_name_surface) .and.                   &
-      (SIZE(self%val, DIM=3) .ne. SIZE(rhs%val, DIM=3))) THEN
-
-    deallocate (self%val)
-
-    LBi = LBOUND(rhs%val, DIM=1)
-    UBi = UBOUND(rhs%val, DIM=1)
-    LBj = LBOUND(rhs%val, DIM=2)
-    UBj = UBOUND(rhs%val, DIM=2)
-    N   = UBOUND(rhs%val, DIM=3)
-
-    allocate ( self%val(LBi:UBi, LBj:UBj, N) )
-    self%N = N
-
-    self%name = rhs%name                      ! update field name and metadata
-    self%metadata = rhs%metadata
-    self%metadata%name = rhs%name 
-  END IF
-
-  ! Special case for processing RHS variable with GeoVaLs as short-name.
-
-  IF ((rhs%name .ne. rhs%metadata%name) .and.                                  &
-      (self%name .ne. rhs%name)) THEN
-    self%name = rhs%name
-  END IF
-
-  ! The only variable that should be different is %val.
-
-  CALL self%check_congruent (rhs)
-
-  ! Copy field values.
-
-  self%val = rhs%val
-
-  ! Then, Copy few properties that are not set in 'roms_fields_init_vars'.
-  ! They are needed elsewhere.
-
-  self%InpNCid        = rhs%InpNCid
-  self%OutNCid        = rhs%OutNCid
-  self%InpRec         = rhs%InpRec
-  self%OutRec         = rhs%OutRec
-  self%DateNumber     = rhs%DateNumber
-
-  IF (allocated(self%DateTimeString)) THEN
-    deallocate ( self%DateTimeString )
-  END IF
-  IF (allocated(rhs%DateTimeString)) THEN
-    lstr = MAX(21, LEN_TRIM(rhs%DateTimeString))
-    allocate ( character(LEN=lstr) :: self%DateTimeString )
-    self%DateTimeString = TRIM(rhs%DateTimeString)
-  END IF
-
-  IF (allocated(self%InpNCname)) THEN
-    deallocate ( self%InpNCname )
-  END IF
-  IF (allocated(rhs%InpNCname)) THEN
-    lstr = LEN_TRIM(rhs%InpNCname)
-    allocate ( character(LEN=lstr) :: self%InpNCname )
-    self%InpNCname = TRIM(rhs%InpNCname)
-  END IF
-
-  IF (allocated(self%OutNCname)) THEN
-    deallocate ( self%OutNCname )
-  END IF
-  IF (allocated(rhs%OutNCname)) THEN
-    lstr = LEN_TRIM(rhs%OutNCname)
-    allocate ( character(LEN=lstr) :: self%OutNCname )
-    self%OutNCname = TRIM(rhs%OutNCname)
-  END IF
-
-END SUBROUTINE roms_field_copy
-
-! ------------------------------------------------------------------------------
-!> Delete field object.
-
-SUBROUTINE roms_field_delete (self)
-
-  CLASS (roms_field), intent(inout) :: self      !< Field object
-
-  IF (LdebugFields .and. (my_comm%rank() .eq. 0)) THEN
-    PRINT '(2a,a5,5(a,i0))', 'Entered roms_field::copy:',                      &
-                             ', variable = ', self%metadata%io_name,           &
-                             '  LBi = ', LBOUND(self%val,DIM=1),               &
-                             ', UBi = ', UBOUND(self%val,DIM=1),               &
-                             ', LBj = ', LBOUND(self%val,DIM=2),               &
-                             ', UBj = ', UBOUND(self%val,DIM=2),               &
-                             ', N = ',   UBOUND(self%val,DIM=3)
-  END IF
-
-  deallocate (self%val)
-
-END SUBROUTINE roms_field_delete
-
-! ------------------------------------------------------------------------------
-!> Make sure the two fields are the same in terms of name, size, and shape.
-
-SUBROUTINE roms_field_check_congruent (self, rhs)
-
-  CLASS (roms_field), intent(in) :: self         !< LHS Field object
-  TYPE (roms_field),  intent(in) :: rhs          !< RHS Field object
-
-  integer                       :: i
-  character (len=1)             :: mydim
-
-  IF (self%N .ne. rhs%N) THEN
-    CALL abor1_ftn ("roms_field::check_congruent: '" // self%name //           &
-                    "', third dimension self%N unequal to '" // rhs%name //    &
-                    "' rhs%N") 
-  END IF
-
-  IF (self%name .ne. rhs%name) THEN
-    CALL abor1_ftn ("roms_field:::check_congruent: '" // self%name //          &
-                    "', variable name self%name unequal '" // rhs%name //      &
-                    "' rhs%name, and possible metadata is different")
-  END IF
-
-  IF (SIZE(SHAPE(self%val)) .ne. SIZE(SHAPE(rhs%val))) THEN
-    CALL abor1_ftn ("roms_field::check_congruent: " //                         &
-                    "variable array rank of self%val unequal rhs%val")
-  END IF
-
-  DO i = 1, SIZE(SHAPE(self%val))
-    IF (SIZE(self%val, DIM=i) .ne. SIZE(rhs%val, DIM=i)) THEN
-      WRITE (mydim,'(i0)') i
-      CALL abor1_ftn ("roms_field::check_congruent:  '" // self%name //        &
-                      "', dimension " // mydim //                              &
-                      " in variable self%val unequal rhs%val")
-    END IF
-  END DO
-
-END SUBROUTINE roms_field_check_congruent
-
-! ------------------------------------------------------------------------------
-!> Update field halo points due to parallel tile partition.
-
-SUBROUTINE roms_field_update_halo (self, geom)
-
-  USE mp_exchange_mod, ONLY : mp_exchange2d, mp_exchange3d
-
-  CLASS (roms_field),        intent(inout) :: self  !< Field object
-  TYPE (roms_geom), pointer, intent(in   ) :: geom  !< Geometry
-
-  logical                                  :: EWperiodic, NSperiodic
-  integer                                  :: model, ng, tile, NghostPoints
-  integer                                  :: LBi, UBi, LBj, UBj, LBk, UBk
-
-  model = geom%model                    ! numerical kernel
-  ng    = geom%ng                       ! nested grid number
-  tile  = geom%tile                     ! tile partition
-
-  NghostPoints = geom%NghostPoints      ! number of ghost points
-
-  EWperiodic = geom%EWperiodic          ! East-West   periodicity switch
-  NSperiodic = geom%NSperiodic          ! North-South periodicity switch
-
-  LBi = geom%LBi
-  UBi = geom%UBi
-  LBj = geom%LBj
-  UBj = geom%UBj
-  LBk = geom%LBk
-  UBk = geom%UBk
-
-  IF (self%N .eq. 1) THEN
-    CALL mp_exchange2d (ng, tile, 1, 1, LBi, UBi, LBj, UBj,                    &
-                        NghostPoints, EWperiodic, NSperiodic,                  &
-                        self%val(:,:,1))
-  ELSE
-     CALL mp_exchange3d (ng, tile, 1, 1, LBi, UBi, LBj, UBj, LBk, UBk,         &
-                         NghostPoints, EWperiodic, NSperiodic,                 &
-                         self%val)
-  END IF
-    
-END SUBROUTINE roms_field_update_halo
-
-! ------------------------------------------------------------------------------
-!> Interpolate 2D or 3D field to different grid stencil location.
-
-SUBROUTINE roms_field_stencil_interp (self, geom, interp, method)
-
-  CLASS (roms_field),        intent(inout) :: self    !< Field object
-  TYPE (roms_geom), pointer, intent(in   ) :: geom    !< Geometry
-  TYPE (roms_interp_type),   intent(inout) :: interp  !< interpolation object
-  integer,                   intent(in   ) :: method  !< interpolation method
-
-  real(kind=kind_real),        allocatable :: val_src(:,:,:)
-
-  ! Make a temporary copy of source field.
-
-  allocate (val_src, MOLD=self%val)
-  val_src = self%val
-
-  ! Interpolate field level-by-level.
-
-  CALL roms_horiz_interp (interp, val_src, self%val, method)
-  IF (exit_flag .ne. NoError) THEN
-    CALL abor1_ftn ('roms_field::stencil_interp: Error in roms_horiz_interp')
-  END IF
-
-  ! Update halo.
-
-  CALL self%update_halo (geom)
-
-  ! Deallocate temporary array.
-
-  IF (allocated(val_src)) deallocate (val_src)
-
-END SUBROUTINE roms_field_stencil_interp
-
-! ------------------------------------------------------------------------------
-!> Initializes ROMS field interpolation structure.
-
-SUBROUTINE roms_field_interp_initialize (geom, field, interp, gtype)
-
-  TYPE (roms_geom),        intent(in   ) :: geom      !< geometry object
-  TYPE (roms_field),       intent(inout) :: field     !< field object
-  TYPE (roms_interp_type), intent(inout) :: interp    !< interpolation object
-  character (len=*),       intent(in   ) :: gtype     !< C-grid location
-
-  integer                                :: LBi, UBi, LBj, UBj
-
-  ! If applicable, deallocate interpolation structure.
-
-  IF (allocated(interp%lon_src)) THEN
-    CALL roms_interp_delete (interp)
-  END IF
-
-  ! Allocate and assign source grid component arrays.
-
-  LBi = LBOUND(field%lon, DIM=1)
-  UBi = UBOUND(field%lon, DIM=1)
-  LBj = LBOUND(field%lon, DIM=2)
-  UBj = UBOUND(field%lon, DIM=2)
-
-  allocate ( interp%lon_src(LBi:UBi,LBj:UBj) )
-  allocate ( interp%lat_src(LBi:UBi,LBj:UBj) )
-  allocate ( interp%angle_src(LBi:UBi,LBj:UBj) )
-  allocate ( interp%mask_src(LBi:UBi,LBj:UBj) )
-
-  interp%ng = geom%ng
-  interp%model = geom%model
-
-  interp%lon_src   = field%lon
-  interp%lat_src   = field%lat
-  interp%angle_src = field%angle
-  interp%mask_src  = field%mask
-
-  interp%LBi_src   = LBi
-  interp%UBi_src   = UBi
-  interp%LBj_src   = LBi
-  interp%UBj_src   = UBi
-
-  interp%Istr_src  = field%Istr
-  interp%Iend_src  = field%Iend
-  interp%Jstr_src  = field%Jstr
-  interp%Jend_src  = field%Jend
-
-  ! Allocate and assign destination grid component arrays.
-
-  LBi = geom%LBi
-  UBi = geom%UBi
-  LBj = geom%LBj
-  UBj = geom%UBj
-
-  allocate ( interp%lon_dst(LBi:UBi,LBj:UBj) )
-  allocate ( interp%lat_dst(LBi:UBi,LBj:UBj) )
-  allocate ( interp%mask_dst(LBi:UBi,LBj:UBj) )
-
-  interp%LBi_dst = LBi
-  interp%UBi_dst = UBi
-  interp%LBj_dst = LBj
-  interp%UBj_dst = UBj
-
-  SELECT CASE (gtype)
-    CASE ('r', 'R', 'w', 'W')            !< RHO-points
-      interp%Istr_dst = geom%IstrR
-      interp%Iend_dst = geom%IendR
-      interp%Jstr_dst = geom%JstrR
-      interp%Jend_dst = geom%JendR
-      interp%lon_dst  = geom%lonr
-      interp%lat_dst  = geom%latr
-      interp%mask_dst = geom%rmask
-    CASE ('u', 'U')                      !< U-points
-      interp%Istr_dst = geom%Istr
-      interp%Iend_dst = geom%IendR
-      interp%Jstr_dst = geom%JstrR
-      interp%Jend_dst = geom%JendR
-      interp%lon_dst  = geom%lonu
-      interp%lat_dst  = geom%latu
-      interp%mask_dst = geom%umask
-    CASE ('v', 'V')                      !< V-points
-      interp%Istr_dst = geom%IstrR
-      interp%Iend_dst = geom%IendR
-      interp%Jstr_dst = geom%Jstr
-      interp%Jend_dst = geom%JendR
-      interp%lon_dst  = geom%lonv
-      interp%lat_dst  = geom%latv
-      interp%mask_dst = geom%vmask
-    CASE DEFAULT
-      CALL abor1_ftn ('roms_field::interp_initialize: unknown C-grid ' //      &
-                      'location = ' // gtype)
-  END SELECT
-
-  ! Compute the horizontal fractional coordinates (x_dst, y_dst) of the source
-  ! cells containing the destination values.
-
-  CALL roms_interp_fractional (interp)
-
-END SUBROUTINE roms_field_interp_initialize
-
-! ------------------------------------------------------------------------------
-!> It checks if field data is in file and return its NetCDF variable index. It
-!! assumes that either 'netcdf_inq_var' or 'pio_netcdf_inq_var' has been called
-!! previously. If found, it checks variable dimensions for consistency with
-!! geometry.
- 
-FUNCTION roms_field_io_has_var (field, geom, vindex) RESULT (foundit)
-
-  USE mod_netcdf,  ONLY : dim_size, n_var, var_dim, var_name
-
-  CLASS (roms_field), intent(in ) :: field         !< Field object  
-  TYPE (roms_geom),   intent(in ) :: geom          !< Geometry object
-  integer,            intent(out) :: vindex        !< variable index
-
-  logical                         :: foundit       !< returned value
-
-  logical                         :: is3d
-  integer                         :: Im, Jm, Km
-  integer                         :: LBk, UBk
-  integer                         :: i, nx, ny, nz
-  character (len=256)             :: text
-
-  ! Initialize
-
-  foundit = .FALSE.
-  is3d    = .FALSE.
-  vindex  = -1
-
-  ! Check if field name is in list of NetCDF variables.
-
-  DO i = 1, n_var
-    IF (field%metadata%io_name .eq. TRIM(var_name(i))) THEN
-      foundit = .TRUE.
-      vindex  = i
-      EXIT
-    END IF
-  END DO
-
-  ! If found variable, check its dimensions for consitency with geometry object.
-
-  IF (foundit) THEN
-
-    SELECT CASE (field%metadata%levels)
-      CASE ('full_ocn')                             ! 3D field, full r-column
-        LBk = 1
-        UBk = geom%N
-        is3d = .TRUE.
-      CASE ('wfull_ocn')                            ! 3D field, full column
-        LBk = 0
-        UBk = geom%N
-        is3d = .TRUE.
-      CASE ('1', 'surface')                  
-        LBk = 1                                     ! 3D field, single level
-        UBk = 1
-    END SELECT
-    Km = UBk-LBk+1
-
-    SELECT CASE (field%metadata%gtype)
-      CASE ('r')                                    ! RHO-points variable
-        Im = geom%Lm + 2
-        Jm = geom%Mm + 2
-      CASE ('u')                                    ! U-points variable
-        Im = geom%Lm + 1
-        Jm = geom%Mm + 2
-      CASE ('v')                                    ! V-points variable
-        Im = geom%Lm + 2
-        Jm = geom%Mm + 1
-      CASE ('w')                                    ! W-poits variable
-        Im = geom%Lm + 2
-        Jm = geom%Mm + 2
-    END SELECT
-
-    ! Check variable dimensions for consistency.
-
-    nx = dim_size(var_dim(1,vindex))
-    ny = dim_size(var_dim(2,vindex))
-
-    IF (is3d) THEN
-
-      nz = dim_size(var_dim(3,vindex))
-      IF ((nx.ne.Im).or.(ny.ne.Jm).or.(nz.ne.Km)) THEN
-        IF (geom%f_comm%rank() .eq. 0) THEN
-          WRITE (text,'(a,3(1x,i0))')                                          &
-                      'roms_field_io_has_var: inconsitent dimensions for '//   &
-                      TRIM(field%metadata%io_name)//':', Im, Jm, Km
-          CALL fckit_log%error (TRIM(text))
-          WRITE (text,'(a,2(1x,i0))')                                          &
-                      'roms_field::io_has_var: expected    dimensions for '//  &
-                      TRIM(field%metadata%io_name)//':', nx, ny, nz
-          CALL fckit_log%error (TRIM(text))
-        END IF
-      END IF
-
-    ELSE
-
-      IF ((nx.ne.Im).or.(ny.ne.Jm)) THEN
-        IF (geom%f_comm%rank() .eq. 0) THEN
-          WRITE (text,'(a,2(1x,i0))')                                          &
-                      'roms_field::io_has_var: inconsitent dimensions for '//  &
-                      TRIM(field%metadata%io_name)//':', Im, Jm
-          CALL fckit_log%error (TRIM(text))
-          WRITE (text,'(a,2(1x,i0))')                                          &
-                      'roms_field::io_has_var: expected    dimensions for '//  &
-                      TRIM(field%metadata%io_name)//':', nx, ny 
-          CALL fckit_log%error (TRIM(text))
-        END IF
-      END IF
-
-    END IF
-
-  END IF
-
-END FUNCTION roms_field_io_has_var
-
-! ------------------------------------------------------------------------------
-!> It computes global field statistics: Min and Max.
-
-SUBROUTINE roms_field_stats (self, fstats)
-
-  USE get_hash_mod, ONLY : get_hash 
-
-  CLASS (roms_field),     intent(in ) :: self         !< Field object  
-  real (kind=kind_real),  intent(out) :: fstats(3)    !< Field statistics
-
-  logical,                allocatable :: mask(:,:)
-  integer                             :: Istr, Iend, Jstr, Jend, LBk, UBk
-  integer                             :: Npts, k
-  integer (kind=SELECTED_INT_KIND(8)) :: checksum
-  real (kind=kind_real),      pointer :: Cwrk(:)
-  real (kind=kind_real),  allocatable :: buffer(:,:)
-  real (kind=kind_real)               :: stats(3)
-
-  ! Initialize.
-
-  Istr = self%Istr
-  Iend = self%Iend
-  Jstr = self%Jstr
-  Jend = self%Jend
-  LBk  = LBOUND(self%val, DIM=3)
-  UBk  = UBOUND(self%val, DIM=3)
-  Npts = (Iend-Istr+1)*(Jend-Jstr+1)*(UBk-LBk+1)
-
-  ! Get the mask and the total number of grid cells.
-
-  allocate ( mask(Istr:Iend, Jstr:Jend) )
-
-  IF (.not. ASSOCIATED(self%mask)) THEN
-    mask = .true.
-  ELSE
-    mask = self%mask(Istr:Iend,Jstr:Jend) > 0.0
-  END IF
-
-  ! Compute field statistics.
-
-  allocate ( buffer(2,LBk:UBk) )
-
-  DO k = LBk, UBK
-    buffer(1,k) = MINVAL(self%val(Istr:Iend, Jstr:Jend, k), MASK=mask)
-    buffer(2,k) = MAXVAL(self%val(Istr:Iend, Jstr:Jend, k), MASK=mask)
-  END DO
-
-  stats(1) = MINVAL(buffer(1,:))
-  stats(2) = MAXVAL(buffer(2,:))
-
-  ! Global reductions
-
-  CALL my_comm%allreduce (stats(1), fstats(1), fckit_mpi_min())
-  CALL my_comm%allreduce (stats(2), fstats(2), fckit_mpi_max())
-
-  ! Compute order invariant 'checksum'.
-
-  IF (.not.associated(Cwrk)) allocate ( Cwrk(Npts) )
-  Cwrk = PACK(self%val(Istr:Iend, Jstr:Jend, LBk:UBk), .TRUE.)
-  CALL get_hash (Cwrk, Npts, checksum, .TRUE.)
-  IF (associated(Cwrk)) deallocate (Cwrk)  
-
-  fstats(3) = REAL(checksum, KIND=kind_real)
-
-  ! Deallocate.
-
-  IF (allocated(mask)) deallocate (mask)
-
-END SUBROUTINE roms_field_stats
-
-! ------------------------------------------------------------------------------
-! ROMS routines for a set of fields:
 ! ------------------------------------------------------------------------------
 
 ! ------------------------------------------------------------------------------
@@ -731,7 +184,7 @@ SUBROUTINE roms_fields_create (self, geom, vars)
   self%geom => geom
 
   IF (LdebugFields .and. (my_comm%rank() .eq. 0)) THEN
-    PRINT '(a, 6(a,i0))', 'roms_fields::create: ',                             &
+    PRINT '(a, 6(a,i0))', 'ROMS_DEBUG roms_fields::create: ',                  &
                           ' tile = ', geom%f_comm%rank(),                      &
                           ', LBi = ', geom%LBi, ', UBi = ', geom%UBi,          &
                           ', LBj = ', geom%LBj, ', UBj = ', geom%UBj,          &
@@ -784,7 +237,7 @@ SUBROUTINE roms_fields_copy (self, rhs)
   ! Initialize the variables based on the names in RHS.
 
   IF (LdebugFields .and. (my_comm%rank() .eq. 0)) THEN
-    PRINT '(a, 6(a,i0))', ' roms_fields::copy:',                               &
+    PRINT '(a, 6(a,i0))', 'ROMS_DEBUG roms_fields::copy:',                     &
                           ' tile = ', rhs%geom%f_comm%rank(),                  &
                           ', LBi = ', rhs%geom%LBi,                            &
                           ', UBi = ', rhs%geom%UBi,                            &
@@ -842,8 +295,307 @@ SUBROUTINE roms_fields_delete (self)
 END SUBROUTINE roms_fields_delete
 
 ! ------------------------------------------------------------------------------
+!> It defines Fields in the ATLAS object.
+
+SUBROUTINE roms_fields_set_atlas (self, geom, vars, afieldset, includeHalo)
+
+  CLASS (roms_fields), target, intent(in   ) :: self         !< Fields object
+  TYPE (roms_geom),            intent(in   ) :: geom         !< Geometry object
+  TYPE (oops_variables),       intent(in   ) :: vars         !< OOPS variables
+  TYPE (atlas_fieldset),       intent(inout) :: afieldset    !< ATLAS fieldset
+  logical, optional,           intent(in   ) :: includeHalo  !< tile halo swtich
+
+  TYPE (roms_field), pointer                    :: field
+  TYPE (atlas_field)                            :: afield
+
+  logical                                       :: include_halo
+  integer                                       :: N, ivar
+
+  ! Determine if including halo points.
+
+  IF (PRESENT(includeHalo)) THEN
+    include_halo = includeHalo
+  ELSE
+    include_halo = .FALSE.
+  END IF
+
+  ! Create and add fields to ATLAS. Currently, ATLAS allows a single function
+  ! space which is problematic with staggered C-grids. That is, ATLAS assumes
+  ! that all the variables are at the same location.
+
+  DO ivar = 1, vars%nvars()
+     
+    CALL self%get (vars%variable(ivar), field)
+
+    IF (LdebugFields .and. (geom%f_comm%rank() .eq. 0)) THEN
+      PRINT '(10a)', 'ROMS_DEBUG roms_fields::set_atlas: oops var = ',         &
+                     TRIM(vars%variable(ivar)),                                &
+                     ', field name = ', TRIM(field%name),                      & 
+                     ', metadata%name = ', field%metadata%name,                &
+                     ', metadata%getval_name = ', field%metadata%getval_name,  &
+                     ', metadata%getval_name_surface = ',                      &
+                     field%metadata%getval_name_surface
+    END IF
+
+    IF (.not.afieldset%has_field(vars%variable(ivar))) THEN
+      N = field%N
+      IF (N .eq. 1) N = 0
+
+      IF (include_halo) THEN
+        afield = geom%afunctionspace_halo%create_field(                        &
+                                                   name=vars%variable(ivar),   &
+                                                   kind=atlas_real(kind_real), &
+                                                   levels=N)
+      ELSE  
+        afield = geom%afunctionspace%create_field(name=vars%variable(ivar),    &
+                                                  kind=atlas_real(kind_real),  &
+                                                  levels=N)
+      END IF
+
+      CALL afieldset%add (afield)                        ! add field
+      CALL afield%final ()                               ! release pointer
+    END IF
+
+  END DO
+
+END SUBROUTINE roms_fields_set_atlas
+
+! ------------------------------------------------------------------------------
+!> It loads Fields data into ATLAS object.
+
+SUBROUTINE roms_fields_to_atlas (self, geom, vars, afieldset, includeHalo)
+
+  CLASS (roms_fields), target, intent(in   ) :: self         !< Fields object
+  TYPE (roms_geom), target,    intent(in   ) :: geom         !< Geometry object
+  TYPE (oops_variables),       intent(in   ) :: vars         !< OOPS variables
+  TYPE (atlas_fieldset),       intent(inout) :: afieldset    !< ATLAS fieldset
+  logical, optional,           intent(in   ) :: includeHalo  !< tile halo swtich
+
+  TYPE (atlas_field)                         :: afield
+  TYPE (atlas_metadata)                      :: meta
+  TYPE (roms_field), pointer                 :: field
+
+  logical                                    :: include_halo
+  integer                                    :: IstrD, IendD, JstrD, JendD
+  integer                                    :: IstrH, IendH, JstrH, JendH
+  integer                                    :: LBi, UBi, LBj, UBj, N
+  integer                                    :: cgrid, ivar, k
+  real (kind=kind_real), allocatable         :: Fdat(:,:,:)
+  real (kind=kind_real), pointer             :: fldptr1(:), fldptr2(:,:)
+
+  ! Determine if including halo points.
+
+  IF (PRESENT(includeHalo)) THEN
+    include_halo = includeHalo
+  ELSE
+    include_halo = .FALSE.
+  END IF
+
+  ! Load fields increment data into the ATLAS object. Currently, ATLAS allows a
+  ! single function space which is problematic with staggered C-grids. That is,
+  ! ATLAS assumes that all the variables are at the same location (cell center,
+  ! A-grid).
+
+  LBi = geom%LBi
+  UBi = geom%UBi
+  LBj = geom%LBj
+  UBj = geom%UBj
+
+  cgrid = r2dvar                                 ! RHO-points (cell-center)
+
+  IstrD = geom%bounds(cgrid)%IstrD
+  IendD = geom%bounds(cgrid)%IendD
+  JstrD = geom%bounds(cgrid)%JstrD
+  JendD = geom%bounds(cgrid)%JendD
+
+  IstrH = geom%bounds(cgrid)%IstrH
+  IendH = geom%bounds(cgrid)%IendH
+  JstrH = geom%bounds(cgrid)%JstrH
+  JendH = geom%bounds(cgrid)%JendH
+
+  DO ivar = 1, vars%nvars()
+
+    CALL self%get (vars%variable(ivar), field)
+
+    IF (LdebugFields .and. (geom%f_comm%rank() .eq. 0)) THEN
+      PRINT '(10a)', 'ROMS_DEBUG roms_fields::to_atlas: oops var = ',          &
+                     TRIM(vars%variable(ivar)),                                &
+                     ', field name = ', TRIM(field%name),                      & 
+                     ', metadata%name = ', field%metadata%name,                &
+                     ', metadata%getval_name = ', field%metadata%getval_name,  &
+                     ', metadata%getval_name_surface = ',                      &
+                     field%metadata%getval_name_surface
+    END IF
+
+    ! If including halo points, copy computational points and perform a
+    ! halo exchange.
+
+    N = field%N
+
+    IF (include_halo) THEN
+      allocate ( Fdat(LBi:UBi, LBj:UBj, N) )
+      Fdat = 0.0_kind_real
+      Fdat(IstrD:IendD, JstrD:JendD, :) = field%val(IstrD:IendD, JstrD:JendD, :)
+
+      IF (field%IsAdjointField) THEN
+        IF (N .eq. 1) THEN
+          CALL ad_mp_exchange2d (geom%ng, geom%tile, iADM, 1,                  &
+                                 LBi, UBi, LBj, UBj,                           &
+                                 geom%NghostPoints,                            &
+                                 geom%EWperiodic, geom%NSperiodic,             &
+                                 Fdat(:,:,1))
+        ELSE
+          CALL ad_mp_exchange3d (geom%ng, geom%tile, iADM, 1,                  &
+                                 LBi, UBi, LBj, UBj, 1, N,                     &
+                                 geom%NghostPoints,                            &
+                                 geom%EWperiodic, geom%NSperiodic,             &
+                                 Fdat)
+        END IF
+      ELSE
+        IF (N .eq. 1) THEN
+          CALL mp_exchange2d (geom%ng, geom%tile, iNLM, 1,                     &
+                              LBi, UBi, LBj, UBj,                              &
+                              geom%NghostPoints,                               &
+                              geom%EWperiodic, geom%NSperiodic,                &
+                              Fdat(:,:,1))
+        ELSE
+          CALL mp_exchange3d (geom%ng, geom%tile, iNLM, 1,                     &
+                              LBi, UBi, LBj, UBj, 1, N,                        &
+                              geom%NghostPoints,                               &
+                              geom%EWperiodic, geom%NSperiodic,                &
+                              Fdat)
+        END IF
+      END IF
+    END IF
+
+    ! Get or create ATLAS field.
+
+    IF (N.eq.1) N = 0
+         
+    IF (afieldset%has_field(vars%variable(ivar))) THEN
+      afield = afieldset%field(vars%variable(ivar))            ! get field
+    ELSE
+      IF (include_halo) THEN                        ! create field with halo
+        afield = geom%afunctionspace_halo%create_field(                        &
+                                                   name=vars%variable(ivar),   &
+                                                   kind=atlas_real(kind_real), &
+                                                   levels=N)
+
+      ELSE                                          ! create field without halo
+        afield = geom%afunctionspace%create_field(name=vars%variable(ivar),    &
+                                                  kind=atlas_real(kind_real),  &
+                                                  levels=N)
+      END IF
+      CALL afieldset%add (afield)                              ! add field
+    END IF
+
+    ! Get field pointer to ATLAS and copy data.
+
+    IF (include_halo) THEN
+      IF (N .eq. 0) THEN
+        CALL afield%data (fldptr1)
+        fldptr1 = RESHAPE(Fdat(IstrH:IendH, JstrH:JendH, 1),                   &
+                          (/ (IendH-IstrH+1)*(JendH-JstrH+1) /))
+      ELSE
+        CALL afield%data (fldptr2)
+        DO k=1,N
+          fldptr2(k,:) = RESHAPE(Fdat(IstrH:IendH, JstrH:JendH, k),            &
+                                 (/ (IendH-IstrH+1)*(JendH-JstrH+1) /))
+        END DO
+      END IF
+    ELSE
+      IF (N .eq. 0) THEN
+        CALL afield%data (fldptr1)
+        fldptr1 = RESHAPE(field%val(IstrD:IendD, JstrD:JendD, 1),              &
+                          (/ (IendD-IstrD+1)*(JendD-JstrD+1) /))
+      ELSE
+        CALL afield%data (fldptr2)
+        DO k=1,N
+          fldptr2(k,:) = RESHAPE(field%val(IstrD:IendD, JstrD:JendD, k),       &
+                                 (/ (IendD-IstrD+1)*(JendD-JstrD+1) /))
+        END DO
+      END IF
+    END IF
+
+    meta = afield%metadata()
+    CALL meta%set ('interp_type', TRIM(field%interp_type))
+
+    CALL afield%final ()                                ! release pointer
+    IF (include_halo) deallocate (Fdat) 
+
+  END DO
+
+END SUBROUTINE roms_fields_to_atlas
+
+! ------------------------------------------------------------------------------
+!> It fills Fields object with data from the ATLAS object.
+
+SUBROUTINE roms_fields_from_atlas (self, geom, vars, afieldset, includeHalo)
+
+  CLASS (roms_fields), target, intent(inout) :: self         !< Fields object
+  TYPE (roms_geom),            intent(in   ) :: geom         !< Geometry object
+  TYPE (oops_variables),       intent(in   ) :: vars         !< OOPS variables
+  TYPE (atlas_fieldset),       intent(in   ) :: afieldset    !< ATLAS fieldset
+  logical, optional,           intent(in   ) :: includeHalo  !< tile halo swtich
+
+  TYPE (roms_field), pointer                 :: field
+  TYPE (atlas_field)                         :: afield
+
+  integer                                    :: IstrD, IendD, JstrD, JendD, N
+  integer                                    :: cgrid, ivar, k
+  real (kind=kind_real), pointer             :: fldptr1(:), fldptr2(:,:)
+
+  ! Initialize increment fields to zero.
+
+  CALL self%zeros ()
+
+  ! Retrieve field increments from the ATLAS object. Currently, ATLAS allows a
+  ! single function space which is problematic with staggered C-grids. That is,
+  ! ATLAS assumes that all the variables are at the same location.
+
+  cgrid = r2dvar                                 ! RHO-points (cell-center)
+
+  IstrD = geom%bounds(cgrid)%IstrD
+  IendD = geom%bounds(cgrid)%IendD
+  JstrD = geom%bounds(cgrid)%JstrD
+  JendD = geom%bounds(cgrid)%JendD
+
+  DO ivar = 1, vars%nvars()
+
+    CALL self%get (vars%variable(ivar), field)
+
+    ! Get field from ATLAS.
+
+    N = field%N
+    IF (N .eq. 1) N = 0
+
+    afield = afieldset%field(vars%variable(ivar))            ! get field
+
+    ! Copy field data.
+
+    IF (N .eq. 0) THEN
+      CALL afield%data (fldptr1)
+      field%val(IstrD:IendD, JstrD:JendD, 1) = RESHAPE(fldptr1,                &
+                                                       (/IendD-IstrD+1,        &
+                                                         JendD-JstrD+1/))
+    ELSE
+      CALL afield%data (fldptr2)
+      DO k = 1, N
+        field%val(IstrD:IendD, JstrD:JendD, k) = RESHAPE(fldptr2(k,:),         &
+                                                         (/IendD-IstrD+1,      &
+                                                           JendD-JstrD+1/))
+      END DO
+    END IF
+
+    CALL afield%final ()                                     ! release pointer
+
+  END DO
+
+END SUBROUTINE roms_fields_from_atlas
+
+! ------------------------------------------------------------------------------
 !> Get a pointer to the roms_field with the given name.
-!!  If no field exists with that name, the prorgam aborts
+!!  If no field exists with that name, the program aborts
 !!  (use roms_fields%has() if you need to check for optional fields)
 
 SUBROUTINE roms_fields_get (self, name, field)
@@ -994,6 +746,13 @@ SUBROUTINE roms_fields_init_vars (self, vars)
     self%fields(i)%name = TRIM(vars(i))
     self%fields(i)%metadata = self%geom%fieldsinfo%get(self%fields(i)%name)
 
+    ! Initialize switches used for parallel tile halo exchange. If adjoint
+    ! field, we need to turn on switch elsewhere for proper management of
+    ! the halo exchange.
+
+    self%fields(i)%IsAdjointField = .FALSE.
+    self%fields(i)%UpdatedHalo    = .FALSE.
+
     ! Initialize Min/Max values.
 
     self%fields(i)%MinValue = self%fields(i)%spval
@@ -1003,28 +762,19 @@ SUBROUTINE roms_fields_init_vars (self, vars)
 
     SELECT CASE (self%fields(i)%metadata%gtype)
       CASE ('r','w')
-        self%fields(i)%Istr    =  self%geom%IstrR
-        self%fields(i)%Iend    =  self%geom%IendR
-        self%fields(i)%Jstr    =  self%geom%JstrR
-        self%fields(i)%Jend    =  self%geom%JendR
+        self%fields(i)%bounds  =  self%geom%bounds(r2dvar)
         self%fields(i)%angle   => self%geom%angler
         self%fields(i)%lon     => self%geom%lonr
         self%fields(i)%lat     => self%geom%latr
         self%fields(i)%mask    => self%geom%rmask
       CASE ('u')
-        self%fields(i)%Istr    =  self%geom%Istr
-        self%fields(i)%Iend    =  self%geom%IendR
-        self%fields(i)%Jstr    =  self%geom%JstrR
-        self%fields(i)%Jend    =  self%geom%JendR
+        self%fields(i)%bounds  =  self%geom%bounds(u2dvar)
         self%fields(i)%angle   => self%geom%angleu
         self%fields(i)%lon     => self%geom%lonu
         self%fields(i)%lat     => self%geom%latu
         self%fields(i)%mask    => self%geom%umask
       CASE ('v')
-        self%fields(i)%Istr    =  self%geom%IstrR
-        self%fields(i)%Iend    =  self%geom%IendR
-        self%fields(i)%Jstr    =  self%geom%Jstr
-        self%fields(i)%Jend    =  self%geom%JendR
+        self%fields(i)%bounds  =  self%geom%bounds(v2dvar)
         self%fields(i)%angle   => self%geom%anglev
         self%fields(i)%lon     => self%geom%lonv
         self%fields(i)%lat     => self%geom%latv
@@ -1067,7 +817,7 @@ SUBROUTINE roms_fields_init_vars (self, vars)
     ! Report.
 
     IF (LdebugFields .and. (self%geom%f_comm%rank() .eq. 0)) THEN
-      PRINT '(2a,a40,a,3(i0,1x))', 'roms_fields::init_vars: ',                 &
+      PRINT '(2a,a40,a,3(i0,1x))', 'ROMS_DEBUG roms_fields::init_vars: ',      &
                                    'created and allocated ',                   &
                                    self%fields(i)%name,                        &
                                    ', SHAPE = ', SHAPE(self%fields(i)%val)
@@ -1213,8 +963,8 @@ SUBROUTINE roms_fields_analytic (self, f_conf, vdate)
       END SELECT      
 
       DO k = 1, field%N
-        DO j = field%Jstr, field%Jend
-          DO i = field%Istr, field%Iend
+        DO j = field%bounds%JstrD, field%bounds%JendD
+          DO i = field%bounds%IstrD, field%bounds%IendD
             field%val(i,j,k) = ana_fields(field%name,                          &
                                           field%mask(i,j),                     &
                                           field%lon(i,j),                      &
@@ -1284,9 +1034,6 @@ END SUBROUTINE roms_fields_analytic
 !! file(s).
 
 SUBROUTINE roms_fields_IO_create (self)
-
-  USE mod_param,   ONLY : MT, Ngrids
-  USE mod_ncparam, ONLY : NV, out_lib
 
   CLASS (roms_fields), intent(inout) :: self        !< Fields object
 
@@ -1470,7 +1217,8 @@ SUBROUTINE roms_fields_mul (self, c)
   END DO
 
   IF (LdebugFields .and. (self%geom%f_comm%rank() .eq. 0)) THEN
-    PRINT '(a,f0.4)', 'roms_fields::mul: multiplication factor, c = ', c
+    PRINT '(a,f0.4)', 'ROMS_DEBUG roms_fields::mul: multiplication factor,'//  &
+                      ' c = ', c
   END IF
 
 END SUBROUTINE roms_fields_mul
@@ -1499,8 +1247,8 @@ SUBROUTINE roms_fields_rms (self, prms)
 
     ! Add the given field to the dot product (only using computational points).
 
-    DO j = field%Jstr, field%Jend
-      DO i = field%Istr, field%Iend
+    DO j = field%bounds%JstrD, field%bounds%JendD
+      DO i = field%bounds%IstrD, field%bounds%IendD
 
         IF (associated(field%mask)) THEN                    ! masking
           IF (field%mask(i,j) < 1.0_kind_real) CYCLE
@@ -1580,8 +1328,8 @@ SUBROUTINE roms_fields_dotprod (fld1, fld2, zprod)
 
     ! Add the given field to the dot product (only using computational points).
 
-    DO j = field1%Jstr, field1%Jend
-      DO i = field1%Istr, field1%Iend
+    DO j = field1%bounds%JstrD, field1%bounds%JendD
+      DO i = field1%bounds%IstrD, field1%bounds%IendD
 
         IF (associated(field1%mask)) THEN
           IF (field1%mask(i,j) < 1.0_kind_real) CYCLE        ! skip land points
@@ -1610,19 +1358,11 @@ SUBROUTINE roms_fields_gpnorm (fld, nf, pstat)
   integer,               intent(in   ) :: nf             !> number of fields
   real (kind=kind_real), intent(inout) :: pstat(3, nf)   !> [min, max, average]
 
-  logical                              :: mask(fld%geom%Istr:fld%geom%Iend,    &
-                                               fld%geom%Jstr:fld%geom%Jend)
-  integer                              :: Istr, Iend, Jstr, Jend, n
+  logical, allocatable                 :: mask(:,:)
+  integer                              :: IstrC, IendC, JstrC, JendC, n
   real (kind=kind_real)                :: my_water_cells, water_cells
   real (kind=kind_real)                :: buffer(3)
   TYPE (roms_field),           pointer :: field
-
-  ! Indices for computational domain (interior points exclude boundary values).
-
-  Istr = fld%geom%Istr
-  Iend = fld%geom%Iend
-  Jstr = fld%geom%Jstr
-  Jend = fld%geom%Jend
 
   ! Calculate global min, max, mean for each field.
  
@@ -1630,12 +1370,21 @@ SUBROUTINE roms_fields_gpnorm (fld, nf, pstat)
 
     CALL fld%get (fld%fields(n)%name, field)
 
+    ! Indices for computational domain.
+
+    IstrC = field%bounds%IstrC
+    IendC = field%bounds%IendC
+    JstrC = field%bounds%JstrC
+    JendC = field%bounds%JendC
+
     ! Get the mask and the total number of grid cells.
+
+    allocate ( mask(IstrC:IendC, JstrC:JendC) )
 
     IF (.not. ASSOCIATED(field%mask)) THEN
       mask = .true.
     ELSE
-      mask = field%mask(Istr:Iend,Jstr:Jend) > 0.0
+      mask = field%mask(IstrC:IendC, JstrC:JendC) > 0.0
     END IF
     my_water_cells = COUNT(mask)
 
@@ -1644,12 +1393,14 @@ SUBROUTINE roms_fields_gpnorm (fld, nf, pstat)
 
     ! Calculate global min/max/mean.
 
-    CALL field_info (field%val(Istr:Iend,Jstr:Jend,:), mask, buffer)
+    CALL field_info (field%val(IstrC:IendC, JstrC:JendC,:), mask, buffer)
 
     CALL fld%geom%f_comm%allreduce (buffer(1), pstat(1,n), fckit_mpi_min())
     CALL fld%geom%f_comm%allreduce (buffer(2), pstat(2,n), fckit_mpi_max())
     CALL fld%geom%f_comm%allreduce (buffer(3), pstat(3,n), fckit_mpi_sum())
     pstat(3,n) = pstat(3,n) / water_cells
+
+    deallocate (mask)
 
   END DO
 
@@ -1678,9 +1429,9 @@ SUBROUTINE roms_fields_colocate (self, gtype)
 
     field => self%fields(i)
 
-    ! Initialize horizontal interpolation structure.
+    ! Initialize horizontal interpolation structure, "interp".
 
-    CALL roms_field_interp_initialize (self%geom, field, interp, gtype)
+    CALL self%fields(i)%interp_initialize (interp, self%geom, gtype)
 
     ! Make a temporary copy of field.
 
@@ -1789,8 +1540,6 @@ END SUBROUTINE roms_fields_deserialize
 
 SUBROUTINE roms_fields_read (self, f_conf, vdate)
 
-  USE mod_ncparam, ONLY : inp_lib, io_nf90, io_pio
-
   CLASS (roms_fields), target, intent(inout) :: self    !< Fields object
   TYPE (fckit_configuration),  intent(in   ) :: f_conf  !< configuration
   TYPE (datetime),             intent(inout) :: vdate   !< Date and Time
@@ -1858,9 +1607,6 @@ END SUBROUTINE roms_fields_read
 !> Writes fields into output file using the standard NetCDF or PIO libraries.
 
 SUBROUTINE roms_fields_write (self, f_conf, vdate)
-
-  USE mod_param,    ONLY : Ngrids
-  USE mod_ncparam,  ONLY : io_nf90, io_pio
 
   CLASS (roms_fields), target, intent(inout) :: self    !< Fields set
   TYPE (fckit_configuration),  intent(in   ) :: f_conf  !< Configuration
@@ -2008,9 +1754,6 @@ END SUBROUTINE roms_fields_write
 
 SUBROUTINE roms_fields_write_debug (self, filename, vdate)
 
-  USE mod_param,    ONLY : Ngrids
-  USE mod_ncparam,  ONLY : io_nf90, io_pio
-
   CLASS (roms_fields), intent(inout) :: self            !< Fields set
   character (len=*),   intent(in   ) :: filename        !< Configuration
   TYPE (datetime),     intent(in   ) :: vdate           !< DateTime
@@ -2088,13 +1831,7 @@ END SUBROUTINE roms_fields_write_debug
 
 SUBROUTINE roms_fields_read_nf90 (self, InpRec, ncname, DateString, DateNumber)
 
-  USE mod_ncparam,    ONLY : io_nf90
-  USE mod_iounits,    ONLY : stdout
-  USE mod_netcdf,     ONLY : netcdf_open, netcdf_close, netcdf_inq_var, var_id
-  USE mod_scalars,    ONLY : NoError, exit_flag
-  USE netcdf,         ONLY : nf90_noerr
-  USE nf_fread2d_mod, ONLY : nf_fread2d
-  USE nf_fread3d_mod, ONLY : nf_fread3d
+  USE netcdf, ONLY : nf90_noerr
 
   CLASS (roms_fields), target, intent(inout) :: self       !< Fields set
   integer,                     intent(in   ) :: InpRec     !< Record to read
@@ -2285,15 +2022,7 @@ END SUBROUTINE roms_fields_read_nf90
 
 SUBROUTINE roms_fields_write_nf90 (self, S, romsTime)
 
-  USE dateclock_mod,   ONLY : datestr
-  USE mod_ncparam,     ONLY : idtime, Vname
-  USE mod_iounits,     ONLY : T_IO
-  USE mod_netcdf,      ONLY : netcdf_inq_var, netcdf_put_fvar, netcdf_sync,    &
-                              var_id
-  USE mod_scalars,     ONLY : Rclock, NoError, exit_flag
-  USE netcdf,          ONLY : nf90_noerr
-  USE nf_fwrite2d_mod, ONLY : nf_fwrite2d
-  USE nf_fwrite3d_mod, ONLY : nf_fwrite3d
+  USE netcdf, ONLY : nf90_noerr
 
   CLASS (roms_fields), target, intent(inout) :: self          !< Fields set
   TYPE (T_IO),                 intent(inout) :: S(:)          !< ROMS I/O struc
@@ -2323,8 +2052,8 @@ SUBROUTINE roms_fields_write_nf90 (self, S, romsTime)
   IF (LdebugFields .and. (LocalPET .eq. 0)) THEN
     lstr = SCAN(S(ng)%name, '/', BACK=.TRUE.) + 1
     lend = LEN_TRIM(S(ng)%name)    
-    PRINT '(2a)', 'roms_fields::write_nf90 - writing state, File = ',          &
-                  S(ng)%name(lstr:lend)
+    PRINT '(2a)', 'ROMS_DEBUG roms_fields::write_nf90 - writing state,'//      &
+                  ' File = ', S(ng)%name(lstr:lend)
   END IF
 
   ! Set writing parameters.
@@ -2454,13 +2183,6 @@ END SUBROUTINE roms_fields_write_nf90
 SUBROUTINE roms_fields_read_pio (self, InpRec, ncname, DateString, DateNumber)
 
   USE mod_pio_netcdf
-
-  USE mod_ncparam,    ONLY : io_pio, r2dvar, r3dvar, u2dvar, u3dvar,           &
-                                                     v2dvar, v3dvar, w3dvar
-  USE mod_iounits,    ONLY : stdout
-  USE mod_scalars,    ONLY : NoError, exit_flag
-  USE nf_fread2d_mod, ONLY : nf_fread2d
-  USE nf_fread3d_mod, ONLY : nf_fread3d
 
   CLASS (roms_fields), target, intent(inout) :: self       !< Fields set
   integer,                     intent(in   ) :: InpRec     !< Record to read
@@ -2712,12 +2434,6 @@ SUBROUTINE roms_fields_write_pio (self, S, romsTime)
   USE mod_pio_netcdf
   USE mod_ncparam
  
- USE dateclock_mod,    ONLY : datestr
-  USE mod_iounits,     ONLY : T_IO
-  USE mod_scalars,     ONLY : NoError, exit_flag
-  USE nf_fwrite2d_mod, ONLY : nf_fwrite2d
-  USE nf_fwrite3d_mod, ONLY : nf_fwrite3d
-
   CLASS (roms_fields), target, intent(inout) :: self         !< Fields set
   TYPE (T_IO),                 intent(inout) :: S(:)         !< ROMS I/O struc
   real (kind=kind_real)                      :: romsTime(:)  !< ROMS time (s)
@@ -2749,8 +2465,8 @@ SUBROUTINE roms_fields_write_pio (self, S, romsTime)
   IF (LdebugFields .and. (LocalPET .eq. 0)) THEN
     lstr = SCAN(S(ng)%name, '/', BACK=.TRUE.) + 1
     lend = LEN_TRIM(S(ng)%name)    
-    PRINT '(2a)', 'roms_fields::write_pio - writing state, File = ',           &
-                  S(ng)%name(lstr:lend)
+    PRINT '(2a)', 'ROMS_DEBUG roms_fields::write_pio - writing state,'//       &
+                  ' File = ', S(ng)%name(lstr:lend)
   END IF
 
   ! Set writing parameters.

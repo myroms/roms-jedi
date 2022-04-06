@@ -1,4 +1,4 @@
-! (C) Copyright 2017-2021 UCAR
+! (C) Copyright 2017-2022 UCAR
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0. 
@@ -35,8 +35,9 @@ USE mod_scalars,                ONLY : NoError, exit_flag
 
 !> ROMS-JEDI interface module association.
 
-USE roms_geom_mod,              ONLY : roms_geom
-USE roms_fields_mod,            ONLY : roms_field
+USE roms_geom_mod,              ONLY : roms_geom,                              &
+                                       roms_tile
+USE roms_field_mod,             ONLY : roms_field
 USE roms_fieldsutils_mod,       ONLY : date2string,                            & 
                                        roms_date2time,                         &
                                        roms_tracer_index
@@ -49,11 +50,14 @@ implicit none
 PRIVATE :: jedi2roms_state                 ! Load JEDI nonlinear state into ROMS
 PRIVATE :: roms2jedi_state                 ! Load ROMS nonlinear state into JEDI
 
+!-------------------------------------------------------------------------------
 !> Fortran derived type to hold ROMS nodel kernel definition.
 
 TYPE, PUBLIC :: roms_model
 
-  TYPE (fckit_mpi_comm) :: f_comm
+  TYPE (fckit_mpi_comm) :: f_comm          ! MPI communicator
+
+  TYPE (roms_tile)      :: bounds(4)       ! tile indice range
 
   integer :: ng                            ! nested grid number
   integer :: tile                          ! domain parallel partition tile
@@ -62,10 +66,6 @@ TYPE, PUBLIC :: roms_model
   integer :: NghostPoints                  ! number of tile ghost points
   integer :: LBi, UBi, LBj, UBj, LBk, UBk  ! array(i,j,k) allocation bounds
   integer :: N                             ! number of vertical levels
-
-  integer :: IstrR, IendR, JstrR, JendR    ! tile RHO-cell full indices range
-  integer :: Istr,  Iend,  Jstr,  Jend     ! computational RHO-indices
-  integer :: IstrU, JstrV                  ! computational U- and V-indices
 
   real(kind=kind_real) :: dt               ! baroclinic timestep size (s)
   real(kind=kind_real) :: INItime          ! Initial conditions time (s)
@@ -86,6 +86,8 @@ TYPE, PUBLIC :: roms_model
   PROCEDURE :: finalize   => roms_model_finalize
 
 END TYPE roms_model
+
+!-------------------------------------------------------------------------------
 
 PRIVATE
 
@@ -175,27 +177,17 @@ SUBROUTINE roms_model_create (self, geom, f_conf)
 
   self%NghostPoints = geom%NghostPoints ! number of ghost points
 
+
   self%LBi = geom%LBi                   ! lower bound I-dimension
   self%UBi = geom%UBi                   ! upper bound I-dimension
   self%LBj = geom%LBj                   ! lower bound J-dimension
   self%UBj = geom%UBj                   ! upper bound J-dimension
 
+  self%bounds = geom%bounds             ! tile indices range
+
   self%N   = geom%N                     ! number of vertical levels
   self%LBk = 1                          ! lower bound K-dimension
   self%UBk = geom%N                     ! upper bound K-dimension
-
-  self%IstrR = geom%IstrR               ! full range I-starting (RHO-points)
-  self%IendR = geom%IendR               ! full range I-ending   (RHO-points)
-  self%JstrR = geom%JstrR               ! full range J-starting (RHO-points)
-  self%JendR = geom%JendR               ! full range J-ending   (RHO-points)
-
-  self%Istr = geom%Istr                 ! full range I-starting (PSI-, U-points)
-  self%Iend = geom%Iend                 ! full range I-ending   (PSI-points)
-  self%Jstr = geom%Jstr                 ! full range J-starting (PSI-, V-points)
-  self%Jend = geom%Jend                 ! full range J-ending   (PSI-points)
-
-  self%IstrU = geom%IstrU               ! computational I-starting (U-points)
-  self%JstrV = geom%JstrV               ! computational J-starting (V-points)
 
 END SUBROUTINE roms_model_create
 
@@ -415,8 +407,9 @@ SUBROUTINE jedi2roms_state (ng, kernel, Tindex, state, DateString)
   ! Set ROMS DateTimeString
 
     IF (LdebugModel .and. (my_comm%rank() .eq. 0))                             &
-      PRINT 10, 'JEDI2ROMS_STATE: Loading JEDI statefield into NL ROMS',       &
-                SIZE(state%fields), MAX(0,jic(ng)-1), Tindex, TRIM(DateString)
+      PRINT 10, 'ROMS_DEBUG jedi2roms_state: Loading JEDI statefield into '//  &
+                'NL ROMS', SIZE(state%fields), MAX(0,jic(ng)-1), Tindex,       &
+                TRIM(DateString)
 
     DO i=1, SIZE(state%fields)
 
@@ -487,17 +480,18 @@ SUBROUTINE roms2jedi_state (ng, kernel, Tindex, state, geom, DateString)
   ROMS_KERNEL : IF (kernel .eq. iNLM) THEN
 
     IF (LdebugModel .and. (my_comm%rank() .eq. 0))                             &
-      PRINT 10, 'ROMS2JEDI_STATE: Loading NL ROMS prediction into JEDI',       &
-                SIZE(state%fields), jic(ng)-1, Tindex, TRIM(DateString)
+      PRINT 10, 'ROMS_DEBUG roms2jedi_state: Loading NL ROMS prediction '//    &
+                'into JEDI', SIZE(state%fields), jic(ng)-1, Tindex,            &
+                TRIM(DateString)
 
     DO i=1, SIZE(state%fields)
 
       field => state%fields(i)
 
-      Is = field%Istr
-      Ie = field%Iend
-      Js = field%Jstr
-      Je = field%Jend
+      Is = field%bounds%IstrD
+      Ie = field%bounds%IendD
+      Js = field%bounds%JstrD
+      Je = field%bounds%JendD
 
       SELECT CASE (field%name)
 
@@ -550,13 +544,14 @@ SUBROUTINE roms2jedi_state (ng, kernel, Tindex, state, geom, DateString)
   geom%z_w = GRID(ng)%z_w
 
   DO k=1,geom%N
-    DO j=geom%Jstr-1,geom%Jend+1
-      DO i=geom%IstrU-1,geom%Iend+1
+    DO j = geom%bounds(u2dvar)%JstrC-1, geom%bounds(u2dvar)%JendC+1
+      DO i = geom%bounds(u2dvar)%IstrC-1, geom%bounds(u2dvar)%IendC+1
         geom%z_u(i,j,k) = 0.5_kind_real*(geom%z_r(i-1,j,k)+geom%z_r(i,j,k))
       END DO
     END DO
-    DO j=geom%JstrV-1,geom%Jend+1
-      DO i=geom%Istr-1,geom%Iend+1
+
+    DO j = geom%bounds(v2dvar)%JstrC-1, geom%bounds(v2dvar)%JendC+1
+      DO i = geom%bounds(v2dvar)%IstrC-1, geom%bounds(v2dvar)%IendC+1
         geom%z_v(i,j,k) = 0.5_kind_real*(geom%z_r(i,j-1,k)+geom%z_r(i,j,k))
       END DO
     END DO

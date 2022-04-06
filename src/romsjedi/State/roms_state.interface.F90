@@ -1,4 +1,4 @@
-! (C) Copyright 2020-2021 UCAR
+! (C) Copyright 2020-2022 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -19,11 +19,10 @@ USE iso_c_binding
 
 USE kinds,                      ONLY : kind_real
 
+USE atlas_module,               ONLY : atlas_fieldset
 USE datetime_mod,               ONLY : datetime, c_f_datetime
 USE fckit_configuration_module, ONLY : fckit_configuration
 USE oops_variables_mod
-USE ufo_geovals_mod_c,          ONLY : ufo_geovals_registry
-USE ufo_geovals_mod,            ONLY : ufo_geovals
 
 USE roms_geom_mod,              ONLY : roms_geom
 USE roms_geom_reg,              ONLY : roms_geom_registry
@@ -496,6 +495,66 @@ SUBROUTINE roms_state_update_fields_c (c_key_self, c_vars)                     &
   CALL self%update_fields (vars)
 
 END SUBROUTINE roms_state_update_fields_c
+
+! ------------------------------------------------------------------------------
+!> It defines State fields in the ATLAS object.
+
+SUBROUTINE roms_state_set_atlas_c (c_key_self, c_key_geom, c_vars,             &
+                                   c_afieldset, c_include_halo)                &
+                             BIND (c, name='roms_state_set_atlas_f90')
+
+  integer (c_int),     intent(in) :: c_key_self     !< State fields pointer
+  integer (c_int),     intent(in) :: c_key_geom     !< Geometry pointer
+  TYPE (c_ptr), value, intent(in) :: c_vars         !< List of Variables
+  TYPE (c_ptr), value, intent(in) :: c_afieldset    !< ATLAS FieldSet
+  logical,             intent(in) :: c_include_halo !< tile halo switch
+
+  TYPE (roms_state),      pointer :: self
+  TYPE (roms_geom),       pointer :: geom
+  TYPE (oops_variables)           :: vars
+  TYPE (atlas_fieldset)           :: afieldset
+  logical                         :: include_halo
+
+  CALL roms_state_registry%get (c_key_self, self)
+  CALL roms_geom_registry%get (c_key_geom, geom)
+
+  vars = oops_variables(c_vars)
+  afieldset = atlas_fieldset(c_afieldset)
+  include_halo = c_include_halo
+
+  CALL self%set_atlas (geom, vars, afieldset, include_halo)
+
+END SUBROUTINE roms_state_set_atlas_c
+
+! ------------------------------------------------------------------------------
+!> It loads State fields data into ATLAS object.
+
+SUBROUTINE roms_state_to_atlas_c (c_key_self, c_key_geom, c_vars,              &
+                                  c_afieldset, c_include_halo)                 &
+                            BIND (c, name='roms_state_to_atlas_f90')
+
+  integer (c_int),     intent(in) :: c_key_self     !< State fields pointer
+  integer (c_int),     intent(in) :: c_key_geom     !< Geometry pointer
+  TYPE (c_ptr), value, intent(in) :: c_vars         !< List of Variables
+  TYPE (c_ptr), value, intent(in) :: c_afieldset    !< ATLAS FieldSet
+  logical,             intent(in) :: c_include_halo !< tile halo switch
+
+  TYPE (roms_state),      pointer :: self
+  TYPE (roms_geom),       pointer :: geom
+  TYPE (oops_variables)           :: vars
+  TYPE (atlas_fieldset)           :: afieldset
+  logical                         :: include_halo
+
+  CALL roms_state_registry%get (c_key_self, self)
+  CALL roms_geom_registry%get (c_key_geom, geom)
+
+  vars = oops_variables(c_vars)
+  afieldset = atlas_fieldset(c_afieldset)
+  include_halo = c_include_halo
+
+  CALL self%to_atlas (geom, vars, afieldset, include_halo)
+
+END SUBROUTINE roms_state_to_atlas_c
 
 ! ------------------------------------------------------------------------------
 

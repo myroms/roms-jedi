@@ -8,6 +8,7 @@
 #ifndef ROMSJEDI_STATE_STATEFORTRAN_H_
 #define ROMSJEDI_STATE_STATEFORTRAN_H_
 
+#include "atlas/field.h"
 #include "oops/base/Variables.h"
 
 #include "romsjedi/Fortran.h"
@@ -56,6 +57,18 @@ namespace romsjedi {
     void roms_state_write_file_f90(const F90flds &,
                                    const eckit::Configuration &,
                                    const util::DateTime * const *);
+
+    void roms_state_set_atlas_f90(const F90flds &,
+                                  const F90geom &,
+                                  const oops::Variables &,
+                                  atlas::field::FieldSetImpl *,
+                                  const bool &);
+
+    void roms_state_to_atlas_f90(const F90flds &,
+                                 const F90geom &,
+                                 const oops::Variables &,
+                                 atlas::field::FieldSetImpl *,
+                                 const bool &);
 
     void roms_state_update_fields_f90(F90flds &,
                                       const oops::Variables &);

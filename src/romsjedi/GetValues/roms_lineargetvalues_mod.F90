@@ -29,14 +29,17 @@ USE ufo_geovals_mod,                ONLY : ufo_geovals
 USE ufo_locations_mod
 USE unstructured_interpolation_mod, ONLY : unstrc_interp
 
+USE mod_ncparam,                    ONLY : r2dvar
+
 USE roms_geom_mod,                  ONLY : roms_geom
 use roms_getvalues_mod,             ONLY : roms_getvalues
-USE roms_fields_mod,                ONLY : roms_fields, roms_field
+USE roms_field_mod,                 ONLY : roms_field
+USE roms_fields_mod,                ONLY : roms_fields
 USE roms_state_mod ,                ONLY : roms_state
 
 implicit none
 
-PRIVATE
+!------------------------------------------------------------------------------
 
 TYPE, PUBLIC, EXTENDS(roms_getvalues) :: roms_lineargetvalues
   
@@ -45,6 +48,10 @@ TYPE, PUBLIC, EXTENDS(roms_getvalues) :: roms_lineargetvalues
   PROCEDURE :: fill_geovals_ad => roms_lineargetvalues_fillgeovals_ad
 
 END TYPE roms_lineargetvalues
+
+!------------------------------------------------------------------------------
+
+PRIVATE
 
 logical :: LdebugLinearGetValues = .FALSE.
 
@@ -74,12 +81,12 @@ SUBROUTINE roms_lineargetvalues_fillgeovals_ad (self, geom, incr,             &
   real (kind=kind_real),          allocatable :: incr3d(:,:,:), incr3d_un(:)
   TYPE (roms_field),                  pointer :: ad_field
 
-  ! Starting and ending indices for the compute domain tile (no halo).
+  ! Starting and ending RHO-cell indices for the compute domain tile (no halo).
 
-  Istr = geom%Istr
-  Iend = geom%Iend
-  Jstr = geom%Jstr
-  Jend = geom%Jend
+  Istr = geom%bounds(r2dvar)%IstrD
+  Iend = geom%bounds(r2dvar)%IendD
+  Jstr = geom%bounds(r2dvar)%JstrD
+  Jend = geom%bounds(r2dvar)%JendD
   N    = geom%N                         ! number of vertical levels in ROMS
 
   ! Get mask for locations in this time window.

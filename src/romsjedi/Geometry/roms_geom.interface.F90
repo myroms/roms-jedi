@@ -5,7 +5,7 @@
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 !
 !>
-!! \brief    Fortran and C++ binding interface for ROMS-JEDI Geometry class
+!! \brief    Fortran and C++ binding interface for ROMS-JEDI Geometry Class
 !!
 !! \details  Interoperability mechanism for the Geometry class that allows
 !!           Fortran to invoke C++ functions and vice versa C++ to invoke
@@ -19,12 +19,14 @@ MODULE roms_geom_mod_c
 USE iso_c_binding
 
 USE atlas_module,               ONLY : atlas_fieldset,                       &
-                                       atlas_functionspace_pointcloud
+                                       atlas_functionspace
 USE fckit_configuration_module, ONLY : fckit_configuration
 USE fckit_mpi_module,           ONLY : fckit_mpi_comm
-use oops_variables_mod
+USE oops_variables_mod,         ONLY : oops_variables
 
-use roms_fields_metadata_mod
+USE mod_ncparam,                ONLY : r2dvar
+
+USE roms_fields_metadata_mod,   ONLY : roms_field_metadata
 USE roms_geom_mod,              ONLY : roms_geom
 USE roms_geom_reg,              ONLY : roms_geom_registry
 
@@ -39,8 +41,8 @@ CONTAINS
 ! ------------------------------------------------------------------------------
 !> Setup geometry object
 
-SUBROUTINE roms_geom_setup_c (c_key_self, c_conf, c_comm)                      &
-                        BIND (c, name='roms_geom_setup_f90')
+SUBROUTINE roms_geom_create_c (c_key_self, c_conf, c_comm)                     &
+                        BIND (c, name='roms_geom_create_f90')
 
   integer (c_int),     intent(inout) :: c_key_self
   TYPE (c_ptr), value, intent(in   ) :: c_conf
@@ -52,9 +54,9 @@ SUBROUTINE roms_geom_setup_c (c_key_self, c_conf, c_comm)                      &
   CALL roms_geom_registry%add (c_key_self)
   CALL roms_geom_registry%get (c_key_self, self)
 
-  CALL self%init (fckit_configuration(c_conf), fckit_mpi_comm(c_comm))
+  CALL self%create (fckit_configuration(c_conf), fckit_mpi_comm(c_comm))
 
-END SUBROUTINE roms_geom_setup_c
+END SUBROUTINE roms_geom_create_c
 
 ! ------------------------------------------------------------------------------
 !> Clone geometry object
@@ -86,7 +88,8 @@ SUBROUTINE roms_geom_delete_c (c_key_self)                                     &
   TYPE (roms_geom),     pointer :: self
 
   CALL roms_geom_registry%get (c_key_self, self)
-  CALL self%end ()
+
+  CALL self%delete ()
   CALL roms_geom_registry%remove (c_key_self)
 
 END SUBROUTINE roms_geom_delete_c
@@ -105,10 +108,10 @@ SUBROUTINE roms_geom_start_end_c (c_key_self, Istr, Iend, Jstr, Jend,          &
 
   CALL roms_geom_registry%get (c_key_self, self)
 
-  Istr = self%Istr
-  Iend = self%Iend
-  Jstr = self%Jstr
-  Jend = self%Jend
+  Istr = self%bounds(r2dvar)%IstrD
+  Iend = self%bounds(r2dvar)%IendD
+  Jstr = self%bounds(r2dvar)%JstrD
+  Jend = self%bounds(r2dvar)%JendD
   Kstr = 1
   Kend = self%N
 
@@ -143,10 +146,10 @@ SUBROUTINE roms_geom_info_c (c_key_self, nx, ny, nz, tile,                     &
   LBj = self%LBj
   UBj = self%UBj
 
-  Istr = self%Istr
-  Iend = self%Iend
-  Jstr = self%Jstr
-  Jend = self%Jend
+  Istr = self%bounds(r2dvar)%IstrD
+  Iend = self%bounds(r2dvar)%IendD
+  Jstr = self%bounds(r2dvar)%JstrD
+  Jend = self%bounds(r2dvar)%JendD
 
 END SUBROUTINE roms_geom_info_c
 
@@ -194,31 +197,36 @@ SUBROUTINE roms_geom_get_num_levels_c (c_key_self, c_vars,                     &
 END SUBROUTINE roms_geom_get_num_levels_c
 
 ! ------------------------------------------------------------------------------
-!> Set ATLAS functionspace pointer
+!> Set ATLAS FunctionSpace pointers.
 
 SUBROUTINE roms_geom_set_atlas_functionspace_pointer_c (c_key_self,            &
-                                                        c_afunctionspace)      &
+                                                        c_aFuncSpace,          &
+                                                        c_aFuncSpace_halo)     &
            BIND (c, name='roms_geom_set_atlas_functionspace_pointer_f90')
 
   integer (c_int),     intent(in) :: c_key_self        !< Key to Geometry object
-  TYPE (c_ptr), value, intent(in) :: c_afunctionspace  !< Key to ATLAS function
+  TYPE (c_ptr), value, intent(in) :: c_aFuncSpace      !< Key to ATLAS function
+  TYPE (c_ptr), value, intent(in) :: c_aFuncSpace_halo !< Key to ATLAS function
 
   TYPE (roms_geom), pointer       :: self
 
   CALL roms_geom_registry%get (c_key_self, self)
 
-  self%afunctionspace = atlas_functionspace_pointcloud(c_afunctionspace)
+  self%afunctionspace = atlas_functionspace(c_aFuncSpace)
+  self%afunctionspace_halo = atlas_functionspace(c_aFuncSpace_halo)
 
 END SUBROUTINE roms_geom_set_atlas_functionspace_pointer_c
 
 ! ------------------------------------------------------------------------------
-!> Set ATLAS **lonlat** fieldset.
+!> Set ATLAS **lonlat** and **lonlat_including_halo** FieldSets.
 
-SUBROUTINE roms_geom_set_atlas_lonlat_c (c_key_self, c_afieldset)              &
+SUBROUTINE roms_geom_set_atlas_lonlat_c (c_key_self, c_afieldset,              &
+                                         c_include_halo)                       &
            BIND (c, name='roms_geom_set_atlas_lonlat_f90')
 
   integer (c_int),     intent(in) :: c_key_self        !< Key to Geometry object
   TYPE (c_ptr), value, intent(in) :: c_afieldset       !< Key to ATLAS fieldset
+  logical,             intent(in) :: c_include_halo    !< tile halo switch
 
   TYPE (roms_geom), pointer       :: self
   TYPE (atlas_fieldset)           :: afieldset
@@ -226,7 +234,7 @@ SUBROUTINE roms_geom_set_atlas_lonlat_c (c_key_self, c_afieldset)              &
   CALL roms_geom_registry%get (c_key_self, self)
   afieldset = atlas_fieldset(c_afieldset)
 
-  CALL self%set_atlas_lonlat (afieldset)
+  CALL self%set_atlas_lonlat (afieldset, c_include_halo)
 
 END SUBROUTINE roms_geom_set_atlas_lonlat_c
 

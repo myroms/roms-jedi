@@ -21,11 +21,13 @@ USE iso_c_binding
 
 USE kinds
 
+USE mod_ncparam,   ONLY : r2dvar
+
 USE roms_geom_mod, ONLY : roms_geom
 
 implicit none
 
-PRIVATE
+! ------------------------------------------------------------------------------
 
 TYPE, PUBLIC :: roms_geomIterator
 
@@ -43,6 +45,10 @@ TYPE, PUBLIC :: roms_geomIterator
   PROCEDURE :: next    => roms_geomIterator_next
 
 END TYPE roms_geomIterator
+
+! ------------------------------------------------------------------------------
+
+PRIVATE
 
 ! ------------------------------------------------------------------------------
 CONTAINS
@@ -133,22 +139,26 @@ SUBROUTINE roms_geomIterator_current (self, lon, lat, depth)
   real (kind_real),          intent(out) :: lon   !< Longitude
   real (kind_real),          intent(out) :: depth !< Depth
 
+  integer                                :: Istr, Iend, Jstr, Jend
+
   ! Check Iindex/Jindex.
+
+  Istr = self%geom%bounds(r2dvar)%IstrD
+  Iend = self%geom%bounds(r2dvar)%IendD
+  Jstr = self%geom%bounds(r2dvar)%JstrD
+  Jend = self%geom%bounds(r2dvar)%JendD
 
   IF ((self%Iindex .eq. -1) .and. (self%Jindex .eq. -1)) THEN
 
-    lat = self%geom%latr(self%geom%Iend, self%geom%Jend)   ! special case
-    lon = self%geom%lonr(self%geom%Iend, self%geom%Jend)   ! {-1,-1} means
-                                                           ! end of the grid
+    lat = self%geom%latr(Iend, Jend)                    ! special case {-1,-1}
+    lon = self%geom%lonr(Iend, Jend)                    ! means end of the grid
 
-  ELSE IF ((self%Iindex .lt. self%geom%Istr) .or.                              &
-           (self%Iindex .gt. self%geom%Iend) .or.                              &
-           (self%Jindex .lt. self%geom%Jstr) .or.                              &
-           (self%Jindex .gt. self%geom%Jend)) THEN
+  ELSE IF ((self%Iindex .lt. Istr) .or. (self%Iindex .gt. Iend) .or.           &
+           (self%Jindex .lt. Jstr) .or. (self%Jindex .gt. Jend)) THEN
 
     CALL abor1_ftn ('roms_geomIterator_current: iterator out of bounds')
 
-  ELSE                                                     ! inside of the grid
+  ELSE                                                  ! inside of the grid
 
     lat = self%geom%latr(self%Iindex, self%Jindex)
     lon = self%geom%lonr(self%Iindex, self%Jindex)
@@ -162,7 +172,7 @@ SUBROUTINE roms_geomIterator_current (self, lon, lat, depth)
       depth = 0.0_kind_real
     CASE (3)                                               ! 3D iterator
       IF (self%Kindex .eq. -1) THEN
-        depth = self%geom%z_r(self%geom%Istr, self%geom%Jstr, self%geom%N)
+        depth = self%geom%z_r(Istr, Jstr, self%geom%N)
       ELSE IF (self%Kindex == 0) then
         depth = 0.0_kind_real
       ELSE IF ((self%Kindex .lt. 0) .or. (self%Kindex .gt. self%geom%N)) THEN
@@ -186,6 +196,12 @@ SUBROUTINE roms_geomIterator_next (self)
   CLASS (roms_geomIterator), intent(inout) :: self    !< GeometryIterator Object
 
   integer                                  :: Iindex, Jindex, Kindex
+  integer                                  :: Istr, Iend, Jstr, Jend
+
+  Istr   = self%geom%bounds(r2dvar)%IstrD
+  Iend   = self%geom%bounds(r2dvar)%IendD
+  Jstr   = self%geom%bounds(r2dvar)%JstrD
+  Jend   = self%geom%bounds(r2dvar)%JendD
 
   Iindex = self%Iindex
   Jindex = self%Jindex
@@ -195,26 +211,26 @@ SUBROUTINE roms_geomIterator_next (self)
 
   SELECT CASE (self%geom%iterator_dimension)
     CASE (2)                                                ! 2D iterator
-      IF (Iindex .lt. self%geom%Iend) THEN
+      IF (Iindex .lt. Iend) THEN
         Iindex = Iindex + 1
-      ELSE IF (Iindex .eq. self%geom%Iend) THEN
-        Iindex = self%geom%Istr
+      ELSE IF (Iindex .eq. Iend) THEN
+        Iindex = Istr
         Jindex = Jindex + 1
       END IF
 
-      IF (Jindex .gt. self%geom%Jend) THEN
+      IF (Jindex .gt. Jend) THEN
         Iindex = -1
         Jindex = -1
       END IF
     CASE (3)                                                ! 3D iterator
-      IF (Iindex .lt. self%geom%Iend) THEN
+      IF (Iindex .lt. Iend) THEN
         Iindex = Iindex + 1
-      ELSE IF (Iindex .eq. self%geom%Iend) THEN
-        Iindex = self%geom%Istr
-        IF (Jindex .lt. self%geom%Jend) THEN
+      ELSE IF (Iindex .eq. Iend) THEN
+        Iindex = Istr
+        IF (Jindex .lt. Jend) THEN
           Jindex = Jindex + 1
-        ELSE IF (Jindex .eq. self%geom%Jend) THEN
-          Jindex = self%geom%Jstr
+        ELSE IF (Jindex .eq. Jend) THEN
+          Jindex = Jstr
           Kindex = Kindex + 1
         END IF                                              ! J-loop
       END IF                                                ! I-loop

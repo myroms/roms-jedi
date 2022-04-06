@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2017-2020 UCAR
+ * (C) Copyright 2017-2022 UCAR
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -39,11 +39,6 @@ namespace eckit {
 namespace romsjedi {
   class Geometry;
   class Increment;
-}
-
-namespace ufo {
-  class GeoVaLs;
-  class Locations;
 }
 
 //-----------------------------------------------------------------------------
@@ -143,33 +138,45 @@ namespace romsjedi {
       static const std::string classname() {return "romsjedi::State";}
 
       /// Constructor, destructor
-      State(const Geometry &, const oops::Variables &,
+
+      State(const Geometry &,
+            const oops::Variables &,
             const util::DateTime &);
-      State(const Geometry &, const Parameters_ &);
-      State(const Geometry &, const State &);
+      State(const Geometry &,
+            const Parameters_ &);
+      State(const Geometry &,
+            const State &);
       State(const State &);
       virtual ~State();
 
       State & operator=(const State &);
 
       /// Needed by PseudoModel
+
       void updateTime(const util::Duration & dt) {time_ += dt;}
 
       /// Add or remove fields due to variable change
+
       void updateFields(const oops::Variables &);
 
       /// Rotations
-      void rotate2north(const oops::Variables &, const oops::Variables &) const;
-      void rotate2grid(const oops::Variables &, const oops::Variables &) const;
+
+      void rotate2north(const oops::Variables &,
+                        const oops::Variables &) const;
+      void rotate2grid(const oops::Variables &,
+                       const oops::Variables &) const;
 
       /// Logarithmic and exponential transformations
+
       void logtrans(const oops::Variables &) const;
       void expontrans(const oops::Variables &) const;
 
       /// Interactions with Increment
+
       State & operator+=(const Increment &);
 
       /// I/O and diagnostics
+
       void read(const Parameters_ &);
       void analytic_init(const Parameters_ &);
       void write(const WriteParameters_ &) const;
@@ -179,18 +186,26 @@ namespace romsjedi {
       util::DateTime & validTime();
 
       /// Serialize and deserialize
+
       size_t serialSize() const override;
       void serialize(std::vector<double> &) const override;
       void deserialize(const std::vector<double> &, size_t &) override;
 
       /// Utilities
+
       std::shared_ptr<const Geometry> geometry() const;
       const oops::Variables & variables() const {return vars_;}
+
+      /// Get values as Atlas FieldSet
+
+      void getFieldSet(const oops::Variables &,
+                       atlas::FieldSet &) const;
 
       int & toFortran() {return keyFlds_;}
       const int & toFortran() const {return keyFlds_;}
 
       /// Other
+
       void zero();
       void accumul(const double &, const State &);
 

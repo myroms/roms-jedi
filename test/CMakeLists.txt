@@ -130,12 +130,12 @@ ecbuild_add_test(
   ARGS         testinput/state.yaml
   LIBS         romsjedi )
 
-ecbuild_add_test(
-  TARGET       test_romsjedi_getvalues
-  MPI          2
-  SOURCES      executables/TestGetValues.cc
-  ARGS         testinput/getvalues.yaml
-  LIBS         romsjedi )
+#ecbuild_add_test(
+#  TARGET       test_romsjedi_getvalues
+#  MPI          2
+#  SOURCES      executables/TestGetValues.cc
+#  ARGS         testinput/getvalues.yaml
+#  LIBS         romsjedi )
 
 ecbuild_add_test(
   TARGET       test_romsjedi_increment

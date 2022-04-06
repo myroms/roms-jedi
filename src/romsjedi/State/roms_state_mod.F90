@@ -14,16 +14,17 @@ USE fckit_configuration_module, ONLY : fckit_configuration
 USE fckit_log_module,           ONLY : fckit_log
 USE oops_variables_mod
 
-USE roms_geom_mod
-USE roms_fields_mod
+USE roms_geom_mod,              ONLY : roms_geom
+USE roms_field_mod,             ONLY : roms_field
+USE roms_fields_mod,            ONLY : roms_fields
 USE roms_fields_metadata_mod
-USE roms_fieldsutils_mod
-USE roms_increment_mod
+!USE roms_fieldsutils_mod
+USE roms_increment_mod,         ONLY : roms_increment
 !USE roms_convert_state_mod
 
 implicit none
 
-PRIVATE
+!-------------------------------------------------------------------------------
 
 TYPE, PUBLIC, EXTENDS(roms_fields) :: roms_state
 
@@ -41,6 +42,10 @@ TYPE, PUBLIC, EXTENDS(roms_fields) :: roms_state
   PROCEDURE :: logexpon     => roms_state_logexpon
 
 END TYPE roms_state
+
+!-------------------------------------------------------------------------------
+
+PRIVATE
 
 !-------------------------------------------------------------------------------
 CONTAINS
