@@ -65,6 +65,12 @@ bump:
     type: cor_rv
     date: *date
 
+test:
+  reference filename: testref/parameters_bump_cor_nicas.ref
+# float relative tolerance: 1.0e-6
+  log output filename: testoutput/parameters_bump_cor_nicas.log
+  test output filename: testoutput/parameters_bump_cor_nicas.out
+
 # NOTES:
 #
 # * Currently, BUMP and ATLAS does not support staggered grids. Thus, the Error

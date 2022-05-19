@@ -30,6 +30,7 @@ window begin: 2004-01-03T00:00:00Z
 window length: *ForecastLength
 
 observations:
+  observers:
   - obs space:
       name: ADT
       obsdataout:
@@ -100,6 +101,11 @@ observations:
 #    obs operator:
 #      name: MarineVertInterp
 
+test:
+  reference filename: testref/hofx_4d.ref
+# float relative tolerance: 1.0e-6
+  log output filename: testoutput/hofx_4d.log
+  test output filename: testoutput/hofx_4d.out
 
 # NOTES:
 #

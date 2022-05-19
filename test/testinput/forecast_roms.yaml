@@ -34,7 +34,13 @@ output:
   date: *initial_date                          # alias to initial date
   forecast length: *ForecastLength             # alias to forecast length
 
-# NOTES:
+test:
+  reference filename: testref/forecast_roms.ref
+# float relative tolerance: 1.0e-6
+  log output filename: testoutput/forecast_roms.log
+  test output filename: testoutput/forecast_roms.out
+
+# Notes:
 #
 # * The file creation policy allows to create a new output every "file_policy" intervals.
 #

@@ -29,6 +29,7 @@ window length: P4D                             # 4-day window ending on 2004-01-
                                                # or other smaller interval
 
 observations:
+  observers:
   - obs space:
       name: ADT
       obsdataout:
@@ -98,6 +99,12 @@ observations:
 #      simulated variables: [sea_water_salinity]
 #    obs operator:
 #      name: MarineVertInterp
+
+test:
+  reference filename: testref/hofx_nomodel.ref
+# float relative tolerance: 1.0e-6
+  log output filename: testoutput/hofx_nomodel.log
+  test output filename: testoutput/hofx_nomodel.out
 
 # NOTES:
 #

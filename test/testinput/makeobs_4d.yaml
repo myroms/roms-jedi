@@ -26,6 +26,7 @@ window begin: 2004-01-03T00:00:00Z
 window length: *ForecastLength
 
 observations:
+  observers:
   - obs space:
       name: ADT
       obsdataout:
@@ -51,6 +52,30 @@ observations:
       covariance model: diagonal
 
   - obs space:
+      name: InsituTemperature
+      obsdataout:
+        obsfile: Data/makeobs/wc13_truth_ptemp.nc4
+      obsdatain:
+        obsfile: Data/obs/wc13_temp_20040103.nc4
+      simulated variables: [sea_water_potential_temperature]
+    obs operator:
+      name: Identity
+    obs error:
+      covariance model: diagonal
+
+  - obs space:
+      name: InsituSalinity
+      obsdataout:
+        obsfile: Data/makeobs/wc13_truth_salt.nc4
+      obsdatain:
+        obsfile: Data/obs/wc13_salt_20040103.nc4
+      simulated variables: [sea_water_practical_salinity]
+    obs operator:
+      name: Identity
+    obs error:
+      covariance model: diagonal
+
+  - obs space:
       name: Simulate
       generate:
         random:
@@ -66,30 +91,6 @@ observations:
       simulated variables: [sea_surface_salinity]
     obs operator:
       name: Identity
-
-#  - obs space:
-#      name: InsituTemperature
-#      obsdataout:
-#        obsfile: Data/makeobs/wc13_truth_ptemp.nc4
-#      obsdatain:
-#        obsfile: Data/obs/wc13_temp_20040103.nc4
-#      simulated variables: [sea_water_potential_temperature]
-#    obs operator:
-#      name: Identity
-#    obs error:
-#      covariance model: diagonal
-
-#  - obs space:
-#      name: InsituSalinity
-#      obsdataout:
-#        obsfile: Data/makeobs/wc13_truth_salt.nc4
-#      obsdatain:
-#        obsfile: Data/obs/wc13_salt_20040103.nc4
-#      simulated variables: [sea_water_practical_salinity]
-#    obs operator:
-#      name: Identity
-#    obs error:
-#      covariance model: diagonal
 
   - obs space:
       name: Simulate
@@ -109,27 +110,32 @@ observations:
     obs operator:
       name: Identity
 
-#  - obs space:
-#      name: Simulate
-#      generate:
-#        random:
-#          nobs: 100
-#          lat1: 30.0
-#          lat2: 48.0
-#          lon1: -134.0
-#          lon2: -116.0
-#          random seed: 452938
-#        obs errors: [1.0, 1.0]
-#      obsdataout:
-#        obsfile: Data/makeobs/wc13_truth_uv.nc4
-#      simulated variables: [eastward_sea_water_velocity,
-#                            northward_sea_water_velocity]
-#    obs operator:
-#      name: Identity
+  - obs space:
+      name: Simulate
+      generate:
+        random:
+          nobs: 100
+          lat1: 30.0
+          lat2: 48.0
+          lon1: -134.0
+          lon2: -116.0
+          random seed: 452938
+        obs errors: [1.0, 1.0]
+      obsdataout:
+        obsfile: Data/makeobs/wc13_truth_uv.nc4
+      simulated variables: [eastward_sea_water_velocity,
+                            northward_sea_water_velocity]
+    obs operator:
+      name: Identity
 
 make obs: true
 obs perturbations: false
 
+test:
+  reference filename: testref/makeobs_4d.ref
+# float relative tolerance: 1.0e-6
+  log output filename: testoutput/makeobs_4d.log
+  test output filename: testoutput/makeobs_4d.out
 
 # NOTES:
 #
