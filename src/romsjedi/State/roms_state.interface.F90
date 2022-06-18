@@ -226,8 +226,8 @@ END SUBROUTINE roms_state_write_file_c
 ! ------------------------------------------------------------------------------
 !> Calculate global statistics for each state field: min, max, and  avg.
 
-SUBROUTINE roms_state_gpnorm_c (c_key_fld, kf, pstat)                          &
-                          BIND (c, name='roms_state_gpnorm_f90')
+SUBROUTINE roms_state_gstats_c (c_key_fld, kf, pstat)                          &
+                          BIND (c, name='roms_state_gstats_f90')
 
   integer (c_int),  intent(in   ) :: c_key_fld    !< State fields pointer
   integer (c_int),  intent(in   ) :: kf           !< fields number pointer
@@ -239,7 +239,7 @@ SUBROUTINE roms_state_gpnorm_c (c_key_fld, kf, pstat)                          &
 
   CALL roms_state_registry%get (c_key_fld, fld)
 
-  CALL fld%gpnorm (kf, zstat)
+  CALL fld%gstats (kf, zstat)
 
   jj=0
   DO jf = 1, kf
@@ -249,7 +249,25 @@ SUBROUTINE roms_state_gpnorm_c (c_key_fld, kf, pstat)                          &
     END DO
   END DO
 
-END SUBROUTINE roms_state_gpnorm_c
+END SUBROUTINE roms_state_gstats_c
+
+! ------------------------------------------------------------------------------
+!> Calculate the energy norm per unit area (10^6 J/m2) of the state vector.
+
+SUBROUTINE roms_state_norm_c (c_key_fld, Enorm)                                &
+                        BIND (c, name='roms_state_norm_f90')
+
+  integer (c_int),  intent(in   ) :: c_key_fld    !< State fields pointer
+  real (c_double),  intent(inout) :: Enorm        !< energy norm pointer
+
+  TYPE (roms_state), pointer      :: fld
+  real(kind=kind_real)            :: psum
+
+  CALL roms_state_registry%get (c_key_fld, fld)
+
+  CALL fld%norm (Enorm)
+
+END SUBROUTINE roms_state_norm_c
 
 ! ------------------------------------------------------------------------------
 !> Calculate the squared-root of the dot-product sum of a field to itself:
@@ -266,8 +284,9 @@ SUBROUTINE roms_state_rms_c (c_key_fld, prms)                                  &
 
   CALL roms_state_registry%get (c_key_fld, fld)
 
-  ! Squared-root of the dot-product sum. Notice that we are not calling
-  ! fld%rms that will give prms = SQRT(psum/norm), where norm = npts.
+  ! Squared-root of the dot-product sum. HGA: what are weird quantity! If I
+  ! the use energy norm, 'test_romsjedi_state' and 'test_romsjedi_model'
+  ! Unit Tests will fail.
 
   CALL fld%dot_prod (fld, psum)
   prms = SQRT(psum)

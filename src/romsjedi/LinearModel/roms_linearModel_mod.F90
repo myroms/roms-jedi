@@ -1,3 +1,5 @@
+#define ZERO_TRAJECTORY
+
 ! (C) Copyright 2017-2022 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
@@ -88,7 +90,7 @@ PRIVATE
 
 ! Set debugging switch.
 
-logical :: LdebugLinearModel = .FALSE.
+logical :: LdebugLinearModel = .TRUE. 
 
 ! Set switch to read ROMS standard input parameter file and allocate and
 ! initialize (first touch policy) variables and structures. It needs to be
@@ -418,7 +420,8 @@ SUBROUTINE roms_linearModel_step_ad (self, Incr, Traj, vdate)
   CALL time_string (self%time, self%roms_datetime)
 
   IF (jic(ng).ne.ntend(ng)) THEN
-    Tindex = -1                            ! use full solution adjoint state
+!   Tindex = -1                            ! use full solution adjoint state
+    Tindex = nnew(ng)
   ELSE
     Tindex = nstp(ng)                      ! use time level index for last step
   END IF
@@ -590,42 +593,90 @@ SUBROUTINE jedi2roms_traj (ng, Traj)
       SELECT CASE (field%name)
         CASE ('ssh')                                    !> free-surface
           DO k = 1, 3
+#ifdef ZERO_TRAJECTORY
+            OCEAN(ng)%zeta(:,:,k) = 0.0_kind_real
+#else
             OCEAN(ng)%zeta(:,:,k) = field%val(:,:,1)
+#endif
           END DO
         CASE ('u2docn')                                 !> 2D U-momentum
           DO k = 1, 3
+#ifdef ZERO_TRAJECTORY
+            OCEAN(ng)%ubar(:,:,k) = 0.0_kind_real
+#else
             OCEAN(ng)%ubar(:,:,k) = field%val(:,:,1)
+#endif
           END DO
         CASE ('v2docn')                                 !> 2D V-momentum
           DO k = 1, 3
-            OCEAN(ng)%ubar(:,:,k) = field%val(:,:,1)
+#ifdef ZERO_TRAJECTORY
+            OCEAN(ng)%vbar(:,:,k) = 0.0_kind_real
+#else
+            OCEAN(ng)%vbar(:,:,k) = field%val(:,:,1)
+#endif
           END DO
         CASE ('DU_avg1')                                !> averaged 2D U-Flux
+#ifdef ZERO_TRAJECTORY
+          COUPLING(ng)%DU_avg1(:,:) = 0.0_kind_real
+#else
           COUPLING(ng)%DU_avg1(:,:) = field%val(:,:,1)
+#endif
         CASE ('DV_avg1')                                !> averaged 2D V-Flux
+#ifdef ZERO_TRAJECTORY
+          COUPLING(ng)%DV_avg1(:,:) = 0.0_kind_real
+#else
           COUPLING(ng)%DV_avg1(:,:) = field%val(:,:,1)
+#endif
         CASE ('DU_avg2')                                !> U-Flux 3D coupling
+#ifdef ZERO_TRAJECTORY
+          COUPLING(ng)%DU_avg2(:,:) = 0.0_kind_real
+#else
           COUPLING(ng)%DU_avg2(:,:) = field%val(:,:,1)
+#endif
         CASE ('DV_avg2')                                !> V-Flux 3D coupling
+#ifdef ZERO_TRAJECTORY
+          COUPLING(ng)%DV_avg2(:,:) = 0.0_kind_real
+#else
           COUPLING(ng)%DV_avg2(:,:) = field%val(:,:,1)
+#endif
         CASE ('uocn')                                   !> 3D U-momentum
           DO k = 1, 2
+#ifdef ZERO_TRAJECTORY
+            OCEAN(ng)%u(:,:,:,k) = 0.0_kind_real
+#else
             OCEAN(ng)%u(:,:,:,k) = field%val
+#endif
           END DO
         CASE ('vocn')                                   !> 3D V-momentum
           DO k = 1, 2
+#ifdef ZERO_TRAJECTORY
+            OCEAN(ng)%v(:,:,:,k) = 0.0_kind_real
+#else
             OCEAN(ng)%v(:,:,:,k) = field%val
+#endif
           END DO
         CASE ('tocn', 'socn')                           !> tracers
           itrc = roms_tracer_index(field%name)
           DO k = 1, 3
+#ifdef ZERO_TRAJECTORY
+            OCEAN(ng)%t(:,:,:,k,itrc) = 0.0_kind_real
+#else
             OCEAN(ng)%t(:,:,:,k,itrc) = field%val
+#endif
           END DO
         CASE ('Ktocn', 'Ksocn')                         !> vertical diffusion
           itrc = roms_tracer_index(field%name)
+#ifdef ZERO_TRAJECTORY
+          MIXING(ng)%Akt(:,:,:,itrc) = 0.0_kind_real
+#else
           MIXING(ng)%Akt(:,:,:,itrc) = field%val
+#endif
         CASE ('Kvocn')                                  !> vertical viscosity
+#ifdef ZERO_TRAJECTORY
+          MIXING(ng)%Akv = 0.0_kind_real
+#else
           MIXING(ng)%Akv = field%val
+#endif
         CASE DEFAULT
           CALL abor1_ftn ("jedi2roms_traj: Cannot find option for field: "//   &
                           TRIM(field%name))
@@ -865,7 +916,8 @@ SUBROUTINE roms2jedi_incr (ng, kernel, Tindex, Incr, DateString)
         SELECT CASE (field%name)
 
           CASE ('ssh')                                         !> free-surface
-            field%val(Is:Ie,Js:Je,1) = OCEAN(ng)%ad_zeta_sol(Is:Ie,Js:Je)
+            field%val(Is:Ie,Js:Je,1) = OCEAN(ng)%ad_zeta(Is:Ie,Js:Je,kstp(ng))
+!           field%val(Is:Ie,Js:Je,1) = OCEAN(ng)%ad_zeta_sol(Is:Ie,Js:Je)
 
           CASE ('uocn')                                        !> 3D U-momentum
             field%val(Is:Ie,Js:Je,:) = OCEAN(ng)%ad_u(Is:Ie,Js:Je,:,Tindex)

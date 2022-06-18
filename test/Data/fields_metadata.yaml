@@ -149,7 +149,7 @@
 - name: 'Kvocn'
   gtype: 'w'
   levels: 'wfull_ocn'
-  getval name: 'vertical_viscosity_coefficient_of_sea_wate'
+  getval name: 'vertical_viscosity_coefficient_of_sea_water'
   io file: 'ocn'
   io name: 'AKv'
 

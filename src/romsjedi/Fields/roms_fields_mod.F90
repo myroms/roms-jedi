@@ -103,9 +103,10 @@ TYPE, PUBLIC :: roms_fields
 
   PROCEDURE :: add             => roms_fields_add
   PROCEDURE :: axpy            => roms_fields_axpy
-  PROCEDURE :: dot_prod        => roms_fields_dotprod
-  PROCEDURE :: gpnorm          => roms_fields_gpnorm
+  PROCEDURE :: dot_prod        => roms_fields_dot_prod
+  PROCEDURE :: gstats          => roms_fields_gstats
   PROCEDURE :: mul             => roms_fields_mul
+  PROCEDURE :: norm            => roms_fields_norm
   PROCEDURE :: rms             => roms_fields_rms
   PROCEDURE :: sub             => roms_fields_sub
   PROCEDURE :: ones            => roms_fields_ones
@@ -1223,6 +1224,244 @@ SUBROUTINE roms_fields_mul (self, c)
 
 END SUBROUTINE roms_fields_mul
 
+
+! ------------------------------------------------------------------------------
+!> Compute the global energy norm per unit ares (MJ/m2) for the state vector.
+
+SUBROUTINE roms_fields_norm (self, Enorm)
+
+  CLASS (roms_fields), target, intent(in ) :: self   !< Fields object
+  real (kind=kind_real),       intent(out) :: Enorm  !< Fields root-mean square
+
+  integer                                  :: i, j, k, n
+
+  real (kind=kind_real), parameter         :: Scoef = 7.6E-4_kind_real   ! 1/PSS
+  real (kind=kind_real), parameter         :: Tcoef = 1.0E-4_kind_real   ! 1/C
+  real (kind=kind_real), parameter         :: bvfsqr = 1.6E-3_kind_real  ! 1/s2
+  real (kind=kind_real), parameter         :: g = 9.81_kind_real         ! m/s2
+  real (kind=kind_real), parameter         :: rho0 = 1025.0_kind_real    ! kg/m3
+
+  real (kind=kind_real)                    :: Hr, Hu, Hv
+  real (kind=kind_real)                    :: area_inv, cff, odx, ody, scale
+  real (kind=kind_real)                    :: my_norm
+  TYPE (roms_field), pointer               :: field
+
+  ! Compute fields RMS.
+
+  my_norm = 0.0_kind_real
+
+  DO n = 1, SIZE(self%fields)
+
+    field => self%fields(n)
+
+    ! Get scale for the energy norm: energy per unit area, J/m2.
+
+    SELECT CASE (field%name)
+
+      CASE ('ssh', 'SSH',                                                      &
+            'sea_surface_height_above_geoid',                                  &
+            'sea_surface_elevation_anomaly')                             ! m
+
+        scale = 0.5_kind_real*g*rho0
+        DO j = field%bounds%JstrD, field%bounds%JendD
+          DO i = field%bounds%IstrD, field%bounds%IendD
+            IF (associated(field%mask)) THEN                    ! masking
+              IF (field%mask(i,j) < 1.0_kind_real) CYCLE
+            END IF
+            DO k = 1, field%N
+              my_norm = my_norm + scale*field%val(i,j,k)*field%val(i,j,k)
+            END DO
+          END DO
+        END DO
+
+      CASE ('u2docn',                                                          &
+            'barotropic_sea_water_x_velocity')                           ! m/s
+
+        cff = 0.5_kind_real*rho0
+        DO j = field%bounds%JstrD, field%bounds%JendD
+          DO i = field%bounds%IstrD, field%bounds%IendD
+            IF (associated(field%mask)) THEN                    ! masking
+              IF (field%mask(i,j) < 1.0_kind_real) CYCLE
+            END IF
+            scale = cff*self%geom%h_u(i,j)   
+            DO k = 1, field%N
+              my_norm = my_norm + scale*field%val(i,j,k)*field%val(i,j,k)
+            END DO
+          END DO
+        END DO
+
+      CASE ('v2docn',                                                          &
+            'barotropic_sea_water_y_velocity')                           ! m/s
+
+        cff = 0.5_kind_real*rho0
+        DO j = field%bounds%JstrD, field%bounds%JendD
+          DO i = field%bounds%IstrD, field%bounds%IendD
+            IF (associated(field%mask)) THEN                    ! masking
+              IF (field%mask(i,j) < 1.0_kind_real) CYCLE
+            END IF
+            scale = cff*self%geom%h_v(i,j)   
+            DO k = 1, field%N
+              my_norm = my_norm + scale*field%val(i,j,k)*field%val(i,j,k)
+            END DO
+          END DO
+        END DO
+
+      CASE ('DU_avg1',                                                         &
+            'sea_water_time_average_of_barotropic_x_velocity_flux',            &
+            'DU_avg2',                                                         &
+            'sea_water_correct_barotropic_x_velocity_flux_for_coupling') ! m3/s
+
+        cff = 0.5_kind_real*rho0
+        DO j = field%bounds%JstrD, field%bounds%JendD
+          DO i = field%bounds%IstrD, field%bounds%IendD
+            IF (associated(field%mask)) THEN                    ! masking
+              IF (field%mask(i,j) < 1.0_kind_real) CYCLE
+            END IF
+            ody = 0.5_kind_real*(self%geom%pn(i-1,j)+self%geom%pn(i,j))  ! 1/m
+            scale = cff*ody*ody
+            DO k = 1, field%N
+              my_norm = my_norm + scale*field%val(i,j,k)*field%val(i,j,k)
+            END DO
+          END DO
+        END DO
+
+      CASE ('DV_avg1',                                                         &
+            'sea_water_time_average_of_barotropic_y_velocity_flux',            &
+            'DV_avg2',                                                         &
+            'sea_water_correct_barotropic_y_velocity_flux_for_coupling') ! m3/s
+
+        cff = 0.5_kind_real*rho0
+        DO j = field%bounds%JstrD, field%bounds%JendD
+          DO i = field%bounds%IstrD, field%bounds%IendD
+            IF (associated(field%mask)) THEN                    ! masking
+              IF (field%mask(i,j) < 1.0_kind_real) CYCLE
+            END IF
+            odx = 0.5_kind_real*(self%geom%pm(i,j-1)+self%geom%pm(i,j))  ! 1/m
+            scale = cff*odx*odx
+            DO k = 1, field%N
+              my_norm = my_norm + scale*field%val(i,j,k)*field%val(i,j,k)
+            END DO
+          END DO
+        END DO
+
+      CASE ('uocn',                                                            &
+            'eastward_sea_water_velocity',                                     &
+            'sea_water_x_velocity',                                            &
+            'usur',                                                            &
+            'surface_eastward_sea_water_velocity',                             &
+            'sea_water_surface_x_velocity')                              ! m/s
+
+        cff = 0.25_kind_real*rho0
+        DO j = field%bounds%JstrD, field%bounds%JendD
+          DO i = field%bounds%IstrD, field%bounds%IendD
+            IF (associated(field%mask)) THEN                    ! masking
+              IF (field%mask(i,j) < 1.0_kind_real) CYCLE
+            END IF
+            DO k = 1, field%N
+              Hu = (self%geom%z_w(i-1,j,k  )+self%geom%z_w(i,j,k  ))-          &
+                   (self%geom%z_w(i-1,j,k-1)+self%geom%z_w(i,j,k-1))     ! m
+              scale = cff*Hu
+              my_norm = my_norm + scale*field%val(i,j,k)*field%val(i,j,k)
+            END DO
+          END DO
+        END DO
+
+      CASE ('vocn',                                                            &
+            'northward_sea_water_velocity',                                    &
+            'sea_water_y_velocity',                                            &
+            'vsur',                                                            &
+            'surface_northward_sea_water_velocity',                            &
+            'sea_water_surface_y_velocity')                              ! m/s
+
+        cff = 0.25_kind_real*rho0
+        DO j = field%bounds%JstrD, field%bounds%JendD
+          DO i = field%bounds%IstrD, field%bounds%IendD
+            IF (associated(field%mask)) THEN                    ! masking
+              IF (field%mask(i,j) < 1.0_kind_real) CYCLE
+            END IF
+            DO k = 1, field%N
+              Hv = (self%geom%z_w(i,j-1,k  )+self%geom%z_w(i,j,k  ))-          &
+                   (self%geom%z_w(i,j-1,k-1)+self%geom%z_w(i,j,k-1))     ! m
+              scale = cff*Hv
+              my_norm = my_norm + scale*field%val(i,j,k)*field%val(i,j,k)
+            END DO
+          END DO
+        END DO
+
+      CASE ('tocn',                                                            &
+            'sea_water_potential_temperature',                                 &
+            'sst', 'SST',                                                      &
+            'sea_surface_temperature')                                   ! C
+
+        cff = 0.5_kind_real*rho0*Tcoef*Tcoef*g*g/bvfsqr
+        DO j = field%bounds%JstrD, field%bounds%JendD
+          DO i = field%bounds%IstrD, field%bounds%IendD
+            IF (associated(field%mask)) THEN                    ! masking
+              IF (field%mask(i,j) < 1.0_kind_real) CYCLE
+            END IF
+            DO k = 1, field%N
+              Hr = self%geom%z_w(i,j,k)-self%geom%z_w(i,j,k-1)
+              scale = cff*Hr                                              ! m
+              my_norm = my_norm + scale*field%val(i,j,k)*field%val(i,j,k)
+            END DO
+          END DO
+        END DO
+
+      CASE ('socn',                                                            &
+            'sea_water_practical_salinity',                                    &
+            'sss', 'SSS',                                                      &
+            'sea_surface_salinity')                                      ! PSS
+
+        cff = 0.5_kind_real*rho0*Scoef*Scoef*g*g/bvfsqr
+        DO j = field%bounds%JstrD, field%bounds%JendD
+          DO i = field%bounds%IstrD, field%bounds%IendD
+            IF (associated(field%mask)) THEN                    ! masking
+              IF (field%mask(i,j) < 1.0_kind_real) CYCLE
+            END IF
+            DO k = 1, field%N
+              Hr = self%geom%z_w(i,j,k)-self%geom%z_w(i,j,k-1)           ! m
+              scale = cff*Hr
+              my_norm = my_norm + scale*field%val(i,j,k)*field%val(i,j,k)
+            END DO
+          END DO
+        END DO
+
+      CASE ('Ksocn',                                                           &
+            'vertical_diffusion_coefficient_of_salinity_in_sea_water',         &
+            'Ktocn',                                                           &
+            'vertical_diffusion_coefficient_of_temperature_in_sea_water',      &
+            'Kvocn',                                                           &
+            'vertical_viscosity_coefficient_of_sea_water')               ! m2/s
+
+        cff = 0.5_kind_real*rho0                                         ! kg/m3
+        DO j = field%bounds%JstrD, field%bounds%JendD
+          DO i = field%bounds%IstrD, field%bounds%IendD
+            IF (associated(field%mask)) THEN                    ! masking
+              IF (field%mask(i,j) < 1.0_kind_real) CYCLE
+            END IF
+            area_inv = self%geom%pm(i,j)*self%geom%pn(i,j)               ! 1/m2
+            DO k = 1, field%N
+              Hr = self%geom%z_w(i,j,k)-self%geom%z_w(i,j,k-1)           ! m
+              scale = cff*Hr*area_inv
+              my_norm = my_norm + scale*field%val(i,j,k)*field%val(i,j,k)
+            END DO
+          END DO
+        END DO
+
+    END SELECT
+
+  END DO
+
+  ! Get global sum.
+
+  CALL self%geom%f_comm%allreduce (my_norm, Enorm, fckit_mpi_sum())
+
+  ! Scale to use MJ/m2 (1 MJ = 10^6 J).
+
+  Enorm = 1.0E-6_kind_real * Enorm
+
+END SUBROUTINE roms_fields_norm
+
 ! ------------------------------------------------------------------------------
 !> Compute the RMS of all state fields.
 
@@ -1303,7 +1542,7 @@ END SUBROUTINE roms_fields_axpy
 !> Calculate the global dot-product sum of two sets of fields. Ignore land
 !! points.
 
-SUBROUTINE roms_fields_dotprod (fld1, fld2, zprod)
+SUBROUTINE roms_fields_dot_prod (fld1, fld2, zprod)
 
   CLASS (roms_fields), target, intent(in ) :: fld1    !< Fields set 1 object
   CLASS (roms_fields), target, intent(in ) :: fld2    !< Fields set 2 object
@@ -1347,12 +1586,12 @@ SUBROUTINE roms_fields_dotprod (fld1, fld2, zprod)
 
   CALL fld1%geom%f_comm%allreduce (my_zprod, zprod, fckit_mpi_sum())
 
-END SUBROUTINE roms_fields_dotprod
+END SUBROUTINE roms_fields_dot_prod
 
 ! ------------------------------------------------------------------------------
 !> Calculate global statistics for each field (min, max, average).
 
-SUBROUTINE roms_fields_gpnorm (fld, nf, pstat)
+SUBROUTINE roms_fields_gstats (fld, nf, pstat)
 
   CLASS (roms_fields),   intent(in   ) :: fld            !> Fields object
   integer,               intent(in   ) :: nf             !> number of fields
@@ -1404,7 +1643,7 @@ SUBROUTINE roms_fields_gpnorm (fld, nf, pstat)
 
   END DO
 
-END SUBROUTINE roms_fields_gpnorm
+END SUBROUTINE roms_fields_gstats
 
 ! ------------------------------------------------------------------------------
 !> Interpolate from U- and V-points to RHO-points.

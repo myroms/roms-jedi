@@ -231,15 +231,16 @@ namespace romsjedi {
     roms_state_sizes_f90(toFortran(),
                          n0, n0, n0, nf);
     std::vector<double> zstat(3*nf);
-    roms_state_gpnorm_f90(toFortran(),
+    roms_state_gstats_f90(toFortran(),
                           nf, zstat[0]);
     for (int jj = 0; jj < nf; ++jj) {
       os << std::endl << std::right << std::setw(7) << vars_[jj]
-                      << "   min="  <<  std::fixed << std::setw(12) <<
+                      << std::setprecision(15)
+                      << "   min="  <<  std::fixed << std::setw(20) <<
                                         std::right << zstat[3*jj]
-                      << "   max="  <<  std::fixed << std::setw(12) <<
+                      << "   max="  <<  std::fixed << std::setw(20) <<
                                         std::right << zstat[3*jj+1]
-                      << "   mean=" <<  std::fixed << std::setw(12) <<
+                      << "   mean=" <<  std::fixed << std::setw(20) <<
                                         std::right << zstat[3*jj+2];
     }
   }
@@ -317,10 +318,13 @@ namespace romsjedi {
 
   double State::norm() const {
     double zz = 0.0;
+//  roms_state_norm_f90(toFortran(),
+//                      zz);
     roms_state_rms_f90(toFortran(),
                        zz);
-    Log::debug() << classname() << ":norm = " << zz
-                 << std::endl;
+//  Log::debug() << classname() << ":Energy norm (10^6 J/m2) = "
+    Log::debug() << classname() << ":norm, SQRT(SUM(x^2)) = "
+                 << std::setprecision(15) << zz << std::endl;
     return zz;
   }
 

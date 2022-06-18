@@ -87,7 +87,7 @@ namespace romsjedi {
     void roms_state_expontrans_f90(const F90flds &,
                                    const oops::Variables &);
 
-    void roms_state_gpnorm_f90(const F90flds &,
+    void roms_state_gstats_f90(const F90flds &,
                                const int &,
                                double &);
 
@@ -96,6 +96,9 @@ namespace romsjedi {
                               int &,
                               int &,
                               int &);
+
+    void roms_state_norm_f90(const F90flds &,
+                            double &);
 
     void roms_state_rms_f90(const F90flds &,
                             double &);

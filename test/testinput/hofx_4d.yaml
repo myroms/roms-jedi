@@ -101,11 +101,11 @@ observations:
 #    obs operator:
 #      name: MarineVertInterp
 
-test:
-  reference filename: testref/hofx_4d.ref
-# float relative tolerance: 1.0e-6
-  log output filename: testoutput/hofx_4d.log
-  test output filename: testoutput/hofx_4d.out
+#test:
+#  reference filename: testref/hofx_4d.ref
+#  float relative tolerance: 1.0e-6
+#  log output filename: testoutput/hofx_4d.log
+#  test output filename: testoutput/hofx_4d.out
 
 # NOTES:
 #

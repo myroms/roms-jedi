@@ -94,6 +94,8 @@ TYPE, PUBLIC :: roms_geom
   real (kind_real), allocatable  :: CosAngler(:,:) ! COS(angler)
   real (kind_real), allocatable  :: SinAngler(:,:) ! SIN(angler)
 
+  real (kind_real), allocatable  :: pm(:,:)        ! inverse x-spacing (1/m)
+  real (kind_real), allocatable  :: pn(:,:)        ! inverse y-spacing (1/m)
   real (kind_real), allocatable  :: cell_area(:,:) ! cell area (m2)
 
   real (kind_real), allocatable  :: f_r(:,:)       ! Coriolis parameter (1/s)
@@ -354,6 +356,9 @@ SUBROUTINE roms_geom_create (self, f_conf, f_comm)
 
   CALL roms_geom_allocate (self)
 
+  self%pm   = GRID(ng)%pm
+  self%pn   = GRID(ng)%pn
+
   self%lonr = GRID(ng)%lonr
   self%latr = GRID(ng)%latr
   self%lonu = GRID(ng)%lonu
@@ -487,6 +492,9 @@ SUBROUTINE roms_geom_delete (self)
   IF (allocated(self%h_u))        deallocate (self%h_u)
   IF (allocated(self%h_v))        deallocate (self%h_v)
 
+  IF (allocated(self%pm))         deallocate (self%pm)
+  IF (allocated(self%pn))         deallocate (self%pn)
+
   IF (allocated(self%lonr))       deallocate (self%lonr)
   IF (allocated(self%latr))       deallocate (self%latr)
   IF (allocated(self%lonu))       deallocate (self%lonu)
@@ -591,6 +599,9 @@ SUBROUTINE roms_geom_clone (self, other)
   self%h_u = other%h_u
   self%h_v = other%h_v
 
+  self%pm  = other%pm
+  self%pn  = other%pn
+
   self%lonr = other%lonr
   self%latr = other%latr
   self%lonu = other%lonu
@@ -675,6 +686,10 @@ SUBROUTINE roms_geom_allocate (self)
   allocate (self%h_r(LBi:UBi, LBj:UBj));          self%h_r = 0.0_kind_real
   allocate (self%h_u(LBi:UBi, LBj:UBj));          self%h_u = 0.0_kind_real
   allocate (self%h_v(LBi:UBi, LBj:UBj));          self%h_v = 0.0_kind_real
+
+  allocate (self%pm(LBi:UBi, LBj:UBj));           self%pm  = 0.0_kind_real
+  allocate (self%pn(LBi:UBi, LBj:UBj));           self%pn  = 0.0_kind_real
+
 
   allocate (self%lonr(LBi:UBi, LBj:UBj));         self%lonr = 0.0_kind_real
   allocate (self%latr(LBi:UBi, LBj:UBj));         self%latr = 0.0_kind_real

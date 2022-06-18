@@ -249,6 +249,8 @@ namespace romsjedi {
     roms_increment_dot_prod_f90(toFortran(),
                                 other.toFortran(),
                                 zz);
+    Log::debug() << classname() << ":dot_product_with = "
+                 << std::setprecision(15) << zz << std::endl;
     return zz;
   }
 
@@ -440,18 +442,19 @@ namespace romsjedi {
                              n0, n0, n0, nf);
 
     std::vector<double> zstat(3*nf);
-    roms_increment_gpnorm_f90(keyFlds_,
+    roms_increment_gstats_f90(keyFlds_,
                               nf,
                               zstat[0]);
 
     for (int jj = 0; jj < nf; ++jj) {
       os << std::endl << std::right << std::setw(7) << vars_[jj]
-         << "   min="  <<  std::fixed << std::setw(12) <<
-                           std::right << zstat[3*jj]
-         << "   max="  <<  std::fixed << std::setw(12) <<
-                           std::right << zstat[3*jj+1]
-         << "   mean=" <<  std::fixed << std::setw(12) <<
-                           std::right << zstat[3*jj+2];
+                      << std::setprecision(15)
+                      << "   min="  <<  std::fixed << std::setw(20) <<
+                         std::right << zstat[3*jj]
+                      << "   max="  <<  std::fixed << std::setw(20) <<
+                         std::right << zstat[3*jj+1]
+                      << "   mean=" <<  std::fixed << std::setw(20) <<
+                         std::right << zstat[3*jj+2];
     }
   }
 
@@ -459,10 +462,10 @@ namespace romsjedi {
 
   double Increment::norm() const {
     double zz = 0.0;
-    roms_increment_rms_f90(toFortran(),
-                           zz);
-    Log::debug() << classname() << ":norm = " << zz
-                 << std::endl;
+    roms_increment_norm_f90(toFortran(),
+                            zz);
+    Log::debug() << classname() << ":Energy norm (10^6 J/m2) = "
+                 << std::setprecision(15)  << zz << std::endl;
     return zz;
   }
 

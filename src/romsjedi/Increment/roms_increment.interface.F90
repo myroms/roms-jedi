@@ -481,8 +481,8 @@ END SUBROUTINE roms_increment_write_file_c
 ! ------------------------------------------------------------------------------
 !> Calculates increment statistics for each field.
 
-SUBROUTINE roms_increment_gpnorm_c (c_key_fld, kf, pstat)                      &
-                              BIND (c, name='roms_increment_gpnorm_f90')
+SUBROUTINE roms_increment_gstats_c (c_key_fld, kf, pstat)                      &
+                              BIND (c, name='roms_increment_gstats_f90')
 
   integer (c_int),    intent(in) :: c_key_fld       !< Fields object pointer
   integer (c_int),    intent(in) :: kf              !< number of fields pointer
@@ -494,7 +494,7 @@ SUBROUTINE roms_increment_gpnorm_c (c_key_fld, kf, pstat)                      &
 
   CALL roms_increment_registry%get (c_key_fld, fld)
 
-  CALL fld%gpnorm (kf, zstat)
+  CALL fld%gstats (kf, zstat)
 
   ic=0
   DO jf = 1, kf
@@ -504,26 +504,25 @@ SUBROUTINE roms_increment_gpnorm_c (c_key_fld, kf, pstat)                      &
     END DO
   END DO
 
-END SUBROUTINE roms_increment_gpnorm_c
+END SUBROUTINE roms_increment_gstats_c
 
 ! ------------------------------------------------------------------------------
-!> Computes the RMS for all fields in the increment object.
+!> Computes the energy norm per unit area (10^6 J/m2) for the state increment
+!  vector.
 
-SUBROUTINE roms_increment_rms_c (c_key_fld, prms)                              &
-                           BIND (c, name='roms_increment_rms_f90')
+SUBROUTINE roms_increment_norm_c (c_key_fld, Enorm)                             &
+                           BIND (c, name='roms_increment_norm_f90')
 
   integer (c_int), intent(in   ) :: c_key_fld       !< Fields object pointer
-  real (c_double), intent(inout) :: prms            !< root-mean square pointer
+  real (c_double), intent(inout) :: Enorm           !< Energy norm pointer
 
   TYPE (roms_increment), pointer :: fld
-  real(kind=kind_real)           :: zz
 
   CALL roms_increment_registry%get (c_key_fld, fld)
 
-  CALL fld%dot_prod (fld, zz)
-  prms = SQRT(zz)
+  CALL fld%norm (Enorm)
 
-END SUBROUTINE roms_increment_rms_c
+END SUBROUTINE roms_increment_norm_c
 
 ! ------------------------------------------------------------------------------
 !> Gets increment values at specified grid points (GeometryIterator).

@@ -9,8 +9,8 @@ geometry:
 
 AnalisysVariables: &avars [ssh, uocn, vocn, tocn, socn]
 
-TrajectoryVariables: &tvars [ssh, uocn, vocn, tocn, socn,
-                             u2docn, v2docn,
+TrajectoryVariables: &tvars [ssh, u2docn, v2docn,
+                             uocn, vocn, tocn, socn,
                              DU_avg1, DV_avg1, DU_avg2, DV_avg2,
                              Ktocn, Ksocn, Kvocn]
 
@@ -46,9 +46,9 @@ background error:
 linear model test:
   forecast length: *ForecastLength
   first multiplier TL: 0.01
-  iterations TL: 10
-# tolerance AD: 10e-4
-  tolerance AD: 10                             # We need to figure out the dot product high error
+  iterations TL: 20
+  tolerance AD: 1.0e-6
+# tolerance AD: 10                             # We need to figure out the dot product high error
   tolerance TL: 1.0
 
 linear model:

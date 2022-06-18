@@ -37,11 +37,11 @@ output:                                        # state1 - state2
   exp: nlm
   type: diffstates
 
-test:
-  reference filename: testref/diffstates.ref
-# float relative tolerance: 1.0e-6
-  log output filename: testoutput/diffstates.log
-  test output filename: testoutput/diffstates.out
+#test:
+#  reference filename: testref/diffstates.ref
+#  float relative tolerance: 1.0e-6
+#  log output filename: testoutput/diffstates.log
+#  test output filename: testoutput/diffstates.out
 
 
 

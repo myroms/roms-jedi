@@ -118,7 +118,7 @@ namespace romsjedi {
                                        const atlas::field::FieldSetImpl *,
                                        const bool &);
 
-    void roms_increment_gpnorm_f90(const F90flds &,
+    void roms_increment_gstats_f90(const F90flds &,
                                    const int &,
                                    double &);
 
@@ -138,8 +138,8 @@ namespace romsjedi {
                                   int &,
                                   int &);
 
-    void roms_increment_rms_f90(const F90flds &,
-                                double &);
+    void roms_increment_norm_f90(const F90flds &,
+                                 double &);
 
     void roms_increment_serial_size_f90(const F90flds &,
                                         const F90geom &,
