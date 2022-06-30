@@ -36,39 +36,27 @@ namespace romsjedi {
                          params.toConfiguration(),
                          &comm);
 
-    // Set ATLAS lon/lat field
+    // Set ATLAS lon/lat field with and without halos
 
-    atlasFieldSet_.reset(new atlas::FieldSet());
-    const bool include_halo = true;
-    roms_geom_set_atlas_lonlat_f90(keyGeom_,
-                                   atlasFieldSet_->get(),
-                                   include_halo);
-    const atlas::Field atlasField = atlasFieldSet_->field("lonlat");
+    atlas::FieldSet lonlat;
+    roms_geom_set_lonlat_f90(keyGeom_,
+                             lonlat.get());
 
-    // Create ATLAS function space
-
-    atlasFunctionSpace_.reset(new atlas::functionspace::
-                              PointCloud(atlasField));
-    ASSERT(include_halo);
-
-    // Create ATLAS function space with halo
-
-    const atlas::Field atlasFieldIncludingHalo = atlasFieldSet_->field(
-                                                 "lonlat_including_halo");
-    atlasFunctionSpaceIncludingHalo_.reset(new atlas::functionspace::
-                                      PointCloud(atlasFieldIncludingHalo));
+    functionSpace_ = atlas::functionspace::PointCloud
+                            (lonlat->field("lonlat"));
+    functionSpaceIncHalo_ = atlas::functionspace::PointCloud
+                                   (lonlat->field("lonlat_inc_halos"));
 
     // Set ATLAS function space pointer in Fortran
 
     roms_geom_set_atlas_functionspace_pointer_f90(keyGeom_,
-                                      atlasFunctionSpace_->get(),
-                                      atlasFunctionSpaceIncludingHalo_->get());
+                                                  functionSpace_.get(),
+                                                  functionSpaceIncHalo_.get());
 
     // Fill ATLAS fieldset
 
-    atlasFieldSet_.reset(new atlas::FieldSet());
-    roms_geom_fill_atlas_fieldset_f90(keyGeom_,
-                                      atlasFieldSet_->get());
+    roms_geom_to_fieldset_f90(keyGeom_,
+                              extraFields_.get());
   }
 
 // -----------------------------------------------------------------------------
@@ -79,20 +67,19 @@ namespace romsjedi {
     roms_geom_clone_f90(keyGeom_,
                         other.keyGeom_);
 
-    atlasFunctionSpace_.reset(new atlas::functionspace::PointCloud(
-                              other.atlasFunctionSpace_->lonlat()));
-    atlasFunctionSpaceIncludingHalo_.reset(new atlas::functionspace::PointCloud(
-                             other.atlasFunctionSpaceIncludingHalo_->lonlat()));
 
+    functionSpace_ = atlas::functionspace::PointCloud
+                            (other.functionSpace_->lonlat());
+    functionSpaceIncHalo_ = atlas::functionspace::PointCloud
+                                   (other.functionSpaceIncHalo_->lonlat());
     roms_geom_set_atlas_functionspace_pointer_f90(keyGeom_,
-                                      atlasFunctionSpace_->get(),
-                                      atlasFunctionSpaceIncludingHalo_->get());
+                                                  functionSpace_.get(),
+                                                  functionSpaceIncHalo_.get());
 
-    atlasFieldSet_.reset(new atlas::FieldSet());
-
-    for (int jfield = 0; jfield < other.atlasFieldSet_->size(); ++jfield) {
-      atlas::Field atlasField = other.atlasFieldSet_->field(jfield);
-      atlasFieldSet_->add(atlasField);
+    extraFields_ = atlas::FieldSet();
+    for (int jfield = 0; jfield < other.extraFields_->size(); ++jfield) {
+      atlas::Field atlasField = other.extraFields_->field(jfield);
+      extraFields_->add(atlasField);
     }
   }
 
@@ -152,11 +139,11 @@ namespace romsjedi {
 void Geometry::latlon(std::vector<double> & lats,
                       std::vector<double> & lons,
                       const bool halo) const {
-  const atlas::functionspace::PointCloud * fspace;
+  const atlas::FunctionSpace * fspace;
   if (halo) {
-    fspace = atlasFunctionSpaceIncludingHalo_.get();
+    fspace = &functionSpaceIncHalo_;
   } else {
-    fspace = atlasFunctionSpace_.get();
+    fspace = &functionSpace_;
   }
   const auto lonlat = atlas::array::make_view<double, 2>(fspace->lonlat());
   const size_t npts = fspace->size();

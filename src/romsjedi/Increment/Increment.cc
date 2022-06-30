@@ -344,73 +344,29 @@ namespace romsjedi {
 /// ATLAS
 // -----------------------------------------------------------------------------
 
-  void Increment::setAtlas(atlas::FieldSet * afieldset) const {
-    const bool include_halo = false;
-    Log::trace() << classname() << ":setAtlas starting"
-                 << std::endl;
-    roms_increment_set_atlas_f90(toFortran(),
+  void Increment::toFieldSet(atlas::FieldSet & fset) const {
+  roms_increment_to_fieldset_f90(toFortran(),
                                  geom_->toFortran(),
                                  vars_,
-                                 afieldset->get(),
-                                 include_halo);
-    Log::trace() << classname() << ":setAtlas done"
-                 << std::endl;
+                                 fset.get());
   }
 
 // -----------------------------------------------------------------------------
 
-  void Increment::toAtlas(atlas::FieldSet * afieldset) const {
-    const bool include_halo = false;
-    Log::trace() << classname() << ":toAtlas starting"
-                 << std::endl;
-    roms_increment_to_atlas_f90(toFortran(),
-                                geom_->toFortran(),
-                                vars_,
-                                afieldset->get(),
-                                include_halo);
-    Log::trace() << classname() << ":toAtlas done"
-                 << std::endl;
+  void Increment::toFieldSetAD(const atlas::FieldSet & fset) {
+  roms_increment_to_fieldset_ad_f90(toFortran(),
+                                    geom_->toFortran(),
+                                    vars_,
+                                    fset.get());
   }
 
 // -----------------------------------------------------------------------------
 
-  void Increment::fromAtlas(atlas::FieldSet * afieldset) {
-    const bool include_halo = false;
-    Log::trace() << classname() << ":fromAtlas starting"
-                 << std::endl;
-    roms_increment_from_atlas_f90(toFortran(),
-                                  geom_->toFortran(),
-                                  vars_,
-                                  afieldset->get(),
-                                  include_halo);
-    Log::trace() << classname() << ":fromAtlas done"
-                 << std::endl;
-  }
-
-// -----------------------------------------------------------------------------
-
-  void Increment::getFieldSet(const oops::Variables & vars,
-                              atlas::FieldSet & fset) const {
-  const bool include_halo = true;
-  roms_increment_set_atlas_f90(toFortran(),
-                               geom_->toFortran(),
-                               vars, fset.get(),
-                               include_halo);
-  roms_increment_to_atlas_f90(toFortran(),
-                              geom_->toFortran(),
-                              vars, fset.get(),
-                              include_halo);
-  }
-
-// -----------------------------------------------------------------------------
-
-  void Increment::getFieldSetAD(const oops::Variables & vars,
-                                const atlas::FieldSet & fset) {
-  const bool include_halo = true;
-  roms_increment_from_atlas_f90(toFortran(),
-                                geom_->toFortran(),
-                                vars, fset.get(),
-                                include_halo);
+  void Increment::fromFieldSet(const atlas::FieldSet & fset) {
+  roms_increment_from_fieldset_f90(toFortran(),
+                                   geom_->toFortran(),
+                                   vars_,
+                                   fset.get());
   }
 
 // -----------------------------------------------------------------------------

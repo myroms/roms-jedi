@@ -199,13 +199,9 @@ namespace romsjedi {
 
   /// ATLAS
 
-  void setAtlas(atlas::FieldSet *) const;
-  void toAtlas(atlas::FieldSet *) const;
-  void fromAtlas(atlas::FieldSet *);
-  void getFieldSet(const oops::Variables &,
-                   atlas::FieldSet &) const;
-  void getFieldSetAD(const oops::Variables &,
-                     const atlas::FieldSet &);
+  void toFieldSet(atlas::FieldSet &) const;
+  void toFieldSetAD(const atlas::FieldSet &);
+  void fromFieldSet(const atlas::FieldSet &);
 
   /// I/O and diagnostics
 

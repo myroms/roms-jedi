@@ -34,6 +34,7 @@ observations:
       obsdatain:
         obsfile: Data/obs/wc13_adt_20040103.nc4
       simulated variables: [absolute_dynamic_topography]
+      observed variables:  [absolute_dynamic_topography]
     obs operator:
       name: ADT
     obs error:
@@ -46,6 +47,7 @@ observations:
       obsdatain:
         obsfile: Data/obs/wc13_sst_20040103.nc4
       simulated variables: [sea_surface_temperature]
+      observed variables:  [sea_surface_temperature]
     obs operator:
       name: Identity
     obs error:
@@ -58,6 +60,7 @@ observations:
       obsdatain:
         obsfile: Data/obs/wc13_temp_20040103.nc4
       simulated variables: [sea_water_potential_temperature]
+      observed variables:  [sea_water_potential_temperature]
     obs operator:
       name: Identity
     obs error:
@@ -70,6 +73,7 @@ observations:
       obsdatain:
         obsfile: Data/obs/wc13_salt_20040103.nc4
       simulated variables: [sea_water_practical_salinity]
+      observed variables:  [sea_water_practical_salinity]
     obs operator:
       name: Identity
     obs error:
@@ -89,6 +93,7 @@ observations:
       obsdataout:
         obsfile: Data/makeobs/wc13_truth_sss.nc4
       simulated variables: [sea_surface_salinity]
+      observed variables:  [sea_surface_salinity]
     obs operator:
       name: Identity
 
@@ -107,6 +112,8 @@ observations:
         obsfile: Data/makeobs/wc13_truth_sur_uv.nc4
       simulated variables: [surface_eastward_sea_water_velocity,
                             surface_northward_sea_water_velocity]
+      observed variables:  [surface_eastward_sea_water_velocity,
+                            surface_northward_sea_water_velocity]
     obs operator:
       name: Identity
 
@@ -124,6 +131,8 @@ observations:
       obsdataout:
         obsfile: Data/makeobs/wc13_truth_uv.nc4
       simulated variables: [eastward_sea_water_velocity,
+                            northward_sea_water_velocity]
+      observed variables:  [eastward_sea_water_velocity,
                             northward_sea_water_velocity]
     obs operator:
       name: Identity

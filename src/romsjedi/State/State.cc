@@ -352,19 +352,20 @@ namespace romsjedi {
 
 // -----------------------------------------------------------------------------
 
-  void State::getFieldSet(const oops::Variables & vars,
-                          atlas::FieldSet & fset) const {
-  const bool include_halo = true;
-  roms_state_set_atlas_f90(toFortran(),
-                           geom_->toFortran(),
-                           vars,
-                           fset.get(),
-                           include_halo);
-  roms_state_to_atlas_f90(toFortran(),
-                          geom_->toFortran(),
-                          vars,
-                          fset.get(),
-                          include_halo);
+  void State::toFieldSet(atlas::FieldSet & fset) const {
+  roms_state_to_fieldset_f90(toFortran(),
+                             geom_->toFortran(),
+                             vars_,
+                             fset.get());
+  }
+
+// -----------------------------------------------------------------------------
+
+  void State::fromFieldSet(const atlas::FieldSet & fset) {
+  roms_state_from_fieldset_f90(toFortran(),
+                               geom_->toFortran(),
+                               vars_,
+                               fset.get());
   }
 
 // -----------------------------------------------------------------------------

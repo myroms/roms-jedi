@@ -100,26 +100,32 @@ namespace romsjedi {
     const int& toFortran() const {return keyGeom_;}
     const eckit::mpi::Comm & getComm() const {return comm_;}
 
-    atlas::FunctionSpace * atlasFunctionSpace() const {
-           return atlasFunctionSpace_.get();}
-    atlas::FunctionSpace * atlasFunctionSpaceIncludingHalo() const {
-           return atlasFunctionSpaceIncludingHalo_.get();}
-    atlas::FieldSet * atlasFieldSet() const {
-           return atlasFieldSet_.get();}
+    const atlas::FunctionSpace & functionSpace() const
+          {return functionSpaceIncHalo_;}
+    atlas::FunctionSpace & functionSpace() {return functionSpaceIncHalo_;}
+
+    const atlas::FieldSet & extraFields() const {return extraFields_;}
+    atlas::FieldSet & extraFields() {return extraFields_;}
+
     void latlon(std::vector<double> &,
                 std::vector<double> &,
+                const bool) const;
+    void latlon(std::vector<double> &,
+                std::vector<double> &,
+                const bool,
+                const char,
                 const bool) const;
 
    private:
     Geometry & operator=(const Geometry &);
     void print(std::ostream &) const;
+
     int keyGeom_;
     const eckit::mpi::Comm & comm_;
-    std::unique_ptr<atlas::functionspace::PointCloud>
-                   atlasFunctionSpace_;
-    std::unique_ptr<atlas::functionspace::PointCloud>
-                   atlasFunctionSpaceIncludingHalo_;
-    std::unique_ptr<atlas::FieldSet> atlasFieldSet_;
+
+    atlas::FunctionSpace functionSpace_;
+    atlas::FunctionSpace functionSpaceIncHalo_;
+    atlas::FieldSet extraFields_;
   };
 }  // namespace romsjedi
 

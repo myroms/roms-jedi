@@ -137,8 +137,8 @@ TYPE, PUBLIC :: roms_geom
   ! ATLAS FunctionSpace defining how a Field is represented in the grid domain
   ! (RHO-cell) for computational points and computational points plus tile halo.
 
-  TYPE (atlas_functionspace) :: afunctionspace
-  TYPE (atlas_functionspace) :: afunctionspace_halo
+  TYPE (atlas_functionspace) :: functionspace
+  TYPE (atlas_functionspace) :: functionspaceIncHalo
 
   ! Fortran and C/C++ interoperability toolkit: MPI coomunicator object
 
@@ -150,14 +150,14 @@ TYPE, PUBLIC :: roms_geom
 
   CONTAINS
 
-  PROCEDURE :: create               => roms_geom_create
-  PROCEDURE :: clone                => roms_geom_clone
-  PROCEDURE :: delete               => roms_geom_delete
+  PROCEDURE :: create        => roms_geom_create
+  PROCEDURE :: clone         => roms_geom_clone
+  PROCEDURE :: delete        => roms_geom_delete
 
-  PROCEDURE :: set_atlas_lonlat     => roms_geom_set_atlas_lonlat
-  PROCEDURE :: fill_atlas_fieldset  => roms_geom_fill_atlas_fieldset
-  PROCEDURE :: atlas2struct         => roms_geom_atlas2struct
-  PROCEDURE :: struct2atlas         => roms_geom_struct2atlas
+  PROCEDURE :: set_lonlat    => roms_geom_set_lonlat
+  PROCEDURE :: to_fieldset   => roms_geom_to_fieldset
+  PROCEDURE :: atlas2struct  => roms_geom_atlas2struct
+  PROCEDURE :: struct2atlas  => roms_geom_struct2atlas
 
 END TYPE roms_geom
 
@@ -520,8 +520,8 @@ SUBROUTINE roms_geom_delete (self)
   IF (allocated(self%z_v))        deallocate (self%z_v)
   IF (allocated(self%z_w))        deallocate (self%z_w)
 
-  CALL self%afunctionspace%final ()
-  CALL self%afunctionspace_halo%final ()
+  CALL self%functionspace%final ()
+  CALL self%functionspaceIncHalo%final ()
 
 END SUBROUTINE roms_geom_delete
 
@@ -633,11 +633,11 @@ SUBROUTINE roms_geom_clone (self, other)
 
   ! Clone ATLAS function space.
 
-  self%afunctionspace = atlas_functionspace(                                   &
-                        other%afunctionspace%c_ptr() )
+  self%functionspace = atlas_functionspace(                                    &
+                       other%functionspace%c_ptr() )
 
-  self%afunctionspace_halo = atlas_functionspace(                              &
-                             other%afunctionspace_halo%c_ptr() )
+  self%functionspaceIncHalo = atlas_functionspace(                             &
+                              other%functionspaceIncHalo%c_ptr() )
 
   ! Report.
 
@@ -719,15 +719,14 @@ SUBROUTINE roms_geom_allocate (self)
 END SUBROUTINE roms_geom_allocate
 
 ! ------------------------------------------------------------------------------
-!> Set ATLAS **lonlat** fieldset at density points.
+!> Set ATLAS **lonlat** and **lonlat_incl_halo** FieldSets at density points.
 
-SUBROUTINE roms_geom_set_atlas_lonlat (self, afieldset, include_halo)
+SUBROUTINE roms_geom_set_lonlat (self, afieldset)
 
   CLASS (roms_geom),     intent(inout) :: self            !< Geometry object
   TYPE (atlas_fieldset), intent(inout) :: afieldset       !< ATLAS fieldset
-  logical,               intent(in   ) :: include_halo    !< tile range switch
 
-  TYPE (atlas_field)                   :: afield, afield_halo
+  TYPE (atlas_field)                   :: afield
   integer                              :: cgrid
   integer                              :: IstrD, IendD, JstrD, JendD
   integer                              :: IstrH, IendH, JstrH, JendH
@@ -756,45 +755,44 @@ SUBROUTINE roms_geom_set_atlas_lonlat (self, afieldset, include_halo)
   r_ptr(2,:) = PACK(self%latr(IstrD:IendD, JstrD:JendD), .TRUE.)
 
   CALL afieldset%add (afield)
+  CALL afield%final ()
 
   ! Add object that includes (lon,lat) of the computational grid plus tile
   ! halo points. At the domain edges, it also include the boundary point.
 
-  IF (include_halo) THEN
 
-    nullify (r_ptr)
+  IstrH = self%bounds(cgrid)%IstrH
+  IendH = self%bounds(cgrid)%IendH
+  JstrH = self%bounds(cgrid)%JstrH
+  JendH = self%bounds(cgrid)%JendH
 
-    IstrH = self%bounds(cgrid)%IstrH
-    IendH = self%bounds(cgrid)%IendH
-    JstrH = self%bounds(cgrid)%JstrH
-    JendH = self%bounds(cgrid)%JendH
+  nullify (r_ptr)
 
-    afield_halo = atlas_field(name="lonlat_including_halo",                    &
-                              kind=atlas_real(kind_real),                      &
-                              shape=(/2,(IendH-IstrH+1)*(JendH-JstrH+1)/))
+  afield = atlas_field(name="lonlat_inc_halos",                                &
+                       kind=atlas_real(kind_real),                             &
+                       shape=(/2,(IendH-IstrH+1)*(JendH-JstrH+1)/))
 
-    CALL afield_halo%data (r_ptr)
+  CALL afield%data (r_ptr)
                           
-    r_ptr(1,:) = PACK(self%lonr(IstrH:IendH, JstrH:JendH), .TRUE.)
-    r_ptr(2,:) = PACK(self%latr(IstrH:IendH, JstrH:JendH), .TRUE.)
+  r_ptr(1,:) = PACK(self%lonr(IstrH:IendH, JstrH:JendH), .TRUE.)
+  r_ptr(2,:) = PACK(self%latr(IstrH:IendH, JstrH:JendH), .TRUE.)
 
-    CALL afieldset%add (afield_halo)
+  CALL afieldset%add (afield)
+  CALL afield%final ()
 
-  END IF
-
-END SUBROUTINE roms_geom_set_atlas_lonlat
+END SUBROUTINE roms_geom_set_lonlat
 
 ! ------------------------------------------------------------------------------
 !> Fill ATLAS fieldset with cell area, vertical level units, and geographical
 !! mask at density points.
 
-SUBROUTINE roms_geom_fill_atlas_fieldset (self, afieldset)
+SUBROUTINE roms_geom_to_fieldset (self, afieldset)
 
   CLASS (roms_geom),     intent(inout) :: self            !< Geometry object
   TYPE (atlas_fieldset), intent(inout) :: afieldset       !< ATLAS fieldset
 
   TYPE (atlas_field)                   :: afield
-  integer                              :: IstrD, IendD, JstrD, JendD, N
+  integer                              :: IstrH, IendH, JstrH, JendH, N
   integer                              :: cgrid, k
   integer, pointer                     :: i_ptr(:,:)
   real (kind_real), pointer            :: r_ptr_1(:), r_ptr_2(:,:)
@@ -805,27 +803,27 @@ SUBROUTINE roms_geom_fill_atlas_fieldset (self, afieldset)
 
   cgrid = r2dvar
 
-  IstrD = self%bounds(cgrid)%IstrD
-  IendD = self%bounds(cgrid)%IendD
-  JstrD = self%bounds(cgrid)%JstrD
-  JendD = self%bounds(cgrid)%JendD
+  IstrH = self%bounds(cgrid)%IstrH
+  IendH = self%bounds(cgrid)%IendH
+  JstrH = self%bounds(cgrid)%JstrH
+  JendH = self%bounds(cgrid)%JendH
   N     = self%N
 
   ! Add grid cell area at RHO-points.
 
-  afield = self%afunctionspace%create_field(name='area',                       &
-                                            kind=atlas_real(kind_real),        &
-                                            levels=0)
+  afield = self%functionspaceIncHalo%create_field(name='area',                &
+                                                  kind=atlas_real(kind_real), &
+                                                  levels=0)
   CALL afield%data (r_ptr_1)
-  r_ptr_1 = PACK(self%cell_area(IstrD:IendD, JstrD:JendD), .TRUE.)
+  r_ptr_1 = PACK(self%cell_area(IstrH:IendH, JstrH:JendH), .TRUE.)
   CALL afieldset%add (afield)
   CALL afield%final ()
 
   ! Add vertical level unit.
 
-  afield = self%afunctionspace%create_field(name='vunit',                      &
-                                            kind=atlas_real(kind_real),        &
-                                            levels=N)
+  afield = self%functionspaceIncHalo%create_field(name='vunit',                &
+                                                  kind=atlas_real(kind_real),  &
+                                                  levels=N)
 
   CALL afield%data (r_ptr_2)
   DO k = 1, self%N
@@ -836,17 +834,17 @@ SUBROUTINE roms_geom_fill_atlas_fieldset (self, afieldset)
 
   ! Add geographical land/sea mask at RHO-points.
 
-  afield = self%afunctionspace%create_field(name='gmask',                      &
-                                            kind=atlas_integer(KIND(0)),       &
-                                            levels=N)
+  afield = self%functionspaceIncHalo%create_field(name='gmask',                &
+                                                  kind=atlas_integer(KIND(0)), &
+                                                  levels=N)
   CALL afield%data (i_ptr)
   DO k = 1,self%N
-    i_ptr(k,:) = INT(PACK(self%rmask(IstrD:IendD, JstrD:JendD), .TRUE.))
+    i_ptr(k,:) = INT(PACK(self%rmask(IstrH:IendH, JstrH:JendH), .TRUE.))
   END DO
   CALL afieldset%add (afield)
   CALL afield%final ()
 
-END SUBROUTINE roms_geom_fill_atlas_fieldset
+END SUBROUTINE roms_geom_to_fieldset
 
 ! ------------------------------------------------------------------------------
 !> Convert an ATLAS fieldset (dx_atlas) to a ROMS-JEDI structured field (dx).
@@ -860,7 +858,7 @@ SUBROUTINE roms_geom_atlas2struct (self, dx, dx_atlas)
 
   TYPE (atlas_field)                   :: afield
   logical, allocatable                 :: fmask(:,:)
-  integer                              :: IstrD, IendD, JstrD, JendD
+  integer                              :: IstrH, IendH, JstrH, JendH
   integer                              :: cgrid
   real (kind_real), pointer            :: r_ptr(:)
 
@@ -870,20 +868,20 @@ SUBROUTINE roms_geom_atlas2struct (self, dx, dx_atlas)
 
   cgrid = r2dvar
 
-  IstrD = self%bounds(cgrid)%IstrD
-  IendD = self%bounds(cgrid)%IendD
-  JstrD = self%bounds(cgrid)%JstrD
-  JendD = self%bounds(cgrid)%JendD
+  IstrH = self%bounds(cgrid)%IstrH
+  IendH = self%bounds(cgrid)%IendH
+  JstrH = self%bounds(cgrid)%JstrH
+  JendH = self%bounds(cgrid)%JendH
 
-  allocate ( fmask(IstrD:IendD, JstrD:JendD) )
+  allocate ( fmask(IstrH:IendH, JstrH:JendH) )
   fmask = .TRUE.
 
   ! Unpack field from ATLAS.
 
   afield = dx_atlas%field('var')
   CALL afield%data (r_ptr)
-  dx(IstrD:IendD, JstrD:JendD) = UNPACK(r_ptr, fmask,                          &
-                                        dx(IstrD:IendD, JstrD:JendD))
+  dx(IstrH:IendH, JstrH:JendH) = UNPACK(r_ptr, fmask,                          &
+                                        dx(IstrH:IendH, JstrH:JendH))
   CALL afield%final ()
 
   deallocate ( fmask )
@@ -901,7 +899,7 @@ SUBROUTINE roms_geom_struct2atlas (self, dx, dx_atlas)
   TYPE (atlas_fieldset), intent(out  ) :: dx_atlas        !< ATLAS fieldset
 
   TYPE (atlas_field)                 :: afield
-  integer                            :: IstrD, IendD, JstrD, JendD
+  integer                            :: IstrH, IendH, JstrH, JendH
   integer                            :: cgrid
   real (kind_real), pointer          :: r_ptr(:)
 
@@ -911,21 +909,21 @@ SUBROUTINE roms_geom_struct2atlas (self, dx, dx_atlas)
 
   cgrid = r2dvar
 
-  IstrD = self%bounds(cgrid)%IstrD
-  IendD = self%bounds(cgrid)%IendD
-  JstrD = self%bounds(cgrid)%JstrD
-  JendD = self%bounds(cgrid)%JendD
+  IstrH = self%bounds(cgrid)%IstrH
+  IendH = self%bounds(cgrid)%IendH
+  JstrH = self%bounds(cgrid)%JstrH
+  JendH = self%bounds(cgrid)%JendH
 
   ! Add structured field to ATLAS.
 
   dx_atlas = atlas_fieldset()
-  afield = self%afunctionspace%create_field('var',                             &
-                                            kind=atlas_real(kind_real),        &
-                                            levels=0)
+  afield = self%functionspace%create_field('var',                              &
+                                           kind=atlas_real(kind_real),         &
+                                           levels=0)
 
   CALL dx_atlas%add (afield)
   CALL afield%data (r_ptr)
-  r_ptr = PACK(dx(IstrD:IendD, JstrD:JendD), .TRUE.)
+  r_ptr = PACK(dx(IstrH:IendH, JstrH:JendH), .TRUE.)
   CALL afield%final ()
 
 END SUBROUTINE roms_geom_struct2atlas

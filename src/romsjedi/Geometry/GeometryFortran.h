@@ -62,16 +62,15 @@ namespace romsjedi {
                                       const size_t &,
                                       size_t[]);
 
-    void roms_geom_set_atlas_lonlat_f90(const F90geom &,
-                                        atlas::field::FieldSetImpl *,
-                                        const bool &);
+    void roms_geom_set_lonlat_f90(const F90geom &,
+                                  atlas::field::FieldSetImpl *);
 
     void roms_geom_set_atlas_functionspace_pointer_f90(const F90geom &,
                                     atlas::functionspace::FunctionSpaceImpl *,
                                     atlas::functionspace::FunctionSpaceImpl *);
 
-    void roms_geom_fill_atlas_fieldset_f90(const F90geom &,
-                                           atlas::field::FieldSetImpl *);
+    void roms_geom_to_fieldset_f90(const F90geom &,
+                                   atlas::field::FieldSetImpl *);
   }
 }  // namespace romsjedi
 

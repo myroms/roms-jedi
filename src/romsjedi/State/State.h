@@ -198,8 +198,8 @@ namespace romsjedi {
 
       /// Get values as Atlas FieldSet
 
-      void getFieldSet(const oops::Variables &,
-                       atlas::FieldSet &) const;
+      void toFieldSet(atlas::FieldSet &) const;
+      void fromFieldSet(const atlas::FieldSet &);
 
       int & toFortran() {return keyFlds_;}
       const int & toFortran() const {return keyFlds_;}

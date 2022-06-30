@@ -1,4 +1,4 @@
-! (C) Copyright 2020-2021 UCAR
+! (C) Copyright 2020-2022 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -18,7 +18,6 @@ MODULE roms_increment_mod
 
 USE kinds,                      ONLY : kind_real
 
-USE atlas_module,               ONLY : atlas_fieldset, atlas_field, atlas_real
 USE fckit_configuration_module, ONLY : fckit_configuration
 USE oops_variables_mod,         ONLY : oops_variables
 USE random_mod,                 ONLY : normal_distribution

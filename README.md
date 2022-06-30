@@ -1,5 +1,7 @@
 # ROMS interface to JEDI
 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;![roms-jedi logo](https://www.myroms.org/trac/ROMS-JEDI_400px.png)
+
 ![roms-jedi logo](https://www.myroms.org/trac/roms_jedi_600px.png)
 
 The following instructions should have the steps needed to implement an interface capable of

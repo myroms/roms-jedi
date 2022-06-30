@@ -100,23 +100,20 @@ namespace romsjedi {
     void roms_increment_update_fields_f90(F90flds &,
                                           const oops::Variables &);
 
-    void roms_increment_set_atlas_f90(const F90flds &,
-                                      const F90geom &,
-                                      const oops::Variables &,
-                                      atlas::field::FieldSetImpl *,
-                                      const bool &);
+    void roms_increment_to_fieldset_f90(const F90flds &,
+                                        const F90geom &,
+                                        const oops::Variables &,
+                                        atlas::field::FieldSetImpl *);
 
-    void roms_increment_to_atlas_f90(const F90flds &,
-                                     const F90geom &,
-                                     const oops::Variables &,
-                                     atlas::field::FieldSetImpl *,
-                                     const bool &);
+    void roms_increment_to_fieldset_ad_f90(const F90flds &,
+                                           const F90geom &,
+                                           const oops::Variables &,
+                                           const atlas::field::FieldSetImpl *);
 
-    void roms_increment_from_atlas_f90(const F90flds &,
-                                       const F90geom &,
-                                       const oops::Variables &,
-                                       const atlas::field::FieldSetImpl *,
-                                       const bool &);
+    void roms_increment_from_fieldset_f90(const F90flds &,
+                                          const F90geom &,
+                                          const oops::Variables &,
+                                          const atlas::field::FieldSetImpl *);
 
     void roms_increment_gstats_f90(const F90flds &,
                                    const int &,

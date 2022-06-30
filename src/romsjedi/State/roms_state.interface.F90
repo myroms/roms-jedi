@@ -495,7 +495,6 @@ SUBROUTINE roms_state_expontrans_c (c_key_self, c_trvars)                      &
 
 END SUBROUTINE roms_state_expontrans_c
 
-
 ! ------------------------------------------------------------------------------
 !> Add or remove fields because of VariableChange object elsewhere.
 
@@ -516,64 +515,58 @@ SUBROUTINE roms_state_update_fields_c (c_key_self, c_vars)                     &
 END SUBROUTINE roms_state_update_fields_c
 
 ! ------------------------------------------------------------------------------
-!> It defines State fields in the ATLAS object.
-
-SUBROUTINE roms_state_set_atlas_c (c_key_self, c_key_geom, c_vars,             &
-                                   c_afieldset, c_include_halo)                &
-                             BIND (c, name='roms_state_set_atlas_f90')
-
-  integer (c_int),     intent(in) :: c_key_self     !< State fields pointer
-  integer (c_int),     intent(in) :: c_key_geom     !< Geometry pointer
-  TYPE (c_ptr), value, intent(in) :: c_vars         !< List of Variables
-  TYPE (c_ptr), value, intent(in) :: c_afieldset    !< ATLAS FieldSet
-  logical,             intent(in) :: c_include_halo !< tile halo switch
-
-  TYPE (roms_state),      pointer :: self
-  TYPE (roms_geom),       pointer :: geom
-  TYPE (oops_variables)           :: vars
-  TYPE (atlas_fieldset)           :: afieldset
-  logical                         :: include_halo
-
-  CALL roms_state_registry%get (c_key_self, self)
-  CALL roms_geom_registry%get (c_key_geom, geom)
-
-  vars = oops_variables(c_vars)
-  afieldset = atlas_fieldset(c_afieldset)
-  include_halo = c_include_halo
-
-  CALL self%set_atlas (geom, vars, afieldset, include_halo)
-
-END SUBROUTINE roms_state_set_atlas_c
-
-! ------------------------------------------------------------------------------
 !> It loads State fields data into ATLAS object.
 
-SUBROUTINE roms_state_to_atlas_c (c_key_self, c_key_geom, c_vars,              &
-                                  c_afieldset, c_include_halo)                 &
-                            BIND (c, name='roms_state_to_atlas_f90')
+SUBROUTINE roms_state_to_fieldset_c (c_key_self, c_key_geom, c_vars,           &
+                                     c_afieldset)                              &
+                               BIND (c, name='roms_state_to_fieldset_f90')
 
   integer (c_int),     intent(in) :: c_key_self     !< State fields pointer
   integer (c_int),     intent(in) :: c_key_geom     !< Geometry pointer
   TYPE (c_ptr), value, intent(in) :: c_vars         !< List of Variables
   TYPE (c_ptr), value, intent(in) :: c_afieldset    !< ATLAS FieldSet
-  logical,             intent(in) :: c_include_halo !< tile halo switch
 
   TYPE (roms_state),      pointer :: self
   TYPE (roms_geom),       pointer :: geom
   TYPE (oops_variables)           :: vars
   TYPE (atlas_fieldset)           :: afieldset
-  logical                         :: include_halo
 
   CALL roms_state_registry%get (c_key_self, self)
   CALL roms_geom_registry%get (c_key_geom, geom)
 
   vars = oops_variables(c_vars)
   afieldset = atlas_fieldset(c_afieldset)
-  include_halo = c_include_halo
 
-  CALL self%to_atlas (geom, vars, afieldset, include_halo)
+  CALL self%to_fieldset (geom, vars, afieldset)
 
-END SUBROUTINE roms_state_to_atlas_c
+END SUBROUTINE roms_state_to_fieldset_c
+
+! ------------------------------------------------------------------------------
+!> Fills State fields with data from the ATLAS object.
+
+SUBROUTINE roms_state_from_fieldset_c (c_key_self, c_key_geom, c_vars,         &
+                                       c_afieldset)                            &
+                               BIND (c, name='roms_state_from_fieldset_f90')
+
+  integer (c_int),     intent(in) :: c_key_self     !< State fields pointer
+  integer (c_int),     intent(in) :: c_key_geom     !< Geometry pointer
+  TYPE (c_ptr), value, intent(in) :: c_vars         !< List of Variables
+  TYPE (c_ptr), value, intent(in) :: c_afieldset    !< ATLAS FieldSet
+
+  TYPE (roms_state),      pointer :: self
+  TYPE (roms_geom),       pointer :: geom
+  TYPE (oops_variables)           :: vars
+  TYPE (atlas_fieldset)           :: afieldset
+
+  CALL roms_state_registry%get (c_key_self, self)
+  CALL roms_geom_registry%get (c_key_geom, geom)
+
+  vars = oops_variables(c_vars)
+  afieldset = atlas_fieldset(c_afieldset)
+
+  CALL self%from_fieldset (geom, vars, afieldset)
+
+END SUBROUTINE roms_state_from_fieldset_c
 
 ! ------------------------------------------------------------------------------
 

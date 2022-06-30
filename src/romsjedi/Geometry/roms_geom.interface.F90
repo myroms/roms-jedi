@@ -200,33 +200,31 @@ END SUBROUTINE roms_geom_get_num_levels_c
 !> Set ATLAS FunctionSpace pointers.
 
 SUBROUTINE roms_geom_set_atlas_functionspace_pointer_c (c_key_self,            &
-                                                        c_aFuncSpace,          &
-                                                        c_aFuncSpace_halo)     &
+                                                        c_FuncSpace,           &
+                                                        c_FuncSpaceIncHalo)    &
            BIND (c, name='roms_geom_set_atlas_functionspace_pointer_f90')
 
-  integer (c_int),     intent(in) :: c_key_self        !< Key to Geometry object
-  TYPE (c_ptr), value, intent(in) :: c_aFuncSpace      !< Key to ATLAS function
-  TYPE (c_ptr), value, intent(in) :: c_aFuncSpace_halo !< Key to ATLAS function
+  integer (c_int),     intent(in) :: c_key_self         !< Key to Geometry object
+  TYPE (c_ptr), value, intent(in) :: c_FuncSpace        !< Key to ATLAS function
+  TYPE (c_ptr), value, intent(in) :: c_FuncSpaceIncHalo !< Key to ATLAS function
 
   TYPE (roms_geom), pointer       :: self
 
   CALL roms_geom_registry%get (c_key_self, self)
 
-  self%afunctionspace = atlas_functionspace(c_aFuncSpace)
-  self%afunctionspace_halo = atlas_functionspace(c_aFuncSpace_halo)
+  self%functionspace = atlas_functionspace(c_FuncSpace)
+  self%functionspaceIncHalo = atlas_functionspace(c_FuncSpaceIncHalo)
 
 END SUBROUTINE roms_geom_set_atlas_functionspace_pointer_c
 
 ! ------------------------------------------------------------------------------
-!> Set ATLAS **lonlat** and **lonlat_including_halo** FieldSets.
+!> Set ATLAS **lonlat** and **lonlat_incl_halos** FieldSets.
 
-SUBROUTINE roms_geom_set_atlas_lonlat_c (c_key_self, c_afieldset,              &
-                                         c_include_halo)                       &
-           BIND (c, name='roms_geom_set_atlas_lonlat_f90')
+SUBROUTINE roms_geom_set_lonlat_c (c_key_self, c_afieldset)                    &
+                             BIND (c, name='roms_geom_set_lonlat_f90')
 
   integer (c_int),     intent(in) :: c_key_self        !< Key to Geometry object
   TYPE (c_ptr), value, intent(in) :: c_afieldset       !< Key to ATLAS fieldset
-  logical,             intent(in) :: c_include_halo    !< tile halo switch
 
   TYPE (roms_geom), pointer       :: self
   TYPE (atlas_fieldset)           :: afieldset
@@ -234,16 +232,16 @@ SUBROUTINE roms_geom_set_atlas_lonlat_c (c_key_self, c_afieldset,              &
   CALL roms_geom_registry%get (c_key_self, self)
   afieldset = atlas_fieldset(c_afieldset)
 
-  CALL self%set_atlas_lonlat (afieldset, c_include_halo)
+  CALL self%set_lonlat (afieldset)
 
-END SUBROUTINE roms_geom_set_atlas_lonlat_c
+END SUBROUTINE roms_geom_set_lonlat_c
 
 ! ------------------------------------------------------------------------------
-!> Fill ATLAS fieldset with cell area, vertical level units, am geographical
+!> Fill ATLAS fieldset with cell area, vertical level units, and geographical
 !! mask.
 
-SUBROUTINE roms_geom_fill_atlas_fieldset_c (c_key_self, c_afieldset)           &
-           BIND (c, name='roms_geom_fill_atlas_fieldset_f90')
+SUBROUTINE roms_geom_to_fieldset_c (c_key_self, c_afieldset)                   &
+                              BIND (c, name='roms_geom_to_fieldset_f90')
 
   integer (c_int),    intent(in) :: c_key_self      !< Key to Geometry object
   type(c_ptr), value, intent(in) :: c_afieldset     !< Key to ATLAS fieldset
@@ -254,9 +252,9 @@ SUBROUTINE roms_geom_fill_atlas_fieldset_c (c_key_self, c_afieldset)           &
   CALL roms_geom_registry%get (c_key_self, self)
   afieldset = atlas_fieldset(c_afieldset)
 
-  CALL self%fill_atlas_fieldset (afieldset)
+  CALL self%to_fieldset (afieldset)
 
-END SUBROUTINE roms_geom_fill_atlas_fieldset_c
+END SUBROUTINE roms_geom_to_fieldset_c
 
 ! ------------------------------------------------------------------------------
 

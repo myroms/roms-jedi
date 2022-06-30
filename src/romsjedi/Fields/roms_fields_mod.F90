@@ -88,9 +88,9 @@ TYPE, PUBLIC :: roms_fields
 
   ! ATLAS.
 
-  PROCEDURE :: set_atlas       => roms_fields_set_atlas
-  PROCEDURE :: to_atlas        => roms_fields_to_atlas
-  PROCEDURE :: from_atlas      => roms_fields_from_atlas
+  PROCEDURE :: to_fieldset     => roms_fields_to_fieldset
+  PROCEDURE :: to_fieldset_ad  => roms_fields_to_fieldset_ad
+  PROCEDURE :: from_fieldset   => roms_fields_from_fieldset
 
   ! Field getters and checkers.
 
@@ -296,81 +296,15 @@ SUBROUTINE roms_fields_delete (self)
 END SUBROUTINE roms_fields_delete
 
 ! ------------------------------------------------------------------------------
-!> It defines Fields in the ATLAS object.
+!> It loads Fields data into ATLAS FieldSet object. It includes computational
+!  points, boundary points, and halo.
 
-SUBROUTINE roms_fields_set_atlas (self, geom, vars, afieldset, includeHalo)
-
-  CLASS (roms_fields), target, intent(in   ) :: self         !< Fields object
-  TYPE (roms_geom),            intent(in   ) :: geom         !< Geometry object
-  TYPE (oops_variables),       intent(in   ) :: vars         !< OOPS variables
-  TYPE (atlas_fieldset),       intent(inout) :: afieldset    !< ATLAS fieldset
-  logical, optional,           intent(in   ) :: includeHalo  !< tile halo swtich
-
-  TYPE (roms_field), pointer                    :: field
-  TYPE (atlas_field)                            :: afield
-
-  logical                                       :: include_halo
-  integer                                       :: N, ivar
-
-  ! Determine if including halo points.
-
-  IF (PRESENT(includeHalo)) THEN
-    include_halo = includeHalo
-  ELSE
-    include_halo = .FALSE.
-  END IF
-
-  ! Create and add fields to ATLAS. Currently, ATLAS allows a single function
-  ! space which is problematic with staggered C-grids. That is, ATLAS assumes
-  ! that all the variables are at the same location.
-
-  DO ivar = 1, vars%nvars()
-     
-    CALL self%get (vars%variable(ivar), field)
-
-    IF (LdebugFields .and. (geom%f_comm%rank() .eq. 0)) THEN
-      PRINT '(10a)', 'ROMS_DEBUG roms_fields::set_atlas: oops var = ',         &
-                     TRIM(vars%variable(ivar)),                                &
-                     ', field name = ', TRIM(field%name),                      & 
-                     ', metadata%name = ', field%metadata%name,                &
-                     ', metadata%getval_name = ', field%metadata%getval_name,  &
-                     ', metadata%getval_name_surface = ',                      &
-                     field%metadata%getval_name_surface
-    END IF
-
-    IF (.not.afieldset%has_field(vars%variable(ivar))) THEN
-      N = field%N
-      IF (N .eq. 1) N = 0
-
-      IF (include_halo) THEN
-        afield = geom%afunctionspace_halo%create_field(                        &
-                                                   name=vars%variable(ivar),   &
-                                                   kind=atlas_real(kind_real), &
-                                                   levels=N)
-      ELSE  
-        afield = geom%afunctionspace%create_field(name=vars%variable(ivar),    &
-                                                  kind=atlas_real(kind_real),  &
-                                                  levels=N)
-      END IF
-
-      CALL afieldset%add (afield)                        ! add field
-      CALL afield%final ()                               ! release pointer
-    END IF
-
-  END DO
-
-END SUBROUTINE roms_fields_set_atlas
-
-! ------------------------------------------------------------------------------
-!> It loads Fields data into ATLAS object.
-
-SUBROUTINE roms_fields_to_atlas (self, geom, vars, afieldset, includeHalo)
+SUBROUTINE roms_fields_to_fieldset (self, geom, vars, afieldset)
 
   CLASS (roms_fields), target, intent(in   ) :: self         !< Fields object
   TYPE (roms_geom), target,    intent(in   ) :: geom         !< Geometry object
   TYPE (oops_variables),       intent(in   ) :: vars         !< OOPS variables
   TYPE (atlas_fieldset),       intent(inout) :: afieldset    !< ATLAS fieldset
-  logical, optional,           intent(in   ) :: includeHalo  !< tile halo swtich
 
   TYPE (atlas_field)                         :: afield
   TYPE (atlas_metadata)                      :: meta
@@ -384,18 +318,10 @@ SUBROUTINE roms_fields_to_atlas (self, geom, vars, afieldset, includeHalo)
   real (kind=kind_real), allocatable         :: Fdat(:,:,:)
   real (kind=kind_real), pointer             :: fldptr1(:), fldptr2(:,:)
 
-  ! Determine if including halo points.
 
-  IF (PRESENT(includeHalo)) THEN
-    include_halo = includeHalo
-  ELSE
-    include_halo = .FALSE.
-  END IF
-
-  ! Load fields increment data into the ATLAS object. Currently, ATLAS allows a
-  ! single function space which is problematic with staggered C-grids. That is,
-  ! ATLAS assumes that all the variables are at the same location (cell center,
-  ! A-grid).
+  ! Get tile bounds. Currently, ATLAS allows a single function space which is
+  ! problematic with staggered C-grids. That is, ATLAS assumes that all the
+  ! variables are at the same location (cell center, A-grid).
 
   LBi = geom%LBi
   UBi = geom%UBi
@@ -414,12 +340,18 @@ SUBROUTINE roms_fields_to_atlas (self, geom, vars, afieldset, includeHalo)
   JstrH = geom%bounds(cgrid)%JstrH
   JendH = geom%bounds(cgrid)%JendH
 
+  ! Allocate temporary field array.
+
+  allocate ( Fdat(LBi:UBi, LBj:UBj, geom%N) )
+
+  ! Load field data into the ATLAS FieldSet object.
+
   DO ivar = 1, vars%nvars()
 
     CALL self%get (vars%variable(ivar), field)
 
     IF (LdebugFields .and. (geom%f_comm%rank() .eq. 0)) THEN
-      PRINT '(10a)', 'ROMS_DEBUG roms_fields::to_atlas: oops var = ',          &
+      PRINT '(10a)', 'ROMS_DEBUG roms_fields::to_fieldset: oops var = ',       &
                      TRIM(vars%variable(ivar)),                                &
                      ', field name = ', TRIM(field%name),                      & 
                      ', metadata%name = ', field%metadata%name,                &
@@ -428,45 +360,25 @@ SUBROUTINE roms_fields_to_atlas (self, geom, vars, afieldset, includeHalo)
                      field%metadata%getval_name_surface
     END IF
 
-    ! If including halo points, copy computational points and perform a
-    ! halo exchange.
+    ! Copy computational points and perform a halo exchange.
 
     N = field%N
 
-    IF (include_halo) THEN
-      allocate ( Fdat(LBi:UBi, LBj:UBj, N) )
-      Fdat = 0.0_kind_real
-      Fdat(IstrD:IendD, JstrD:JendD, :) = field%val(IstrD:IendD, JstrD:JendD, :)
+    Fdat = 0.0_kind_real
+    Fdat(IstrD:IendD, JstrD:JendD, :) = field%val(IstrD:IendD, JstrD:JendD, :)
 
-      IF (field%IsAdjointField) THEN
-        IF (N .eq. 1) THEN
-          CALL ad_mp_exchange2d (geom%ng, geom%tile, iADM, 1,                  &
-                                 LBi, UBi, LBj, UBj,                           &
-                                 geom%NghostPoints,                            &
-                                 geom%EWperiodic, geom%NSperiodic,             &
-                                 Fdat(:,:,1))
-        ELSE
-          CALL ad_mp_exchange3d (geom%ng, geom%tile, iADM, 1,                  &
-                                 LBi, UBi, LBj, UBj, 1, N,                     &
-                                 geom%NghostPoints,                            &
-                                 geom%EWperiodic, geom%NSperiodic,             &
-                                 Fdat)
-        END IF
-      ELSE
-        IF (N .eq. 1) THEN
-          CALL mp_exchange2d (geom%ng, geom%tile, iNLM, 1,                     &
-                              LBi, UBi, LBj, UBj,                              &
-                              geom%NghostPoints,                               &
-                              geom%EWperiodic, geom%NSperiodic,                &
-                              Fdat(:,:,1))
-        ELSE
-          CALL mp_exchange3d (geom%ng, geom%tile, iNLM, 1,                     &
-                              LBi, UBi, LBj, UBj, 1, N,                        &
-                              geom%NghostPoints,                               &
-                              geom%EWperiodic, geom%NSperiodic,                &
-                              Fdat)
-        END IF
-      END IF
+    IF (N .eq. 1) THEN
+      CALL mp_exchange2d (geom%ng, geom%tile, iNLM, 1,                         &
+                          LBi, UBi, LBj, UBj,                                  &
+                          geom%NghostPoints,                                   &
+                          geom%EWperiodic, geom%NSperiodic,                    &
+                          Fdat(:,:,1))
+    ELSE
+      CALL mp_exchange3d (geom%ng, geom%tile, iNLM, 1,                         &
+                          LBi, UBi, LBj, UBj, 1, N,                            &
+                          geom%NghostPoints,                                   &
+                          geom%EWperiodic, geom%NSperiodic,                    &
+                          Fdat)
     END IF
 
     ! Get or create ATLAS field.
@@ -474,75 +386,177 @@ SUBROUTINE roms_fields_to_atlas (self, geom, vars, afieldset, includeHalo)
     IF (N.eq.1) N = 0
          
     IF (afieldset%has_field(vars%variable(ivar))) THEN
-      afield = afieldset%field(vars%variable(ivar))            ! get field
+      afield = afieldset%field(vars%variable(ivar))           ! get field
     ELSE
-      IF (include_halo) THEN                        ! create field with halo
-        afield = geom%afunctionspace_halo%create_field(                        &
+      afield = geom%functionspaceIncHalo%create_field(                         &
                                                    name=vars%variable(ivar),   &
                                                    kind=atlas_real(kind_real), &
                                                    levels=N)
 
-      ELSE                                          ! create field without halo
-        afield = geom%afunctionspace%create_field(name=vars%variable(ivar),    &
-                                                  kind=atlas_real(kind_real),  &
-                                                  levels=N)
-      END IF
-      CALL afieldset%add (afield)                              ! add field
+      CALL afieldset%add (afield)                             ! add field
     END IF
 
     ! Get field pointer to ATLAS and copy data.
 
-    IF (include_halo) THEN
-      IF (N .eq. 0) THEN
-        CALL afield%data (fldptr1)
-        fldptr1 = RESHAPE(Fdat(IstrH:IendH, JstrH:JendH, 1),                   &
-                          (/ (IendH-IstrH+1)*(JendH-JstrH+1) /))
-      ELSE
-        CALL afield%data (fldptr2)
-        DO k=1,N
-          fldptr2(k,:) = RESHAPE(Fdat(IstrH:IendH, JstrH:JendH, k),            &
-                                 (/ (IendH-IstrH+1)*(JendH-JstrH+1) /))
-        END DO
-      END IF
+    IF (N .eq. 0) THEN
+      CALL afield%data (fldptr1)
+      fldptr1 = PACK(Fdat(IstrH:IendH, JstrH:JendH, 1), .TRUE.)
     ELSE
-      IF (N .eq. 0) THEN
-        CALL afield%data (fldptr1)
-        fldptr1 = RESHAPE(field%val(IstrD:IendD, JstrD:JendD, 1),              &
-                          (/ (IendD-IstrD+1)*(JendD-JstrD+1) /))
-      ELSE
-        CALL afield%data (fldptr2)
-        DO k=1,N
-          fldptr2(k,:) = RESHAPE(field%val(IstrD:IendD, JstrD:JendD, k),       &
-                                 (/ (IendD-IstrD+1)*(JendD-JstrD+1) /))
-        END DO
-      END IF
+      CALL afield%data (fldptr2)
+      DO k=1,N
+        fldptr2(k,:) = PACK(Fdat(IstrH:IendH, JstrH:JendH, k), .TRUE.)
+      END DO
     END IF
 
     meta = afield%metadata()
     CALL meta%set ('interp_type', TRIM(field%interp_type))
 
-    CALL afield%final ()                                ! release pointer
-    IF (include_halo) deallocate (Fdat) 
+    CALL afield%final ()                                      ! release pointer
 
   END DO
 
-END SUBROUTINE roms_fields_to_atlas
+  deallocate (Fdat) 
+
+END SUBROUTINE roms_fields_to_fieldset
+
+! ------------------------------------------------------------------------------
+!> It loads adjoint Fields data into ATLAS FieldSet object. It includes
+!  computational points, boundary points, and halo.
+
+SUBROUTINE roms_fields_to_fieldset_ad (self, geom, vars, afieldset)
+
+  CLASS (roms_fields), target, intent(in   ) :: self         !< Fields object
+  TYPE (roms_geom), target,    intent(in   ) :: geom         !< Geometry object
+  TYPE (oops_variables),       intent(in   ) :: vars         !< OOPS variables
+  TYPE (atlas_fieldset),       intent(inout) :: afieldset    !< ATLAS fieldset
+
+  TYPE (atlas_field)                         :: afield
+  TYPE (atlas_metadata)                      :: meta
+  TYPE (roms_field), pointer                 :: field
+
+  logical                                    :: include_halo
+  integer                                    :: IstrD, IendD, JstrD, JendD
+  integer                                    :: IstrH, IendH, JstrH, JendH
+  integer                                    :: LBi, UBi, LBj, UBj, N
+  integer                                    :: cgrid, ivar, k
+  real (kind=kind_real), allocatable         :: Fdat(:,:,:)
+  real (kind=kind_real), pointer             :: fldptr1(:), fldptr2(:,:)
+
+  ! Get tile bounds. Currently, ATLAS allows a single function space which is
+  ! problematic with staggered C-grids. That is, ATLAS assumes that all the
+  ! variables are at the same location (cell center, A-grid).
+
+  LBi = geom%LBi
+  UBi = geom%UBi
+  LBj = geom%LBj
+  UBj = geom%UBj
+
+  cgrid = r2dvar                                 ! RHO-points (cell-center)
+
+  IstrD = geom%bounds(cgrid)%IstrD
+  IendD = geom%bounds(cgrid)%IendD
+  JstrD = geom%bounds(cgrid)%JstrD
+  JendD = geom%bounds(cgrid)%JendD
+
+  IstrH = geom%bounds(cgrid)%IstrH
+  IendH = geom%bounds(cgrid)%IendH
+  JstrH = geom%bounds(cgrid)%JstrH
+  JendH = geom%bounds(cgrid)%JendH
+
+  ! Allocate temporary field array.
+
+  allocate ( Fdat(LBi:UBi, LBj:UBj, geom%N) )
+
+  ! Load field data into the ATLAS FieldSet object.
+
+  DO ivar = 1, vars%nvars()
+
+    CALL self%get (vars%variable(ivar), field)
+
+    IF (LdebugFields .and. (geom%f_comm%rank() .eq. 0)) THEN
+      PRINT '(10a)', 'ROMS_DEBUG roms_fields::to_fieldset_ad: oops var = ',    &
+                     TRIM(vars%variable(ivar)),                                &
+                     ', field name = ', TRIM(field%name),                      & 
+                     ', metadata%name = ', field%metadata%name,                &
+                     ', metadata%getval_name = ', field%metadata%getval_name,  &
+                     ', metadata%getval_name_surface = ',                      &
+                     field%metadata%getval_name_surface
+    END IF
+
+    ! Copy computational points and perform an adjoint halo exchange.
+
+    N = field%N
+
+    Fdat = 0.0_kind_real
+
+    Fdat(IstrD:IendD, JstrD:JendD, :) = field%val(IstrD:IendD, JstrD:JendD, :)
+
+    IF (N .eq. 1) THEN
+      CALL ad_mp_exchange2d (geom%ng, geom%tile, iADM, 1,                      &
+                             LBi, UBi, LBj, UBj,                               &
+                             geom%NghostPoints,                                &
+                             geom%EWperiodic, geom%NSperiodic,                 &
+                             Fdat(:,:,1))
+    ELSE
+      CALL ad_mp_exchange3d (geom%ng, geom%tile, iADM, 1,                      &
+                             LBi, UBi, LBj, UBj, 1, N,                         &
+                             geom%NghostPoints,                                &
+                             geom%EWperiodic, geom%NSperiodic,                 &
+                             Fdat)
+    END IF
+
+    ! Get or create ATLAS field.
+
+    IF (N.eq.1) N = 0
+         
+    IF (afieldset%has_field(vars%variable(ivar))) THEN
+      afield = afieldset%field(vars%variable(ivar))           ! get field
+    ELSE
+      afield = geom%functionspaceIncHalo%create_field(                         &
+                                                   name=vars%variable(ivar),   &
+                                                   kind=atlas_real(kind_real), &
+                                                   levels=N)
+
+      CALL afieldset%add (afield)                             ! add field
+    END IF
+
+    ! Get field pointer to ATLAS and copy data.
+
+    IF (N .eq. 0) THEN
+      CALL afield%data (fldptr1)
+      fldptr1 = PACK(Fdat(IstrH:IendH, JstrH:JendH, 1), .TRUE.)
+    ELSE
+      CALL afield%data (fldptr2)
+      DO k=1,N
+        fldptr2(k,:) = PACK(Fdat(IstrH:IendH, JstrH:JendH, k), .TRUE.)
+      END DO
+    END IF
+
+    meta = afield%metadata()
+    CALL meta%set ('interp_type', TRIM(field%interp_type))
+
+    CALL afield%final ()                                      ! release pointer
+
+  END DO
+
+  deallocate (Fdat) 
+
+END SUBROUTINE roms_fields_to_fieldset_ad
 
 ! ------------------------------------------------------------------------------
 !> It fills Fields object with data from the ATLAS object.
 
-SUBROUTINE roms_fields_from_atlas (self, geom, vars, afieldset, includeHalo)
+SUBROUTINE roms_fields_from_fieldset (self, geom, vars, afieldset)
 
   CLASS (roms_fields), target, intent(inout) :: self         !< Fields object
   TYPE (roms_geom),            intent(in   ) :: geom         !< Geometry object
   TYPE (oops_variables),       intent(in   ) :: vars         !< OOPS variables
   TYPE (atlas_fieldset),       intent(in   ) :: afieldset    !< ATLAS fieldset
-  logical, optional,           intent(in   ) :: includeHalo  !< tile halo swtich
 
   TYPE (roms_field), pointer                 :: field
   TYPE (atlas_field)                         :: afield
 
-  integer                                    :: IstrD, IendD, JstrD, JendD, N
+  integer                                    :: IstrH, IendH, JstrH, JendH, N
   integer                                    :: cgrid, ivar, k
   real (kind=kind_real), pointer             :: fldptr1(:), fldptr2(:,:)
 
@@ -556,10 +570,10 @@ SUBROUTINE roms_fields_from_atlas (self, geom, vars, afieldset, includeHalo)
 
   cgrid = r2dvar                                 ! RHO-points (cell-center)
 
-  IstrD = geom%bounds(cgrid)%IstrD
-  IendD = geom%bounds(cgrid)%IendD
-  JstrD = geom%bounds(cgrid)%JstrD
-  JendD = geom%bounds(cgrid)%JendD
+  IstrH = geom%bounds(cgrid)%IstrH
+  IendH = geom%bounds(cgrid)%IendH
+  JstrH = geom%bounds(cgrid)%JstrH
+  JendH = geom%bounds(cgrid)%JendH
 
   DO ivar = 1, vars%nvars()
 
@@ -576,15 +590,15 @@ SUBROUTINE roms_fields_from_atlas (self, geom, vars, afieldset, includeHalo)
 
     IF (N .eq. 0) THEN
       CALL afield%data (fldptr1)
-      field%val(IstrD:IendD, JstrD:JendD, 1) = RESHAPE(fldptr1,                &
-                                                       (/IendD-IstrD+1,        &
-                                                         JendD-JstrD+1/))
+      field%val(IstrH:IendH,JstrH:JendH,1) = RESHAPE(fldptr1,                  &
+                                                     (/IendH-IstrH+1,          &
+                                                       JendH-JstrH+1/))
     ELSE
       CALL afield%data (fldptr2)
       DO k = 1, N
-        field%val(IstrD:IendD, JstrD:JendD, k) = RESHAPE(fldptr2(k,:),         &
-                                                         (/IendD-IstrD+1,      &
-                                                           JendD-JstrD+1/))
+        field%val(IstrH:IendH,JstrH:JendH,k) = RESHAPE(fldptr2(k,:),           &
+                                                       (/IendH-IstrH+1,        &
+                                                         JendH-JstrH+1/))
       END DO
     END IF
 
@@ -592,7 +606,7 @@ SUBROUTINE roms_fields_from_atlas (self, geom, vars, afieldset, includeHalo)
 
   END DO
 
-END SUBROUTINE roms_fields_from_atlas
+END SUBROUTINE roms_fields_from_fieldset
 
 ! ------------------------------------------------------------------------------
 !> Get a pointer to the roms_field with the given name.
