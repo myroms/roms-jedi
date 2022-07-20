@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2021 UCAR.
+ * (C) Copyright 2021-2022 UCAR.
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -25,30 +25,29 @@ namespace romsjedi {
 
 // -----------------------------------------------------------------------------
 
-
   LinearVariableChange::~LinearVariableChange() {}
 
 // -----------------------------------------------------------------------------
 
-  void LinearVariableChange::setTrajectory(const State & xbg,
-                                           const State & xfg) {
-    oops::Log::trace() << "LinearVariableChange::setTrajectory starting"
+  void LinearVariableChange::changeVarTraj(const State & xfg,
+                                           const oops::Variables & vars) {
+    oops::Log::trace() << "LinearVariableChange::changeVarTraj starting"
                        << std::endl;
 
   // Create the variable change
 
     linearVariableChange_.reset(LinearVariableChangeFactory::create(
-                          xbg, xfg, *geom_,
+                          xfg, xfg, *geom_,
                           params_.linearVariableChangeParameters.value()));
-    oops::Log::trace() << "LinearVariableChange::setTrajectory done"
+    oops::Log::trace() << "LinearVariableChange::changeVarTraj done"
                        << std::endl;
   }
 
 // -----------------------------------------------------------------------------
 
-  void LinearVariableChange::multiply(Increment & dx,
-                                      const oops::Variables & vars) const {
-    oops::Log::trace() << "LinearVariableChange::multiply starting"
+  void LinearVariableChange::changeVarTL(Increment & dx,
+                                         const oops::Variables & vars) const {
+    oops::Log::trace() << "LinearVariableChange::changeVarTL starting"
                        << std::endl;
 
   // Create output state
@@ -63,15 +62,15 @@ namespace romsjedi {
   // Copy data from temporary state
     dx = dxout;
 
-    oops::Log::trace() << "LinearVariableChange::multiply done" << dx
+    oops::Log::trace() << "LinearVariableChange::changeVarTL done" << dx
                        << std::endl;
   }
 
 // -----------------------------------------------------------------------------
 
-  void LinearVariableChange::multiplyInverse(Increment & dx,
+  void LinearVariableChange::changeVarInverseTL(Increment & dx,
                                            const oops::Variables & vars) const {
-    oops::Log::trace() << "LinearVariableChange::multiplyInverse starting"
+    oops::Log::trace() << "LinearVariableChange::changeVarInverseTL starting"
                        << std::endl;
 
   // Create output state
@@ -86,15 +85,15 @@ namespace romsjedi {
   // Copy data from temporary state
     dx = dxout;
 
-    oops::Log::trace() << "LinearVariableChange::multiplyInverse done"
+    oops::Log::trace() << "LinearVariableChange::changeVarInverseTL done"
                        << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-  void LinearVariableChange::multiplyAD(Increment & dx,
-                                        const oops::Variables & vars) const {
-    oops::Log::trace() << "LinearVariableChange::multiplyAD starting"
+  void LinearVariableChange::changeVarAD(Increment & dx,
+                                         const oops::Variables & vars) const {
+    oops::Log::trace() << "LinearVariableChange::changeVarAD starting"
                        << std::endl;
 
   // Create output state
@@ -109,14 +108,14 @@ namespace romsjedi {
   // Copy data from temporary state
     dx = dxout;
 
-    oops::Log::trace() << "LinearVariableChange::multiplyAD done" << std::endl;
+    oops::Log::trace() << "LinearVariableChange::changeVarAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-  void LinearVariableChange::multiplyInverseAD(Increment & dx,
-                                          const oops::Variables & vars) const {
-    oops::Log::trace() << "LinearVariableChange::multiplyInverseAD starting"
+  void LinearVariableChange::changeVarInverseAD(Increment & dx,
+                                           const oops::Variables & vars) const {
+    oops::Log::trace() << "LinearVariableChange::changeVarInverseAD starting"
                        << std::endl;
 
   // Create output state
@@ -131,7 +130,7 @@ namespace romsjedi {
   // Copy data from temporary state
     dx = dxout;
 
-    oops::Log::trace() << "LinearVariableChange::multiplyInverseAD done"
+    oops::Log::trace() << "LinearVariableChange::changeVarInverseAD done"
                        << std::endl;
   }
 

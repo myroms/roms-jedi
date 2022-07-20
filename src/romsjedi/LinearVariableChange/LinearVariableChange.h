@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2021 UCAR.
+ * (C) Copyright 2021-2022 UCAR.
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -36,12 +36,17 @@ namespace romsjedi {
     explicit LinearVariableChange(const Geometry &, const Parameters_ &);
     ~LinearVariableChange();
 
-    void setTrajectory(const State &, const State &);
+    void changeVarTraj(const State &,
+                       const oops::Variables &);
 
-    void multiply(Increment &, const oops::Variables &) const;
-    void multiplyInverse(Increment &, const oops::Variables &) const;
-    void multiplyAD(Increment &, const oops::Variables &) const;
-    void multiplyInverseAD(Increment &, const oops::Variables &) const;
+    void changeVarTL(Increment &,
+                     const oops::Variables &) const;
+    void changeVarInverseTL(Increment &,
+                            const oops::Variables &) const;
+    void changeVarAD(Increment &,
+                     const oops::Variables &) const;
+    void changeVarInverseAD(Increment &,
+                            const oops::Variables &) const;
 
    private:
     void print(std::ostream &) const override;
