@@ -792,10 +792,12 @@ SUBROUTINE roms_geom_to_fieldset (self, afieldset)
   TYPE (atlas_fieldset), intent(inout) :: afieldset       !< ATLAS fieldset
 
   TYPE (atlas_field)                   :: afield
-  integer                              :: IstrH, IendH, JstrH, JendH, N
-  integer                              :: cgrid, k
+  integer                              :: IstrC, IendC, JstrC, JendC
+  integer                              :: IstrH, IendH, JstrH, JendH
+  integer                              :: N, cgrid, k
+  integer, allocatable                 :: hmask(:,:)
   integer, pointer                     :: i_ptr(:,:)
-  real (kind_real), pointer            :: r_ptr_1(:), r_ptr_2(:,:)
+  real (kind_real), pointer            :: r_ptr(:,:)
 
   ! Initialize. Currently, ATLAS allows a single function space which is
   ! problematic with staggered C-grids. That is, ATLAS assumes that all
@@ -803,6 +805,10 @@ SUBROUTINE roms_geom_to_fieldset (self, afieldset)
 
   cgrid = r2dvar
 
+  IstrC = self%bounds(cgrid)%IstrC
+  IendC = self%bounds(cgrid)%IendC
+  JstrC = self%bounds(cgrid)%JstrC
+  JendC = self%bounds(cgrid)%JendC
   IstrH = self%bounds(cgrid)%IstrH
   IendH = self%bounds(cgrid)%IendH
   JstrH = self%bounds(cgrid)%JstrH
@@ -813,9 +819,9 @@ SUBROUTINE roms_geom_to_fieldset (self, afieldset)
 
   afield = self%functionspaceIncHalo%create_field(name='area',                &
                                                   kind=atlas_real(kind_real), &
-                                                  levels=0)
-  CALL afield%data (r_ptr_1)
-  r_ptr_1 = PACK(self%cell_area(IstrH:IendH, JstrH:JendH), .TRUE.)
+                                                  levels=1)
+  CALL afield%data (r_ptr)
+  r_ptr(1,:) = PACK(self%cell_area(IstrH:IendH, JstrH:JendH), .TRUE.)
   CALL afieldset%add (afield)
   CALL afield%final ()
 
@@ -824,10 +830,9 @@ SUBROUTINE roms_geom_to_fieldset (self, afieldset)
   afield = self%functionspaceIncHalo%create_field(name='vunit',                &
                                                   kind=atlas_real(kind_real),  &
                                                   levels=N)
-
-  CALL afield%data (r_ptr_2)
-  DO k = 1, self%N
-    r_ptr_2(k,:) = REAL(k, kind_real)
+  CALL afield%data (r_ptr)
+  DO k = 1, N
+    r_ptr(k,:) = REAL(k, kind_real)
   END DO
   CALL afieldset%add (afield)
   CALL afield%final ()
@@ -838,11 +843,26 @@ SUBROUTINE roms_geom_to_fieldset (self, afieldset)
                                                   kind=atlas_integer(KIND(0)), &
                                                   levels=N)
   CALL afield%data (i_ptr)
-  DO k = 1,self%N
+  DO k = 1, N
     i_ptr(k,:) = INT(PACK(self%rmask(IstrH:IendH, JstrH:JendH), .TRUE.))
   END DO
   CALL afieldset%add (afield)
   CALL afield%final ()
+
+  ! Add halo mask.
+
+  afield = self%functionspaceIncHalo%create_field(name='hmask',                &
+                                                  kind=atlas_integer(KIND(0)), &
+                                                  levels=1)
+  allocate (hmask(self%LBi:self%UBi, self%LBj:self%UBj))
+  hmask = 0
+  hmask(IstrC:IendC, JstrC:JendC) = 1
+  CALL afield%data (i_ptr)
+  i_ptr(1,:) = PACK(hmask(IstrH:IendH, JstrH:JendH), .TRUE.)
+  CALL afieldset%add (afield)
+  CALL afield%final ()
+  deallocate (hmask)
+
 
 END SUBROUTINE roms_geom_to_fieldset
 
@@ -860,7 +880,7 @@ SUBROUTINE roms_geom_atlas2struct (self, dx, dx_atlas)
   logical, allocatable                 :: fmask(:,:)
   integer                              :: IstrH, IendH, JstrH, JendH
   integer                              :: cgrid
-  real (kind_real), pointer            :: r_ptr(:)
+  real (kind_real), pointer            :: r_ptr(:,:)
 
   ! Initialize. Currently, ATLAS allows a single function space which is
   ! problematic with staggered C-grids. That is, ATLAS assumes that all
@@ -880,7 +900,7 @@ SUBROUTINE roms_geom_atlas2struct (self, dx, dx_atlas)
 
   afield = dx_atlas%field('var')
   CALL afield%data (r_ptr)
-  dx(IstrH:IendH, JstrH:JendH) = UNPACK(r_ptr, fmask,                          &
+  dx(IstrH:IendH, JstrH:JendH) = UNPACK(r_ptr(1,:), fmask,                     &
                                         dx(IstrH:IendH, JstrH:JendH))
   CALL afield%final ()
 
@@ -898,10 +918,10 @@ SUBROUTINE roms_geom_struct2atlas (self, dx, dx_atlas)
                                              self%LBj:)   !< Structured field
   TYPE (atlas_fieldset), intent(out  ) :: dx_atlas        !< ATLAS fieldset
 
-  TYPE (atlas_field)                 :: afield
-  integer                            :: IstrH, IendH, JstrH, JendH
-  integer                            :: cgrid
-  real (kind_real), pointer          :: r_ptr(:)
+  TYPE (atlas_field)                   :: afield
+  integer                              :: IstrH, IendH, JstrH, JendH
+  integer                              :: cgrid
+  real (kind_real), pointer            :: r_ptr(:,:)
 
   ! Initialize. Currently, ATLAS allows a single function space which is
   ! problematic with staggered C-grids. That is, ATLAS assumes that all
@@ -919,11 +939,11 @@ SUBROUTINE roms_geom_struct2atlas (self, dx, dx_atlas)
   dx_atlas = atlas_fieldset()
   afield = self%functionspace%create_field('var',                              &
                                            kind=atlas_real(kind_real),         &
-                                           levels=0)
+                                           levels=1)
 
   CALL dx_atlas%add (afield)
   CALL afield%data (r_ptr)
-  r_ptr = PACK(dx(IstrH:IendH, JstrH:JendH), .TRUE.)
+  r_ptr(1,:) = PACK(dx(IstrH:IendH, JstrH:JendH), .TRUE.)
   CALL afield%final ()
 
 END SUBROUTINE roms_geom_struct2atlas

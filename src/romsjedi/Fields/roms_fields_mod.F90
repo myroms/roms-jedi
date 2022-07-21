@@ -316,7 +316,7 @@ SUBROUTINE roms_fields_to_fieldset (self, geom, vars, afieldset)
   integer                                    :: LBi, UBi, LBj, UBj, N
   integer                                    :: cgrid, ivar, k
   real (kind=kind_real), allocatable         :: Fdat(:,:,:)
-  real (kind=kind_real), pointer             :: fldptr1(:), fldptr2(:,:)
+  real (kind=kind_real), pointer             :: fldptr(:,:)
 
 
   ! Get tile bounds. Currently, ATLAS allows a single function space which is
@@ -382,8 +382,6 @@ SUBROUTINE roms_fields_to_fieldset (self, geom, vars, afieldset)
     END IF
 
     ! Get or create ATLAS field.
-
-    IF (N.eq.1) N = 0
          
     IF (afieldset%has_field(vars%variable(ivar))) THEN
       afield = afieldset%field(vars%variable(ivar))           ! get field
@@ -398,15 +396,10 @@ SUBROUTINE roms_fields_to_fieldset (self, geom, vars, afieldset)
 
     ! Get field pointer to ATLAS and copy data.
 
-    IF (N .eq. 0) THEN
-      CALL afield%data (fldptr1)
-      fldptr1 = PACK(Fdat(IstrH:IendH, JstrH:JendH, 1), .TRUE.)
-    ELSE
-      CALL afield%data (fldptr2)
-      DO k=1,N
-        fldptr2(k,:) = PACK(Fdat(IstrH:IendH, JstrH:JendH, k), .TRUE.)
-      END DO
-    END IF
+    CALL afield%data (fldptr)
+    DO k = 1, N
+      fldptr(k,:) = PACK(Fdat(IstrH:IendH, JstrH:JendH, k), .TRUE.)
+    END DO
 
     meta = afield%metadata()
     CALL meta%set ('interp_type', TRIM(field%interp_type))
@@ -440,7 +433,7 @@ SUBROUTINE roms_fields_to_fieldset_ad (self, geom, vars, afieldset)
   integer                                    :: LBi, UBi, LBj, UBj, N
   integer                                    :: cgrid, ivar, k
   real (kind=kind_real), allocatable         :: Fdat(:,:,:)
-  real (kind=kind_real), pointer             :: fldptr1(:), fldptr2(:,:)
+  real (kind=kind_real), pointer             :: fldptr(:,:)
 
   ! Get tile bounds. Currently, ATLAS allows a single function space which is
   ! problematic with staggered C-grids. That is, ATLAS assumes that all the
@@ -506,8 +499,6 @@ SUBROUTINE roms_fields_to_fieldset_ad (self, geom, vars, afieldset)
     END IF
 
     ! Get or create ATLAS field.
-
-    IF (N.eq.1) N = 0
          
     IF (afieldset%has_field(vars%variable(ivar))) THEN
       afield = afieldset%field(vars%variable(ivar))           ! get field
@@ -522,15 +513,10 @@ SUBROUTINE roms_fields_to_fieldset_ad (self, geom, vars, afieldset)
 
     ! Get field pointer to ATLAS and copy data.
 
-    IF (N .eq. 0) THEN
-      CALL afield%data (fldptr1)
-      fldptr1 = PACK(Fdat(IstrH:IendH, JstrH:JendH, 1), .TRUE.)
-    ELSE
-      CALL afield%data (fldptr2)
-      DO k=1,N
-        fldptr2(k,:) = PACK(Fdat(IstrH:IendH, JstrH:JendH, k), .TRUE.)
-      END DO
-    END IF
+    CALL afield%data (fldptr)
+    DO k = 1, N
+      fldptr(k,:) = PACK(Fdat(IstrH:IendH, JstrH:JendH, k), .TRUE.)
+    END DO
 
     meta = afield%metadata()
     CALL meta%set ('interp_type', TRIM(field%interp_type))
@@ -556,9 +542,9 @@ SUBROUTINE roms_fields_from_fieldset (self, geom, vars, afieldset)
   TYPE (roms_field), pointer                 :: field
   TYPE (atlas_field)                         :: afield
 
-  integer                                    :: IstrH, IendH, JstrH, JendH, N
+  integer                                    :: IstrH, IendH, JstrH, JendH
   integer                                    :: cgrid, ivar, k
-  real (kind=kind_real), pointer             :: fldptr1(:), fldptr2(:,:)
+  real (kind=kind_real), pointer             :: fldptr(:,:)
 
   ! Initialize increment fields to zero.
 
@@ -581,26 +567,16 @@ SUBROUTINE roms_fields_from_fieldset (self, geom, vars, afieldset)
 
     ! Get field from ATLAS.
 
-    N = field%N
-    IF (N .eq. 1) N = 0
-
     afield = afieldset%field(vars%variable(ivar))            ! get field
 
     ! Copy field data.
 
-    IF (N .eq. 0) THEN
-      CALL afield%data (fldptr1)
-      field%val(IstrH:IendH,JstrH:JendH,1) = RESHAPE(fldptr1,                  &
-                                                     (/IendH-IstrH+1,          &
+    CALL afield%data (fldptr)
+    DO k = 1, field%N
+      field%val(IstrH:IendH,JstrH:JendH,k) = RESHAPE(fldptr(k,:),            &
+                                                     (/IendH-IstrH+1,        &
                                                        JendH-JstrH+1/))
-    ELSE
-      CALL afield%data (fldptr2)
-      DO k = 1, N
-        field%val(IstrH:IendH,JstrH:JendH,k) = RESHAPE(fldptr2(k,:),           &
-                                                       (/IendH-IstrH+1,        &
-                                                         JendH-JstrH+1/))
-      END DO
-    END IF
+    END DO
 
     CALL afield%final ()                                     ! release pointer
 

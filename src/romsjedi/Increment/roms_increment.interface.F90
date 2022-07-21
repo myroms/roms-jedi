@@ -368,7 +368,6 @@ SUBROUTINE roms_increment_to_fieldset_c (c_key_self, c_key_geom, c_vars,       &
   TYPE (roms_geom),  pointer      :: geom
   TYPE (oops_variables)           :: vars
   TYPE (atlas_fieldset)           :: afieldset
-  logical                         :: include_halo
 
   CALL roms_increment_registry%get (c_key_self, self)
   CALL roms_geom_registry%get (c_key_geom, geom)
@@ -396,7 +395,6 @@ SUBROUTINE roms_increment_to_fieldset_ad_c (c_key_self, c_key_geom, c_vars,    &
   TYPE (roms_geom),  pointer      :: geom
   TYPE (oops_variables)           :: vars
   TYPE (atlas_fieldset)           :: afieldset
-  logical                         :: include_halo
 
   CALL roms_increment_registry%get (c_key_self, self)
   CALL roms_geom_registry%get (c_key_geom, geom)
