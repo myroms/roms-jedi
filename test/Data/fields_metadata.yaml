@@ -19,6 +19,14 @@
 - name: 'tocn'
   gtype: 'r'
   levels: 'full_ocn'
+  getval name: 'sea_water_temperature'
+  getval name surface: 'sea_surface_temperature'
+  io file: 'ocn'
+  io name: 'temp'
+
+- name: 'ptocn'
+  gtype: 'r'
+  levels: 'full_ocn'
   getval name: 'sea_water_potential_temperature'
   getval name surface: 'sea_surface_temperature'
   io file: 'ocn'
@@ -27,7 +35,7 @@
 - name: 'socn'
   gtype: 'r'
   levels: 'full_ocn'
-  getval name: 'sea_water_practical_salinity'
+  getval name: 'sea_water_salinity'
   getval name surface: 'sea_surface_salinity'
   io file: 'ocn'
   io name: 'salt'
@@ -61,13 +69,13 @@
   gtype: 'v'                                  # standard name is 'sea_water_y_velocity'
   levels: 'full_ocn'
   getval name: 'sea_water_y_velocity'
-  getval name surface: 'sea_water_surface_y_velocity'
+  getval name surface: 'surface_sea_water_y_velocity'
   io file: 'ocn'
   io name: 'v'
 
 - name: 'ssh'
   gtype: 'r'
-  getval name: 'sea_surface_height_above_geoid'
+  getval name: 'sea_surface_height_above_sea_level'
   getval name surface: 'N/A'
   io file: 'ocn'
   io name: 'zeta'
@@ -76,13 +84,37 @@
 # Built-in derived variables.
 # --------------------------------------------------------------------------------------------------
 
-- name: 'zocn'
+- name: 'z0ocn_r'                             # time independent, zeta=0
+  gtype: 'r'
+  masked: 'false'
+  levels: 'full_ocn'
+  getval name: 'unvarying_model_level_depth_at_cell_center'
+  io file: 'ocn'
+  io name: 'z_rho'
+
+- name: 'z0ocn_w'                             # time independent, zeta=0
+  gtype: 'r'
+  masked: 'false'
+  levels: 'wfull_ocn'
+  getval name: 'unvarying_model_level_depth_at_cell_top_face'
+  io file: 'ocn'
+  io name: 'z_w'
+
+- name: 'zocn_r'                              # time depedendent, zeta varying
   gtype: 'r'
   masked: 'false'
   levels: 'full_ocn'
   getval name: 'model_level_depth_at_cell_center'
   io file: 'ocn'
   io name: 'z_rho'
+
+- name: 'zocn_w'                              # time depedendent, zeta varying
+  gtype: 'w'
+  masked: 'false'
+  levels: 'wfull_ocn'
+  getval name: 'model_level_depth_at_cell_top_face'
+  io file: 'ocn'
+  io name: 'z_w'
 
 - name: 'hocn'
   gtype: 'r'

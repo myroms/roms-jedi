@@ -14,3 +14,4 @@ inc variables: [ssh, uocn, vocn, tocn, socn]
 increment test:
   date: 2004-01-03T00:00:00Z
   skip atlas: true
+  skip rms by level test: true

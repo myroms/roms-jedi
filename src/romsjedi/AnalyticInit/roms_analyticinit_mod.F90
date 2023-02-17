@@ -1,5 +1,5 @@
 !
-! (C) Copyright 2017-2022 UCAR
+! (C) Copyright 2017-2023 UCAR
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0. 
@@ -93,15 +93,15 @@ SUBROUTINE roms_analytic_geovals (self, locs, method, T0, S0, U0, V0)
     DO ivar = 1, nvar
       DO iloc = 1, self%geovals(ivar)%nlocs
         DO ival = 1, self%geovals(ivar)%nval    
-          value = ana_fields(TRIM(self%variables(ivar)),                     &
-                             mask,                                           &
-                             locs_lons(iloc),                                &
-                             locs_lats(iloc),                                &
-                             self%geovals(nvar)%vals(ival,iloc),             &
-                             self%geovals(nvar-1)%vals(1,iloc),              &
-                             Tb = T0,                                        &
-                             Sb = S0,                                        &
-                             Ub = U0,                                        &
+          value = ana_fields(TRIM(self%variables(ivar)),                       &
+                             mask,                                             &
+                             locs_lons(iloc),                                  &
+                             locs_lats(iloc),                                  &
+                             self%geovals(nvar)%vals(ival,iloc),               &
+                             self%geovals(nvar-1)%vals(1,iloc),                &
+                             Tb = T0,                                          &
+                             Sb = S0,                                          &
+                             Ub = U0,                                          &
                              Vb = V0)
           self%geovals(ivar)%vals(ival, iloc) = value
         END DO
@@ -113,31 +113,36 @@ SUBROUTINE roms_analytic_geovals (self, locs, method, T0, S0, U0, V0)
     DO ivar = 1, nvar
 
       SELECT CASE (TRIM(self%variables(ivar)))
-        CASE ('tocn',                                                        &
-              'sea_water_potential_temperature',                             &
-              'sst', 'SST',                                                  &
-              'sea_surface_temperature')
+        CASE ('tocn', 'ptocn',                                                 &
+              'sea_water_temperature',                                         &
+              'sea_water_potential_temperature',                               &
+              'sst', 'SST',                                                    &
+              'sea_surface_temperature',                                       &
+              'sea_surface_skin_temperature')
           value = T0
-        CASE ('socn',                                                        &
-              'sea_water_practical_salinity',                                &
-              'sss', 'SSS',                                                  &
+        CASE ('socn',                                                          &
+              'sea_water_practical_salinity',                                  &
+              'sea_water_salinity',                                            &
+              'sss', 'SSS',                                                    &
               'sea_surface_salinity')
           value = S0
-        CASE ('uocn',                                                        &
-              'eastward_sea_water_velocity',                                 &
-              'sea_water_x_velocity',                                        &
-              'usur',                                                        &
-              'surface_eastward_sea_water_velocity')
+        CASE ('uocn',                                                          &
+              'eastward_sea_water_velocity',                                   &
+              'sea_water_x_velocity',                                          &
+              'usur', 'Usur',                                                  &
+              'surface_eastward_sea_water_velocity',                           &
+              'sea_water_surface_x_velocity')
           value = U0
-        CASE ('vocn',                                                        &
-              'northward_sea_water_velocity',                                &
-              'sea_water_y_velocity',                                        &
-              'vsur',                                                        &
-              'surface_northward_sea_water_velocity',                        &
+        CASE ('vocn',                                                          &
+              'northward_sea_water_velocity',                                  &
+              'sea_water_y_velocity',                                          &
+              'vsur', 'Vsur',                                                  &
+              'surface_northward_sea_water_velocity',                          &
               'sea_water_surface_y_velocity')
           value = V0
-        CASE ('ssh', 'SSH',                                                  &
-              'sea_surface_height_above_geoid',                              &
+        CASE ('ssh', 'SSH',                                                    &
+              'sea_surface_height_above_sea_level',                            & 
+              'sea_surface_height_above_geoid',                                &
               'sea_surface_elevation_anomaly')
           value = 0.0_kind_real
       END SELECT

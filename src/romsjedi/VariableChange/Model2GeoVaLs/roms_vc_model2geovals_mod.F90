@@ -1,4 +1,4 @@
-! (C) Copyright 2020-2021 UCAR
+! (C) Copyright 2020-2023 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -72,15 +72,23 @@ SUBROUTINE roms_vc_model2geovals_changeVar (self, geom, xin, xout)
 
     SELECT CASE (xout%fields(i)%name)
 
-      CASE ('sea_surface_temperature')                   !< SST
+      CASE ('sea_surface_temperature')                  !< SST
         CALL xin%get ('tocn', field)
         Nsur = field%N
         xout%fields(i)%val(:,:,1) = field%val(:,:,Nsur)
 
-      CASE ('sea_surface_salinty')                       !< SSS
+      CASE ('sea_surface_salinty')                      !< SSS
         CALL xin%get ('socn', field)
         Nsur = field%N
         xout%fields(i)%val(:,:,1) = field%val(:,:,Nsur)
+
+      CASE ('model_level_depth_at_cell_center')
+        CALL xin%get ('zocn_r', field)
+        xout%fields(i)%val = field%val
+
+      CASE ('unvarying_model_level_depth_at_cell_center')
+        CALL xin%get ('z0ocn_r', field)
+        xout%fields(i)%val = field%val
 
       CASE DEFAULT                                       ! Identity Operator 
         CALL xin%get (xout%fields(i)%metadata%name, field)

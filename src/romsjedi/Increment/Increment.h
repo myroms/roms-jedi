@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2017-2022 UCAR.
+ * (C) Copyright 2017-2023 UCAR.
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -23,9 +23,8 @@
 #include <string>
 #include <vector>
 
-#include "atlas/field.h"
-
 #include "oops/base/LocalIncrement.h"
+#include "oops/base/Variables.h"
 #include "oops/util/DateTime.h"
 #include "oops/util/dot_product.h"
 #include "oops/util/Duration.h"
@@ -43,12 +42,12 @@
 
 // Forward declarations
 
-namespace eckit {
-  class Configuration;
+namespace atlas {
+  class FieldSet;
 }
 
-namespace oops {
-  class Variables;
+namespace eckit {
+  class Configuration;
 }
 
 namespace romsjedi {
@@ -208,6 +207,7 @@ namespace romsjedi {
   void read(const ReadParameters_ &);
   void write(const WriteParameters_ &) const;
   double norm() const;
+  std::vector<double> rmsByLevel(const std::string &) const;
 
   /// Other
 
@@ -232,6 +232,9 @@ namespace romsjedi {
   const int & toFortran() const {return keyFlds_;}
 
   /// Private methods and variables
+
+  const oops::Variables & variables() const {return vars_;}
+  const util::DateTime & time() const {return time_;}
 
    private:
     void print(std::ostream &) const;

@@ -26,10 +26,10 @@ find_package( gsl-lite REQUIRED HINTS $ENV{gsl_list_DIR})
 find_package( eckit  1.11.6   REQUIRED)
 find_package( fckit  0.7.0    REQUIRED)
 find_package( atlas  0.20.2   REQUIRED)
-find_package( oops   1.0.0    REQUIRED)
+find_package( oops   1.3.0    REQUIRED)
 find_package( saber  1.0.0    REQUIRED)
 find_package( ioda   1.0.0    REQUIRED)
-find_package( ufo    1.0.0    REQUIRED)
+find_package( ufo    1.3.0    REQUIRED)
 include_directories( ${NETCDF_INCLUDE_DIRS} )
 
 # ROMS

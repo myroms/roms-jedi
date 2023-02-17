@@ -1,4 +1,4 @@
-! (C) Copyright 2017-2022 UCAR
+! (C) Copyright 2017-2023 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://Qwww.apache.org/licenses/LICENSE-2.0.
@@ -167,11 +167,13 @@ CONTAINS
 
 SUBROUTINE roms_fields_create (self, geom, vars)
 
+  USE mod_grid, ONLY: GRID
+
   CLASS (roms_fields),        intent(inout) :: self   !< Fields object
   TYPE (roms_geom),  pointer, intent(inout) :: geom   !< Geometry
   TYPE (oops_variables),      intent(in   ) :: vars   !< Fields names to create
 
-  integer                                   :: i
+  integer                                   :: i, ng
   character(len=:), allocatable             :: vars_str(:)
 
   ! Make sure current object has not already been allocated.
@@ -209,10 +211,20 @@ SUBROUTINE roms_fields_create (self, geom, vars)
 
   ! If vertical mixing, initialize to background value.
 
+  ng = geom%ng
+
   DO i = 1, SIZE(self%fields)
     SELECT CASE (self%fields(i)%name)
       CASE ('AKt', 'AKs', 'AKv')
         self%fields(i)%val = 1.0E-5_kind_real
+      CASE ('z0ocn_r')
+        self%fields(i)%val = GRID(ng)%z0_r
+      CASE ('z0ocn_w')
+        self%fields(i)%val = GRID(ng)%z0_w
+      CASE ('zocn_r')
+        self%fields(i)%val = GRID(ng)%z_r
+      CASE ('zocn_w')
+        self%fields(i)%val = GRID(ng)%z_w
     END SELECT
   END DO
 
@@ -310,7 +322,6 @@ SUBROUTINE roms_fields_to_fieldset (self, geom, vars, afieldset)
   TYPE (atlas_metadata)                      :: meta
   TYPE (roms_field), pointer                 :: field
 
-  logical                                    :: include_halo
   integer                                    :: IstrD, IendD, JstrD, JendD
   integer                                    :: IstrH, IendH, JstrH, JendH
   integer                                    :: LBi, UBi, LBj, UBj, N
@@ -365,24 +376,16 @@ SUBROUTINE roms_fields_to_fieldset (self, geom, vars, afieldset)
     N = field%N
 
     Fdat = 0.0_kind_real
-    Fdat(IstrD:IendD, JstrD:JendD, :) = field%val(IstrD:IendD, JstrD:JendD, :)
+    Fdat(IstrD:IendD,JstrD:JendD,1:N) = field%val(IstrD:IendD,JstrD:JendD,:)
 
-    IF (N .eq. 1) THEN
-      CALL mp_exchange2d (geom%ng, geom%tile, iNLM, 1,                         &
-                          LBi, UBi, LBj, UBj,                                  &
-                          geom%NghostPoints,                                   &
-                          geom%EWperiodic, geom%NSperiodic,                    &
-                          Fdat(:,:,1))
-    ELSE
-      CALL mp_exchange3d (geom%ng, geom%tile, iNLM, 1,                         &
-                          LBi, UBi, LBj, UBj, 1, N,                            &
-                          geom%NghostPoints,                                   &
-                          geom%EWperiodic, geom%NSperiodic,                    &
-                          Fdat)
-    END IF
+    CALL mp_exchange3d (geom%ng, geom%tile, iNLM, 1,                           &
+                        LBi, UBi, LBj, UBj, 1, N,                              &
+                        geom%NghostPoints,                                     &
+                        geom%EWperiodic, geom%NSperiodic,                      &
+                        Fdat)
 
     ! Get or create ATLAS field.
-         
+    
     IF (afieldset%has_field(vars%variable(ivar))) THEN
       afield = afieldset%field(vars%variable(ivar))           ! get field
     ELSE
@@ -397,6 +400,7 @@ SUBROUTINE roms_fields_to_fieldset (self, geom, vars, afieldset)
     ! Get field pointer to ATLAS and copy data.
 
     CALL afield%data (fldptr)
+    
     DO k = 1, N
       fldptr(k,:) = PACK(Fdat(IstrH:IendH, JstrH:JendH, k), .TRUE.)
     END DO
@@ -427,7 +431,6 @@ SUBROUTINE roms_fields_to_fieldset_ad (self, geom, vars, afieldset)
   TYPE (atlas_metadata)                      :: meta
   TYPE (roms_field), pointer                 :: field
 
-  logical                                    :: include_halo
   integer                                    :: IstrD, IendD, JstrD, JendD
   integer                                    :: IstrH, IendH, JstrH, JendH
   integer                                    :: LBi, UBi, LBj, UBj, N
@@ -482,24 +485,16 @@ SUBROUTINE roms_fields_to_fieldset_ad (self, geom, vars, afieldset)
 
     Fdat = 0.0_kind_real
 
-    Fdat(IstrD:IendD, JstrD:JendD, :) = field%val(IstrD:IendD, JstrD:JendD, :)
+    Fdat(IstrD:IendD,JstrD:JendD,1:N) = field%val(IstrD:IendD,JstrD:JendD,:)
 
-    IF (N .eq. 1) THEN
-      CALL ad_mp_exchange2d (geom%ng, geom%tile, iADM, 1,                      &
-                             LBi, UBi, LBj, UBj,                               &
-                             geom%NghostPoints,                                &
-                             geom%EWperiodic, geom%NSperiodic,                 &
-                             Fdat(:,:,1))
-    ELSE
-      CALL ad_mp_exchange3d (geom%ng, geom%tile, iADM, 1,                      &
-                             LBi, UBi, LBj, UBj, 1, N,                         &
-                             geom%NghostPoints,                                &
-                             geom%EWperiodic, geom%NSperiodic,                 &
-                             Fdat)
-    END IF
+    CALL ad_mp_exchange3d (geom%ng, geom%tile, iADM, 1,                        &
+                           LBi, UBi, LBj, UBj, 1, N,                           &
+                           geom%NghostPoints,                                  &
+                           geom%EWperiodic, geom%NSperiodic,                   &
+                           Fdat)
 
     ! Get or create ATLAS field.
-         
+    
     IF (afieldset%has_field(vars%variable(ivar))) THEN
       afield = afieldset%field(vars%variable(ivar))           ! get field
     ELSE
@@ -514,6 +509,7 @@ SUBROUTINE roms_fields_to_fieldset_ad (self, geom, vars, afieldset)
     ! Get field pointer to ATLAS and copy data.
 
     CALL afield%data (fldptr)
+    
     DO k = 1, N
       fldptr(k,:) = PACK(Fdat(IstrH:IendH, JstrH:JendH, k), .TRUE.)
     END DO
@@ -572,9 +568,10 @@ SUBROUTINE roms_fields_from_fieldset (self, geom, vars, afieldset)
     ! Copy field data.
 
     CALL afield%data (fldptr)
+
     DO k = 1, field%N
-      field%val(IstrH:IendH,JstrH:JendH,k) = RESHAPE(fldptr(k,:),            &
-                                                     (/IendH-IstrH+1,        &
+      field%val(IstrH:IendH,JstrH:JendH,k) = RESHAPE(fldptr(k,:),              &
+                                                     (/IendH-IstrH+1,          &
                                                        JendH-JstrH+1/))
     END DO
 
@@ -732,7 +729,7 @@ SUBROUTINE roms_fields_init_vars (self, vars)
     ! Get field information from the metadata 'geom%fieldsinfo' object, which
     ! is read from the YAML configuration file elsewhere. Notice that the user
     ! may specify the variable names as the ROMS-JEDI internal value or the UFO
-    ! value.  For example, 'ssh' or 'sea_surface_height_above_geoid'.
+    ! value.  For example, 'ssh' or 'sea_surface_height_above_sea_level'.
 
     self%fields(i)%name = TRIM(vars(i))
     self%fields(i)%metadata = self%geom%fieldsinfo%get(self%fields(i)%name)
@@ -976,33 +973,37 @@ SUBROUTINE roms_fields_analytic (self, f_conf, vdate)
     DO n = 1, SIZE(self%fields)
 
       field => self%fields(n)
-  
+
       SELECT CASE (field%name)
-        CASE ('tocn',                                                          &
+        CASE ('tocn', 'ptocn',                                                 &
+              'sea_water_temperature',                                         &
               'sea_water_potential_temperature',                               &
               'sst', 'SST',                                                    &
-              'sea_surface_temperature')
+              'sea_surface_temperature',                                       &
+              'sea_surface_skin_temperature')
           field%val = T0
         CASE ('socn',                                                          &
               'sea_water_practical_salinity',                                  &
+              'sea_water_salinity',                                            &
               'sss', 'SSS',                                                    &
               'sea_surface_salinity')
           field%val = S0
         CASE ('uocn',                                                          &
               'eastward_sea_water_velocity',                                   &
               'sea_water_x_velocity',                                          &
-              'usur',                                                          &
+              'usur', 'Usur',                                                  &
               'surface_eastward_sea_water_velocity',                           &
               'sea_water_surface_x_velocity')
           field%val = U0
         CASE ('vocn',                                                          &
               'northward_sea_water_velocity',                                  &
               'sea_water_y_velocity',                                          &
-              'vsur',                                                          &
+              'vsur', 'Vsur',                                                  &
               'surface_northward_sea_water_velocity',                          &
               'sea_water_surface_y_velocity')
           field%val = V0
         CASE ('ssh', 'SSH',                                                    &
+              'sea_surface_height_above_sea_level',                            & 
               'sea_surface_height_above_geoid',                                &
               'sea_surface_elevation_anomaly')
           field%val = 0.0_kind_real
@@ -1033,7 +1034,7 @@ SUBROUTINE roms_fields_IO_create (self)
   ! Allocate I/O structure.
 
   IF (.not.allocated(self%IO)) THEN
- 
+
     allocate ( self%IO(Ngrids) )
 
     ! Allocate array variables in the structure.
@@ -1249,6 +1250,7 @@ SUBROUTINE roms_fields_norm (self, Enorm)
     SELECT CASE (field%name)
 
       CASE ('ssh', 'SSH',                                                      &
+            'sea_surface_height_above_sea_level',                              &
             'sea_surface_height_above_geoid',                                  &
             'sea_surface_elevation_anomaly')                             ! m
 
@@ -1594,7 +1596,7 @@ SUBROUTINE roms_fields_gstats (fld, nf, pstat)
   TYPE (roms_field),           pointer :: field
 
   ! Calculate global min, max, mean for each field.
- 
+
   DO n = 1, SIZE(fld%fields)
 
     CALL fld%get (fld%fields(n)%name, field)
@@ -2224,6 +2226,22 @@ SUBROUTINE roms_fields_read_nf90 (self, InpRec, ncname, DateString, DateNumber)
 
           field%val = 1.0E-5_kind_real         ! vertical mixing coefficients
     
+        CASE ('z0ocn_r')
+
+          field%val = self%geom%z0_r
+
+        CASE ('zocn_r')
+
+          field%val = self%geom%z_r
+
+        CASE ('z0ocn_w')
+
+          field%val = self%geom%z0_w
+
+        CASE ('zocn_w')
+
+          field%val = self%geom%z_w
+
         CASE DEFAULT
 
           field%val = 0.0_kind_real

@@ -25,9 +25,11 @@ background error:
   analysis variables: *avars
   date: *date
   bump:
-    datadir: Data/bump
-    strategy: specific_univariate
-    write_nicas_local: 1
+    io:
+      data directory: Data/bump
+    drivers:
+      multivariate strategy: univariate
+      write local nicas: true
   correlation:
   - name: ocn
     variables: *avars

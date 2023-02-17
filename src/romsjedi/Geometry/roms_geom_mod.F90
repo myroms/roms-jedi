@@ -1,4 +1,4 @@
-! (C) Copyright 2017-2022 UCAR
+! (C) Copyright 2017-2023 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -105,6 +105,8 @@ TYPE, PUBLIC :: roms_geom
   real (kind_real), allocatable  :: latr(:,:)      ! latitude (degrees north)
   real (kind_real), allocatable  :: z_r(:,:,:)     ! RHO-depths (m, negative)
   real (kind_real), allocatable  :: z_w(:,:,:)     ! W-depths (m, negative)
+  real (kind_real), allocatable  :: z0_r(:,:,:)    ! unvarying RHO-depths (m)
+  real (kind_real), allocatable  :: z0_w(:,:,:)    ! unvarying W-depths (m)
 
   real (kind_real), allocatable  :: rmask(:,:)     ! mask,  0=land 1=ocean
 
@@ -184,6 +186,7 @@ SUBROUTINE roms_geom_create (self, f_conf, f_comm)
   USE mod_scalars,     ONLY : EWperiodic, NSperiodic, NoError, exit_flag
 
   USE roms_kernel_mod, ONLY : ROMS_initialize
+  USE set_depth_mod,   ONLY : set_depth0, set_depth
 
   CLASS (roms_geom),          intent(out) :: self         !< Geometry object
   TYPE (fckit_configuration), intent(in)  :: f_conf       !< Configuration
@@ -252,6 +255,13 @@ SUBROUTINE roms_geom_create (self, f_conf, f_comm)
       CALL abor1_ftn ("geom_init: Error while calling ROMS_initialize")
     END IF
   END IF
+
+  ! Initialize model depths and level thickness. At this point, the free
+  ! surface is zero (zeta=0). Notice that these arrays are computed formally
+  ! in routine 'ROMS_initializeP2'.
+
+  CALL set_depth0 (ng, tile, iNLM)              ! time independent
+  CALL set_depth  (ng, tile, iNLM)              ! time dependent
 
   ! Domain decomposition ranges and indices.
 
@@ -432,6 +442,9 @@ SUBROUTINE roms_geom_create (self, f_conf, f_comm)
 
   ! Depths (m; negative).
 
+  self%z0_r = GRID(ng)%z0_r
+  self%z0_w = GRID(ng)%z0_w
+
   self%z_r = GRID(ng)%z_r
   self%z_w = GRID(ng)%z_w
 
@@ -519,6 +532,9 @@ SUBROUTINE roms_geom_delete (self)
   IF (allocated(self%z_u))        deallocate (self%z_u)
   IF (allocated(self%z_v))        deallocate (self%z_v)
   IF (allocated(self%z_w))        deallocate (self%z_w)
+
+  IF (allocated(self%z0_r))       deallocate (self%z0_r)
+  IF (allocated(self%z0_w))       deallocate (self%z0_w)
 
   CALL self%functionspace%final ()
   CALL self%functionspaceIncHalo%final ()
@@ -627,6 +643,9 @@ SUBROUTINE roms_geom_clone (self, other)
   self%z_v = other%z_v
   self%z_w = other%z_w
 
+  self%z0_r = other%z0_r
+  self%z0_w = other%z0_w
+
   ! Clone fields metadata.
 
   CALL other%fieldsinfo%clone (self%fieldsinfo)
@@ -715,6 +734,9 @@ SUBROUTINE roms_geom_allocate (self)
   allocate (self%z_u(LBi:UBi, LBj:UBj, LBk:UBk)); self%z_u = 0.0_kind_real
   allocate (self%z_v(LBi:UBi, LBj:UBj, LBk:UBk)); self%z_v = 0.0_kind_real
   allocate (self%z_w(LBi:UBi, LBj:UBj,   0:UBk)); self%z_w = 0.0_kind_real
+
+  allocate (self%z0_r(LBi:UBi,LBj:UBj, LBk:UBk)); self%z0_r = 0.0_kind_real
+  allocate (self%z0_w(LBi:UBi,LBj:UBj,   0:UBk)); self%z0_w = 0.0_kind_real
 
 END SUBROUTINE roms_geom_allocate
 
@@ -862,7 +884,6 @@ SUBROUTINE roms_geom_to_fieldset (self, afieldset)
   CALL afieldset%add (afield)
   CALL afield%final ()
   deallocate (hmask)
-
 
 END SUBROUTINE roms_geom_to_fieldset
 

@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2017-2022 UCAR
+ * (C) Copyright 2017-2023 UCAR
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -324,6 +324,22 @@ namespace romsjedi {
                                 iter.toFortran(),
                                 vals[0],
                                 vals.size());
+  }
+
+// -----------------------------------------------------------------------------
+
+  std::vector<double> Increment::rmsByLevel(const std::string & var) const {
+    atlas::FieldSet incrField;
+    Increment::toFieldSet(incrField);
+    const auto fieldView = atlas::array::make_view<double, 2>(incrField[var]);
+    std::vector<double> vect(fieldView.shape(1), 0.0);
+    for (atlas::idx_t k = 0; k < fieldView.shape(1); ++k) {
+      for (atlas::idx_t i = 0; i < fieldView.shape(0); ++i) {
+        vect[k]+=(fieldView(i, k))*(fieldView(i, k));
+      }
+      vect[k] = sqrt(vect[k]/fieldView.shape(0));
+    }
+    return vect;
   }
 
 // -----------------------------------------------------------------------------

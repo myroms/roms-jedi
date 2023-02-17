@@ -20,86 +20,158 @@ model:
   simulation length: *ForecastLength
 
 initial condition:
+  date: 2004-01-03T00:00:00Z
   fields_dir: jediroms_wc13/Data/
   fields_filename: wc13_roms_ini_20040103.nc   # initial fields for 2004-01-03T00:00:00Z
   fields_record: 1
-  state variables: [ssh, uocn, vocn, tocn, socn]
-  date: 2004-01-03T00:00:00Z
+  state variables: [ssh, uocn, vocn, tocn, socn, zocn_r]
 
 window begin: 2004-01-03T00:00:00Z
 window length: *ForecastLength
 
 observations:
   observers:
+
+  - obs space:
+      name: InsituTS
+      obsdatain:
+        engine:
+          type: H5File
+          obsfile: Data/obs/wc13_TS_20040103.nc4
+      obsdataout:
+        engine:
+          type: H5File
+          obsfile: Data/hofx/wc13_TS_hofx_4d.nc4
+      simulated variables: [salinity, waterTemperature]
+    obs operator:
+      name: VertInterp
+      vertical coordinate: model_level_depth_at_cell_center
+      observation vertical coordinate: depth
+      observation alias file: testinput/obsop_name_map.yaml
+
+  - obs space:
+      name: InsituTemperature
+      obsdatain:
+        engine:
+          type: H5File
+          obsfile: Data/obs/wc13_temp_20040103.nc4
+      obsdataout:
+        engine:
+          type: H5File
+          obsfile: Data/hofx/wc13_temp_hofx_4d.nc4
+      simulated variables: [waterTemperature]
+    obs operator:
+      name: VertInterp
+      vertical coordinate: model_level_depth_at_cell_center
+      observation vertical coordinate: depth
+      observation alias file: testinput/obsop_name_map.yaml
+
+  - obs space:
+      name: InsituSalinity
+      obsdatain:
+        engine:
+          type: H5File
+          obsfile: Data/obs/wc13_salt_20040103.nc4
+      obsdataout:
+        engine:
+          type: H5File
+          obsfile: Data/hofx/wc13_salt_hofx_4d.nc4
+      simulated variables: [salinity]
+    obs operator:
+      name: VertInterp
+      vertical coordinate: model_level_depth_at_cell_center
+      observation vertical coordinate: depth
+      observation alias file: testinput/obsop_name_map.yaml
+
+  - obs space:
+      name: SST
+      obsdatain:
+        engine:
+          type: H5File
+          obsfile: Data/obs/wc13_sst_20040103.nc4
+      obsdataout:
+        engine:
+          type: H5File
+          obsfile: Data/hofx/wc13_sst_hofx_4d.nc4
+      simulated variables: [seaSurfaceTemperature]
+    obs operator:
+      name: Identity
+      observation alias file: testinput/obsop_name_map.yaml
+
+  - obs space:
+      name: SSS
+      obsdatain:
+        engine:
+          type: H5File
+          obsfile: Data/obs/wc13_sss_20040103.nc4
+      obsdataout:
+        engine:
+          type: H5File
+          obsfile: Data/hofx/wc13_sss_hofx_4d.nc4
+      simulated variables: [seaSurfaceSalinity]
+    obs operator:
+      name: Identity
+      observation alias file: testinput/obsop_name_map.yaml
+
   - obs space:
       name: ADT
-      obsdataout:
-        obsfile: Data/hofx/wc13_adt_hofx.nc
       obsdatain:
-        obsfile: Data/obs/wc13_adt_20040103.nc4
-      simulated variables: [absolute_dynamic_topography]
+        engine:
+          type: H5File
+          obsfile: Data/obs/wc13_adt_20040103.nc4
+      obsdataout:
+        engine:
+          type: H5File
+          obsfile: Data/hofx/wc13_adt_hofx_4d.nc4
+      simulated variables: [absoluteDynamicTopography]
     obs operator:
       name: ADT
 
   - obs space:
-      name: SeaSurfaceTemp
-      obsdataout:
-        obsfile: Data/hofx/wc13_sst_hofx.nc
+      name: SurfaceUV
       obsdatain:
-        obsfile: Data/obs/wc13_sst_20040103.nc4
-      simulated variables: [sea_surface_temperature]
+        engine:
+          type: H5File
+          obsfile: Data/obs/wc13_uv_sur_20040103.nc4
+      obsdataout:
+        engine:
+          type: H5File
+          obsfile: Data/hofx/wc13_uv_sur_hofx_4d.nc4
+      simulated variables: [waterSurfaceZonalVelocity,
+                            waterSurfaceMeridionalVelocity]
     obs operator:
       name: Identity
-
-  - obs space:
-      name: SeaSurfaceSalinity
-      obsdataout:
-        obsfile: Data/hofx/wc13_sss_hofx.nc
-      obsdatain:
-        obsfile: Data/obs/wc13_sss_20040103.nc4
-      simulated variables: [sea_surface_salinity]
-    obs operator:
-      name: Identity
+      observation alias file: testinput/obsop_name_map.yaml
 
   - obs space:
       name: SurfaceU
-      obsdataout:
-        obsfile: Data/hofx/wc13_usur_hofx.nc
       obsdatain:
-        obsfile: Data/obs/wc13_usur_20040103.nc4
-      simulated variables: [surface_eastward_sea_water_velocity]
+        engine:
+          type: H5File
+          obsfile: Data/obs/wc13_usur_20040103.nc4
+      obsdataout:
+        engine:
+          type: H5File
+          obsfile: Data/hofx/wc13_usur_hofx_4d.nc4
+      simulated variables: [waterSurfaceZonalVelocity]
     obs operator:
       name: Identity
+      observation alias file: testinput/obsop_name_map.yaml
 
   - obs space:
       name: SurfaceV
-      obsdataout:
-        obsfile: Data/hofx/wc13_vsur_hofx.nc
       obsdatain:
-        obsfile: Data/obs/wc13_vsur_20040103.nc4
-      simulated variables: [surface_northward_sea_water_velocity]
+        engine:
+          type: H5File
+          obsfile: Data/obs/wc13_vsur_20040103.nc4
+      obsdataout:
+        engine:
+          type: H5File
+          obsfile: Data/hofx/wc13_vsur_hofx_4d.nc4
+      simulated variables: [waterSurfaceMeridionalVelocity]
     obs operator:
       name: Identity
-
-# - obs space:
-#     name: InsituTemperature
-#     obsdataout:
-#       obsfile: Data/hofx/wc13_temp_hofx.nc
-#     obsdatain:
-#       obsfile: Data/obs/wc13_temp_20040103.nc4
-#     simulated variables: [sea_water_temperature]
-#   obs operator:
-#     name: InsituTemperature
-
-#  - obs space:
-#      name: InsituSalinity
-#      obsdataout:
-#        obsfile: Data/hofx/wc13_salt_hofx.nc
-#      obsdatain:
-#        obsfile: Data/obs/wc13_salt_20040103.nc4
-#      simulated variables: [sea_water_salinity]
-#    obs operator:
-#      name: MarineVertInterp
+      observation alias file: testinput/obsop_name_map.yaml
 
 #test:
 #  reference filename: testref/hofx_4d.ref
@@ -108,6 +180,11 @@ observations:
 #  test output filename: testoutput/hofx_4d.out
 
 # NOTES:
+#
+# * Check IODA ObsSpace YAML file for metadata naming conventions:
+#
+#   JCSDA repository: ioda/share/ioda/yaml/validation/ObsSpace.yaml
+#   https://github.com/JCSDA-internal/ioda/blob/develop/share/ioda/yaml/validation/ObsSpace.yaml
 #
 # * The WC13 application is configured to run for 96 hours (4-days).
 #   However,  it is possible to use a smaller interval for the

@@ -32,16 +32,18 @@ initial condition:
   state variables: *tvars
 
 background error:
-  analysis variables: *avars
-  bump:
-    datadir: Data/bump
-    prefix: wc13_bump
-    strategy: specific_univariate
   covariance model: romsjedi-ID
+  analysis variables: *avars
+  date: *date
+  bump:
+    general:
+      datadir: Data/bump
+      prefix: wc13_bump
+    drivers:
+      strategy: specific_univariate
   correlation:
   - name: ocn
     variables: *avars
-  date: *date
 
 linear model test:
   forecast length: *ForecastLength

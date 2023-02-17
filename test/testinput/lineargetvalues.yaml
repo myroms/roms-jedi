@@ -7,13 +7,13 @@ geometry:
   fields metadata: Data/fields_metadata.yaml
   ng: 1                                        # ROMS nested grid number
 
-state variables: &geovals [sea_surface_height_above_geoid,
+state variables: &geovals [sea_surface_height_above_sea_level,
                            sea_water_zonal_velocity,
                            sea_water_meridional_velocity,
                            sea_water_potential_temperature,
                            sea_water_practical_salinity,
                            sea_floor_depth_below_sea_surface,
-                           level_depth]
+                           model_level_depth_at_cell_center]
 
 linear getvalues test:
   tolerance linearity: 1.0e-11
@@ -28,7 +28,7 @@ background:
   fields_filename: wc13_roms_ini_20040103.nc
   fields_record: 1
   date: &date 2004-01-03T00:00:00Z
-  state variables: [ssh, uocn, vocn, tocn, socn, hocn, zocn]
+  state variables: [ssh, uocn, vocn, tocn, socn, hocn, zocn_r]
 
 geovals:
   state variables: *geovals

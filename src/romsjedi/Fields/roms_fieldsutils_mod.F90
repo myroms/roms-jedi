@@ -1,4 +1,4 @@
-! (C) Copyright 2017-2022 UCAR
+! (C) Copyright 2017-2023 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -124,16 +124,19 @@ FUNCTION ana_fields (name, mask, lon, lat, z, h, Tb, Sb, Ub, Vb)               &
   ! Analytical initialization.
 
   SELECT CASE (TRIM(name))
-    CASE ('tocn',                                                              &
+    CASE ('tocn', 'ptocn',                                                     &
+          'sea_water_temperature',                                             &
           'sea_water_potential_temperature',                                   &
           'sst', 'SST',                                                        &
-          'sea_surface_temperature')
+          'sea_surface_temperature',                                           &
+          'sea_surface_skin_temperature')
       fac1=COS(lon*deg2rad)*COS(lat*deg2rad)/dscale
       fac2=-0.5_kind_real*U0*dscale*f*SQRT(pi)/(Tcoef*g*h)
       fac3=(fac2*erf(fac1)+T0)*(1.0_kind_real+z/h)
       value=fac3*mask
     CASE ('socn',                                                              &
           'sea_water_practical_salinity',                                      &
+          'sea_water_salinity',                                                &
           'sss', 'SSS',                                                        &
           'sea_surface_salinity')
       fac1=COS(lon*deg2rad)*COS(lat*deg2rad)/dscale
@@ -143,7 +146,7 @@ FUNCTION ana_fields (name, mask, lon, lat, z, h, Tb, Sb, Ub, Vb)               &
     CASE ('uocn',                                                              &
           'eastward_sea_water_velocity',                                       &
           'sea_water_x_velocity',                                              &
-          'usur',                                                              &
+          'usur', 'Usur',                                                      &
           'surface_eastward_sea_water_velocity',                               &
           'sea_water_surface_x_velocity')
       fac1=SIN(lon*deg2rad)*COS(lat*deg2rad)/dscale
@@ -153,7 +156,7 @@ FUNCTION ana_fields (name, mask, lon, lat, z, h, Tb, Sb, Ub, Vb)               &
     CASE ('vocn',                                                              &
           'northward_sea_water_velocity',                                      &
           'sea_water_y_velocity',                                              &
-          'vsur',                                                              &
+          'vsur', 'Vsur',                                                      &
           'surface_northward_sea_water_velocity',                              &
           'sea_water_surface_y_velocity')
       fac1=COS(lon*deg2rad)*SIN(lat*deg2rad)/dscale
@@ -161,6 +164,7 @@ FUNCTION ana_fields (name, mask, lon, lat, z, h, Tb, Sb, Ub, Vb)               &
       fac3=-V0*(0.5_kind_real+fac2+(0.5*fac2*fac2))*EXP(-fac1*fac1)
       value=fac3*mask
     CASE ('ssh', 'SSH',                                                        &
+          'sea_surface_height_above_sea_level',                                & 
           'sea_surface_height_above_geoid',                                    &
           'sea_surface_elevation_anomaly')
       fac1=COS(lon*deg2rad)*SIN(lat*deg2rad)/dscale
@@ -168,12 +172,17 @@ FUNCTION ana_fields (name, mask, lon, lat, z, h, Tb, Sb, Ub, Vb)               &
       fac3=1.0E+5*fac2*erf(fac1);
       value=fac3*mask
     CASE ('hocn',                                                              &
+          'bathymetry',                                                        &
           'sea_floor_depth_below_sea_surface',                                 &
           'sea_floor_depth')
       value=h
-    CASE ('zocn',                                                              &
+    CASE ('zocn_r',                                                            &
           'model_level_depth_at_cell_center',                                  &
+          'ocean_depth',                                                       &
           'level_depth')
+      value=z
+    CASE ('zocn_w',                                                            &
+          'model_level_depth_at_cell_top_face')
       value=z
   END SELECT
 

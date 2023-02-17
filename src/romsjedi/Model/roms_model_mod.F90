@@ -1,4 +1,4 @@
-! (C) Copyright 2017-2022 UCAR
+! (C) Copyright 2017-2023 UCAR
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0. 
@@ -516,6 +516,14 @@ SUBROUTINE roms2jedi_state (ng, kernel, Tindex, state, geom, DateString)
         CASE ('tocn', 'socn')                           !> tracers
           itrc = roms_tracer_index(field%name)
           field%val(Is:Ie,Js:Je,:) = OCEAN(ng)%t(Is:Ie,Js:Je,:,Tindex,itrc)
+        CASE ('z0ocn_r')                                !> unvarying rho-depths
+          field%val(Is:Ie,Js:Je,:) = GRID(ng)%z0_r(Is:Ie,Js:Je,:)
+        CASE ('z0ocn_w')                                !> unvarying w-depths
+          field%val(Is:Ie,Js:Je,:) = GRID(ng)%z0_w(Is:Ie,Js:Je,:)
+        CASE ('zocn_r')                                 !> varying rho-depths
+          field%val(Is:Ie,Js:Je,:) = GRID(ng)%z_r(Is:Ie,Js:Je,:)
+        CASE ('zocn_w')                                 !> varying w-depths
+          field%val(Is:Ie,Js:Je,:) = GRID(ng)%z_r(Is:Ie,Js:Je,:)
         CASE ('Ktocn', 'Ksocn')                         !> vertical diffusion
           itrc = roms_tracer_index(field%name)
           field%val(Is:Ie,Js:Je,:) = MIXING(ng)%Akt(Is:Ie,Js:Je,:,itrc)

@@ -19,34 +19,50 @@ background:
   date: &date 2004-01-03T00:00:00Z                # initial fields date
 
 bump:
-  datadir: Data/bump                              # BUMP data directory
-  forced_radii: true                              # Force NICAS length-scales
-  method: cor                                     # Compute correlation parameters
-  new_nicas: true                                 # Run NICAS driver
-  resol: 6.0                                      # NICAS subgrid resolution
-
+  io:
+    data directory: Data/bump                     # BUMP data directory
+  drivers:
+    multivariate strategy: univariate             # NICAS multivariate strategy
+    compute nicas: true                           # Run NICAS driver
+    write local nicas: true
+  model:
+    do not cross mask boundaries: true
+  nicas:
+    resolution: 6.0                               # NICAS subgrid resolution
+    explicit length-scales: true
+    horizontal length-scale:
+    - groups:
+      - ssh
+      value: 50.0e3
+    - groups:
+      - tocn
+      value: 50.0e3
+    - groups:
+      - socn
+      value: 50.0e3
+    vertical length-scale:
+    - groups:
+      - tocn
+      value: 500
+    - groups:
+      - socn
+      value: 500
   grids:
-  - prefix: wc13_bump_parameters_2d               # NetCDF-4 filename prefix: 2D correlations
-    variables: [ssh]
-    rh:                                           # Homogeneous horizontal correlation radius (m)
-      ssh: [50.0e3]
-    rv:                                           # Homogeneous vertical correlation radius (m)
-      ssh: [0.0]
+  - model:
+      variables:
+      - ssh
+    io:
+      files prefix: wc13_bump2d                   # NetCDF-4 filename prefix: 2D correlations
+  - model:
+      variables:
+      - tocn
+      - socn
+    io:
+      files prefix: wc13_bump3d                   # NetCDF-4 filename prefix: 3D correlations
 
-  - prefix: wc13_bump_parameters_3d               # NetCDF-4 filename prefix: 3D correlations
-    variables: [tocn, socn]
-    rh:                                           # Homogeneous horizontal correlation radius (m)
-      tocn: [50.0e3]
-      socn: [50.0e3]
-    rv:                                           # Homogeneous vertical correlation radius (m)
-      tocn: [500]
-      socn: [500]
-  strategy: specific_univariate                   # NICAS multivariate strategy
-  verbosity: main
-  write_nicas_local: true
-
-  output:                                         # Write horizontal correlations NetCDF file
-  - parameter: cor_rh
+output:                                           # Write horizontal correlations NetCDF file
+- parameter: cor_rh
+  file:
     data_dir: Data/bump
     data_frequency: &frequency PT2H
     file_policy: *frequency
@@ -55,7 +71,8 @@ bump:
     exp: bump_parameters
     type: cor_rh
     date: *date
-  - parameter: cor_rv                             # Write vertical correlations NetCDF file
+- parameter: cor_rv                               # Write vertical correlations NetCDF file
+  file:
     data_dir: Data/bump
     data_frequency: &frequency PT2H
     file_policy: *frequency

@@ -20,6 +20,7 @@ list( APPEND romsjedi_test_input
   testinput/makeobs_4d.yaml
   testinput/makeobs_4d_perturbed.yaml
   testinput/model.yaml
+  testinput/obsop_name_map.yaml
   testinput/parameters_bump_cor_nicas.yaml
   testinput/parameters_bump_cov_nicas.yaml
   testinput/state.yaml
@@ -28,37 +29,11 @@ list( APPEND romsjedi_test_input
 # Unit tests reference files
 
 set( romsjedi_test_ref
-  testref/3dhyb.ref
-  testref/3dhybfgat.ref
-  testref/3dvarbump.ref
-  testref/3dvar_godas.ref
-  testref/3dvar_roms.ref
-  testref/3dvarlowres_roms.ref
-  testref/3dvarfgat.ref
-  testref/3dvarfgat_pseudo.ref
-  testref/addincrement.ref
-  testref/balance_mask.ref
-  testref/checkpointmodel.ref
-  testref/convertstate.ref
-  testref/convertstate_changevar.ref
   testref/diffstates.ref
-  testref/dirac_bump_cov.ref
-  testref/dirac_horizfilt.ref
-  testref/dirac_roms_cov.ref
-  testref/dirac_romshyb_cov.ref
-  testref/enshofx.ref
-  testref/enspert.ref
-  testref/ensrecenter.ref
-  testref/ensvariance.ref
-  testref/forecast_identity.ref
-  testref/forecast_pseudo.ref
   testref/forecast_roms.ref
   testref/hofx_nomodel.ref
-  testref/hofx_3d.ref
   testref/hofx_4d.ref
-  testref/hybridgain.ref
-  testref/letkf_observer.ref
-  testref/letkf_solver.ref
+  testinput/increment.ref
   testref/makeobs_4d.ref
   testref/makeobs_4d_perturbed.ref
   testref/parameters_bump_cor_nicas.ref
@@ -69,11 +44,14 @@ set( romsjedi_test_ref
 
 set( romsjedi_data_files
   Data/fields_metadata.yaml
+  Data/obs/wc13_TS_20040103.nc4
   Data/obs/wc13_adt_20040103.nc4
-  Data/obs/wc13_temp_20040103.nc4
+  Data/obs/wc13_ptemp_20040103.nc4
   Data/obs/wc13_salt_20040103.nc4
-  Data/obs/wc13_sst_20040103.nc4
   Data/obs/wc13_sss_20040103.nc4
+  Data/obs/wc13_sst_20040103.nc4
+  Data/obs/wc13_temp_20040103.nc4
+  Data/obs/wc13_uv_sur_20040103.nc4
   Data/obs/wc13_usur_20040103.nc4
   Data/obs/wc13_vsur_20040103.nc4
 )
