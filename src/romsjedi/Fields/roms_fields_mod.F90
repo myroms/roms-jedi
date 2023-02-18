@@ -729,7 +729,7 @@ SUBROUTINE roms_fields_init_vars (self, vars)
     ! Get field information from the metadata 'geom%fieldsinfo' object, which
     ! is read from the YAML configuration file elsewhere. Notice that the user
     ! may specify the variable names as the ROMS-JEDI internal value or the UFO
-    ! value.  For example, 'ssh' or 'sea_surface_height_above_sea_level'.
+    ! value. For example, 'ssh' or 'sea_surface_height_above_geoid'.
 
     self%fields(i)%name = TRIM(vars(i))
     self%fields(i)%metadata = self%geom%fieldsinfo%get(self%fields(i)%name)
@@ -1003,9 +1003,8 @@ SUBROUTINE roms_fields_analytic (self, f_conf, vdate)
               'sea_water_surface_y_velocity')
           field%val = V0
         CASE ('ssh', 'SSH',                                                    &
-              'sea_surface_height_above_sea_level',                            & 
               'sea_surface_height_above_geoid',                                &
-              'sea_surface_elevation_anomaly')
+              'sea_surface_height_above_geopotential_datum')
           field%val = 0.0_kind_real
       END SELECT
 
@@ -1250,9 +1249,8 @@ SUBROUTINE roms_fields_norm (self, Enorm)
     SELECT CASE (field%name)
 
       CASE ('ssh', 'SSH',                                                      &
-            'sea_surface_height_above_sea_level',                              &
             'sea_surface_height_above_geoid',                                  &
-            'sea_surface_elevation_anomaly')                             ! m
+            'sea_surface_height_above_geopotential_datum')               ! m
 
         scale = 0.5_kind_real*g*rho0
         DO j = field%bounds%JstrD, field%bounds%JendD

@@ -141,9 +141,8 @@ SUBROUTINE roms_analytic_geovals (self, locs, method, T0, S0, U0, V0)
               'sea_water_surface_y_velocity')
           value = V0
         CASE ('ssh', 'SSH',                                                    &
-              'sea_surface_height_above_sea_level',                            & 
               'sea_surface_height_above_geoid',                                &
-              'sea_surface_elevation_anomaly')
+              'sea_surface_height_above_geopotential_datum')
           value = 0.0_kind_real
       END SELECT
 

@@ -164,9 +164,8 @@ FUNCTION ana_fields (name, mask, lon, lat, z, h, Tb, Sb, Ub, Vb)               &
       fac3=-V0*(0.5_kind_real+fac2+(0.5*fac2*fac2))*EXP(-fac1*fac1)
       value=fac3*mask
     CASE ('ssh', 'SSH',                                                        &
-          'sea_surface_height_above_sea_level',                                & 
           'sea_surface_height_above_geoid',                                    &
-          'sea_surface_elevation_anomaly')
+          'sea_surface_height_above_geopotential_datum')
       fac1=COS(lon*deg2rad)*SIN(lat*deg2rad)/dscale
       fac2=-U0*dscale*f*SQRT(pi)/(12.0_kind_real*g)
       fac3=1.0E+5*fac2*erf(fac1);

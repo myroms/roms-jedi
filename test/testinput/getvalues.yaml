@@ -7,7 +7,7 @@ geometry:
   fields metadata: Data/fields_metadata.yaml
   ng: 1                                        # ROMS nested grid number
 
-state variables: &geovals [sea_surface_height_above_sea_level,
+state variables: &geovals [sea_surface_height_above_geoid,
                            eastward_sea_water_velocity,
                            northward_sea_water_velocity,
                            sea_water_potential_temperature,
