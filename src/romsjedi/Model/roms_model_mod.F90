@@ -367,13 +367,12 @@ SUBROUTINE roms_model_finalize (self, state)
 
   CALL ROMS_finalize
 
-  !> Deallocates ROMS state arrays and vectors.
+  !> Deallocates ROMS state arrays and vectors. Turn on ROMS allocate/initialize
+  !  switch for next JEDI tasks, if any.
+  !  HGA: I have to comment the deallocation when running 3D-Var.
 
-  CALL ROMS_deallocate_arrays
-
-  !> Turn on ROMS allocate/initialize switch for next JEDI tasks, if any.
-
-  LsetROMS = .TRUE.
+!  CALL ROMS_deallocate_arrays
+!  LsetROMS = .TRUE.
 
 END SUBROUTINE roms_model_finalize
 

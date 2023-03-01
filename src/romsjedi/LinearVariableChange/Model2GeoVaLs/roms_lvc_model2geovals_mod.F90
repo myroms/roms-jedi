@@ -1,4 +1,4 @@
-! (C) Copyright 2020-2021 UCAR
+! (C) Copyright 2020-2023 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -20,6 +20,7 @@ USE kinds,                      ONLY : kind_real
 
 USE fckit_configuration_module, ONLY : fckit_configuration
 
+USE roms_field_mod,             ONLY : roms_field
 USE roms_geom_mod,              ONLY : roms_geom,                              &
                                        roms_tile
 USE roms_increment_mod,         ONLY : roms_increment
@@ -51,6 +52,10 @@ END TYPE roms_lvc_model2geovals
 !-------------------------------------------------------------------------------
 
 PRIVATE
+
+! Switch for printing fields information during debugging.
+
+logical :: LdebugLinearModel2Geovals = .FALSE.
 
 !-------------------------------------------------------------------------------
 CONTAINS
@@ -104,14 +109,75 @@ END SUBROUTINE roms_lvc_model2geovals_delete
 
 SUBROUTINE roms_lvc_model2geovals_multiply (self, geom, dxm, dxg)
 
+  USE strings_mod, ONLY : join_string                    !< ROMS strings module
+
   CLASS (roms_lvc_model2geovals), intent(inout) :: self  !< VarChange object
   TYPE (roms_geom),               intent(inout) :: geom  !< Geometry
   TYPE (roms_increment),          intent(in   ) :: dxm   !< Increment (in)
   TYPE (roms_increment),          intent(inout) :: dxg   !< Increment (out)
 
-  ! TODO: For now, apply identity operator.
+  TYPE (roms_field),                    pointer :: field
 
-  dxg = dxm
+  integer                                       :: Nsur, i, lstr1, lstr2
+  character (len=:), allocatable                :: dxg_vars(:), dxm_vars(:)
+  character (len=524)                           :: dxg_string, dxm_string
+
+  ! Debug input and output increment metadata.
+
+  IF (LdebugLinearModel2Geovals .and. (geom%f_comm%rank() .eq. 0)) THEN
+    ALLOCATE (character(len=1024) :: dxg_vars(SIZE(dxg%fields)))
+    DO i = 1, SIZE(dxg%fields)
+      dxg_vars(i) = dxg%fields(i)%name
+    END DO 
+    CALL join_string (dxg_vars, SIZE(dxg%fields), dxg_string, lstr1)
+
+    ALLOCATE (character(len=1024) :: dxm_vars(SIZE(dxm%fields)))
+    DO i = 1, SIZE(dxm%fields)
+      dxm_vars(i) = dxm%fields(i)%name
+    END DO 
+    CALL join_string (dxm_vars, SIZE(dxm%fields), dxm_string, lstr2)
+
+    PRINT '(5a)', 'ROMS_DEBUG roms_lvc_model2geovals::multiply:',              &
+                  ' DXG vars: ', dxg_string(1:lstr1),                          &
+                  ' | DXM vars: ', dxm_string(1:lstr2)
+  END IF
+
+  ! Apply the required linear variable change to variables in the DXG vector.
+  ! Here, the number of variables in the increment vectors DXM and DXG state
+  ! vectors are the same (usually, we have  ssh, uocn, vocn, tocn, and socn).
+
+  DO i = 1, SIZE(dxg%fields)
+
+    IF (LdebugLinearModel2Geovals .and. (geom%f_comm%rank() .eq. 0)) THEN
+      PRINT '(8a)', 'ROMS_DEBUG roms_lvc_model2geovals::multiply: '//          &
+                    'Changing DXG name = ', dxg%fields(i)%name,                &
+                    ', metadata%name = ',                                      &
+                    dxg%fields(i)%metadata%name,                               &
+                    ', metadata%getval_name = ',                               &
+                    dxg%fields(i)%metadata%getval_name,                        &
+                    ', metadata%getval_name_surface = ',                       &
+                    dxg%fields(i)%metadata%getval_name_surface
+    END IF
+
+    CALL dxm%get (dxg%fields(i)%metadata%name, field)
+
+    IF ((dxg%fields(i)%name .eq. field%metadata%name) .or.                     &
+        (dxg%fields(i)%name .eq. field%metadata%getval_name)) THEN
+
+      dxg%fields(i)%val(:,:,:) = field%val(:,:,:)     !< full field
+
+    ELSE IF (dxg%fields(i)%name .eq. field%metadata%getval_name_surface) THEN
+
+      Nsur = dxm%fields(i)%N
+      dxg%fields(i)%val(:,:,1) = field%val(:,:,Nsur)  !< surface field
+
+    ELSE
+
+      CALL abor1_ftn ('roms_lvc_model2geovals_multiply: error while '//        &
+                      'processing field: '//TRIM(dxg%fields(i)%name))
+    END IF
+
+  END DO
 
 END SUBROUTINE roms_lvc_model2geovals_multiply
 
@@ -121,17 +187,83 @@ END SUBROUTINE roms_lvc_model2geovals_multiply
 
 SUBROUTINE roms_lvc_model2geovals_multiplyAD (self, geom, dxg, dxm)
 
+  USE strings_mod, ONLY : join_string                    !< ROMS strings module
+
   CLASS (roms_lvc_model2geovals), intent(inout) :: self  !< VarChange object
   TYPE (roms_geom),               intent(inout) :: geom  !< Geometry
   TYPE (roms_increment),          intent(in   ) :: dxg   !< Increment (in)
   TYPE (roms_increment),          intent(inout) :: dxm   !< Increment (out)
 
-  ! TODO: For now, apply identity operator.
+  TYPE (roms_field),                    pointer :: field
 
-  dxm = dxg
+  integer                                       :: Nsur, i, lstr1, lstr2
+  character (len=:), allocatable                :: dxg_vars(:), dxm_vars(:)
+  character (len=524)                           :: dxg_string, dxm_string
+
+  ! Debug input and output increment metadata.
+
+  IF (LdebugLinearModel2Geovals .and. (geom%f_comm%rank() .eq. 0)) THEN
+    ALLOCATE (character(len=1024) :: dxg_vars(SIZE(dxg%fields)))
+    DO i = 1, SIZE(dxg%fields)
+      dxg_vars(i) = dxg%fields(i)%name
+    END DO 
+    CALL join_string (dxg_vars, SIZE(dxg%fields), dxg_string, lstr1)
+
+    ALLOCATE (character(len=1024) :: dxm_vars(SIZE(dxm%fields)))
+    DO i = 1, SIZE(dxm%fields)
+      dxm_vars(i) = dxm%fields(i)%name
+    END DO 
+    CALL join_string (dxm_vars, SIZE(dxm%fields), dxm_string, lstr2)
+
+    PRINT '(5a)', 'ROMS_DEBUG roms_lvc_model2geovals::multiplyAD:',            &
+                  ' DXG vars: ', dxg_string(1:lstr1),                          &
+                  ' | DXM vars: ', dxm_string(1:lstr2)
+  END IF
+
+  ! Apply the required adjoint variable change to variables in the DXM vector.
+  ! In most cases, the number of variables in the DXM state vector (ssh, uocn,
+  ! vocn, tocn, and socn) is larger the than in the DXG increment vector, which
+  ! contains the observed variables (sea_water_temperature, sea_water_salinity,
+  ! sea_surface_temperature, and sea_surface_height_above_geoid)
+
+  DO i = 1, SIZE(dxg%fields)
+
+    IF (LdebugLinearModel2Geovals .and. (geom%f_comm%rank() .eq. 0)) THEN
+      PRINT '(8a)', 'ROMS_DEBUG roms_lvc_model2geovals::multiplyAD: '//        &
+                    'Changing DXM name = ', dxg%fields(i)%name,                &
+                    ', metadata%name = ',                                      &
+                    dxg%fields(i)%metadata%name,                               &
+                    ', metadata%getval_name = ',                               &
+                    dxg%fields(i)%metadata%getval_name,                        &
+                    ', metadata%getval_name_surface = ',                       &
+                    dxg%fields(i)%metadata%getval_name_surface
+    END IF
+
+    CALL dxm%get (dxg%fields(i)%metadata%name, field)
+
+    IF ((dxg%fields(i)%name .eq. field%metadata%name) .or.                     &
+        (dxg%fields(i)%name .eq. field%metadata%getval_name)) THEN
+
+      field%val = field%val +                                                  &
+                  dxg%fields(i)%val                   !< full field
+
+    ELSE IF (dxg%fields(i)%name .eq. field%metadata%getval_name_surface) THEN
+
+      Nsur = dxg%fields(i)%N
+      field%val(:,:,1) = field%val(:,:,1) +                                    &
+                         dxg%fields(i)%val(:,:,1)     !< surface field
+
+    ELSE
+
+      CALL abor1_ftn ('roms_lvc_model2geovals_multiplyAD: error while '//      &
+                          'processing field: '//TRIM(dxg%fields(i)%name))
+
+    END IF
+
+  END DO
 
 END SUBROUTINE roms_lvc_model2geovals_multiplyAD
 
-!-------------------------------------------------------------------------------
+! ------------------------------------------------------------------------------
 
 END MODULE roms_lvc_model2geovals_mod

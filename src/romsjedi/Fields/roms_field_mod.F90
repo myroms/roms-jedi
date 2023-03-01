@@ -1,4 +1,4 @@
-! (C) Copyright 2017-2022 UCAR
+! (C) Copyright 2017-2023 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://Qwww.apache.org/licenses/LICENSE-2.0.
@@ -372,19 +372,25 @@ SUBROUTINE roms_field_check_congruent (self, rhs)
   CLASS (roms_field), intent(in) :: self         !< LHS Field object
   TYPE (roms_field),  intent(in) :: rhs          !< RHS Field object
 
-  integer                       :: i
-  character (len=1)             :: mydim
+  integer                        :: i
+  character (len=1)              :: mydim
+  character (len=4)              :: self_N, rhs_N
 
   IF (self%N .ne. rhs%N) THEN
+    WRITE (self_N,'(i0)') self%N
+    WRITE (rhs_N ,'(i0)') rhs%N
     CALL abor1_ftn ("roms_field::check_congruent: '" // self%name //           &
-                    "', third dimension self%N unequal to '" // rhs%name //    &
-                    "' rhs%N") 
+                    "', third dimension self%N = " // TRIM(self_N) //          &
+                    " is unequal to '" // rhs%name // "' rhs%N = " //          &
+                    TRIM(rhs_N))
   END IF
 
-  IF (self%name .ne. rhs%name) THEN
-    CALL abor1_ftn ("roms_field:::check_congruent: '" // self%name //          &
-                    "', variable name self%name unequal '" // rhs%name //      &
-                    "' rhs%name, and possible metadata is different")
+  IF (self%metadata%name .ne. rhs%metadata%name) THEN
+    CALL abor1_ftn ("roms_field:::check_congruent: '"                          &
+                    // self%metadata%name //                                   &
+                    "', variable name self%metadata%name unequal '"            &
+                    // rhs%metadata%name //                                    &
+                    "' rhs%metadata%name, and possible metadata is different")
   END IF
 
   IF (SIZE(SHAPE(self%val)) .ne. SIZE(SHAPE(rhs%val))) THEN

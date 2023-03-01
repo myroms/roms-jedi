@@ -43,10 +43,10 @@ bump:
     vertical length-scale:
     - groups:
       - tocn
-      value: 500
+      value: 30
     - groups:
       - socn
-      value: 500
+      value: 30
   grids:
   - model:
       variables:
@@ -67,7 +67,7 @@ output:                                           # Write horizontal correlation
     data_frequency: &frequency PT2H
     file_policy: *frequency
     forecast length: *frequency
-    prefix: wc13_inc
+    prefix: wc13
     exp: bump_parameters
     type: cor_rh
     date: *date
@@ -77,7 +77,7 @@ output:                                           # Write horizontal correlation
     data_frequency: &frequency PT2H
     file_policy: *frequency
     forecast length: *frequency
-    prefix: wc13_inc
+    prefix: wc13
     exp: bump_parameters
     type: cor_rv
     date: *date

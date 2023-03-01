@@ -1,4 +1,4 @@
-# (C) Copyright 2017-2021 UCAR.
+# (C) Copyright 2017-2023 UCAR.
 #
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -59,5 +59,6 @@ add_subdirectory(LinearModel)
 add_subdirectory(LinearVariableChange)
 add_subdirectory(Model)
 add_subdirectory(ModelBias)
+add_subdirectory(NormGradient)
 add_subdirectory(State)
 add_subdirectory(VariableChange)

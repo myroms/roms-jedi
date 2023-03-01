@@ -54,7 +54,13 @@ namespace romsjedi {
 
   void VarChaModel2GeoVaLs::changeVarInverse(const State & xin,
                                              State & xout) const {
-    util::abor1_cpp("VarChaModel2GeoVaLs::changeVarInverse not implemented");
+    util::Timer timer(classname(), "changeVarInverse");
+    oops::Log::trace() << classname() << " changeVarInverse starting"
+                                      << std::endl;
+    xout = xin;
+    xout.validTime() = xin.validTime();
+    oops::Log::trace() << classname() << " changeVarInverse done"
+                                      << std::endl;
   }
 
 // -----------------------------------------------------------------------------

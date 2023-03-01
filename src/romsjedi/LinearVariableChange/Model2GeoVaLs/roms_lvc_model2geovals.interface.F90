@@ -1,4 +1,4 @@
-! (C) Copyright 2020-2021 UCAR
+! (C) Copyright 2020-2023 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -141,8 +141,8 @@ SUBROUTINE roms_lvc_model2geovals_multiplyAD_c (c_key_self,                    &
 
   CALL roms_lvc_model2geovals_registry%get (c_key_self, self)
   CALL roms_geom_registry%get (c_key_geom, geom)
-  CALL roms_increment_registry%get (c_key_dxin, dxout)
-  CALL roms_increment_registry%get (c_key_dxin, dxout)
+  CALL roms_increment_registry%get (c_key_dxin, dxin)
+  CALL roms_increment_registry%get (c_key_dxout, dxout)
 
   CALL self%multiplyAD (geom, dxin, dxout)
 

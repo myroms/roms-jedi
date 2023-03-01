@@ -196,6 +196,23 @@ else
     echo " Test #${ic}: test_bump_parameters_cor_nicas ........  Passed"
   fi
 
+
+  ic=$(( $ic + 1 ))
+  ${MPIrun} ../../bin/romsjedi_var.x testinput/3dvar_fgat.noLM 1>> test_${ic}.log 2>> test.err
+  if [ $? -ne 0 ] ; then
+    echo " Test #${ic}: test_romsjedi_3dvar_noLM ..............  *Failed"
+  else
+    echo " Test #${ic}: test_romsjedi_3dvar_noLM ..............  Passed"
+  fi
+
+  ic=$(( $ic + 1 ))
+  ${MPIrun} ../../bin/romsjedi_var.x testinput/3dvar_fgat.yaml 1>> test_${ic}.log 2>> test.err
+  if [ $? -ne 0 ] ; then
+    echo " Test #${ic}: test_romsjedi_3dvar_fgat ..............  *Failed"
+  else
+    echo " Test #${ic}: test_romsjedi_3dvar_fgat ..............  Passed"
+  fi
+
 fi
 
 exit 0

@@ -1,4 +1,4 @@
-# (C) Copyright 2017-2021 UCAR
+# (C) Copyright 2017-2023 UCAR
 #
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -6,6 +6,8 @@
 # Unit tests configuration files
 
 list( APPEND romsjedi_test_input
+  testinput/3dvar_fgat.yaml
+  testinput/3dvar_noLM.yaml
   testinput/errorcovariance.yaml
   testinput/diffstates.yaml
   testinput/forecast_roms.yaml
@@ -29,6 +31,8 @@ list( APPEND romsjedi_test_input
 # Unit tests reference files
 
 set( romsjedi_test_ref
+  testref/3dvar_fgat.ref
+  testref/3dvar_noLM.ref
   testref/diffstates.ref
   testref/forecast_roms.ref
   testref/hofx_nomodel.ref
@@ -45,12 +49,17 @@ set( romsjedi_test_ref
 set( romsjedi_data_files
   Data/fields_metadata.yaml
   Data/obs/wc13_TS_20040103.nc4
+  Data/obs/wc13_TS_20040105.nc4
   Data/obs/wc13_adt_20040103.nc4
+  Data/obs/wc13_adt_20040105.nc4
   Data/obs/wc13_ptemp_20040103.nc4
   Data/obs/wc13_salt_20040103.nc4
+  Data/obs/wc13_salt_20040105.nc4
   Data/obs/wc13_sss_20040103.nc4
   Data/obs/wc13_sst_20040103.nc4
+  Data/obs/wc13_sst_20040105.nc4
   Data/obs/wc13_temp_20040103.nc4
+  Data/obs/wc13_temp_20040105.nc4
   Data/obs/wc13_uv_sur_20040103.nc4
   Data/obs/wc13_usur_20040103.nc4
   Data/obs/wc13_vsur_20040103.nc4
@@ -59,6 +68,9 @@ set( romsjedi_data_files
 # Create input/output directories for the tests and symlinks for all files
 
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/fgat)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/noLM)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/bump)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/diff)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/forecast)
@@ -84,7 +96,7 @@ execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
   ${CMAKE_CURRENT_BINARY_DIR}/jediroms_wc13 )
 
 #================================================================================
-# Tests of class interfaces
+# Unit Tests of ROMS-JEDI interface class objects
 #================================================================================
 
 ecbuild_add_test(
@@ -169,7 +181,7 @@ ecbuild_add_test(
 #  LIBS         romsjedi )
 
 #================================================================================
-# Tests using the maind ROMS-JEDI applications
+# Unit Tests using the main ROMS-JEDI applications
 #================================================================================
 
 ecbuild_add_test(
@@ -219,4 +231,22 @@ ecbuild_add_test(
   MPI          2
   COMMAND      romsjedi_error_covariance_training.x
   ARGS         testinput/parameters_bump_cor_nicas.yaml
+  LIBS         romsjedi )
+
+#================================================================================
+# ROMS-JEDI Data Assimilation applications
+#================================================================================
+
+ecbuild_add_test(
+  TARGET       test_romsjedi_3dvar_noLM
+  MPI          2
+  COMMAND      romsjedi_var.x
+  ARGS         testinput/3dvar_noLM.yaml
+  LIBS         romsjedi )
+
+ecbuild_add_test(
+  TARGET       test_romsjedi_3dvar_fgat
+  MPI          2
+  COMMAND      romsjedi_var.x
+  ARGS         testinput/3dvar_fgat.yaml
   LIBS         romsjedi )

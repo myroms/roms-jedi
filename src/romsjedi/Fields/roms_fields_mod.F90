@@ -274,8 +274,16 @@ SUBROUTINE roms_fields_copy (self, rhs)
   ! Copy values from RHS to SELF, only if the variable exists in SELF.
 
   DO i = 1, SIZE(self%fields)
+
+    IF (LdebugFields .and. (my_comm%rank() .eq. 0)) THEN
+      PRINT '(4a,i0)', 'ROMS_DEBUG roms_fields::copy:',                         &
+                       ' copying RHS var = ', self%fields(i)%name,              &
+                       ', self N = ',   self%fields(i)%N
+    END IF
+
     CALL rhs%get (self%fields(i)%name, rhs_fld)
     CALL self%fields(i)%copy (rhs_fld)
+
   END DO
 
 END SUBROUTINE roms_fields_copy
@@ -599,8 +607,17 @@ SUBROUTINE roms_fields_get (self, name, field)
   DO i = 1, SIZE(self%fields)
     IF ((TRIM(name) .eq. self%fields(i)%name) .or.                             &
         (TRIM(name) .eq. self%fields(i)%metadata%getval_name)) THEN
+
+      IF (LdebugFields .and. (my_comm%rank() .eq. 0)) THEN
+        PRINT '(4a,i0,a,i0)', 'ROMS_DEBUG roms_fields::get:',                  &
+                              ' name: ', TRIM(name),                           &
+                              ', ifield: ', i,                                 &
+                              ', self N: ', self%fields(i)%N
+      END IF
+
       field => self%fields(i)
       RETURN
+
     END IF
   END DO
 
@@ -623,7 +640,8 @@ FUNCTION roms_fields_has (self, name) RESULT (foundit)
 
   foundit = .false.
   DO i = 1, SIZE(self%fields)
-    IF (TRIM(name) == self%fields(i)%name) THEN
+    IF ((TRIM(name) .eq. self%fields(i)%name) .or.                              &
+        (TRIM(name) .eq. self%fields(i)%metadata%getval_name)) THEN
       foundit = .true.
       RETURN
     END IF
@@ -822,14 +840,37 @@ END SUBROUTINE roms_fields_init_vars
 
 SUBROUTINE roms_fields_update_fields (self, vars)
 
+  USE strings_mod, ONLY : join_string              !< ROMS strings module
+
   CLASS (roms_fields),   intent(inout) :: self     !< Fields object
   TYPE (oops_variables), intent(in   ) :: vars     !< variable names
 
   TYPE (roms_fields)                   :: tmp
   TYPE (roms_field), pointer           :: field
-  integer                              :: i
+
+  integer                              :: i, lstr1, lstr2
+  character (len=:), allocatable       :: self_vars(:), tmp_vars(:)
+  character (len=524)                  :: self_string, tmp_string
 
   ! Create new fields.
+ 
+  IF (LdebugFields .and. (my_comm%rank() .eq. 0)) THEN 
+    ALLOCATE (character(len=1024) :: self_vars(SIZE(self%fields)))
+    DO i = 1, SIZE(self%fields)
+      self_vars(i) = self%fields(i)%name
+    END DO 
+    CALL join_string (self_vars, SIZE(self%fields), self_string, lstr1)
+
+    ALLOCATE (character(len=1024) :: tmp_vars(vars%nvars()))
+    DO i = 1, vars%nvars()
+      tmp_vars(i) = TRIM(vars%variable(i))
+    END DO
+    CALL join_string (tmp_vars, vars%nvars(), tmp_string, lstr2)
+
+    PRINT '(5a)', 'ROMS_DEBUG roms_fields::update_fields:',                    &
+                  ' SELF vars: ', self_string(1:lstr1),                        &
+                  ' | creating TMP vars: ', tmp_string(1:lstr2)
+  END IF
 
   CALL tmp%create (self%geom, vars)
 
@@ -2215,7 +2256,7 @@ SUBROUTINE roms_fields_read_nf90 (self, InpRec, ncname, DateString, DateNumber)
         CASE ('ssh', 'uocn', 'vocn', 'tocn', 'socn')
 
           WRITE (Message,'(6a)')                                               &
-                'roms_fields::read_nf90: Unable to find tate variable: ',      &
+                'roms_fields::read_nf90: Unable to find state variable: ',     &
                 field%name, " - ", field%metadata%getval_name,                 &
                 ', file: ', TRIM(ncname)
           CALL abor1_ftn (TRIM(Message))

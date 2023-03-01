@@ -21,6 +21,7 @@ namespace romsjedi {
   typedef int F90lvc_M2G;     // LinearVarChange Model2GeoVaLs key type
   typedef int F90model;       // Model key type
   typedef int F90traj;        // LinearModel trajectory key type
+  typedef int F90varchange;   // VarChange key type
   typedef int F90vc_M2G;      // VarChange Model2GeoVaLs key type
 
 }  // namespace romsjedi

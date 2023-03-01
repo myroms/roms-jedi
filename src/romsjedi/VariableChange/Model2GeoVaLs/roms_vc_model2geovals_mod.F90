@@ -31,6 +31,8 @@ TYPE, PUBLIC :: roms_vc_model2geovals
 
 END TYPE roms_vc_model2geovals
 
+!-------------------------------------------------------------------------------
+
 PRIVATE
 
 ! Switch for printing fields information during debugging.
@@ -55,7 +57,7 @@ SUBROUTINE roms_vc_model2geovals_changeVar (self, geom, xin, xout)
   TYPE (roms_field),                   pointer :: field
   integer                                      :: Nsur, i
 
-  ! Apply the require variable change.
+  ! Apply the required variable change.
 
   DO i = 1, SIZE(xout%fields)
 
@@ -72,36 +74,41 @@ SUBROUTINE roms_vc_model2geovals_changeVar (self, geom, xin, xout)
 
     SELECT CASE (xout%fields(i)%name)
 
-      CASE ('sea_surface_temperature')                  !< SST
+      CASE ('sea_surface_temperature')                   !< SST
+
         CALL xin%get ('tocn', field)
         Nsur = field%N
         xout%fields(i)%val(:,:,1) = field%val(:,:,Nsur)
+        xout%fields(i)%N = 1
 
-      CASE ('sea_surface_salinty')                      !< SSS
+      CASE ('sea_surface_salinity')                      !< SSS
+
         CALL xin%get ('socn', field)
         Nsur = field%N
         xout%fields(i)%val(:,:,1) = field%val(:,:,Nsur)
-
-      CASE ('model_level_depth_at_cell_center')
-        CALL xin%get ('zocn_r', field)
-        xout%fields(i)%val = field%val
-
-      CASE ('unvarying_model_level_depth_at_cell_center')
-        CALL xin%get ('z0ocn_r', field)
-        xout%fields(i)%val = field%val
+        xout%fields(i)%N = 1
 
       CASE DEFAULT                                       ! Identity Operator 
+
         CALL xin%get (xout%fields(i)%metadata%name, field)
-        IF (field%metadata%getval_name .eq.                                    &
-            xout%fields(i)%name) THEN                    !< full 3D field
-          xout%fields(i)%val(:,:,:) = field%val(:,:,:)  
+
+        IF ((xout%fields(i)%name .eq. field%metadata%getval_name) .or.         &
+            (xout%fields(i)%name .eq. field%metadata%name)) THEN
+
+          xout%fields(i)%val(:,:,:) = field%val(:,:,:)   !< full field
+
         ELSE IF (field%metadata%getval_name_surface .eq.                       &
                  xout%fields(i)%name) THEN               !< surface Z-index
+
           Nsur = field%N
           xout%fields(i)%val(:,:,1) = field%val(:,:,Nsur)
+          xout%fields(i)%N = 1
+
         ELSE
+
           CALL abor1_ftn ('roms_vc_model2geovals_changevar: error while '//    &
                           'processing field: '//TRIM(xout%fields(i)%name))
+
         END IF
 
     END SELECT
