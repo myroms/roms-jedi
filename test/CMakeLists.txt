@@ -6,10 +6,15 @@
 # Unit tests configuration files
 
 list( APPEND romsjedi_test_input
-  testinput/3dvar_fgat.yaml
+  testinput/3dvar_fgat_DRPLanczos.yaml
+  testinput/3dvar_fgat_RPCG.yaml
   testinput/3dvar_noLM.yaml
-  testinput/errorcovariance.yaml
+  testinput/3dvar_single_obs.yaml
+  testinput/3dvar_zero_obs.yaml
   testinput/diffstates.yaml
+  testinput/dirac_roms_cor_nicas.yaml
+  testinput/enspert.yaml
+  testinput/errorcovariance.yaml
   testinput/forecast_roms.yaml
   testinput/geometry.yaml
   testinput/geometryiterator.yaml
@@ -31,13 +36,18 @@ list( APPEND romsjedi_test_input
 # Unit tests reference files
 
 set( romsjedi_test_ref
-  testref/3dvar_fgat.ref
+  testref/3dvar_fgat_DRPLanczos.ref
+  testref/3dvar_fgat_RPCG.ref
   testref/3dvar_noLM.ref
+  testref/3dvar_single_obs.ref
+  testref/3dvar_zero_obs.ref
   testref/diffstates.ref
+  testref/dirac_roms_cor_nicas.ref
+  testref/enspert.ref
   testref/forecast_roms.ref
   testref/hofx_nomodel.ref
   testref/hofx_4d.ref
-  testinput/increment.ref
+  testref/increment.ref
   testref/makeobs_4d.ref
   testref/makeobs_4d_perturbed.ref
   testref/parameters_bump_cor_nicas.ref
@@ -52,12 +62,14 @@ set( romsjedi_data_files
   Data/obs/wc13_TS_20040105.nc4
   Data/obs/wc13_adt_20040103.nc4
   Data/obs/wc13_adt_20040105.nc4
+  Data/obs/wc13_adt_single_obs_20040105.nc4
   Data/obs/wc13_ptemp_20040103.nc4
   Data/obs/wc13_salt_20040103.nc4
   Data/obs/wc13_salt_20040105.nc4
   Data/obs/wc13_sss_20040103.nc4
   Data/obs/wc13_sst_20040103.nc4
   Data/obs/wc13_sst_20040105.nc4
+  Data/obs/wc13_sst_single_obs_20040105.nc4
   Data/obs/wc13_temp_20040103.nc4
   Data/obs/wc13_temp_20040105.nc4
   Data/obs/wc13_uv_sur_20040103.nc4
@@ -70,9 +82,15 @@ set( romsjedi_data_files
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/fgat)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/fgat/DRPLanczos)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/fgat/RPCG)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/noLM)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/singleObs)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/zeroObs)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/bump)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/diff)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/dirac)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/ensembles)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/forecast)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/hofx)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/increment)
@@ -94,6 +112,19 @@ endforeach()
 execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
   ${ROMS_BUILD_DIR}/../../../jediroms_wc13
   ${CMAKE_CURRENT_BINARY_DIR}/jediroms_wc13 )
+
+# Copy BASH scripts to facilitate running of Unit Tests.
+
+set( romsjedi_bash_scripts
+  batch_tests.sh
+  slurm_test.sh
+)
+
+foreach(FILENAME ${romsjedi_bash_scripts})
+  execute_process(COMMAND ${CMAKE_COMMAND} -E copy
+    ${CMAKE_CURRENT_SOURCE_DIR}/${FILENAME}
+    ${CMAKE_CURRENT_BINARY_DIR}/${FILENAME} )
+endforeach()
 
 #================================================================================
 # Unit Tests of ROMS-JEDI interface class objects
@@ -233,9 +264,43 @@ ecbuild_add_test(
   ARGS         testinput/parameters_bump_cor_nicas.yaml
   LIBS         romsjedi )
 
+ecbuild_add_test(
+  TARGET       test_dirac_roms_cor_nicas
+  MPI          2
+  COMMAND      romsjedi_dirac.x
+  ARGS         testinput/dirac_roms_cor_nicas.yaml
+  LIBS         romsjedi )
+
+#================================================================================
+# ROMS-JEDI Ensemble applications
+#================================================================================
+
+# Ensemble generation
+
+ecbuild_add_test(
+  TARGET       test_romsjedi_enspert
+  MPI          2
+  COMMAND      romsjedi_enspert.x
+  ARGS         testinput/enspert.yaml
+  LIBS         romsjedi )
+
 #================================================================================
 # ROMS-JEDI Data Assimilation applications
 #================================================================================
+
+ecbuild_add_test(
+  TARGET       test_romsjedi_3dvar_zero_obs
+  MPI          2
+  COMMAND      romsjedi_var.x
+  ARGS         testinput/3dvar_zero_obs.yaml
+  LIBS         romsjedi )
+
+ecbuild_add_test(
+  TARGET       test_romsjedi_3dvar_single_obs
+  MPI          2
+  COMMAND      romsjedi_var.x
+  ARGS         testinput/3dvar_single_obs.yaml
+  LIBS         romsjedi )
 
 ecbuild_add_test(
   TARGET       test_romsjedi_3dvar_noLM
@@ -245,8 +310,15 @@ ecbuild_add_test(
   LIBS         romsjedi )
 
 ecbuild_add_test(
-  TARGET       test_romsjedi_3dvar_fgat
+  TARGET       test_romsjedi_3dvar_fgat_DRPLanczos
   MPI          2
   COMMAND      romsjedi_var.x
-  ARGS         testinput/3dvar_fgat.yaml
+  ARGS         testinput/3dvar_fgat_DRPLanczos.yaml
+  LIBS         romsjedi )
+
+ecbuild_add_test(
+  TARGET       test_romsjedi_3dvar_fgat_RPCG
+  MPI          2
+  COMMAND      romsjedi_var.x
+  ARGS         testinput/3dvar_fgat_RPCG.yaml
   LIBS         romsjedi )

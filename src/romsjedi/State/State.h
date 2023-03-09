@@ -92,12 +92,16 @@ namespace romsjedi {
     OOPS_CONCRETE_PARAMETERS(StateWriteParameters, WriteParametersBase)
 
    public:
-    oops::RequiredParameter<util::Duration> filePolicy{
+    oops::OptionalParameter<bool> singleTimeRecord{
+      "single_record",
+      "State is written into single time record file",
+      this};
+    oops::OptionalParameter<util::Duration> filePolicy{
       "file_policy",
       "State output new file creation policy time interval for "
       "single or multiple files",
       this};
-    oops::RequiredParameter<util::Duration> dataFrequency{
+    oops::OptionalParameter<util::Duration> dataFrequency{
       "data_frequency",
       "State data writing frequency",
       this};
@@ -117,7 +121,7 @@ namespace romsjedi {
       "type",
       "State 'type' label used in the generation of filename(s)",
       this};
-    oops::RequiredParameter<util::Duration> forecastLength{
+    oops::OptionalParameter<util::Duration> forecastLength{
       "forecast length",
       "Alias to application forecast length needed in file creation policy",
       this};

@@ -177,7 +177,7 @@ SUBROUTINE roms_increment_setpoint (self, geoiter, values)
 END SUBROUTINE roms_increment_setpoint
 
 ! ------------------------------------------------------------------------------
-!> Sets Dirac delta function at specified location(s).
+!> Sets Dirac delta function impulses at the specified location(s).
 
 SUBROUTINE roms_increment_dirac (self, f_conf)
 
@@ -185,14 +185,18 @@ SUBROUTINE roms_increment_dirac (self, f_conf)
   TYPE (fckit_configuration), value, intent(in   ) :: f_conf   !< Configuration
 
   TYPE (roms_field),                       pointer :: field
+
   integer,                             allocatable :: ixdir(:), iydir(:)
-  integer,                             allocatable :: ifdir(:), izdir(:)
+  integer,                             allocatable :: izdir(:)
   integer                                          :: IstrD, IendD, JstrD, JendD
   integer                                          :: n, ndir, nk
+  character (len=32),                  allocatable :: ifdir(:)
+  character (len=:),                   allocatable :: fieldname(:)
+
 
   ! Get Diracs size.
 
-  ndir = f_conf%get_size("ixdir")
+  CALL f_conf%get_or_die ("ndir", ndir)
 
   IF (( f_conf%get_size("iydir") .ne. ndir ) .or. &
       ( f_conf%get_size("izdir") .ne. ndir ) .or. &
@@ -208,12 +212,15 @@ SUBROUTINE roms_increment_dirac (self, f_conf)
   allocate ( izdir(ndir) )
   allocate ( ifdir(ndir) )
 
-  ! Get Diracs positions.
+  ! Get Diracs delta function impulses locations in terms of (i,j,k) grid cells.
 
   CALL f_conf%get_or_die ("ixdir", ixdir)
   CALL f_conf%get_or_die ("iydir", iydir)
   CALL f_conf%get_or_die ("izdir", izdir)
-  CALL f_conf%get_or_die ("ifdir", ifdir)
+
+  CALL f_conf%get_or_die ("ifdir", fieldname)
+  ifdir = fieldname
+  DEALLOCATE (fieldname)
 
   ! Get tile partition bounds.
 
@@ -235,22 +242,9 @@ SUBROUTINE roms_increment_dirac (self, f_conf)
 
     field => null()
 
-    SELECT CASE (ifdir(n))
-      CASE (1)
-        CALL self%get ("tocn", field)
-      CASE (2)
-        CALL self%get ("socn", field)
-      CASE (3)
-        CALL self%get ("ssh",  field)
-      CASE default
-        CALL abor1_ftn ('roms_increment::dirac: field type out range')
-    END SELECT
+    CALL self%get (TRIM(ifdir(n)), field)
 
-    IF (associated(field)) THEN
-      nk = 1
-      IF (field%N > 1) nk = izdir(n)
-      field%val(ixdir(n),iydir(n),izdir(n)) = 1.0_kind_real
-    END IF
+    field%val(ixdir(n),iydir(n),izdir(n)) = 1.0_kind_real
 
   END DO
 

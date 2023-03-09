@@ -1886,13 +1886,15 @@ SUBROUTINE roms_fields_write (self, f_conf, vdate)
 
   TYPE (datetime)                            :: rdate
   TYPE (duration)                            :: frequency, policy, step
+
+  logical                                    :: createFile, singleRecord
   integer                                    :: LocalPET, Nrecs, model, ng
   integer                                    :: frequency_sec, policy_sec
   integer                                    :: step_sec
   integer, save                              :: out_rec
   real (kind=kind_real)                      :: romsTime(Ngrids), romsDateNumber
   character (len=256)                        :: text
-  character(len=max_length)                  :: filename
+  character(len=max_length)                  :: ValidityDate, filename
   character (len=:), allocatable             :: Fpolicy, iniDate, ioFrequency
 
   character (len=*), parameter               :: MyFile =                       &
@@ -1906,17 +1908,31 @@ SUBROUTINE roms_fields_write (self, f_conf, vdate)
   model    = self%geom%model           ! ROMS numerical kernel
   ng       = self%geom%ng              ! nested grid number
 
+  ! Get information from vdate structure.
+
+  CALL datetime_to_string (vdate, ValidityDate)
+
   ! Inquire configuration YAML file about file policy, output data frequency,
   ! initial date.
 
-  IF (.not.f_conf%get("file_policy", Fpolicy)) THEN
-    CALL abor1_ftn ("roms_fields::write: Cannot find 'file_policy'" //         &
-                    " in YAML configuration")
+  IF (f_conf%has("single_record")) THEN
+    IF (.not.f_conf%get("single_record", singleRecord)) THEN
+      CALL abor1_ftn ("roms_fields::write: Cannot find 'file_policy'" //       &
+                      " in YAML configuration")
+    END IF
+  ELSE
+    singleRecord = .FALSE.
   END IF
 
-  IF (.not.f_conf%get("data_frequency", ioFrequency)) THEN
-    CALL abor1_ftn ("roms_fields::write: Cannot find 'data_frequency'" //      &
-                    " in YAML configuration")
+  IF (.not.singleRecord) THEN
+    IF (.not.f_conf%get("file_policy", Fpolicy)) THEN
+      CALL abor1_ftn ("roms_fields::write: Cannot find 'file_policy'" //       &
+                      " in YAML configuration")
+    END IF
+    IF (.not.f_conf%get("data_frequency", ioFrequency)) THEN
+      CALL abor1_ftn ("roms_fields::write: Cannot find 'data_frequency'" //    &
+                      " in YAML configuration")
+    END IF
   END IF
 
   IF (.not.f_conf%get("date", iniDate)) THEN
@@ -1927,29 +1943,37 @@ SUBROUTINE roms_fields_write (self, f_conf, vdate)
   CALL datetime_create (iniDate, rdate)         ! initial date
   CALL datetime_diff   (vdate, rdate, step)     ! time since initial date
 
-  policy    = Fpolicy
-  frequency = ioFrequency
+  ! Determine if output NetCDF needs to be created or not.
 
-  step_sec      = duration_seconds(step)
-  policy_sec    = duration_seconds(policy)
-  frequency_sec = duration_seconds(frequency)
+  IF (singleRecord) THEN
+    createFile = .TRUE.
+  ELSE
+    policy    = Fpolicy
+    frequency = ioFrequency
 
-  ! Number of time records in the output file.
+    step_sec      = duration_seconds(step)
+    policy_sec    = duration_seconds(policy)
+    frequency_sec = duration_seconds(frequency)
 
-  Nrecs = policy_sec/frequency_sec
-  IF (policy_sec .eq. frequency_sec) Nrecs = 1
+    ! Number of time records in the output file.
 
-  ! Initialize record counter. This routine is called twice by "State.cc" with
-  ! the same "vdate" as the initialization date "iniDate", weird.  The time
-  ! record counter is reset to zero in the second call to create files properly
-  ! every "policy_sec" intervals.
+    Nrecs = policy_sec/frequency_sec
+    IF (policy_sec .eq. frequency_sec) Nrecs = 1
 
-  IF (step_sec .eq. 0) out_rec = 0
+    ! Initialize record counter. This routine is called twice by "State.cc" with
+    ! the same "vdate" as the initialization date "iniDate", weird.  The time
+    ! record counter is reset to zero in the second call to create files properly
+    ! every "policy_sec" intervals.
+
+    IF (step_sec .eq. 0) out_rec = 0
+
+    createFile = (MOD(step_sec, policy_sec).eq.0) .and. (out_rec .eq. 0)
+  END IF
 
   ! Create output NetCDF file according to specified policy: a new file is
   ! created every "policy_sec" intervals.
 
-  IF (MOD(step_sec, policy_sec) .eq. 0 .and. (out_rec .eq. 0)) THEN
+  IF (createFile) THEN
 
     ! Generate output NetCDF filename.
 
@@ -2335,7 +2359,7 @@ SUBROUTINE roms_fields_write_nf90 (self, S, romsTime)
   model    = geom%model                !< ROMS numerical kernel
   ng       = geom%ng                   !< nested grid number
 
-  IF (LdebugFields .and. (LocalPET .eq. 0)) THEN
+  IF (LocalPET .eq. 0) THEN
     lstr = SCAN(S(ng)%name, '/', BACK=.TRUE.) + 1
     lend = LEN_TRIM(S(ng)%name)    
     PRINT '(2a)', 'ROMS_DEBUG roms_fields::write_nf90 - writing state,'//      &
@@ -2417,7 +2441,7 @@ SUBROUTINE roms_fields_write_nf90 (self, S, romsTime)
                                    MaxValue = field%MaxValue),                 &
                        nf90_noerr, io_nf90, __LINE__, MyFile)
 
-          IF (LdebugFields .and. (LocalPET .eq. 0)) THEN
+          IF (LocalPET .eq. 0) THEN
             PRINT 10, field%name, field%MinValue, field%MaxValue
           END IF
 
@@ -2433,7 +2457,7 @@ SUBROUTINE roms_fields_write_nf90 (self, S, romsTime)
                                    MaxValue = field%MaxValue),                 &
                        nf90_noerr, io_nf90, __LINE__, MyFile)
 
-          IF (LdebugFields .and. (LocalPET .eq. 0)) THEN
+          IF (LocalPET .eq. 0) THEN
             PRINT 10, field%name, field%MinValue, field%MaxValue
           END IF
 
@@ -2441,11 +2465,22 @@ SUBROUTINE roms_fields_write_nf90 (self, S, romsTime)
 
     ELSE
 
-      WRITE (Message,'(4a)')                                                   &
-             'roms_fields::write_nf90: Cannot find and option to write = ',    &
-             field%name, " - ", field%metadata%getval_name,                    &
-            ', file: ', TRIM(S(ng)%name)
-      CALL abor1_ftn (TRIM(Message))
+      SELECT CASE (field%name)
+
+        CASE ('zocn_r', 'z0ocn_r',                                             &
+              'zocn_w', 'z0ocn_w')
+
+        ! Ignore time-dependent metric variables.
+
+        CASE DEFAULT
+
+          WRITE (Message,'(5a)')                                               &
+                'roms_fields::write_nf90: Cannot find and option to write = ', &
+                field%name, " - ", field%metadata%getval_name,                 &
+                ', file: ', TRIM(S(ng)%name)
+          CALL abor1_ftn (TRIM(Message))
+
+      END SELECT
 
     END IF
 
@@ -2888,7 +2923,7 @@ SUBROUTINE roms_fields_write_pio (self, S, romsTime)
                                    MaxValue = Fmax),                           &
                        PIO_noerr, io_pio, __LINE__, MyFile)
 
-          IF (LdebugFields .and. (LocalPET .eq. 0)) THEN
+          IF (LocalPET .eq. 0) THEN
             PRINT 10, field%name, Fmin, Fmax
           END IF
 
@@ -2904,18 +2939,29 @@ SUBROUTINE roms_fields_write_pio (self, S, romsTime)
                                    MaxValue = Fmax),                           &
                        PIO_noerr, io_pio, __LINE__, MyFile)
 
-          IF (LdebugFields .and. (LocalPET .eq. 0)) THEN
+          IF (LocalPET .eq. 0) THEN
             PRINT 10, field%name, Fmin, Fmax
           END IF
 
       END SELECT
 
     ELSE
-  
-      WRITE (Message,'(4a)')                                                   &
-            'roms_fields::write_pio: Cannot find and option to write = ',      &
-            field%name, " - ", field%metadata%getval_name
-      CALL abor1_ftn (TRIM(Message))
+
+      SELECT CASE (field%name)
+
+        CASE ('zocn_r', 'z0ocn_r',                                             &
+              'zocn_w', 'z0ocn_w')
+
+        ! Ignore time-dependent metric variables.
+
+        CASE DEFAULT
+
+          WRITE (Message,'(5a)')                                               &
+                'roms_fields::write_pio: Cannot find and option to write = ',  &
+                field%name, " - ", field%metadata%getval_name
+          CALL abor1_ftn (TRIM(Message))
+
+      END SELECT
 
     END IF
     

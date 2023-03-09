@@ -389,6 +389,8 @@ END SUBROUTINE roms_date2time
 FUNCTION roms_gen_filename (f_conf, max_length, vdate, file_type)              &
                     RESULT (filename)
 
+  USE strings_mod, ONLY : uppercase
+
   TYPE (fckit_configuration),  intent(in) :: f_conf     !< configuration
   integer,                     intent(in) :: max_length !< string length
   TYPE (datetime),             intent(in) :: vdate      !< Date/Time
@@ -396,13 +398,17 @@ FUNCTION roms_gen_filename (f_conf, max_length, vdate, file_type)              &
 
   TYPE (datetime)                         :: rdate
   TYPE (duration)                         :: step
+
+  logical                                 :: IsEnsemble
   integer                                 :: year, month, day
   integer                                 :: hour, minute, seconds
-  integer                                 :: lstr
+  integer                                 :: ensemble_number, lstr
+  character (len=3)                       :: Enumber
   character (len=19)                      :: filedate
   character (len=max_length)              :: filename 
   character (len=max_length)              :: MyPrefix, StepString, ValidityDate
   character (len=:), allocatable          :: Fdir, Fexp, Fprefix, Ftype, iniDate
+
 
   ! Inquire configuration YAML file about the output directory, file prefix,
   ! file type, and application date
@@ -427,6 +433,17 @@ FUNCTION roms_gen_filename (f_conf, max_length, vdate, file_type)              &
                     " in YAML configuration")
   END IF
 
+  IF (INDEX(uppercase(Ftype), 'ENS').gt.0) THEN
+    IF (.not.f_conf%get("member", ensemble_number)) THEN
+      CALL abor1_ftn ("roms_gen_filename: Cannot find 'member'"//              &
+                      " in 'f_conf' object")
+    END IF
+    IsEnsemble = .TRUE.
+    WRITE (Enumber, '(i3.3)') ensemble_number
+  ELSE
+    IsEnsemble = .FALSE.
+  END IF
+
   IF (.not.f_conf%get("date", iniDate)) THEN
     CALL abor1_ftn ("roms_gen_filename: Cannot find 'date'"//                  &
                     " in YAML configuration")
@@ -439,6 +456,12 @@ FUNCTION roms_gen_filename (f_conf, max_length, vdate, file_type)              &
     MyPrefix = Fdir // Fprefix // '_' // Fexp // '_' // Ftype
   ELSE
     MyPrefix = Fdir // CHAR(47) // Fprefix // '_' // Fexp // '_' // Ftype
+  END IF
+
+  ! If ensemble file, attach ensemble number descriptor.
+
+  IF (IsEnsemble) THEN
+    MyPrefix = TRIM(MyPrefix) // Enumber
   END IF
 
   ! Get information from vdate structure.

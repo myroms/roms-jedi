@@ -1,0 +1,78 @@
+# ROMS-JEDI Dirac Test: Delta Function perturbation Impulses
+#
+# It perturb the requested state field(s) with Dirac impulses at the
+# specified (i,j,k) grid cell.
+
+geometry:
+  project_dir: jediroms_wc13/JEDI/
+  roms_stdinp: roms_wc13_20040103.in
+  fields metadata: Data/fields_metadata.yaml
+  ng: 1                                        # ROMS nested grid number
+
+initial condition:
+  fields_dir: jediroms_wc13/Data/
+  fields_filename: wc13_roms_ini_20040103.nc   # initial fields for 2004-01-03T00:00:00Z
+  fields_record: 1
+  state variables: &roms_analysis [ssh, uocn, vocn, tocn, socn]
+  date: &date 2004-01-03T00:00:00Z
+
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: BUMP_NICAS
+    bump:
+      drivers:
+        multivariate strategy: univariate
+        read local nicas: true
+      grids:
+      - model:
+          variables:
+          - ssh
+        io:
+          files prefix: Data/bump/wc13_bump2d
+      - model:
+          variables:
+          - tocn
+          - socn
+        io:
+          files prefix: Data/bump/wc13_bump3d
+  saber outer blocks:
+  - saber block name: StdDev
+    input fields:
+    - parameter: StdDev
+      file:
+        fields_dir: jediroms_wc13/Data/
+        fields_filename: wc13_std_i.nc         # same as ROMS native RBL4D-Var
+        fields_record: 1
+        state variables: *roms_analysis
+        date: *date
+
+dirac:
+  ndir:  2                                     # Size of impulse vectors
+  ixdir: [30, 20]                              # X-direction index impulse location
+  iydir: [10, 40]                              # Y-direction index impulse location
+  izdir: [30, 30]                              # Z-direction index impulse location
+  ifdir: ['tocn', 'socn']                      # State field to perturb
+
+output dirac:
+  file_policy: PT98H                           # single output file with 49 records
+  data_frequency: PT2H                         # write output data every 2 hours
+  data_dir: Data/dirac
+  prefix: wc13_roms
+  exp: dirac
+  type: inc
+  date: *date                                  # alias to initial date
+
+output variance:
+  file_policy: PT98H                           # single output file with 49 records
+  data_frequency: PT2H                         # write output data every 2 hours
+  data_dir: Data/dirac
+  prefix: wc13_roms
+  exp: dirac
+  type: var
+  date: *date                                  # alias to initial date
+
+#test:
+#  reference filename: testref/dirac_roms_cor_nicas.ref
+#  log output filename: testoutput/dirac_roms_cor_nicas.log
+#  test output filename: testoutput/dirac_roms_cor_nicas.out

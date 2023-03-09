@@ -206,6 +206,7 @@ SUBROUTINE roms_model_delete (self)
   ! a good idea to release memory to avoid any leaks.
 
   CALL ROMS_deallocate_arrays
+  LsetROMS = .TRUE.
 
 END SUBROUTINE roms_model_delete
 
@@ -359,6 +360,12 @@ END SUBROUTINE roms_model_step
 
 SUBROUTINE roms_model_finalize (self, state)
 
+  USE mod_boundary, ONLY : initialize_boundary
+  USE mod_coupling, ONLY : initialize_coupling
+  USE mod_mixing,   ONLY : initialize_mixing
+  USE mod_forces,   ONLY : initialize_forces
+  USE mod_ocean,    ONLY : initialize_ocean
+
   CLASS (roms_model), target :: self
   CLASS (roms_state)         :: state
 
@@ -367,9 +374,17 @@ SUBROUTINE roms_model_finalize (self, state)
 
   CALL ROMS_finalize
 
-  !> Deallocates ROMS state arrays and vectors. Turn on ROMS allocate/initialize
-  !  switch for next JEDI tasks, if any.
-  !  HGA: I have to comment the deallocation when running 3D-Var.
+  !> We cannot deallocate ROMS variables using "ROMS_deallocate_arrays" because
+  !> some variables in the GRID structure are needed in variational data
+  !> assimilation, after finishing time-stepping. However, we need to initialize
+  !> several variables to zero in DA and to pass "test_romsjedi_mode" unit test.
+  !> Otherwise, we get the wrong norms.
+
+   CALL initialize_boundary (self%ng, self%tile, iNLM)
+   CALL initialize_coupling (self%ng, self%tile, iNLM)
+   CALL initialize_forces   (self%ng, self%tile, iNLM)
+   CALL initialize_mixing   (self%ng, self%tile, iNLM)
+   CALL initialize_ocean    (self%ng, self%tile, iNLM)
 
 !  CALL ROMS_deallocate_arrays
 !  LsetROMS = .TRUE.

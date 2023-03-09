@@ -68,9 +68,27 @@ namespace romsjedi {
     OOPS_CONCRETE_PARAMETERS(IncrementDiracParameters, Parameters)
 
    public:
-    oops::RequiredParameter<std::vector<int>> ixdir{"ixdir", this};
+    oops::RequiredParameter<int> ndir{
+      "ndir",
+      "Number Dirac Impulse in location vectors",
+      this};
+    oops::RequiredParameter<std::vector<int>> ixdir{
+      "ixdir",
+      "Dirac Impulse grid x-direction index vector",
+      this};
+    oops::RequiredParameter<std::vector<int>> iydir{
+      "iydir",
+      "Dirac Impulse grid y-direction index vector",
+      this};
+    oops::RequiredParameter<std::vector<int>> izdir{
+      "izdir",
+      "Dirac Impulse grid z-direction index vector",
+      this};
+    oops::RequiredParameter<std::vector<std::string>> ifdir{
+      "ifdir",
+      "State fields vector to perturb with Dirac Impulse",
+      this};
   };
-
 
   /// \brief Parameters passed to the Increment::read method.
 
@@ -114,12 +132,16 @@ namespace romsjedi {
       "parameter",
       "Background Error Covariance parameter",
       this};
-    oops::RequiredParameter<util::Duration> filePolicy{
+    oops::OptionalParameter<bool> singleTimeRecord{
+      "single_record",
+      "State is written into single time record file",
+      this};
+    oops::OptionalParameter<util::Duration> filePolicy{
       "file_policy",
       "State output new file creation policy time interval for "
       "single or multiple files",
       this};
-    oops::RequiredParameter<util::Duration> dataFrequency{
+    oops::OptionalParameter<util::Duration> dataFrequency{
       "data_frequency",
       "State data writing frequency",
       this};
@@ -139,7 +161,7 @@ namespace romsjedi {
       "type",
       "State 'type' label used in the generation of filename(s)",
       this};
-    oops::RequiredParameter<util::Duration> forecastLength{
+    oops::OptionalParameter<util::Duration> forecastLength{
       "forecast length",
       "Alias to application forecast length needed in file creation policy",
       this};

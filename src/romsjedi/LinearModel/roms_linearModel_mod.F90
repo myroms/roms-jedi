@@ -22,7 +22,7 @@ USE oops_variables_mod
 !> ROMS modules association.
 
 USE roms_kernel_mod
-USE mod_param,                  ONLY : iADM, iTLM
+USE mod_param,                  ONLY : iADM, iNLM, iTLM
 USE mod_scalars,                ONLY : NoError, exit_flag
 
 !> ROMS-JEDI interface module association.
@@ -507,8 +507,35 @@ END SUBROUTINE roms_linearModel_step_tl
 
 SUBROUTINE roms_linearModel_finalize_ad (self, Incr)
 
+  USE mod_parallel, ONLY : Cend, Cstr, Csum, Ctotal, total_cpu
+
+  USE mod_coupling, ONLY : initialize_coupling
+  USE mod_forces,   ONLY : initialize_forces
+  USE mod_grid,     ONLY : initialize_grid
+  USE mod_mixing,   ONLY : initialize_mixing
+  USE mod_ocean,    ONLY : initialize_ocean
+
   CLASS (roms_linearModel), intent(inout) :: self     !< LinearModel object
   CLASS (roms_increment),   intent(inout) :: Incr     !< Increment object
+
+  ! Zeroth-out profiling arrays.
+
+  Cstr(:,iADM,:) = 0.0_kind_real
+  Cend(:,iADM,:) = 0.0_kind_real
+  Csum(:,iADM,:) = 0.0_kind_real
+  Ctotal         = 0.0_kind_real
+  total_cpu      = 0.0_kind_real
+
+  ! Since the adjoint kernel is used primarily in iterative algorithms, the
+  ! variables in several ROMS structures are initialized to zero, as it is
+  ! done in ROMS native adjoint-based algorithms.
+
+!  CALL initialize_coupling (self%ng, self%tile, iADM)
+!  CALL initialize_forces   (self%ng, self%tile, iADM)
+!  CALL initialize_grid     (self%ng, self%tile, iADM)
+!  CALL initialize_mixing   (self%ng, self%tile, iADM)
+!  CALL initialize_ocean    (self%ng, self%tile, iNLM)
+!  CALL initialize_ocean    (self%ng, self%tile, iADM)
 
 END SUBROUTINE roms_linearModel_finalize_ad
 
@@ -517,8 +544,33 @@ END SUBROUTINE roms_linearModel_finalize_ad
 
 SUBROUTINE roms_linearModel_finalize_tl (self, Incr)
 
+  USE mod_parallel, ONLY : Cend, Cstr, Csum, Ctotal, total_cpu
+
+  USE mod_coupling, ONLY : initialize_coupling
+  USE mod_forces,   ONLY : initialize_forces
+  USE mod_grid,     ONLY : initialize_grid
+  USE mod_ocean,    ONLY : initialize_ocean
+
   CLASS (roms_linearModel), intent(inout) :: self     !< LinearModel object
   CLASS (roms_increment),   intent(inout) :: Incr     !< Increment object
+
+  ! Zeroth-out profiling arrays.
+
+  Cstr(:,iTLM,:) = 0.0_kind_real
+  Cend(:,iTLM,:) = 0.0_kind_real
+  Csum(:,iTLM,:) = 0.0_kind_real
+  Ctotal         = 0.0_kind_real
+  total_cpu      = 0.0_kind_real
+
+  ! Since the tangent linear kernel is used primarily in iterative algorithms,
+  ! the variables in several ROMS structures are initialized to zero, as it is
+  ! done in ROMS native adjoint-based algorithms.
+
+!  CALL initialize_coupling (self%ng, self%tile, 0)
+!  CALL initialize_forces   (self%ng, self%tile, iTLM)
+!  CALL initialize_grid     (self%ng, self%tile, iTLM)
+!  CALL initialize_ocean    (self%ng, self%tile, iNLM)
+!  CALL initialize_ocean    (self%ng, self%tile, iTLM)
 
 END SUBROUTINE roms_linearModel_finalize_tl
 
@@ -526,6 +578,8 @@ END SUBROUTINE roms_linearModel_finalize_tl
 !> It loads JEDI nonlinear state trajectory fields into ROMS field structure.
 
 SUBROUTINE jedi2roms_traj (ng, Traj)
+
+  USE mod_parallel, ONLY : Cend, Cstr, Csum
 
   USE mod_coupling, ONLY : COUPLING
   USE mod_mixing,   ONLY : MIXING
