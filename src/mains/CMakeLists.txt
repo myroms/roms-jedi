@@ -39,27 +39,27 @@ ecbuild_add_executable( TARGET  romsjedi_eda.x
                                 saber
                       )
 
-ecbuild_add_executable( TARGET  romsjedi_enshofx.x
+ecbuild_add_executable( TARGET  romsjedi_ens_hofx.x
                         SOURCES EnsHofX.cc
                         LIBS    romsjedi
                       )
 
-ecbuild_add_executable( TARGET  romsjedi_ensmeanvariance.x
+ecbuild_add_executable( TARGET  romsjedi_ens_mean_variance.x
                         SOURCES EnsMeanVariance.cc
                         LIBS    romsjedi
                       )
 
-ecbuild_add_executable( TARGET  romsjedi_enspert.x
+ecbuild_add_executable( TARGET  romsjedi_ens_pert.x
                         SOURCES GenEnsPertB.cc
                         LIBS    romsjedi
                       )
 
-ecbuild_add_executable( TARGET  romsjedi_ensrecenter.x
+ecbuild_add_executable( TARGET  romsjedi_ens_recenter.x
                         SOURCES EnsRecenter.cc
                         LIBS    romsjedi
                       )
 
-ecbuild_add_executable( TARGET  romsjedi_ensvariance.x
+ecbuild_add_executable( TARGET  romsjedi_ens_variance.x
                         SOURCES EnsVariance.cc
                         LIBS    romsjedi
                       )

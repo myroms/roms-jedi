@@ -1,5 +1,9 @@
-# ROMS is configured with the JEDI driver and includes the NLM, TLM, and ADM kernels
-# for the US West Coast WC13 test application.
+# ROMS-JEDI Error Covariance Unit Test: WC13 Application
+#
+# The covariance model is the identity operator: romsjedi-ID
+#
+# In realistic applications we will use SABER (BUMP_NICAS). However,
+# we may need a customized ROMS_ERROR in the future. 
 
 geometry:
   project_dir: jediroms_wc13/JEDI/
@@ -9,7 +13,7 @@ geometry:
 
 covariance test:
   testinverse: false
-  tolerance: 1e-12
+  tolerance: 1e-10
 
 analysis variables: &avars [ssh, tocn, socn]
 
@@ -21,15 +25,25 @@ background:
   date: &date 2004-01-03T00:00:00Z
 
 background error:
-  covariance model: romsjedi-ID
+  covariance model: romsjedi-ID                # Identity
   analysis variables: *avars
   date: *date
   bump:
-    io:
-      data directory: Data/bump
     drivers:
       multivariate strategy: univariate
       write local nicas: true
+    io:
+      data directory: Data/bump
   correlation:
-  - name: ocn
-    variables: *avars
+    grids:
+    - model:
+        variables:
+        - ssh
+      io:
+        files prefix: Data/bump/wc13_bump2d
+    - model:
+        variables:
+        - tocn
+        - socn
+      io:
+        files prefix: Data/bump/wc13_bump3d

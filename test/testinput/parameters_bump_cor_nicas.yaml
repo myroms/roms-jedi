@@ -1,7 +1,11 @@
-# ROMS is configured with the JEDI driver and includes the NLM, TLM, and ADM kernels
-# for the US West Coast WC13 test application.
+# ROMS-JEDI BUMP Covariance Training Parameters (BUMP_NICAS) Test: WC13 Application
 #
-# It Computes and writes Error Coveriance spatial decorrelation parameters for BUMP.
+# It sets correlation parameters to model the background error covariance
+# using BUMP/NICAS.
+#
+# Notice that BUMP uses ATLAS which only supports the computations at the center
+# of grid cell (ROMS's RHO-points). We need to figure out what to do for the
+# staggered U- and V-points state variables later.
 
 geometry:
   project_dir: jediroms_wc13/JEDI/
@@ -33,20 +37,23 @@ bump:
     horizontal length-scale:
     - groups:
       - ssh
-      value: 50.0e3
+      value: 250.0e3
     - groups:
       - tocn
-      value: 50.0e3
+      value: 250.0e3
     - groups:
       - socn
-      value: 50.0e3
+      value: 250.0e3
     vertical length-scale:
     - groups:
+      - ssh
+      value: 0
+    - groups:
       - tocn
-      value: 30
+      value: 100
     - groups:
       - socn
-      value: 30
+      value: 100
   grids:
   - model:
       variables:
@@ -63,20 +70,16 @@ bump:
 output:                                           # Write horizontal correlations NetCDF file
 - parameter: cor_rh
   file:
+    single_record: true
     data_dir: Data/bump
-    data_frequency: &frequency PT2H
-    file_policy: *frequency
-    forecast length: *frequency
     prefix: wc13
     exp: bump_parameters
     type: cor_rh
     date: *date
 - parameter: cor_rv                               # Write vertical correlations NetCDF file
   file:
+    single_record: true
     data_dir: Data/bump
-    data_frequency: &frequency PT2H
-    file_policy: *frequency
-    forecast length: *frequency
     prefix: wc13
     exp: bump_parameters
     type: cor_rv
@@ -87,12 +90,3 @@ output:                                           # Write horizontal correlation
 #  float relative tolerance: 1.0e-6
 #  log output filename: testoutput/parameters_bump_cor_nicas.log
 #  test output filename: testoutput/parameters_bump_cor_nicas.out
-
-# NOTES:
-#
-# * Currently, BUMP and ATLAS does not support staggered grids. Thus, the Error
-#   Covariance convolutions is limited to RHO-points.
-#
-# * In the 'ouput' token the 'data_frequency' valuecan be any interval provided that
-#   the values for 'file policy' and 'forecast length' are the same. As a result,
-#   a single output file is created with one time-record.

@@ -433,7 +433,7 @@ FUNCTION roms_gen_filename (f_conf, max_length, vdate, file_type)              &
                     " in YAML configuration")
   END IF
 
-  IF (INDEX(uppercase(Ftype), 'ENS').gt.0) THEN
+  IF (INDEX(uppercase(Ftype), 'MEM').gt.0) THEN
     IF (.not.f_conf%get("member", ensemble_number)) THEN
       CALL abor1_ftn ("roms_gen_filename: Cannot find 'member'"//              &
                       " in 'f_conf' object")

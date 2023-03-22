@@ -33,6 +33,8 @@ USE fckit_configuration_module, ONLY : fckit_configuration
 USE fckit_mpi_module,           ONLY : fckit_mpi_comm
 USE fckit_log_module
 
+USE type_fieldset,              ONLY : fieldset_type
+
 USE mod_ncparam,                ONLY : p2dvar, r2dvar, u2dvar, v2dvar
 
 USE roms_fields_metadata_mod,   ONLY : roms_fields_metadata
@@ -97,6 +99,7 @@ TYPE, PUBLIC :: roms_geom
   real (kind_real), allocatable  :: pm(:,:)        ! inverse x-spacing (1/m)
   real (kind_real), allocatable  :: pn(:,:)        ! inverse y-spacing (1/m)
   real (kind_real), allocatable  :: cell_area(:,:) ! cell area (m2)
+  real (kind_real), allocatable  :: Rossby(:,:)    ! deformation radius (m)
 
   real (kind_real), allocatable  :: f_r(:,:)       ! Coriolis parameter (1/s)
   real (kind_real), allocatable  :: h_r(:,:)       ! bathymetry (m; positive)
@@ -183,7 +186,8 @@ SUBROUTINE roms_geom_create (self, f_conf, f_comm)
   USE mod_param
   USE mod_grid
   USE mod_iounits,     ONLY : Iname
-  USE mod_scalars,     ONLY : EWperiodic, NSperiodic, NoError, exit_flag
+  USE mod_scalars,     ONLY : EWperiodic, NSperiodic, NoError,                  &
+                              bvf_bak, exit_flag, pi
 
   USE roms_kernel_mod, ONLY : ROMS_initialize
   USE set_depth_mod,   ONLY : set_depth0, set_depth
@@ -195,6 +199,7 @@ SUBROUTINE roms_geom_create (self, f_conf, f_comm)
   logical, save                           :: first
   integer                                 :: cgrid, i, j, k, lstr, ng, tile
   integer                                 :: MyComm
+  real (kind=kind_real)                   :: scale
   character (len=:), allocatable          :: flds_meta, project_dir, roms_stdinp
 
   ! Get MPI communicator.
@@ -462,6 +467,17 @@ SUBROUTINE roms_geom_create (self, f_conf, f_comm)
     END DO
   END DO
 
+  ! Compute first baroclinic Rossby radius of deformation (N*H/(pi*f). Using
+  ! vertical scale height as H=50 m.
+
+  scale = 50.0_kind_real * SQRT(bvf_bak) / pi
+
+  DO j = self%bounds(r2dvar)%JstrD, self%bounds(r2dvar)%JendD
+    DO i = self%bounds(r2dvar)%IstrD, self%bounds(r2dvar)%IendD
+        self%Rossby(i,j) = scale / self%f_r(i,j)
+    END DO
+  END DO
+
   ! Report.
 
   IF (LdebugGeometry) THEN
@@ -520,6 +536,8 @@ SUBROUTINE roms_geom_delete (self)
   IF (allocated(self%anglev))     deallocate (self%anglev)
 
   IF (allocated(self%cell_area))  deallocate (self%cell_area)
+
+  IF (allocated(self%Rossby))     deallocate (self%Rossby)
 
   IF (allocated(self%CosAngler))  deallocate (self%CosAngler)
   IF (allocated(self%SinAngler))  deallocate (self%SinAngler)
@@ -631,6 +649,8 @@ SUBROUTINE roms_geom_clone (self, other)
 
   self%cell_area = other%cell_area
 
+  self%Rossby    = other%Rossby
+
   self%CosAngler = other%CosAngler
   self%SinAngler = other%SinAngler
 
@@ -709,7 +729,6 @@ SUBROUTINE roms_geom_allocate (self)
   allocate (self%pm(LBi:UBi, LBj:UBj));           self%pm  = 0.0_kind_real
   allocate (self%pn(LBi:UBi, LBj:UBj));           self%pn  = 0.0_kind_real
 
-
   allocate (self%lonr(LBi:UBi, LBj:UBj));         self%lonr = 0.0_kind_real
   allocate (self%latr(LBi:UBi, LBj:UBj));         self%latr = 0.0_kind_real
   allocate (self%lonu(LBi:UBi, LBj:UBj));         self%lonu = 0.0_kind_real
@@ -722,6 +741,8 @@ SUBROUTINE roms_geom_allocate (self)
   allocate (self%anglev(LBi:UBi, LBj:UBj));       self%anglev = 0.0_kind_real
 
   allocate (self%cell_area(LBi:UBi, LBj:UBj));    self%cell_area = 0.0_kind_real
+
+  allocate (self%Rossby(LBi:UBi, LBj:UBj));       self%Rossby = 0.0_kind_real
 
   allocate (self%CosAngler(LBi:UBi, LBj:UBj));    self%CosAngler = 0.0_kind_real
   allocate (self%SinAngler(LBi:UBi, LBj:UBj));    self%SinAngler = 0.0_kind_real
@@ -825,7 +846,7 @@ SUBROUTINE roms_geom_to_fieldset (self, afieldset)
   ! problematic with staggered C-grids. That is, ATLAS assumes that all
   ! the variables are at the same location.
 
-  cgrid = r2dvar
+  cgrid = r2dvar                           ! RHO-points, grid cell center
 
   IstrC = self%bounds(cgrid)%IstrC
   IendC = self%bounds(cgrid)%IendC
@@ -847,14 +868,16 @@ SUBROUTINE roms_geom_to_fieldset (self, afieldset)
   CALL afieldset%add (afield)
   CALL afield%final ()
 
-  ! Add vertical level unit.
+  ! Add vertical level unit: time-independent depths at RHO-points 
+  !                          (negative, levelsAreTopDown = .FALSE.)
 
   afield = self%functionspaceIncHalo%create_field(name='vunit',                &
                                                   kind=atlas_real(kind_real),  &
                                                   levels=N)
   CALL afield%data (r_ptr)
   DO k = 1, N
-    r_ptr(k,:) = REAL(k, kind_real)
+!   r_ptr(k,:) = REAL(k, kind_real)
+    r_ptr(k,:) = PACK(self%z0_r(IstrH:IendH, JstrH:JendH, k), .TRUE.)
   END DO
   CALL afieldset%add (afield)
   CALL afield%final ()
@@ -895,7 +918,7 @@ SUBROUTINE roms_geom_atlas2struct (self, dx, dx_atlas)
   CLASS (roms_geom),     intent(in   ) :: self            !< Geometry object
   real (kind=kind_real), intent(inout) :: dx(self%LBi:,                        &
                                              self%LBj:)   !< structured field
-  TYPE (atlas_fieldset), intent(inout) :: dx_atlas        !< ATLAS fieldset
+  TYPE (fieldset_type),  intent(inout) :: dx_atlas        !< ATLAS fieldset
 
   TYPE (atlas_field)                   :: afield
   logical, allocatable                 :: fmask(:,:)
@@ -937,7 +960,7 @@ SUBROUTINE roms_geom_struct2atlas (self, dx, dx_atlas)
   CLASS (roms_geom),     intent(in   ) :: self            !< Geometry object
   real (kind=kind_real), intent(inout) :: dx(self%LBi:,                        &
                                              self%LBj:)   !< Structured field
-  TYPE (atlas_fieldset), intent(out  ) :: dx_atlas        !< ATLAS fieldset
+  TYPE (fieldset_type),  intent(out  ) :: dx_atlas        !< ATLAS fieldset
 
   TYPE (atlas_field)                   :: afield
   integer                              :: IstrH, IendH, JstrH, JendH

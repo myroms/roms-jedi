@@ -1,12 +1,10 @@
-# ROMS-JEDI 3D-Var FGAT test: WC13 Application
+# ROMS-JEDI 3D-Var FGAT (Dual Formulation) Test: WC13 Application
 #
 # It uses ROMS 3D state vector and the 4D-Var cost function for a
 # 3D-FGAT (First Guess at Appropriate Time) by approximating the
 # Tangent Linear and Adjoint models with the Identity operator.
 # It computes the analysis increment for the initial state vector
 # (beginning of the DA window).
-#
-# Notice that it does not require ROMS TLM and ADM kernels.
 #
 # Using RPCG (Augmented Restricted Preconditioned Conjugate Gradient)
 # Minimizer, Gratton and Tshimanga, QJRMS, 135: 1573-1585 (2009).
@@ -89,7 +87,7 @@ cost function:
         obsdataout:
           engine:
             type: H5File
-            obsfile: Data/3dvar/fgat/RPCG/wc13_temp_3dvar_fgat.nc4
+            obsfile: Data/3dvar/fgat/dual/wc13_temp_3dvar_fgat.nc4
         simulated variables: [waterTemperature]
       obs operator:
         name: VertInterp
@@ -108,7 +106,7 @@ cost function:
         obsdataout:
          engine:
             type: H5File
-            obsfile: Data/3dvar/fgat/RPCG/wc13_salt_3dvar_fgat.nc4
+            obsfile: Data/3dvar/fgat/dual/wc13_salt_3dvar_fgat.nc4
         simulated variables: [salinity]
       obs operator:
         name: VertInterp
@@ -127,7 +125,7 @@ cost function:
         obsdataout:
           engine:
             type: H5File
-            obsfile: Data/3dvar/fgat/RPCG/wc13_sst_3dvar_fgat.nc4
+            obsfile: Data/3dvar/fgat/dual/wc13_sst_3dvar_fgat.nc4
         simulated variables: [seaSurfaceTemperature]
       obs operator:
         name: Identity
@@ -144,7 +142,7 @@ cost function:
         obsdataout:
           engine:
             type: H5File
-            obsfile: Data/3dvar/fgat/RPCG/wc13_adt_3dvar_fgat.nc4
+            obsfile: Data/3dvar/fgat/dual/wc13_adt_3dvar_fgat.nc4
         simulated variables: [absoluteDynamicTopography]
       obs operator:
         name: ADT
@@ -153,7 +151,7 @@ cost function:
 
 variational:
   minimizer:
-    algorithm: RPCG
+    algorithm: RPCG                              # Dual Formulation
   iterations:                                    # each item defines an outer loop
   - geometry: *geom
     linear model:
@@ -169,7 +167,7 @@ variational:
       write increment: true
       increment:                                 # DA increment output file
         single_record: true
-        data_dir: Data/3dvar/fgat/RPCG
+        data_dir: Data/3dvar/fgat/dual
         prefix: wc13_roms
         exp: 3dvar
         type: inc
@@ -183,14 +181,14 @@ output:
   file_policy: PT98H                             # single output file with 49 records
   frequency: &frequency PT2H                     # write output data every 2 hours
   data_frequency: *frequency
-  data_dir: Data/3dvar/fgat/RPCG
+  data_dir: Data/3dvar/fgat/dual
   prefix: wc13_roms
   exp: 3dvar
-  type: fgat
+  type: nlm
   date: *date
 
 #test:
-#  reference filename: testref/3dvar_fgat_RPCG.ref
+#  reference filename: testref/3dvar_fgat_dual.ref
 #  float relative tolerance: 1e-5
-#  log output filename: testoutput/3dvar_fgat_RPCG.log
-#  test output filename: testoutput/3dvar_fgat_RPCG.out
+#  log output filename: testoutput/3dvar_fgat_dual.log
+#  test output filename: testoutput/3dvar_fgat_dual.out

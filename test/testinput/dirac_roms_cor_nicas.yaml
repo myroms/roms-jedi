@@ -36,7 +36,7 @@ background error:
           - socn
         io:
           files prefix: Data/bump/wc13_bump3d
-  saber outer blocks:
+  saber outer blocks:                          # standard deviation impulse scaling
   - saber block name: StdDev
     input fields:
     - parameter: StdDev
@@ -48,11 +48,11 @@ background error:
         date: *date
 
 dirac:
-  ndir:  2                                     # Size of impulse vectors
-  ixdir: [30, 20]                              # X-direction index impulse location
-  iydir: [10, 40]                              # Y-direction index impulse location
-  izdir: [30, 30]                              # Z-direction index impulse location
-  ifdir: ['tocn', 'socn']                      # State field to perturb
+  ndir:  3                                     # Size of impulse vectors
+  ixdir: [25, 30, 20]                          # X-direction index impulse location
+  iydir: [20, 10, 40]                          # Y-direction index impulse location
+  izdir: [1,  30, 30]                          # Z-direction index impulse location
+  ifdir: ['ssh', 'tocn', 'socn']               # State field to perturb
 
 output dirac:
   file_policy: PT98H                           # single output file with 49 records

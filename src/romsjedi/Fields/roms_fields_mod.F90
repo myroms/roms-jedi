@@ -104,6 +104,7 @@ TYPE, PUBLIC :: roms_fields
   PROCEDURE :: add             => roms_fields_add
   PROCEDURE :: axpy            => roms_fields_axpy
   PROCEDURE :: dot_prod        => roms_fields_dot_prod
+  PROCEDURE :: enorm           => roms_fields_enorm
   PROCEDURE :: gstats          => roms_fields_gstats
   PROCEDURE :: mul             => roms_fields_mul
   PROCEDURE :: norm            => roms_fields_norm
@@ -1255,14 +1256,13 @@ SUBROUTINE roms_fields_mul (self, c)
 
 END SUBROUTINE roms_fields_mul
 
-
 ! ------------------------------------------------------------------------------
 !> Compute the global energy norm per unit ares (MJ/m2) for the state vector.
 
-SUBROUTINE roms_fields_norm (self, Enorm)
+SUBROUTINE roms_fields_enorm (self, Enorm)
 
   CLASS (roms_fields), target, intent(in ) :: self   !< Fields object
-  real (kind=kind_real),       intent(out) :: Enorm  !< Fields root-mean square
+  real (kind=kind_real),       intent(out) :: Enorm  !< squared Fields sum
 
   integer                                  :: i, j, k, n
 
@@ -1432,7 +1432,7 @@ SUBROUTINE roms_fields_norm (self, Enorm)
             END IF
             DO k = 1, field%N
               Hr = self%geom%z_w(i,j,k)-self%geom%z_w(i,j,k-1)
-              scale = cff*Hr                                              ! m
+              scale = cff*Hr                                             ! m
               my_norm = my_norm + scale*field%val(i,j,k)*field%val(i,j,k)
             END DO
           END DO
@@ -1490,6 +1490,49 @@ SUBROUTINE roms_fields_norm (self, Enorm)
   ! Scale to use MJ/m2 (1 MJ = 10^6 J).
 
   Enorm = 1.0E-6_kind_real * Enorm
+
+END SUBROUTINE roms_fields_enorm
+
+! ------------------------------------------------------------------------------
+!> Compute the global norm for the nondimentional state vector.
+
+SUBROUTINE roms_fields_norm (self, norm)
+
+  CLASS (roms_fields), target, intent(in ) :: self   !< Fields object
+  real (kind=kind_real),       intent(out) :: norm   !< squared Fields sum
+
+  integer                                  :: i, j, k, n
+
+  real (kind=kind_real)                    :: my_norm
+  TYPE (roms_field), pointer               :: field
+
+  ! Compute fields RMS.
+
+  my_norm = 0.0_kind_real
+
+  DO n = 1, SIZE(self%fields)
+
+    field => self%fields(n)
+
+    DO j = field%bounds%JstrD, field%bounds%JendD
+      DO i = field%bounds%IstrD, field%bounds%IendD
+
+        IF (associated(field%mask)) THEN                    ! masking
+          IF (field%mask(i,j) < 1.0_kind_real) CYCLE
+        END IF
+
+        DO k = 1, field%N
+          my_norm = my_norm + field%val(i,j,k)*field%val(i,j,k)
+        END DO
+
+      END DO
+    END DO
+
+  END DO
+
+  ! Get global sum.
+
+  CALL self%geom%f_comm%allreduce (my_norm, norm, fckit_mpi_sum())
 
 END SUBROUTINE roms_fields_norm
 
@@ -1814,7 +1857,7 @@ SUBROUTINE roms_fields_read (self, f_conf, vdate)
   TYPE (fckit_configuration),  intent(in   ) :: f_conf  !< configuration
   TYPE (datetime),             intent(inout) :: vdate   !< Date and Time
 
-  integer                                   :: InpRec, LocalPET
+  integer                                   :: InpRec, LocalPET, lstr
   real (kind=kind_real)                     :: romsDateNumber, romsTime
   character (len=:), allocatable            :: fields_dir, fields_filename
   character (len=:), allocatable            :: my_string
@@ -1835,7 +1878,13 @@ SUBROUTINE roms_fields_read (self, f_conf, vdate)
   IF (.not.f_conf%get("fields_filename", fields_filename)) THEN
     CALL abor1_ftn ("roms_fields::read: Cannot find fields input filename")
   END IF
-  ncname = TRIM(fields_dir)//TRIM(fields_filename)
+
+  lstr = LEN(fields_dir)
+  IF (fields_dir(lstr:lstr) .eq. '/') THEN
+    ncname = TRIM(fields_dir)//TRIM(fields_filename)
+  ELSE
+    ncname = TRIM(fields_dir)//'/'//TRIM(fields_filename)
+  END IF
 
   IF (.not.f_conf%get("fields_record", InpRec)) THEN
     CALL abor1_ftn ("roms_fields::read: Cannot find record to process")
@@ -1947,6 +1996,7 @@ SUBROUTINE roms_fields_write (self, f_conf, vdate)
 
   IF (singleRecord) THEN
     createFile = .TRUE.
+    Nrecs = 1
   ELSE
     policy    = Fpolicy
     frequency = ioFrequency
