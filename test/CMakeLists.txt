@@ -17,8 +17,8 @@ list( APPEND romsjedi_test_input
   testinput/3dvar_single_obs.yaml
   testinput/3dvar_zero_obs.yaml
   testinput/diffstates.yaml
-  testinput/dirac_roms_cor_nicas.yaml
-  testinput/dirac_roms_ens_cov_nicas.yaml
+  testinput/dirac_cov_nicas.yaml
+  testinput/dirac_ens_cov_nicas.yaml
   testinput/ens_hofx.yaml
   testinput/ens_hofx_1.yaml
   testinput/ens_hofx_2.yaml
@@ -63,8 +63,8 @@ set( romsjedi_test_ref
   testref/3dvar_single_obs.ref
   testref/3dvar_zero_obs.ref
   testref/diffstates.ref
-  testref/dirac_roms_cor_nicas.ref
-  testref/dirac_roms_ens_cov_nicas.ref
+  testref/dirac_cov_nicas.ref
+  testref/dirac_ens_cov_nicas.ref
   testref/ens_hofx.ref
   testref/ens_mean_variance.ref
   testref/ens_perturbation.ref
@@ -294,34 +294,26 @@ ecbuild_add_test(
   LIBS         romsjedi )
 
 ecbuild_add_test(
-  TARGET       test_bump_parameters_cor_nicas
+  TARGET       test_romsjedi_bump_parameters_cor_nicas
   MPI          2
   COMMAND      romsjedi_error_covariance_training.x
   ARGS         testinput/parameters_bump_cor_nicas.yaml
   LIBS         romsjedi )
 
 ecbuild_add_test(
-  TARGET       test_bump_loc_parameters_cor_nicas
+  TARGET       test_romsjedi_bump_loc_parameters_cor_nicas
   MPI          2
   COMMAND      romsjedi_error_covariance_training.x
   ARGS         testinput/parameters_bump_loc_cor_nicas.yaml
   LIBS         romsjedi )
 
 ecbuild_add_test(
-  TARGET       test_dirac_roms_cor_nicas
+  TARGET       test_romsjedi_dirac_cov_nicas
   MPI          2
   COMMAND      romsjedi_dirac.x
-  ARGS         testinput/dirac_roms_cor_nicas.yaml
+  ARGS         testinput/dirac_cov_nicas.yaml
   LIBS         romsjedi
-  TEST_DEPENDS test_bump_parameters_cor_nicas )
-
-ecbuild_add_test(
-  TARGET       test_dirac_roms_ens_cov_nicas
-  MPI          2
-  COMMAND      romsjedi_dirac.x
-  ARGS         testinput/dirac_roms_ens_cov_nicas.yaml
-  LIBS         romsjedi
-  TEST_DEPENDS test_bump_loc_parameters_cor_nicas )
+  TEST_DEPENDS test_romsjedi_bump_parameters_cor_nicas )
 
 #================================================================================
 # ROMS-JEDI Ensemble applications
@@ -368,6 +360,15 @@ ecbuild_add_test(
   LIBS         romsjedi
   TEST_DEPENDS test_romsjedi_ens_pert )
 
+ecbuild_add_test(
+  TARGET       test_romsjedi_dirac_ens_cov_nicas
+  MPI          2
+  COMMAND      romsjedi_dirac.x
+  ARGS         testinput/dirac_ens_cov_nicas.yaml
+  LIBS         romsjedi
+  TEST_DEPENDS test_romsjedi_ens_pert
+               test_romsjedi_bump_loc_parameters_cor_nicas )
+
 #================================================================================
 # ROMS-JEDI Variational Data Assimilation applications
 #================================================================================
@@ -378,7 +379,7 @@ ecbuild_add_test(
   COMMAND      romsjedi_var.x
   ARGS         testinput/3dvar_zero_obs.yaml
   LIBS         romsjedi
-  TEST_DEPENDS test_bump_parameters_cor_nicas )
+  TEST_DEPENDS test_romsjedi_bump_parameters_cor_nicas )
 
 ecbuild_add_test(
   TARGET       test_romsjedi_3dvar_single_obs
@@ -386,7 +387,7 @@ ecbuild_add_test(
   COMMAND      romsjedi_var.x
   ARGS         testinput/3dvar_single_obs.yaml
   LIBS         romsjedi
-  TEST_DEPENDS test_bump_parameters_cor_nicas )
+  TEST_DEPENDS test_romsjedi_bump_parameters_cor_nicas )
 
 ecbuild_add_test(
   TARGET       test_romsjedi_3dvar_regular_primal
@@ -394,7 +395,7 @@ ecbuild_add_test(
   COMMAND      romsjedi_var.x
   ARGS         testinput/3dvar_regular_primal.yaml
   LIBS         romsjedi
-  TEST_DEPENDS test_bump_parameters_cor_nicas )
+  TEST_DEPENDS test_romsjed_bump_parameters_cor_nicas )
 
 ecbuild_add_test(
   TARGET       test_romsjedi_3dvar_regular_dual
@@ -402,7 +403,7 @@ ecbuild_add_test(
   COMMAND      romsjedi_var.x
   ARGS         testinput/3dvar_regular_dual.yaml
   LIBS         romsjedi
-  TEST_DEPENDS test_bump_parameters_cor_nicas )
+  TEST_DEPENDS test_romsjedi_bump_parameters_cor_nicas )
 
 ecbuild_add_test(
   TARGET       test_romsjedi_3dvar_fgat_primal
@@ -410,7 +411,7 @@ ecbuild_add_test(
   COMMAND      romsjedi_var.x
   ARGS         testinput/3dvar_fgat_primal.yaml
   LIBS         romsjedi
-  TEST_DEPENDS test_bump_parameters_cor_nicas )
+  TEST_DEPENDS test_romsjedi_bump_parameters_cor_nicas )
 
 ecbuild_add_test(
   TARGET       test_romsjedi_3dvar_fgat_dual
@@ -418,7 +419,7 @@ ecbuild_add_test(
   COMMAND      romsjedi_var.x
   ARGS         testinput/3dvar_fgat_dual.yaml
   LIBS         romsjedi
-  TEST_DEPENDS test_bump_parameters_cor_nicas )
+  TEST_DEPENDS test_romsjedi_bump_parameters_cor_nicas )
 
 #================================================================================
 # ROMS-JEDI Hybrid Variational Data Assimilation applications
@@ -430,7 +431,7 @@ ecbuild_add_test(
   COMMAND      romsjedi_var.x
  ARGS         testinput/3denvar_regular_primal.yaml
   LIBS         romsjedi
-  TEST_DEPENDS test_bump_loc_parameters_cor_nicas )
+  TEST_DEPENDS test_romsjedi_bump_loc_parameters_cor_nicas )
 
 ecbuild_add_test(
   TARGET       test_romsjedi_3denvar_regular_dual
@@ -438,7 +439,7 @@ ecbuild_add_test(
   COMMAND      romsjedi_var.x
   ARGS         testinput/3denvar_regular_dual.yaml
   LIBS         romsjedi
-  TEST_DEPENDS test_bump_loc_parameters_cor_nicas )
+  TEST_DEPENDS test_romsjedi_bump_loc_parameters_cor_nicas )
 
 ecbuild_add_test(
   TARGET       test_romsjedi_3denvar_fgat_primal
@@ -446,7 +447,7 @@ ecbuild_add_test(
   COMMAND      romsjedi_var.x
   ARGS         testinput/3denvar_fgat_primal.yaml
   LIBS         romsjedi
-  TEST_DEPENDS test_bump_loc_parameters_cor_nicas )
+  TEST_DEPENDS test_romsjedi_bump_loc_parameters_cor_nicas )
 
 ecbuild_add_test(
   TARGET       test_romsjedi_3denvar_fgat_dual
@@ -454,4 +455,4 @@ ecbuild_add_test(
   COMMAND      romsjedi_var.x
   ARGS         testinput/3denvar_fgat_dual.yaml
   LIBS         romsjedi
-  TEST_DEPENDS test_bump_loc_parameters_cor_nicas )
+  TEST_DEPENDS test_romsjedi_bump_loc_parameters_cor_nicas )

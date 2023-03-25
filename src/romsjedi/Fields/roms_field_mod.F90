@@ -741,7 +741,7 @@ SUBROUTINE roms_field_stats (self, fstats)
   integer                             :: IstrD, IendD, JstrD, JendD, LBk, UBk
   integer                             :: Npts, k
   integer (kind=SELECTED_INT_KIND(8)) :: checksum
-  real (kind=kind_real),      pointer :: Cwrk(:)
+  real (kind=kind_real),  allocatable :: Cwrk(:)
   real (kind=kind_real),  allocatable :: buffer(:,:)
   real (kind=kind_real)               :: stats(3)
 
@@ -784,10 +784,10 @@ SUBROUTINE roms_field_stats (self, fstats)
 
   ! Compute order invariant 'checksum'.
 
-  IF (.not.associated(Cwrk)) allocate ( Cwrk(Npts) )
+  IF (.not.allocated(Cwrk)) allocate ( Cwrk(Npts) )
   Cwrk = PACK(self%val(IstrD:IendD, JstrD:JendD, LBk:UBk), .TRUE.)
   CALL get_hash (Cwrk, Npts, checksum, .TRUE.)
-  IF (associated(Cwrk)) deallocate (Cwrk)  
+  IF (allocated(Cwrk)) deallocate (Cwrk)  
 
   fstats(3) = REAL(checksum, KIND=kind_real)
 

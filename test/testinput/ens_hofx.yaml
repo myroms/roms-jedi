@@ -1,6 +1,6 @@
 # ROMS-JEDI Ensemble HofX Test: WC13 Application
 #
-# In rhis EnsembleApplication, the MPI communicator is split between
+# In this EnsembleApplication, the MPI communicator is split between
 # the number of ensemble members.  Therefore, it needs to be run
 # with appropriate number of processes (NCPUS):
 #
