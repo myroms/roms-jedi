@@ -230,18 +230,20 @@ namespace romsjedi {
     int n0, nf;
     roms_state_sizes_f90(toFortran(),
                          n0, n0, n0, nf);
-    std::vector<double> zstat(3*nf);
+    std::vector<double> zstat(4*nf);
     roms_state_gstats_f90(toFortran(),
                           nf, zstat[0]);
     for (int jj = 0; jj < nf; ++jj) {
-      os << std::endl << std::right << std::setw(7) << vars_[jj]
+      os << std::endl << std::right << std::setw(34) << vars_[jj]
                       << std::setprecision(15)
-                      << "   min="  <<  std::fixed << std::setw(20) <<
-                                        std::right << zstat[3*jj]
-                      << "   max="  <<  std::fixed << std::setw(20) <<
-                                        std::right << zstat[3*jj+1]
-                      << "   mean=" <<  std::fixed << std::setw(20) <<
-                                        std::right << zstat[3*jj+2];
+                      << "   Min= "      << std::fixed << std::setw(21) <<
+                                            std::right << zstat[4*jj]
+                      << "   Max= "      << std::fixed << std::setw(21) <<
+                                            std::right << zstat[4*jj+1]
+                      << "   Mean= "     << std::fixed << std::setw(21) <<
+                                            std::right << zstat[4*jj+2]
+                      << "   CheckSum= " << std::fixed << std::right <<
+                                            static_cast<int>(zstat[4*jj+3]);
     }
   }
 
@@ -318,12 +320,9 @@ namespace romsjedi {
 
   double State::norm() const {
     double zz = 0.0;
-//  roms_state_norm_f90(toFortran(),
-//                      zz);
     roms_state_rms_f90(toFortran(),
                        zz);
-//  Log::debug() << classname() << ":Energy norm (10^6 J/m2) = "
-    Log::debug() << classname() << ":norm, SQRT(SUM(x^2)) = "
+    Log::debug() << classname() << ":norm, RMS = SQRT(SUM(x^2)) = "
                  << std::setprecision(15) << zz << std::endl;
     return zz;
   }
@@ -353,19 +352,31 @@ namespace romsjedi {
 // -----------------------------------------------------------------------------
 
   void State::toFieldSet(atlas::FieldSet & fset) const {
-  roms_state_to_fieldset_f90(toFortran(),
-                             geom_->toFortran(),
-                             vars_,
-                             fset.get());
+    Log::trace() << classname() << ":toFieldSet starting"
+                 << std::endl;
+    Log::debug() << classname() << ":toFieldSet vars = " << vars_
+                 << std::endl;
+    roms_state_to_fieldset_f90(toFortran(),
+                               geom_->toFortran(),
+                               vars_,
+                               fset.get());
+    Log::trace() << classname() << ":toFieldSet done"
+                 << std::endl;
   }
 
 // -----------------------------------------------------------------------------
 
   void State::fromFieldSet(const atlas::FieldSet & fset) {
-  roms_state_from_fieldset_f90(toFortran(),
-                               geom_->toFortran(),
-                               vars_,
-                               fset.get());
+    Log::trace() << classname() << ":fromFieldSet starting"
+                 << std::endl;
+    Log::debug() << classname() << ":fromFieldSet vars = " << vars_
+                 << std::endl;
+    roms_state_from_fieldset_f90(toFortran(),
+                                 geom_->toFortran(),
+                                 vars_,
+                                 fset.get());
+    Log::trace() << classname() << ":fromFieldSet done"
+                 << std::endl;
   }
 
 // -----------------------------------------------------------------------------

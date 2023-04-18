@@ -1,0 +1,28 @@
+Test     : Norm of input parameter StdDev: 7.7717431208294583e+03
+Test     : CostJb   : Nonlinear Jb = 0.0000000000000000e+00
+Test     : CostJo   : Nonlinear Jo(SST) = 2.9147498012345586e+03, nobs = 4952, Jo/n = 5.8860052528969276e-01, err = 4.0783752598605327e-01
+Test     : CostJo   : Nonlinear Jo(ADT) = 1.6444594270776101e+03, nobs = 1570, Jo/n = 1.0474263866736371e+00, err = 2.0313911453614535e-02
+Test     : CostFunction: Nonlinear J = 4.5592092283121692e+03
+Test     : Eigenvalue 1 : 2.3988620922966345e+02
+Test     : Norm eigenvector = 7.0046787472243295e+01
+Test     : Eigenvalue 2 : 2.1249860059310203e+02
+Test     : Norm eigenvector = 7.6328716659438854e+01
+Test     : Eigenvalue 3 : 1.9226235470737348e+02
+Test     : Norm eigenvector = 6.1612228302834318e+01
+Test     : Eigenvalue 4 : 1.7144367121301417e+02
+Test     : Norm eigenvector = 5.6420708190267050e+01
+Test     : Eigenvalue 5 : 1.3438479566196642e+02
+Test     : Norm eigenvector = 4.1291935000429909e+01
+Test     : DRPLanczosMinimizer: reduction in residual norm = 8.1102495349662920e-02
+Test     : CostFunction::addIncrement: Analysis: 
+Test     :   Valid time: 2004-01-05T00:00:00Z
+Test     :                                ssh   Min=    -0.282602970780221   Max=     0.234549447482707   Mean=    -0.016399927243750   CheckSum= 64668
+Test     :                               uocn   Min=    -0.341817847405432   Max=     0.453787729515345   Mean=     0.003225795656572   CheckSum= 1874317
+Test     :                               vocn   Min=    -0.553064987459898   Max=     0.283580769403201   Mean=    -0.001954805719354   CheckSum= 1872352
+Test     :                               tocn   Min=     1.136179488778934   Max=    18.009838709592518   Mean=     6.415757019484091   CheckSum= 1671230
+Test     :                               socn   Min=    32.063447041881858   Max=    34.687630455755681   Mean=    33.934538203959896   CheckSum= 1496726
+Test     :                             zocn_r   Min= -4947.840267560327447   Max=    -0.245773375763171   Mean= -1064.400608062135916   CheckSum= 2356927
+Test     : CostJb   : Nonlinear Jb = 65.682538663785223
+Test     : CostJo   : Nonlinear Jo(SST) = 562.279880182160468, nobs = 4952, Jo/n = 0.113546017807383, err = 0.407837525986053
+Test     : CostJo   : Nonlinear Jo(ADT) = 305.656587516858963, nobs = 1570, Jo/n = 0.194685724533031, err = 0.020313911453615
+Test     : CostFunction: Nonlinear J = 933.619006362804612

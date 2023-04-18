@@ -1,2 +1,2 @@
-Test     : Norm of cor_rh - 1 at 2004-01-03T00:00:00Z: 3.3530490946501593e+11
-Test     : Norm of cor_rv - 1 at 2004-01-03T00:00:00Z: 3.0975200540251594e+07
+Test     : Norm of BUMP output parameter cor_rh - 1: 7.2323125000000000e+15
+Test     : Norm of BUMP output parameter cor_rv - 1: 1.1382000000000000e+09

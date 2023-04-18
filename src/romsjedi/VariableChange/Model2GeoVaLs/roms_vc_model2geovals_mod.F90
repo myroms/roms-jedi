@@ -15,11 +15,12 @@
 
 MODULE roms_vc_model2geovals_mod
 
-USE kinds,               ONLY : kind_real
+USE kinds,                ONLY : kind_real
 
-USE roms_field_mod,      ONLY : roms_field
-USE roms_geom_mod,       ONLY : roms_geom
-USE roms_state_mod,      ONLY : roms_state
+USE roms_field_mod,       ONLY : roms_field
+USE roms_fieldsutils_mod, ONLY : LdebugModel2Geovals
+USE roms_geom_mod,        ONLY : roms_geom
+USE roms_state_mod,       ONLY : roms_state
 
 implicit none
 
@@ -31,13 +32,7 @@ TYPE, PUBLIC :: roms_vc_model2geovals
 
 END TYPE roms_vc_model2geovals
 
-!-------------------------------------------------------------------------------
-
 PRIVATE
-
-! Switch for printing fields information during debugging.
-
-logical :: LdebugModel2Geovals = .FALSE.
 
 !-------------------------------------------------------------------------------
 CONTAINS
@@ -56,20 +51,25 @@ SUBROUTINE roms_vc_model2geovals_changeVar (self, geom, xin, xout)
 
   TYPE (roms_field),                   pointer :: field
   integer                                      :: Nsur, i
+  real (kind=kind_real)                        :: stats(3)
 
   ! Apply the required variable change.
+
+  IF (LdebugModel2Geovals .and. (geom%f_comm%rank() .eq. 0)) THEN
+    PRINT '(a)', 'ROMS_DEBUG roms_vc_model2geovals::changeVar:'
+  END IF
 
   DO i = 1, SIZE(xout%fields)
 
     IF (LdebugModel2Geovals .and. (geom%f_comm%rank() .eq. 0)) THEN
-      PRINT '(8a)', 'ROMS_DEBUG roms_vc_model2geovals::changeVar: '//          &
-                    'field name = ', xout%fields(i)%name,                      &
-                    ', metadata%name = ',                                      &
-                    xout%fields(i)%metadata%name,                              &
-                    ', metadata%getval_name = ',                               &
-                    xout%fields(i)%metadata%getval_name,                       &
-                    ', metadata%getval_name_surface = ',                       &
-                    xout%fields(i)%metadata%getval_name_surface
+    ! PRINT '(8a)', 'ROMS_DEBUG roms_vc_model2geovals::changeVar: '//          &
+    !               'field name = ', xout%fields(i)%name,                      &
+    !               ', metadata%name = ',                                      &
+    !               xout%fields(i)%metadata%name,                              &
+    !               ', metadata%getval_name = ',                               &
+    !               xout%fields(i)%metadata%getval_name,                       &
+    !               ', metadata%getval_name_surface = ',                       &
+    !               xout%fields(i)%metadata%getval_name_surface
     END IF
 
     SELECT CASE (xout%fields(i)%name)
@@ -112,6 +112,15 @@ SUBROUTINE roms_vc_model2geovals_changeVar (self, geom, xin, xout)
         END IF
 
     END SELECT
+
+    IF (LdebugModel2Geovals) THEN
+      CALL xout%fields(i)%stats (stats)
+      IF (geom%f_comm%rank() .eq. 0) THEN
+        PRINT 10, xout%fields(i)%name, stats(1), stats(2), INT(stats(3))
+ 10     FORMAT (2x,'- ',a30,':',t38,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,  &
+                ',  CheckSum = ', i0)
+      END IF
+    END IF
 
   END DO
 

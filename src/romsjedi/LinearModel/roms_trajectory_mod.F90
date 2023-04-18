@@ -1,4 +1,4 @@
-! (C) Copyright 2017-2022 UCAR
+! (C) Copyright 2017-2023 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -22,11 +22,12 @@ USE fckit_mpi_module,     ONLY : fckit_mpi_comm
 
 USE roms_field_mod,       ONLY : roms_field
 USE roms_fields_mod,      ONLY : roms_fields
-USE roms_fieldsutils_mod, ONLY : date2string
+USE roms_fieldsutils_mod, ONLY : date2string, LdebugTrajectory
 USE roms_state_mod,       ONLY : roms_state
 
 implicit none
 
+!-------------------------------------------------------------------------------
 !> Fortran derived type object to hold linearize model trajectory
 
 TYPE, PUBLIC, EXTENDS(roms_fields) :: roms_trajectory
@@ -49,12 +50,9 @@ TYPE, PUBLIC, EXTENDS(roms_fields) :: roms_trajectory
   PROCEDURE :: set        => roms_trajectory_set
 
 END TYPE roms_trajectory
+!-------------------------------------------------------------------------------
 
 PRIVATE
-
-! Switch for printing fields information during debugging.
-
-logical :: LdebugTrajectory = .FALSE.
 
 ! MPI communicator.
 

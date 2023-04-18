@@ -72,7 +72,7 @@ output variance:
   type: var
   date: *date                                  # alias to initial date
 
-#test:
-#  reference filename: testref/dirac_roms_cor_nicas.ref
-#  log output filename: testoutput/dirac_roms_cor_nicas.log
-#  test output filename: testoutput/dirac_roms_cor_nicas.out
+test:
+  reference filename: testref/dirac_cov_nicas.ref
+  log output filename: testoutput/dirac_cov_nicas.log
+  test output filename: testoutput/dirac_cov_nicas.out

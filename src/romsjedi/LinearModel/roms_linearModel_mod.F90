@@ -29,6 +29,7 @@ USE mod_scalars,                ONLY : NoError, exit_flag
 
 USE roms_field_mod,             ONLY : roms_field
 USE roms_fieldsutils_mod,       ONLY : date2string,                            &
+                                       LdebugLinearModel,                      &
                                        roms_date2time,                         &
                                        roms_tracer_index
 USE roms_geom_mod,              ONLY : roms_geom,                              &
@@ -87,10 +88,6 @@ END TYPE roms_linearModel
 !-------------------------------------------------------------------------------
 
 PRIVATE
-
-! Set debugging switch.
-
-logical :: LdebugLinearModel = .TRUE. 
 
 ! Set switch to read ROMS standard input parameter file and allocate and
 ! initialize (first touch policy) variables and structures. It needs to be

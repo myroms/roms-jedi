@@ -50,8 +50,8 @@ bump:
       - tocn
       - socn
 
-#test:
-#  reference filename: testref/parameters_bump_loc_cor_nicas.ref
-#  float relative tolerance: 1.0e-6
-#  log output filename: testoutput/parameters_bump_loc_cor_nicas.log
-#  test output filename: testoutput/parameters_bump_loc_cor_nicas.out
+test:
+  reference filename: testref/parameters_bump_loc_cor_nicas.ref
+  float relative tolerance: 1.0e-5
+  log output filename: testoutput/parameters_bump_loc_cor_nicas.log
+  test output filename: testoutput/parameters_bump_loc_cor_nicas.out

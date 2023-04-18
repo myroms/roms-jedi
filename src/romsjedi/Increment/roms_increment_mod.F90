@@ -189,7 +189,7 @@ SUBROUTINE roms_increment_dirac (self, f_conf)
   integer,                             allocatable :: ixdir(:), iydir(:)
   integer,                             allocatable :: izdir(:)
   integer                                          :: IstrD, IendD, JstrD, JendD
-  integer                                          :: n, ndir, nk
+  integer                                          :: n, ndir
   character (len=32),                  allocatable :: ifdir(:)
   character (len=:),                   allocatable :: fieldname(:)
 

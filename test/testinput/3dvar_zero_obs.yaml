@@ -75,61 +75,6 @@ cost function:
           state variables: *roms_analysis
           date: *mid_date 
 
-# background error:                              # Error in BUMP: fetch from allocatable variable BLK when it is not allocated
-#   covariance model: SABER
-#   saber central block:
-#     saber block name: BUMP_NICAS
-#     bump:
-#       io:
-#         data directory: Data/3dvar/zeroObs
-#       drivers:
-#         multivariate strategy: univariate
-#         write local nicas: true
-#       model:
-#         do not cross mask boundaries: true
-#       nicas:
-#         resolution: 6.0                        # NICAS subgrid resolution
-#         explicit length-scales: true
-#         horizontal length-scale:
-#         - groups:
-#           - ssh
-#           value: 50.0e3
-#         - groups:
-#           - tocn
-#           value: 50.0e3
-#         - groups:
-#           - socn
-#           value: 50.0e3
-#         vertical length-scale:
-#         - groups:
-#           - tocn
-#           value: 30
-#         - groups:
-#           - socn
-#           value: 30
-#       grids:
-#       - model:
-#           variables:
-#           - ssh
-#         io:
-#           files prefix: Data/3dvar/zeroObs/wc13_bump2d
-#       - model:
-#           variables:
-#           - tocn
-#           - socn
-#         io:
-#           files prefix: Data/3dvar/zeroObs/wc13_bump3d
-#   saber outer blocks:
-#   - saber block name: StdDev
-#     input fields:
-#     - parameter: StdDev
-#       file:
-#         fields_dir: jediroms_wc13/Data/
-#         fields_filename: wc13_std_i.nc         # same as ROMS native RBL4D-Var
-#         fields_record: 1
-#         state variables: *roms_analysis
-#         date: *mid_date                        # middle DA window
-
   observations:
     obs perturbations: false                     # default
     observers:
@@ -211,8 +156,8 @@ output:
   type: zero_obs
   date: *mid_date
 
-#test:
-#  reference filename: testref/3dvar_zeroObs.ref
-#  float relative tolerance: 1e-5
-#  log output filename: testoutput/3dvar_zeroObs.log
-#  test output filename: testoutput/3dvar_zroObs.out
+test:
+  reference filename: testref/3dvar_zero_obs.ref
+  float relative tolerance: 1e-5
+  log output filename: testoutput/3dvar_zero_obs.log
+  test output filename: testoutput/3dvar_zero_obs.out

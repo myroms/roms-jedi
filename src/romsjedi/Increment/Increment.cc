@@ -361,28 +361,46 @@ namespace romsjedi {
 // -----------------------------------------------------------------------------
 
   void Increment::toFieldSet(atlas::FieldSet & fset) const {
-  roms_increment_to_fieldset_f90(toFortran(),
-                                 geom_->toFortran(),
-                                 vars_,
-                                 fset.get());
+    Log::trace() << classname() << ":toFieldSet starting"
+                 << std::endl;
+    Log::debug() << classname() << ":toFieldSet vars = " << vars_
+                 << std::endl;
+    roms_increment_to_fieldset_f90(toFortran(),
+                                   geom_->toFortran(),
+                                   vars_,
+                                   fset.get());
+    Log::trace() << classname() << ":toFieldSet done"
+                 << std::endl;
   }
 
 // -----------------------------------------------------------------------------
 
   void Increment::toFieldSetAD(const atlas::FieldSet & fset) {
-  roms_increment_to_fieldset_ad_f90(toFortran(),
-                                    geom_->toFortran(),
-                                    vars_,
-                                    fset.get());
+    Log::trace() << classname() << ":toFieldSetAD starting"
+                 << std::endl;
+    Log::debug() << classname() << ":toFieldSetAD vars = " << vars_
+                 << std::endl;
+    roms_increment_to_fieldset_ad_f90(toFortran(),
+                                      geom_->toFortran(),
+                                      vars_,
+                                      fset.get());
+    Log::trace() << classname() << ":toFieldSetAD done"
+                 << std::endl;
   }
 
 // -----------------------------------------------------------------------------
 
   void Increment::fromFieldSet(const atlas::FieldSet & fset) {
-  roms_increment_from_fieldset_f90(toFortran(),
-                                   geom_->toFortran(),
-                                   vars_,
-                                   fset.get());
+    Log::trace() << classname() << ":fromFieldSet starting"
+                 << std::endl;
+    Log::debug() << classname() << ":fromFieldSet vars = " << vars_
+                 << std::endl;
+    roms_increment_from_fieldset_f90(toFortran(),
+                                     geom_->toFortran(),
+                                     vars_,
+                                     fset.get());
+    Log::trace() << classname() << ":fromFieldSet done"
+                 << std::endl;
   }
 
 // -----------------------------------------------------------------------------
@@ -413,20 +431,22 @@ namespace romsjedi {
     roms_increment_sizes_f90(keyFlds_,
                              n0, n0, n0, nf);
 
-    std::vector<double> zstat(3*nf);
+    std::vector<double> zstat(4*nf);
     roms_increment_gstats_f90(keyFlds_,
                               nf,
                               zstat[0]);
 
     for (int jj = 0; jj < nf; ++jj) {
-      os << std::endl << std::right << std::setw(7) << vars_[jj]
+      os << std::endl << std::right << std::setw(34) << vars_[jj]
                       << std::setprecision(15)
-                      << "   min="  <<  std::fixed << std::setw(20) <<
-                         std::right << zstat[3*jj]
-                      << "   max="  <<  std::fixed << std::setw(20) <<
-                         std::right << zstat[3*jj+1]
-                      << "   mean=" <<  std::fixed << std::setw(20) <<
-                         std::right << zstat[3*jj+2];
+                      << "   Min= "      << std::fixed << std::setw(21) <<
+                                            std::right << zstat[4*jj]
+                      << "   Max= "      << std::fixed << std::setw(21) <<
+                                            std::right << zstat[4*jj+1]
+                      << "   Mean= "     << std::fixed << std::setw(21) <<
+                                            std::right << zstat[4*jj+2]
+                      << "   CheckSum= " << std::fixed << std::right <<
+                                            static_cast<int>(zstat[4*jj+3]);
     }
   }
 
@@ -436,7 +456,7 @@ namespace romsjedi {
     double zz = 0.0;
     roms_increment_norm_f90(toFortran(),
                             zz);
-    Log::debug() << classname() << ":Energy norm (10^6 J/m2) = "
+    Log::debug() << classname() << ":norm zz = "
                  << std::setprecision(15)  << zz << std::endl;
     return zz;
   }

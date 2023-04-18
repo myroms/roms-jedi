@@ -74,8 +74,8 @@ output:
   date: *date                                  # alias to initial date
   forecast length: *ForecastLength             # alias to forecast length
 
-#test:
-#  reference filename: testref/ens_perturbation.ref
-#  float relative tolerance: 1.0e-6
-#  log output filename: testoutput/ens_perturbation.log
-#  test output filename: testoutput/ens_perturbation.out
+test:
+  reference filename: testref/ens_perturbation.ref
+  float relative tolerance: 1.0e-6
+  log output filename: testoutput/ens_perturbation.log
+  test output filename: testoutput/ens_perturbation.out

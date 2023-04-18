@@ -231,10 +231,10 @@ SUBROUTINE roms_state_gstats_c (c_key_fld, kf, pstat)                          &
 
   integer (c_int),  intent(in   ) :: c_key_fld    !< State fields pointer
   integer (c_int),  intent(in   ) :: kf           !< fields number pointer
-  real (c_double),  intent(inout) :: pstat(3*kf)  !< statistics pointer
+  real (c_double),  intent(inout) :: pstat(4*kf)  !< statistics pointer
 
   TYPE (roms_state), pointer      :: fld
-  real (kind=kind_real)           :: zstat(3, kf)
+  real (kind=kind_real)           :: zstat(4, kf)
   integer                         :: jj, js, jf
 
   CALL roms_state_registry%get (c_key_fld, fld)
@@ -243,7 +243,7 @@ SUBROUTINE roms_state_gstats_c (c_key_fld, kf, pstat)                          &
 
   jj=0
   DO jf = 1, kf
-    DO js = 1, 3
+    DO js = 1, 4
       jj=jj+1
       pstat(jj) = zstat(js,jf)
     END DO
@@ -252,20 +252,19 @@ SUBROUTINE roms_state_gstats_c (c_key_fld, kf, pstat)                          &
 END SUBROUTINE roms_state_gstats_c
 
 ! ------------------------------------------------------------------------------
-!> Calculate the energy norm per unit area (10^6 J/m2) of the state vector.
+!> Calculate the global norm for the nondimensional state vector.
 
-SUBROUTINE roms_state_norm_c (c_key_fld, Enorm)                                &
+SUBROUTINE roms_state_norm_c (c_key_fld, norm)                                 &
                         BIND (c, name='roms_state_norm_f90')
 
   integer (c_int),  intent(in   ) :: c_key_fld    !< State fields pointer
-  real (c_double),  intent(inout) :: Enorm        !< energy norm pointer
+  real (c_double),  intent(inout) :: norm         !< energy norm pointer
 
   TYPE (roms_state), pointer      :: fld
-  real(kind=kind_real)            :: psum
 
   CALL roms_state_registry%get (c_key_fld, fld)
 
-  CALL fld%norm (Enorm)
+  CALL fld%norm (norm)
 
 END SUBROUTINE roms_state_norm_c
 

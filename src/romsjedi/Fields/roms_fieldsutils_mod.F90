@@ -32,8 +32,6 @@ USE roms_fields_metadata_mod,   ONLY : roms_field_metadata
 
 implicit none
 
-PRIVATE
-
 PUBLIC  :: ana_fields
 PUBLIC  :: date2string
 PUBLIC  :: DetectError
@@ -42,6 +40,7 @@ PUBLIC  :: nc_err
 PUBLIC  :: roms_close_ncfile
 PUBLIC  :: roms_create_ncfile
 PUBLIC  :: roms_date2time
+PUBLIC  :: roms_get_env
 PUBLIC  :: roms_gen_filename
 PUBLIC  :: roms_tracer_index
 
@@ -59,7 +58,23 @@ INTERFACE field_info
   MODULE PROCEDURE field_info3d, field_info2d
 END INTERFACE field_info
 
-logical,  parameter :: LdebugFieldUtils = .FALSE.
+! ROMS-JEDI objects debugging switches retieved from environmental variables.
+
+logical, PUBLIC :: LdebugAnalyticInit        = .FALSE.
+logical, PUBLIC :: LdebugField               = .FALSE.
+logical, PUBLIC :: LdebugFields              = .FALSE.
+logical, PUBLIC :: LdebugFieldsUtils         = .FALSE.
+logical, PUBLIC :: LdebugGeometry            = .FALSE.
+logical, PUBLIC :: LdebugGetValues           = .FALSE.
+logical, PUBLIC :: LdebugLinearGetValues     = .FALSE.
+logical, PUBLIC :: LdebugLinearModel         = .FALSE.
+logical, PUBLIC :: LdebugLinearModel2Geovals = .FALSE.
+logical, PUBLIC :: LdebugModel               = .FALSE.
+logical, PUBLIC :: LdebugModel2Geovals       = .FALSE.
+logical, PUBLIC :: LdebugTrajectory          = .FALSE.
+logical, PUBLIC :: set_environment           = .FALSE.
+
+PRIVATE
 
 ! ------------------------------------------------------------------------------
 CONTAINS
@@ -251,9 +266,36 @@ END FUNCTION DetectError
 
 SUBROUTINE field_info2d (fld, mask, info)
 
-  real (kind=kind_real), intent(in ) :: fld(:,:)    !< 2D field values
-  logical,               intent(in ) :: mask(:,:)   !< field mask
-  real (kind=kind_real), intent(out) :: info(3)     !< [MIN, MAX, SUM]
+  USE get_hash_mod, ONLY : get_hash                 !< ROMS module
+
+  real (kind=kind_real),  intent(in ) :: fld(:,:)   !< 2D field values
+  logical,                intent(in ) :: mask(:,:)  !< field mask
+  real (kind=kind_real),  intent(out) :: info(4)    !< [MIN, MAX, SUM, CheckSum]
+
+  integer                             :: LBi, UBi, LBj, UBj
+  integer                             :: Npts
+  integer (kind=SELECTED_INT_KIND(8)) :: checksum
+  real (kind=kind_real),  allocatable :: Cwrk(:)
+
+  ! Initialize.
+
+  LBi = LBOUND(fld, DIM=1)
+  UBi = UBOUND(fld, DIM=1)
+  LBj = LBOUND(fld, DIM=2)
+  UBj = UBOUND(fld, DIM=2)
+
+  Npts = (UBi-LBi+1) * (UBj-LBj+1)
+
+  ! Compute order invariant 'checksum'.
+
+  IF (.not.allocated(Cwrk)) allocate ( Cwrk(Npts) )
+  Cwrk = PACK(fld(LBi:UBi, LBj:UBj), .TRUE.)
+  CALL get_hash (Cwrk, Npts, checksum, .TRUE.)
+  info(4) = REAL  (checksum, KIND=kind_real) 
+
+  IF (allocated(Cwrk)) deallocate (Cwrk)
+
+  ! Compute global 2D field statistics.
 
   info(1) = MINVAL(fld, MASK=mask)
   info(2) = MAXVAL(fld, MASK=mask)
@@ -266,12 +308,28 @@ END SUBROUTINE field_info2d
 
 SUBROUTINE field_info3d (fld, mask, info)
 
-  real (kind=kind_real), intent(in ) :: fld(:,:,:)  !< 3D field values
-  logical,               intent(in ) :: mask(:,:)   !< field mask
-  real (kind=kind_real), intent(out) :: info(3)     !< [MIN, MAX, SUM]
+  USE get_hash_mod, ONLY : get_hash                 !< ROMS module
 
-  integer                            :: k
-  real (kind=kind_real)              :: buffer(3,size(fld, dim=3))
+  real (kind=kind_real),  intent(in ) :: fld(:,:,:) !< 3D field values
+  logical,                intent(in ) :: mask(:,:)  !< field mask
+  real (kind=kind_real),  intent(out) :: info(4)    !< [MIN, MAX, SUM, CheckSum]
+
+  integer                             :: LBi, UBi, LBj, UBj, LBk, UBk
+  integer                             :: Npts, k
+  integer (kind=SELECTED_INT_KIND(8)) :: checksum
+  real (kind=kind_real)               :: buffer(3,SIZE(fld, dim=3))
+  real (kind=kind_real),  allocatable :: Cwrk(:)
+
+  ! Initialize.
+
+  LBi = LBOUND(fld, DIM=1)
+  UBi = UBOUND(fld, DIM=1)
+  LBj = LBOUND(fld, DIM=2)
+  UBj = UBOUND(fld, DIM=2)
+  LBk = LBOUND(fld, DIM=3)
+  UBk = UBOUND(fld, DIM=3)
+
+  Npts = (UBi-LBi+1) * (UBj-LBj+1) * (UBk-LBk+1)
 
   ! Calculate the min/max/sum separately for each masked level.
 
@@ -280,6 +338,15 @@ SUBROUTINE field_info3d (fld, mask, info)
     buffer(2,k) = MAXVAL(fld(:,:,k), MASK=mask)
     buffer(3,k) = SUM   (fld(:,:,k), MASK=mask) / SIZE(fld, dim=3)
   END DO
+
+  ! Compute order invariant 'checksum'.
+
+  IF (.not.allocated(Cwrk)) allocate ( Cwrk(Npts) )
+  Cwrk = PACK(fld(LBi:UBi, LBj:UBj, LBk:UBk), .TRUE.)
+  CALL get_hash (Cwrk, Npts, checksum, .TRUE.)
+  info(4) = REAL  (checksum, KIND=kind_real) 
+
+  IF (allocated(Cwrk)) deallocate (Cwrk)
 
   ! Then, combine the min/max/sum over all levels
 
@@ -369,7 +436,7 @@ SUBROUTINE roms_date2time (LocalPET, vdate, romsTime, romsDateNumber)
     romsDateNumber = myDateNumber(1)                      ! Gregorian Calendar
   END IF
 
-  IF (LdebugFieldUtils .and. (LocalPET .eq. 0)) THEN
+  IF (LdebugFieldsUtils .and. (LocalPET .eq. 0)) THEN
     PRINT '(a,a)',             'Reference Date:      ', TRIM(Rclock%string)
     PRINT '(a,a)',             'Current Date:        ', TRIM(CurrentDateString)
     PRINT '(a,5(i0,1x),f7.4)', 'YYYY MM DD hh mm ss: ', year,month,day,hour,   &
@@ -480,7 +547,7 @@ FUNCTION roms_gen_filename (f_conf, max_length, vdate, file_type)              &
 
   filename = TRIM(MyPrefix) // '_' // TRIM(filedate) // '.nc'
 
-  IF (LdebugFieldUtils) THEN  
+  IF (LdebugFieldsUtils) THEN  
     PRINT '(a)',   '------------------'
     PRINT '(a,a)', 'Initial Date   = ', TRIM(iniDate)
     PRINT '(a,a)', 'Validity Date  = ', TRIM(ValidityDate)
@@ -503,6 +570,36 @@ FUNCTION roms_gen_filename (f_conf, max_length, vdate, file_type)              &
   10  FORMAT (i4,'-',i2.2,'-',i2.2,'-',i2.2,'.',i2.2,'.',i2.2)
 
 END FUNCTION roms_gen_filename
+
+! ------------------------------------------------------------------------------
+!> Activates debugging switches by retreiving system environmental variables.
+
+SUBROUTINE roms_get_env ()
+
+  USE get_env_mod, ONLY : get_env
+
+  integer :: status
+
+  ! Activate debugging switches. If the environmental variable is not found,
+  ! the logical switch returnef by "get_env" is false.
+
+  IF (.not.set_environment) THEN
+    set_environment = .TRUE.
+    status = get_env('LdebugAnalyticInit',        LdebugAnalyticInit)
+    status = get_env('LdebugField',               LdebugField)
+    status = get_env('LdebugFields',              LdebugFields)
+    status = get_env('LdebugFieldsUtils',         LdebugFieldsUtils)
+    status = get_env('LdebugGeometry',            LdebugGeometry)
+    status = get_env('LdebugGetValues',           LdebugGetValues)
+    status = get_env('LdebugLinearGetValues',     LdebugLinearGetValues)
+    status = get_env('LdebugLinearModel',         LdebugLinearModel)
+    status = get_env('LdebugLinearModel2Geovals', LdebugLinearModel2Geovals)
+    status = get_env('LdebugModel',               LdebugModel)
+    status = get_env('LdebugModel2Geovals',       LdebugModel2Geovals)
+    status = get_env('LdebugTrajectory',          LdebugTrajectory)
+  END IF
+
+END SUBROUTINE roms_get_env
 
 ! ------------------------------------------------------------------------------
 !> It set ROMS tracer index from ROMS-JEDI internal metadata name.

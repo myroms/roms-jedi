@@ -260,11 +260,11 @@ observations:
 
 make obs: true
 
-#test:
-#  reference filename: testref/makeobs_4d_perturbed.ref
-#  float relative tolerance: 1.0e-6
-#  log output filename: testoutput/makeobs_4d_perturbed.log
-#  test output filename: testoutput/makeobs_4d_perturbed.out
+test:
+  reference filename: testref/makeobs_4d_perturbed.ref
+  float relative tolerance: 1.0e-6
+  log output filename: testoutput/makeobs_4d_perturbed.log
+  test output filename: testoutput/makeobs_4d_perturbed.out
 
 # NOTES:
 #

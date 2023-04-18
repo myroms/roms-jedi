@@ -477,10 +477,10 @@ SUBROUTINE roms_increment_gstats_c (c_key_fld, kf, pstat)                      &
 
   integer (c_int),    intent(in) :: c_key_fld       !< Fields object pointer
   integer (c_int),    intent(in) :: kf              !< number of fields pointer
-  real (c_double), intent(inout) :: pstat(3*kf)     !< statistics pointer
+  real (c_double), intent(inout) :: pstat(4*kf)     !< statistics pointer
 
   TYPE (roms_increment), pointer :: fld
-  real (kind=kind_real)          :: zstat(3, kf)
+  real (kind=kind_real)          :: zstat(4, kf)
   integer                        :: ic, js, jf
 
   CALL roms_increment_registry%get (c_key_fld, fld)
@@ -489,7 +489,7 @@ SUBROUTINE roms_increment_gstats_c (c_key_fld, kf, pstat)                      &
 
   ic=0
   DO jf = 1, kf
-    DO js = 1, 3
+    DO js = 1, 4
       ic=ic+1
       pstat(ic) = zstat(js,jf)
     END DO

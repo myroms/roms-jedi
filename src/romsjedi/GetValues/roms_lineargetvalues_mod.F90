@@ -1,4 +1,4 @@
-! (C) Copyright 2020-2021 UCAR
+! (C) Copyright 2020-2023 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -35,7 +35,8 @@ USE roms_geom_mod,                  ONLY : roms_geom
 use roms_getvalues_mod,             ONLY : roms_getvalues
 USE roms_field_mod,                 ONLY : roms_field
 USE roms_fields_mod,                ONLY : roms_fields
-USE roms_state_mod ,                ONLY : roms_state
+USE roms_fieldsutils_mod,           ONLY : LdebugLinearGetValues
+USE roms_state_mod,                 ONLY : roms_state
 
 implicit none
 
@@ -52,8 +53,6 @@ END TYPE roms_lineargetvalues
 !------------------------------------------------------------------------------
 
 PRIVATE
-
-logical :: LdebugLinearGetValues = .FALSE.
 
 !------------------------------------------------------------------------------
 CONTAINS

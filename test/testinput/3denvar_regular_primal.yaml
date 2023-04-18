@@ -31,99 +31,79 @@ cost function:
 
   background:
     fields_dir: jediroms_wc13/Data/
-    fields_filename: wc13_roms_ini_20040103.nc   # initial fields for 2004-01-03T00:00:00Z
+    fields_filename: wc13_roms_ini_20040105.nc   # initial fields for 2004-01-05T00:00:00Z
     fields_record: 1
     state variables: *roms_state
     date: *mid_date                              # middle DA window
 
   background error:
-    covariance model: hybrid
-    components:
-    - covariance:                                # Static error covariance
-        covariance model: SABER
-          saber central block:
-            saber block name: ID
-          saber outer blocks:
-          - saber block name: StdDev
-            input fields:
-            - parameter: StdDev
-              file:
-              fields_dir: jediroms_wc13/Data/
-              fields_filename: wc13_std_i.nc     # same as ROMS native RBL4D-Var
-              fields_record: 1
-              state variables: *roms_analysis
-              date: *mid_date
-      weight:                                    # Static B weight
-        value: 0.05
-    - covariance:
-        covariance model: ensemble               # Ensemble error covariance
-        members from tempate:
-          template:
-            date: *date
-            fields_dir: Data/ensembles/
-            fields_filename: wc13_roms_ensemble_mem%mem%_2004-01-03-00.00.00.nc
-            fields_record: 1                     # 2004-01-03T00:00:00Z
-#           fields_record: 49                    # 2004-01-07T00:00:00Z
-            state variables: *roms_state
-          pattern: %mem%
-          nmembers: 10
-          zero padding: 3
-        localization:
-          localization method: SABER
-          saber central block:
-            saber block name: BUMP_NICAS
-            active variables: *roms_analysis
-            bump:
-              drivers:
-                multivariate strategy: duplicates
-                read local nicas: true
-              io:
-                data directory: Data/bump_loc
-                files prefix: wc13_bump_loc
-      weight:                                    # Ensemble B weight
-        value: 0.95
+    covariance model: ensemble                   # Ensemble error covariance
+    localization:
+      localization method: SABER
+      saber central block:
+        saber block name: BUMP_NICAS
+        active variables: *roms_analysis
+        bump:
+          drivers:
+            multivariate strategy: duplicated
+            read local nicas: true
+          io:
+            data directory: Data/bump_loc
+            files prefix: wc13_bump_loc
+    members from template:
+      template:
+        date: *mid_date
+        fields_dir: Data/ensembles/
+        fields_filename: wc13_roms_ensemble_mem%mem%_2004-01-03-00.00.00.nc
+#       fields_record: 1                       # 2004-01-03T00:00:00Z
+        fields_record: 25                      # 2004-01-05T00:00:00Z
+#       fields_record: 49                      # 2004-01-07T00:00:00Z
+        state variables: *roms_state
+      pattern: %mem%
+      nmembers: 10
+      zero padding: 3
 
   observations:
     obs perturbations: false                     # default
     observers:
 
-    - obs space:
-        name: InsituTemperature
-        obsdatain:
-          engine:
-            type: H5File
-            obsfile: Data/obs/wc13_temp_20040105.nc4
-        obsdataout:
-          engine:
-            type: H5File
-            obsfile: Data/3endvar/regular/primal/wc13_temp_3denvar_regular.nc4
-        simulated variables: [waterTemperature]
-      obs operator:
-        name: VertInterp
-        vertical coordinate: model_level_depth_at_cell_center
-        observation vertical coordinate: depth
-        observation alias file: testinput/obsop_name_map.yaml
-      obs error:
-        covariance model: diagonal
+#   - obs space:
+#       name: InsituTemperature
+#       obsdatain:
+#         engine:
+#           type: H5File
+#           obsfile: Data/obs/wc13_temp_20040105.nc4
+#       obsdataout:
+#         engine:
+#           type: H5File
+#           obsfile: Data/3endvar/regular/primal/wc13_temp_3denvar_regular.nc4
+#       simulated variables: [waterTemperature]
+#     obs operator:
+#       name: VertInterp
+#       vertical coordinate: model_level_depth_at_cell_center
+#       observation vertical coordinate: depth
+#       observation alias file: testinput/obsop_name_map.yaml
+#     obs error:
+#       covariance model: diagonal
 
-    - obs space:
-        name: InsituSalinity
-        obsdatain:
-          engine:
-            type: H5File
-            obsfile: Data/obs/wc13_salt_20040105.nc4
-        obsdataout:
-          engine:
-            type: H5File
-            obsfile: Data/3denvar/regular/primal/wc13_salt_3denvar_regular.nc4
-        simulated variables: [salinity]
-      obs operator:
-        name: VertInterp
-        vertical coordinate: model_level_depth_at_cell_center
-        observation vertical coordinate: depth
-        observation alias file: testinput/obsop_name_map.yaml
-      obs error:
-        covariance model: diagonal
+#   - obs space:
+#       name: InsituSalinity
+#       obsdatain:
+#         engine:
+#           type: H5File
+#           obsfile: Data/obs/wc13_salt_20040105.nc4
+#       obsdataout:
+#         engine:
+#           type: H5File
+#           obsfile: Data/3denvar/regular/primal/wc13_salt_3denvar_regular.nc4
+#       simulated variables: [salinity]
+#     obs operator:
+#       name: VertInterp
+#       vertical coordinate: model_level_depth_at_cell_center
+#       observation vertical coordinate: depth
+#       observation alias file: testinput/obsop_name_map.yaml
+#     obs error:
+#       covariance model: diagonal
 
     - obs space:
         name: SST
@@ -172,7 +152,7 @@ variational:
         date: *mid_date
   iterations:                                    # each item defines an outer loop
   - geometry: *geom
-    ninner: 1
+    ninner: 10
     gradient norm reduction: 1E-10
     test: on
     diagnostics:                                 # Written into output IODA files
@@ -183,7 +163,7 @@ variational:
         single_record: true
         data_dir: Data/3denvar/regular/primal
         prefix: wc13_roms
-        exp: 3denvar_primal
+        exp: 3denvar
         type: inc
         date: *mid_date
 
@@ -201,8 +181,8 @@ output:
   type: nlm
   date: *mid_date
 
-#test:
-#  reference filename: testref/3denvar_regular_primal.ref
-#  float relative tolerance: 1e-5
-#  log output filename: testoutput/3denvar_regular_primal.log
-#  test output filename: testoutput/3denvar_regular_primal.out
+test:
+  reference filename: testref/3denvar_regular_primal.ref
+  float relative tolerance: 1e-5
+  log output filename: testoutput/3denvar_regular_primal.log
+  test output filename: testoutput/3denvar_regular_primal.out

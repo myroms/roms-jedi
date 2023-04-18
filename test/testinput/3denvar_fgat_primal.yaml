@@ -13,7 +13,6 @@ forecast length: &ForecastLength PT96H           # 96 hours (4 days) window endi
 model timestep:  &TimeStep PT1800S               # WC13 has a 30 minutes timestep
 
 initial date: &date 2004-01-03T00:00:00Z         # initial DA window
-middle date:  &mid_date 2004-01-05T00:00:00Z     # middle  DA window
 
 roms analysis:  &roms_analysis [ssh, uocn, vocn, tocn, socn]
 roms state:     &roms_state    [ssh, uocn, vocn, tocn, socn, zocn_r]
@@ -44,108 +43,72 @@ cost function:
     date: *date 
 
   background error:
-    covariance model: hybrid
-    components:
-    - covariance:                                # Static error covariance
-        covariance model: SABER
-          saber central block:
-            saber block name: BUMP_NICAS
-            bump:
-              drivers:
-                multivariate strategy: univariate
-                read local nicas: true
-              grids:
-              - model:
-                  variables:
-                  - ssh
-                io:
-                  files prefix: Data/bump/wc13_bump2d
-             - model:
-                 variables:
-                 - tocn
-                 - socn
-               io:
-                 files prefix: Data/bump/wc13_bump3d
-          saber outer blocks:
-          - saber block name: StdDev
-            input fields:
-            - parameter: StdDev
-              file:
-              fields_dir: jediroms_wc13/Data/
-              fields_filename: wc13_std_i.nc     # same as ROMS native RBL4D-Var
-              fields_record: 1
-              state variables: *roms_analysis
-              date: *mid_date
-      weight:                                    # Static B weight
-        value: 0.4
-    - covariance:
-        covariance model: ensemble               # Ensemble error covariance
-        members from tempate:
-          template:
-            date: *date
-            fields_dir: Data/ensembles/
-            fields_filename: wc13_roms_ensemble_mem%mem%_2004-01-03-00.00.00.nc
-            fields_record: 1                     # 2004-01-03T00:00:00Z
-#           fields_record: 49                    # 2004-01-07T00:00:00Z
-            state variables: *roms_state
-          pattern: %mem%
-          nmembers: 10
-          zero padding: 3
-        localization:
-          localization method: SABER
-          saber central block:
-            saber block name: BUMP_NICAS
-            active variables: *roms_analysis
-            bump:
-              drivers:
-                multivariate strategy: duplicates
-                read local nicas: true
-              io:
-                data directory: Data/bump_loc
-                files prefix: wc13_bump_loc
-      weight:                                    # Ensemble B weight
-        value: 0.6
+    covariance model: ensemble                   # Ensemble error covariance
+    localization:
+      localization method: SABER
+      saber central block:
+        saber block name: BUMP_NICAS
+        active variables: *roms_analysis
+        bump:
+          drivers:
+            multivariate strategy: duplicated
+            read local nicas: true
+          io:
+            data directory: Data/bump_loc
+            files prefix: wc13_bump_loc
+    members from template:
+      template:
+        date: *date
+        fields_dir: Data/ensembles/
+        fields_filename: wc13_roms_ensemble_mem%mem%_2004-01-03-00.00.00.nc
+        fields_record: 1                       # 2004-01-03T00:00:00Z
+#       fields_record: 49                      # 2004-01-07T00:00:00Z
+        state variables: *roms_state
+      pattern: %mem%
+      nmembers: 10
+      zero padding: 3
 
   observations:
     obs perturbations: false                     # default
     observers:
-    - obs space:
-        name: InsituTemperature
-        obsdatain:
-          engine:
-            type: H5File
-            obsfile: Data/obs/wc13_temp_20040103.nc4
-        obsdataout:
-          engine:
-            type: H5File
-            obsfile: Data/3denvar/fgat/primal/wc13_temp_3denvar_fgat.nc4
-        simulated variables: [waterTemperature]
-      obs operator:
-        name: VertInterp
-        vertical coordinate: model_level_depth_at_cell_center
-        observation vertical coordinate: depth
-        observation alias file: testinput/obsop_name_map.yaml
-      obs error:
-        covariance model: diagonal
+
+#   - obs space:
+#       name: InsituTemperature
+#       obsdatain:
+#         engine:
+#           type: H5File
+#           obsfile: Data/obs/wc13_temp_20040103.nc4
+#       obsdataout:
+#         engine:
+#           type: H5File
+#           obsfile: Data/3denvar/fgat/primal/wc13_temp_3denvar_fgat.nc4
+#       simulated variables: [waterTemperature]
+#     obs operator:
+#       name: VertInterp
+#       vertical coordinate: model_level_depth_at_cell_center
+#       observation vertical coordinate: depth
+#       observation alias file: testinput/obsop_name_map.yaml
+#     obs error:
+#       covariance model: diagonal
  
-    - obs space:
-        name: InsituSalinity
-        obsdatain:
-          engine:
-            type: H5File
-            obsfile: Data/obs/wc13_salt_20040103.nc4
-        obsdataout:
-         engine:
-            type: H5File
-            obsfile: Data/3denvar/fgat/primal/wc13_salt_3denvar_fgat.nc4
-        simulated variables: [salinity]
-      obs operator:
-        name: VertInterp
-        vertical coordinate: model_level_depth_at_cell_center
-        observation vertical coordinate: depth
-        observation alias file: testinput/obsop_name_map.yaml
-      obs error:
-        covariance model: diagonal
+#   - obs space:
+#       name: InsituSalinity
+#       obsdatain:
+#         engine:
+#           type: H5File
+#           obsfile: Data/obs/wc13_salt_20040103.nc4
+#       obsdataout:
+#        engine:
+#           type: H5File
+#           obsfile: Data/3denvar/fgat/primal/wc13_salt_3denvar_fgat.nc4
+#       simulated variables: [salinity]
+#     obs operator:
+#       name: VertInterp
+#       vertical coordinate: model_level_depth_at_cell_center
+#       observation vertical coordinate: depth
+#       observation alias file: testinput/obsop_name_map.yaml
+#     obs error:
+#       covariance model: diagonal
  
     - obs space:
         name: SST
@@ -198,8 +161,7 @@ variational:
     geometry: *geom
     linear model:
       name: Identity                             # Identity TLM/ADM
-      tstep: PT6H
-#     tstep: *TimeStep
+      tstep: *TimeStep
       increment variables: *roms_analysis
       variable change: Identity
     diagnostics:                                 # Written into output IODA files
@@ -210,7 +172,7 @@ variational:
         single_record: true
         data_dir: Data/3denvar/fgat/primal
         prefix: wc13_roms
-        exp: 3dvar
+        exp: 3denvar
         type: inc
         date: *date
 
@@ -224,12 +186,12 @@ output:
   data_frequency: *frequency
   data_dir: Data/3denvar/fgat/primal
   prefix: wc13_roms
-  exp: 3dvar
+  exp: 3denvar
   type: nlm
   date: *date
 
-#test:
-#  reference filename: testref/3denvar_fgat_primal.ref
-#  float relative tolerance: 1e-5
-#  log output filename: testoutput/3denvar_fgat_primal.log
-#  test output filename: testoutput/3denvar_fgat_primal.out
+test:
+  reference filename: testref/3denvar_fgat_primal.ref
+  float relative tolerance: 1e-5
+  log output filename: testoutput/3denvar_fgat_primal.log
+  test output filename: testoutput/3denvar_fgat_primal.out

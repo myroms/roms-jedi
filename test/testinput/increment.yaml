@@ -15,3 +15,9 @@ increment test:
   date: 2004-01-03T00:00:00Z
   skip atlas: true
   skip rms by level test: true
+
+test:
+  reference filename: testref/increment.ref
+  float relative tolerance: 1e-5
+  log output filename: testoutput/increment.log
+  test output filename: testoutput/increment.out

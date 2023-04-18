@@ -169,11 +169,11 @@ observations:
       name: Identity
       observation alias file: testinput/obsop_name_map.yaml
 
-#test:
-#  reference filename: testref/hofx_3d.ref
-#  float relative tolerance: 1.0e-6
-#  log output filename: testoutput/hofx_nomodel.log
-#  test output filename: testoutput/hofx_nomodel.out
+test:
+  reference filename: testref/hofx_nomodel.ref
+  float relative tolerance: 1.0e-5
+  log output filename: testoutput/hofx_nomodel.log
+  test output filename: testoutput/hofx_nomodel.out
 
 # NOTES:
 #

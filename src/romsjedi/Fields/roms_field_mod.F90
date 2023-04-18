@@ -29,6 +29,7 @@ USE roms_interpolate_mod,       ONLY : roms_interp_type,                       &
 USE mod_scalars,                ONLY : NoError, exit_flag
 
 USE roms_fields_metadata_mod,   ONLY : roms_field_metadata
+USE roms_fieldsutils_mod,       ONLY : LdebugField
 USE roms_geom_mod,              ONLY : roms_geom,                              &
                                        roms_tile
 
@@ -92,10 +93,6 @@ END TYPE roms_field
 ! ------------------------------------------------------------------------------
 
 PRIVATE
-
-! Switch for printing fields information during debugging.
-
-logical :: LdebugField = .FALSE.
 
 ! Local MPI communicator.
 
@@ -732,7 +729,7 @@ END FUNCTION roms_field_io_has_var
 
 SUBROUTINE roms_field_stats (self, fstats)
 
-  USE get_hash_mod, ONLY : get_hash 
+  USE get_hash_mod, ONLY : get_hash                   !< ROMS module
 
   CLASS (roms_field),     intent(in ) :: self         !< Field object  
   real (kind=kind_real),  intent(out) :: fstats(3)    !< Field statistics

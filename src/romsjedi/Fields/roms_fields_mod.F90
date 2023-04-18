@@ -143,10 +143,6 @@ END TYPE roms_fields
 
 PRIVATE
 
-! Switch for printing fields information during debugging.
-
-logical :: LdebugFields = .FALSE.
-
 ! Number of I/O multi-files.
 
 integer, parameter :: Nfiles = 1
@@ -245,6 +241,7 @@ SUBROUTINE roms_fields_copy (self, rhs)
   CLASS (roms_fields), intent(in   ) :: rhs      !< RHS Fields object
 
   integer                            :: i
+  real (kind=kind_real)              :: stats(3)
   character(len=:), allocatable      :: vars_str(:)
   TYPE (roms_field), pointer         :: rhs_fld
 
@@ -276,14 +273,17 @@ SUBROUTINE roms_fields_copy (self, rhs)
 
   DO i = 1, SIZE(self%fields)
 
-    IF (LdebugFields .and. (my_comm%rank() .eq. 0)) THEN
-      PRINT '(4a,i0)', 'ROMS_DEBUG roms_fields::copy:',                         &
-                       ' copying RHS var = ', self%fields(i)%name,              &
-                       ', self N = ',   self%fields(i)%N
-    END IF
-
     CALL rhs%get (self%fields(i)%name, rhs_fld)
     CALL self%fields(i)%copy (rhs_fld)
+
+    IF (LdebugFields) THEN
+      CALL rhs_fld%stats (stats)
+      IF (my_comm%rank() .eq. 0) THEN
+        PRINT 10, rhs_fld%name, stats(1), stats(2), INT(stats(3))
+ 10     FORMAT (2x,'- ',a30,':',t38,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,  &
+                ',  CheckSum = ', i0)
+      END IF
+    END IF
 
   END DO
 
@@ -335,9 +335,9 @@ SUBROUTINE roms_fields_to_fieldset (self, geom, vars, afieldset)
   integer                                    :: IstrH, IendH, JstrH, JendH
   integer                                    :: LBi, UBi, LBj, UBj, N
   integer                                    :: cgrid, ivar, k
+  real (kind=kind_real)                      :: stats(3)
   real (kind=kind_real), allocatable         :: Fdat(:,:,:)
   real (kind=kind_real), pointer             :: fldptr(:,:)
-
 
   ! Get tile bounds. Currently, ATLAS allows a single function space which is
   ! problematic with staggered C-grids. That is, ATLAS assumes that all the
@@ -370,14 +370,13 @@ SUBROUTINE roms_fields_to_fieldset (self, geom, vars, afieldset)
 
     CALL self%get (vars%variable(ivar), field)
 
-    IF (LdebugFields .and. (geom%f_comm%rank() .eq. 0)) THEN
-      PRINT '(10a)', 'ROMS_DEBUG roms_fields::to_fieldset: oops var = ',       &
-                     TRIM(vars%variable(ivar)),                                &
-                     ', field name = ', TRIM(field%name),                      & 
-                     ', metadata%name = ', field%metadata%name,                &
-                     ', metadata%getval_name = ', field%metadata%getval_name,  &
-                     ', metadata%getval_name_surface = ',                      &
-                     field%metadata%getval_name_surface
+    IF (LdebugFields) THEN
+      CALL field%stats (stats)
+      IF (geom%f_comm%rank() .eq. 0) THEN
+        PRINT 10, field%name, stats(1), stats(2), INT(stats(3))
+ 10     FORMAT (2x,'- ',a30,':',t38,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,  &
+                ',  CheckSum = ', i0)
+      END IF
     END IF
 
     ! Copy computational points and perform a halo exchange.
@@ -402,7 +401,6 @@ SUBROUTINE roms_fields_to_fieldset (self, geom, vars, afieldset)
                                                    name=vars%variable(ivar),   &
                                                    kind=atlas_real(kind_real), &
                                                    levels=N)
-
       CALL afieldset%add (afield)                             ! add field
     END IF
 
@@ -426,26 +424,28 @@ SUBROUTINE roms_fields_to_fieldset (self, geom, vars, afieldset)
 END SUBROUTINE roms_fields_to_fieldset
 
 ! ------------------------------------------------------------------------------
-!> It loads adjoint Fields data into ATLAS FieldSet object. It includes
-!  computational points, boundary points, and halo.
+!> It loads adjoint Fields data, usually observation forcing: transpose[H(X)],
+!  into ATLAS FieldSet object. It is the adjoint of "roms_fields_to_fieldset".
 
-SUBROUTINE roms_fields_to_fieldset_ad (self, geom, vars, afieldset)
+SUBROUTINE roms_fields_to_fieldset_ad (ad_self, geom, vars, ad_afieldset)
 
-  CLASS (roms_fields), target, intent(in   ) :: self         !< Fields object
+  CLASS (roms_fields), target, intent(inout) :: ad_self      !< Fields object
   TYPE (roms_geom), target,    intent(in   ) :: geom         !< Geometry object
   TYPE (oops_variables),       intent(in   ) :: vars         !< OOPS variables
-  TYPE (atlas_fieldset),       intent(inout) :: afieldset    !< ATLAS fieldset
+  TYPE (atlas_fieldset),       intent(in   ) :: ad_afieldset !< ATLAS fieldset
 
-  TYPE (atlas_field)                         :: afield
+  TYPE (atlas_field)                         :: ad_afield
   TYPE (atlas_metadata)                      :: meta
-  TYPE (roms_field), pointer                 :: field
+  TYPE (roms_field), pointer                 :: ad_field
 
+  logical, allocatable                       :: mask(:,:)
   integer                                    :: IstrD, IendD, JstrD, JendD
   integer                                    :: IstrH, IendH, JstrH, JendH
-  integer                                    :: LBi, UBi, LBj, UBj, N
+  integer                                    :: LBi, UBi, LBj, UBj, N, ni, nj
   integer                                    :: cgrid, ivar, k
-  real (kind=kind_real), allocatable         :: Fdat(:,:,:)
-  real (kind=kind_real), pointer             :: fldptr(:,:)
+  real (kind=kind_real)                      :: info(4), stats(3)
+  real (kind=kind_real), allocatable         :: ad_Fdat(:,:,:)
+  real (kind=kind_real), pointer             :: ad_fldptr(:,:)
 
   ! Get tile bounds. Currently, ATLAS allows a single function space which is
   ! problematic with staggered C-grids. That is, ATLAS assumes that all the
@@ -468,69 +468,90 @@ SUBROUTINE roms_fields_to_fieldset_ad (self, geom, vars, afieldset)
   JstrH = geom%bounds(cgrid)%JstrH
   JendH = geom%bounds(cgrid)%JendH
 
+  ni = IendH - IstrH + 1
+  nj = JendH - JstrH + 1
+
   ! Allocate temporary field array.
 
-  allocate ( Fdat(LBi:UBi, LBj:UBj, geom%N) )
+  allocate ( ad_Fdat(LBi:UBi, LBj:UBj, geom%N) )
 
-  ! Load field data into the ATLAS FieldSet object.
+  IF (LdebugFields) THEN
+    allocate ( mask(IstrH:IendH, JstrH:JendH) )
+    mask = geom%rmask(IstrH:IendH, JstrH:JendH) > 0
+  END IF
+
+  ! Adjoint of load field data into the ATLAS FieldSet object.
 
   DO ivar = 1, vars%nvars()
 
-    CALL self%get (vars%variable(ivar), field)
+    ! Get JEDI adjoint field from structure.
 
-    IF (LdebugFields .and. (geom%f_comm%rank() .eq. 0)) THEN
-      PRINT '(10a)', 'ROMS_DEBUG roms_fields::to_fieldset_ad: oops var = ',    &
-                     TRIM(vars%variable(ivar)),                                &
-                     ', field name = ', TRIM(field%name),                      & 
-                     ', metadata%name = ', field%metadata%name,                &
-                     ', metadata%getval_name = ', field%metadata%getval_name,  &
-                     ', metadata%getval_name_surface = ',                      &
-                     field%metadata%getval_name_surface
+    CALL ad_self%get (vars%variable(ivar), ad_field)
+
+    IF (LdebugFields) THEN
+      CALL ad_field%stats (stats)
+      IF (geom%f_comm%rank() .eq. 0) THEN
+        PRINT 10, ad_field%name, stats(1), stats(2), INT(stats(3)),            &
+                  '(input increment)'
+ 10     FORMAT (2x,'- ',a30,':',t38,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,  &
+                ',  CheckSum = ', i0, 3x, a)
+      END IF
     END IF
 
-    ! Copy computational points and perform an adjoint halo exchange.
+    ! Get ATLAS field from adjoint FieldSet object. Then, get data pointer.
 
-    N = field%N
+    ad_afield = ad_afieldset%field(vars%variable(ivar))   
+    CALL ad_afield%data (ad_fldptr)
 
-    Fdat = 0.0_kind_real
+    ! Adjoint of pack field to ATLAS: load unpacked pointer data into local
+    !                                 temporary array "ad_Fdat" level-by-level.
 
-    Fdat(IstrD:IendD,JstrD:JendD,1:N) = field%val(IstrD:IendD,JstrD:JendD,:)
+    N = ad_field%N
+    ad_Fdat = 0.0_kind_real
 
-    CALL ad_mp_exchange3d (geom%ng, geom%tile, iADM, 1,                        &
-                           LBi, UBi, LBj, UBj, 1, N,                           &
-                           geom%NghostPoints,                                  &
-                           geom%EWperiodic, geom%NSperiodic,                   &
-                           Fdat)
-
-    ! Get or create ATLAS field.
-    
-    IF (afieldset%has_field(vars%variable(ivar))) THEN
-      afield = afieldset%field(vars%variable(ivar))           ! get field
-    ELSE
-      afield = geom%functionspaceIncHalo%create_field(                         &
-                                                   name=vars%variable(ivar),   &
-                                                   kind=atlas_real(kind_real), &
-                                                   levels=N)
-
-      CALL afieldset%add (afield)                             ! add field
-    END IF
-
-    ! Get field pointer to ATLAS and copy data.
-
-    CALL afield%data (fldptr)
-    
     DO k = 1, N
-      fldptr(k,:) = PACK(Fdat(IstrH:IendH, JstrH:JendH, k), .TRUE.)
+      ad_Fdat(IstrH:IendH,JstrH:JendH,k) = RESHAPE(ad_fldptr(k,:), (/ni, nj/))
     END DO
 
-    meta = afield%metadata()
-    CALL meta%set ('interp_type', TRIM(field%interp_type))
+    IF (LdebugFields) THEN
+      CALL field_info (ad_Fdat(IstrH:IendH,JstrH:JendH,:),                     &
+                       mask(IstrH:,JstrH:), info)
+      IF (geom%f_comm%rank() .eq. 0) THEN
+        PRINT 10, ad_field%name, info(1), info(2), INT(info(4)),               &
+                  '(data from ATLAS)'
+      END IF
+    END IF
 
-    CALL afield%final ()                                      ! release pointer
+    ! Perform adjoint halo exchange.
+
+     CALL ad_mp_exchange3d (geom%ng, geom%tile, iADM, 1,                        &
+                            LBi, UBi, LBj, UBj, 1, N,                           &
+                            geom%NghostPoints,                                  &
+                            geom%EWperiodic, geom%NSperiodic,                   &
+                            ad_Fdat)
+
+    ! Adjoint of copy state field into ATLAS FieldSet.
+
+    ad_field%val(IstrD:IendD,JstrD:JendD,1:N) =                                &
+                                   ad_field%val(IstrD:IendD,JstrD:JendD,1:N)+  &
+                                   ad_Fdat(IstrD:IendD,JstrD:JendD,1:N)
+
+    IF (LdebugFields) THEN
+      CALL ad_field%stats (stats)
+      IF (geom%f_comm%rank() .eq. 0) THEN
+        PRINT 10, ad_field%name, stats(1), stats(2), INT(stats(3)),            &
+                  '(output increment)'
+      END IF
+    END IF
+
+    ! Release pointer.
+
+    CALL ad_afield%final ()                                      
 
   END DO
 
-  deallocate (Fdat) 
+  deallocate (ad_Fdat) 
+  IF (LdebugFields) deallocate (mask)
 
 END SUBROUTINE roms_fields_to_fieldset_ad
 
@@ -549,6 +570,7 @@ SUBROUTINE roms_fields_from_fieldset (self, geom, vars, afieldset)
 
   integer                                    :: IstrH, IendH, JstrH, JendH
   integer                                    :: cgrid, ivar, k
+  real (kind=kind_real)                      :: stats(3)
   real (kind=kind_real), pointer             :: fldptr(:,:)
 
   ! Initialize increment fields to zero.
@@ -584,6 +606,15 @@ SUBROUTINE roms_fields_from_fieldset (self, geom, vars, afieldset)
                                                        JendH-JstrH+1/))
     END DO
 
+    IF (LdebugFields) THEN
+      CALL field%stats (stats)
+      IF (geom%f_comm%rank() .eq. 0) THEN
+        PRINT 10, field%name, stats(1), stats(2), INT(stats(3))
+ 10     FORMAT (2x,'- ',a30,':',t38,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,  &
+                ',  CheckSum = ', i0)
+      END IF
+    END IF
+
     CALL afield%final ()                                     ! release pointer
 
   END DO
@@ -608,13 +639,6 @@ SUBROUTINE roms_fields_get (self, name, field)
   DO i = 1, SIZE(self%fields)
     IF ((TRIM(name) .eq. self%fields(i)%name) .or.                             &
         (TRIM(name) .eq. self%fields(i)%metadata%getval_name)) THEN
-
-      IF (LdebugFields .and. (my_comm%rank() .eq. 0)) THEN
-        PRINT '(4a,i0,a,i0)', 'ROMS_DEBUG roms_fields::get:',                  &
-                              ' name: ', TRIM(name),                           &
-                              ', ifield: ', i,                                 &
-                              ', self N: ', self%fields(i)%N
-      END IF
 
       field => self%fields(i)
       RETURN
@@ -690,7 +714,7 @@ SUBROUTINE roms_fields_check_congruent (f1, f2)
 END SUBROUTINE roms_fields_check_congruent
 
 ! ------------------------------------------------------------------------------
-!> Make sure two sets of fields have same shape for eachfield they have in
+!> Make sure two sets of fields have same shape for each field they have in
 !! common, f1 must be a subset of f2.
 
 !  TODO: make this more robust (allow for different number of fields?)
@@ -1200,6 +1224,7 @@ SUBROUTINE roms_fields_add (self, rhs)
   CLASS (roms_fields), intent(in   ) :: rhs      !< RHS Fields object
 
   integer                            :: i
+  real (kind=kind_real)              :: stats(3)
 
   ! Make sure fields have the same name, size, and shape.
 
@@ -1207,8 +1232,21 @@ SUBROUTINE roms_fields_add (self, rhs)
 
   ! Add SELF and RHS fields.
 
+  IF (LdebugFields .and. (self%geom%f_comm%rank() .eq. 0)) THEN
+    PRINT '(a)', 'ROMS_DEBUG roms_fields::add:'
+  END IF
+
   DO i = 1, SIZE(self%fields)
     self%fields(i)%val = self%fields(i)%val + rhs%fields(i)%val
+
+    IF (LdebugFields) THEN
+      CALL self%fields(i)%stats (stats)
+      IF (my_comm%rank() .eq. 0) THEN
+        PRINT 10, self%fields(i)%name, stats(1), stats(2), INT(stats(3))
+ 10     FORMAT (2x,'- ',a30,':',t38,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,  &
+                ',  CheckSum = ', i0)
+      END IF
+    END IF
   END DO
 
 END SUBROUTINE roms_fields_add
@@ -1222,6 +1260,7 @@ SUBROUTINE roms_fields_sub (self, rhs)
   CLASS (roms_fields), intent(in   ) :: rhs      !< RHS Fields object
 
   integer                            :: i
+  real (kind=kind_real)              :: stats(3)
 
   ! Make sure fields have the same name, size, and shape.
 
@@ -1229,8 +1268,21 @@ SUBROUTINE roms_fields_sub (self, rhs)
 
   ! Subtract RHS from SELF.
 
+  IF (LdebugFields .and. (self%geom%f_comm%rank() .eq. 0)) THEN
+    PRINT '(a)', 'ROMS_DEBUG roms_fields::sub:'
+  END IF
+
   DO i = 1, SIZE(self%fields)
     self%fields(i)%val = self%fields(i)%val - rhs%fields(i)%val
+
+    IF (LdebugFields) THEN
+      CALL self%fields(i)%stats (stats)
+      IF (my_comm%rank() .eq. 0) THEN
+        PRINT 10, self%fields(i)%name, stats(1), stats(2), INT(stats(3))
+ 10     FORMAT (2x,'- ',a30,':',t38,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,  &
+                ',  CheckSum = ', i0)
+      END IF
+    END IF
   END DO
 
 END SUBROUTINE roms_fields_sub
@@ -1244,15 +1296,24 @@ SUBROUTINE roms_fields_mul (self, c)
   real (kind=kind_real), intent(in   ) :: c      !< multiplication constant
 
   integer                              :: i
+  real (kind=kind_real)                :: stats(3)
+
+  IF (LdebugFields .and. (self%geom%f_comm%rank() .eq. 0)) THEN
+    PRINT '(a,f0.15)', 'ROMS_DEBUG roms_fields::mul, c = ', c
+  END IF
 
   DO i = 1, SIZE(self%fields)
     self%fields(i)%val = c * self%fields(i)%val
-  END DO
 
-  IF (LdebugFields .and. (self%geom%f_comm%rank() .eq. 0)) THEN
-    PRINT '(a,f0.4)', 'ROMS_DEBUG roms_fields::mul: multiplication factor,'//  &
-                      ' c = ', c
-  END IF
+    IF (LdebugFields) THEN
+      CALL self%fields(i)%stats (stats)
+      IF (my_comm%rank() .eq. 0) THEN
+        PRINT 10, self%fields(i)%name, stats(1), stats(2), INT(stats(3))
+ 10     FORMAT (2x,'- ',a30,':',t38,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,  &
+                ',  CheckSum = ', i0)
+      END IF
+    END IF
+  END DO
 
 END SUBROUTINE roms_fields_mul
 
@@ -1491,10 +1552,14 @@ SUBROUTINE roms_fields_enorm (self, Enorm)
 
   Enorm = 1.0E-6_kind_real * Enorm
 
+  IF (LdebugFields .and. (my_comm%rank() .eq. 0)) THEN
+    PRINT '(a,f0.15)', 'ROMS_DEBUG roms_fields::enorm, Enorm = ', Enorm
+  END IF
+
 END SUBROUTINE roms_fields_enorm
 
 ! ------------------------------------------------------------------------------
-!> Compute the global norm for the nondimentional state vector.
+!> Compute the global norm for the nondimensional state vector.
 
 SUBROUTINE roms_fields_norm (self, norm)
 
@@ -1533,6 +1598,10 @@ SUBROUTINE roms_fields_norm (self, norm)
   ! Get global sum.
 
   CALL self%geom%f_comm%allreduce (my_norm, norm, fckit_mpi_sum())
+
+  IF (LdebugFields .and. (my_comm%rank() .eq. 0)) THEN
+    PRINT '(a,f0.15)', 'ROMS_DEBUG roms_fields::norm, norm = ', norm
+  END IF
 
 END SUBROUTINE roms_fields_norm
 
@@ -1585,6 +1654,10 @@ SUBROUTINE roms_fields_rms (self, prms)
 
   prms = SQRT(psum/norm)
 
+  IF (LdebugFields .and. (my_comm%rank() .eq. 0)) THEN
+    PRINT '(a,f0.15)', 'ROMS_DEBUG roms_fields::rms, prms = ', prms
+  END IF
+
 END SUBROUTINE roms_fields_rms
 
 ! ------------------------------------------------------------------------------
@@ -1597,17 +1670,31 @@ SUBROUTINE roms_fields_axpy (self, c, rhs)
   CLASS (roms_fields),         intent(in   ) :: rhs   !< RHS Fields object
 
   integer                                    :: i
+  real (kind=kind_real)                      :: stats(3)
   TYPE (roms_field),                 pointer :: f_rhs, f_lhs
 
   ! Make sure fields are correct shape.
 
   CALL self%check_subset (rhs)
 
+  IF (LdebugFields .and. (my_comm%rank() .eq. 0)) THEN
+    PRINT '(a, f0.15)', 'ROMS_DEBUG roms_fields::axpy: c = ', c
+  END IF
+
   DO i = 1, SIZE(self%fields)
     f_lhs => self%fields(i)
     IF (.not. rhs%has(f_lhs%name)) CYCLE
     CALL rhs%get (f_lhs%name, f_rhs)
     f_lhs%val = f_lhs%val + c * f_rhs%val
+
+    IF (LdebugFields) THEN
+      CALL f_lhs%stats (stats)
+      IF (my_comm%rank() .eq. 0) THEN
+        PRINT 10, f_lhs%name, stats(1), stats(2), INT(stats(3))
+ 10     FORMAT (2x,'- ',a30,':',t38,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,  &
+                ',  CheckSum = ', i0)
+      END IF
+    END IF
   END DO
 
 END SUBROUTINE roms_fields_axpy
@@ -1660,21 +1747,25 @@ SUBROUTINE roms_fields_dot_prod (fld1, fld2, zprod)
 
   CALL fld1%geom%f_comm%allreduce (my_zprod, zprod, fckit_mpi_sum())
 
+  IF (LdebugFields .and. (my_comm%rank() .eq. 0)) THEN
+    PRINT '(a,f0.15)', 'ROMS_DEBUG roms_fields::dot_prod zprod = ', zprod
+  END IF
+
 END SUBROUTINE roms_fields_dot_prod
 
 ! ------------------------------------------------------------------------------
 !> Calculate global statistics for each field (min, max, average).
 
-SUBROUTINE roms_fields_gstats (fld, nf, pstat)
+SUBROUTINE roms_fields_gstats (fld, nf, gstat)
 
   CLASS (roms_fields),   intent(in   ) :: fld            !> Fields object
   integer,               intent(in   ) :: nf             !> number of fields
-  real (kind=kind_real), intent(inout) :: pstat(3, nf)   !> [min, max, average]
+  real (kind=kind_real), intent(inout) :: gstat(4, nf)   !> [min, max, average]
 
   logical, allocatable                 :: mask(:,:)
   integer                              :: IstrC, IendC, JstrC, JendC, n
   real (kind=kind_real)                :: my_water_cells, water_cells
-  real (kind=kind_real)                :: buffer(3)
+  real (kind=kind_real)                :: buffer(4)
   TYPE (roms_field),           pointer :: field
 
   ! Calculate global min, max, mean for each field.
@@ -1708,12 +1799,16 @@ SUBROUTINE roms_fields_gstats (fld, nf, pstat)
 
     CALL field_info (field%val(IstrC:IendC, JstrC:JendC,:), mask, buffer)
 
-    CALL fld%geom%f_comm%allreduce (buffer(1), pstat(1,n), fckit_mpi_min())
-    CALL fld%geom%f_comm%allreduce (buffer(2), pstat(2,n), fckit_mpi_max())
-    CALL fld%geom%f_comm%allreduce (buffer(3), pstat(3,n), fckit_mpi_sum())
-    pstat(3,n) = pstat(3,n) / water_cells
+    CALL fld%geom%f_comm%allreduce (buffer(1), gstat(1,n), fckit_mpi_min())
+    CALL fld%geom%f_comm%allreduce (buffer(2), gstat(2,n), fckit_mpi_max())
+    CALL fld%geom%f_comm%allreduce (buffer(3), gstat(3,n), fckit_mpi_sum())
+    gstat(3,n) = gstat(3,n) / water_cells
 
     deallocate (mask)
+
+    ! Load global CheckSum.
+
+    gstat(4,n) = buffer(4)
 
   END DO
 
@@ -2524,7 +2619,7 @@ SUBROUTINE roms_fields_write_nf90 (self, S, romsTime)
 
         CASE DEFAULT
 
-          WRITE (Message,'(5a)')                                               &
+          WRITE (Message,'(6a)')                                               &
                 'roms_fields::write_nf90: Cannot find and option to write = ', &
                 field%name, " - ", field%metadata%getval_name,                 &
                 ', file: ', TRIM(S(ng)%name)
@@ -3006,9 +3101,10 @@ SUBROUTINE roms_fields_write_pio (self, S, romsTime)
 
         CASE DEFAULT
 
-          WRITE (Message,'(5a)')                                               &
+          WRITE (Message,'(6a)')                                               &
                 'roms_fields::write_pio: Cannot find and option to write = ',  &
-                field%name, " - ", field%metadata%getval_name
+                field%name, " - ", field%metadata%getval_name,                 &
+                ', file: ', TRIM(S(ng)%name)
           CALL abor1_ftn (TRIM(Message))
 
       END SELECT

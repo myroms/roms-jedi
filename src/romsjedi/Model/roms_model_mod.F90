@@ -39,6 +39,7 @@ USE roms_geom_mod,              ONLY : roms_geom,                              &
                                        roms_tile
 USE roms_field_mod,             ONLY : roms_field
 USE roms_fieldsutils_mod,       ONLY : date2string,                            & 
+                                       LdebugModel,                            &
                                        roms_date2time,                         &
                                        roms_tracer_index
 USE roms_state_mod,             ONLY : roms_state
@@ -90,10 +91,6 @@ END TYPE roms_model
 !-------------------------------------------------------------------------------
 
 PRIVATE
-
-! Set debugging switch.
-
-logical :: LdebugModel = .FALSE.
 
 ! Set switch to read ROMS standard input parameter file and allocate and
 ! initialize (first touch policy) variables and structures. It needs to be

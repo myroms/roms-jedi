@@ -14,7 +14,6 @@ forecast length: &ForecastLength PT96H           # 96 hours (4 days) window endi
 model timestep:  &TimeStep PT1800S               # WC13 has a 30 minutes timestep
 
 initial date: &date 2004-01-03T00:00:00Z         # initial DA window
-middle date:  &mid_date 2004-01-05T00:00:00Z     # middle  DA window
 
 roms analysis:  &roms_analysis [ssh, uocn, vocn, tocn, socn]
 roms state:     &roms_state    [ssh, uocn, vocn, tocn, socn, zocn_r]
@@ -57,13 +56,15 @@ cost function:
             variables:
             - ssh
           io:
-            files prefix: Data/bump/wc13_bump2d
+            data directory: Data/bump
+            files prefix: wc13_bump2d
         - model:
             variables:
             - tocn
             - socn
           io:
-            files prefix: Data/bump/wc13_bump3d
+            data directory: Data/bump
+            files prefix: wc13_bump3d
     saber outer blocks:
     - saber block name: StdDev
       input fields:
@@ -78,43 +79,44 @@ cost function:
   observations:
     obs perturbations: false                     # default
     observers:
-    - obs space:
-        name: InsituTemperature
-        obsdatain:
-          engine:
-            type: H5File
-            obsfile: Data/obs/wc13_temp_20040103.nc4
-        obsdataout:
-          engine:
-            type: H5File
-            obsfile: Data/3dvar/fgat/dual/wc13_temp_3dvar_fgat.nc4
-        simulated variables: [waterTemperature]
-      obs operator:
-        name: VertInterp
-        vertical coordinate: model_level_depth_at_cell_center
-        observation vertical coordinate: depth
-        observation alias file: testinput/obsop_name_map.yaml
-      obs error:
-        covariance model: diagonal
+
+#   - obs space:
+#       name: InsituTemperature
+#       obsdatain:
+#         engine:
+#           type: H5File
+#           obsfile: Data/obs/wc13_temp_20040103.nc4
+#       obsdataout:
+#         engine:
+#           type: H5File
+#           obsfile: Data/3dvar/fgat/dual/wc13_temp_3dvar_fgat.nc4
+#       simulated variables: [waterTemperature]
+#     obs operator:
+#       name: VertInterp
+#       vertical coordinate: model_level_depth_at_cell_center
+#       observation vertical coordinate: depth
+#       observation alias file: testinput/obsop_name_map.yaml
+#     obs error:
+#       covariance model: diagonal
  
-    - obs space:
-        name: InsituSalinity
-        obsdatain:
-          engine:
-            type: H5File
-            obsfile: Data/obs/wc13_salt_20040103.nc4
-        obsdataout:
-         engine:
-            type: H5File
-            obsfile: Data/3dvar/fgat/dual/wc13_salt_3dvar_fgat.nc4
-        simulated variables: [salinity]
-      obs operator:
-        name: VertInterp
-        vertical coordinate: model_level_depth_at_cell_center
-        observation vertical coordinate: depth
-        observation alias file: testinput/obsop_name_map.yaml
-      obs error:
-        covariance model: diagonal
+#   - obs space:
+#       name: InsituSalinity
+#       obsdatain:
+#         engine:
+#           type: H5File
+#           obsfile: Data/obs/wc13_salt_20040103.nc4
+#       obsdataout:
+#        engine:
+#           type: H5File
+#           obsfile: Data/3dvar/fgat/dual/wc13_salt_3dvar_fgat.nc4
+#       simulated variables: [salinity]
+#     obs operator:
+#       name: VertInterp
+#       vertical coordinate: model_level_depth_at_cell_center
+#       observation vertical coordinate: depth
+#       observation alias file: testinput/obsop_name_map.yaml
+#     obs error:
+#       covariance model: diagonal
  
     - obs space:
         name: SST
@@ -158,7 +160,7 @@ variational:
       name: Identity                             # Identity TLM/ADM
       increment variables: *roms_analysis
       tstep: *TimeStep
-    ninner: 5
+    ninner: 10
     gradient norm reduction: 1E-10
     test: on
     diagnostics:                                 # Written into output IODA files
@@ -187,8 +189,8 @@ output:
   type: nlm
   date: *date
 
-#test:
-#  reference filename: testref/3dvar_fgat_dual.ref
-#  float relative tolerance: 1e-5
-#  log output filename: testoutput/3dvar_fgat_dual.log
-#  test output filename: testoutput/3dvar_fgat_dual.out
+test:
+  reference filename: testref/3dvar_fgat_dual.ref
+  float relative tolerance: 1e-5
+  log output filename: testoutput/3dvar_fgat_dual.log
+  test output filename: testoutput/3dvar_fgat_dual.out

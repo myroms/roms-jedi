@@ -38,6 +38,7 @@ USE type_fieldset,              ONLY : fieldset_type
 USE mod_ncparam,                ONLY : p2dvar, r2dvar, u2dvar, v2dvar
 
 USE roms_fields_metadata_mod,   ONLY : roms_fields_metadata
+USE roms_fieldsutils_mod,       ONLY : LdebugGeometry, roms_get_env
 
 implicit none
 
@@ -145,7 +146,7 @@ TYPE, PUBLIC :: roms_geom
   TYPE (atlas_functionspace) :: functionspace
   TYPE (atlas_functionspace) :: functionspaceIncHalo
 
-  ! Fortran and C/C++ interoperability toolkit: MPI coomunicator object
+  ! Fortran and C/C++ interoperability toolkit: MPI coomunicator object.
 
   TYPE (fckit_mpi_comm)                 :: f_comm
 
@@ -166,13 +167,7 @@ TYPE, PUBLIC :: roms_geom
 
 END TYPE roms_geom
 
-! ------------------------------------------------------------------------------
-
 PRIVATE
-
-!> Switch for printing fields information during debugging
-
-logical :: LdebugGeometry = .FALSE.
 
 ! ------------------------------------------------------------------------------
 CONTAINS
@@ -247,6 +242,10 @@ SUBROUTINE roms_geom_create (self, f_conf, f_comm)
   IF (.not.f_conf%get("iterator dimension", self%iterator_dimension))          &
     self%iterator_dimension = 2
 
+  ! Retrieve ROMS-JEDI debuggin switch from system environmental variables.
+
+  CALL roms_get_env ()
+
   ! ROMS initialization: read input script, allocate, initialize, and set grid.
 
   Iname = TRIM(project_dir)//TRIM(roms_stdinp)
@@ -268,7 +267,23 @@ SUBROUTINE roms_geom_create (self, f_conf, f_comm)
   CALL set_depth0 (ng, tile, iNLM)              ! time independent
   CALL set_depth  (ng, tile, iNLM)              ! time dependent
 
-  ! Domain decomposition ranges and indices.
+  ! Domain tile decomposition ranges and left-hand indexing:
+  !
+  !   (IstrC:IendC, JstrC:JendC)  => computational points
+  !   (IstrD:IendD, JstrD:JeenD)  => computational plus boundary points
+  !   (IstrH:IendH. JstrH:JendH)  => computational plus boundary and halo points
+  !                                  (ROMS could have 2 or 3 halo points)
+  !
+  !   p(i,j+1,k)---v(i,j+1,k)---p(i+1,j+1,k)       -------w(i,j,k)-------
+  !      |                          |              |                    |
+  !   u(i,j,k)     r(i,j,k)     u(i+1,j,k)         |   p,r,u,v(i,j,k)   |
+  !      |                          |              |                    |
+  !   p(i,j,k)-----v(i,j,k)-----p(i+1,j,k)         ------w(i,j,k-1)------
+  !
+  !          horizontal stencil                       vertical stencil
+  !            Arakawa C-grid          p,r,u,v:  bottom (k=1) to top (k=N)
+  !                                          w:  bottom (k=0) to top (k=N)
+  !                                              [levelsAreTopDown()=false]
 
   DO cgrid = 1, 4
 
@@ -483,23 +498,23 @@ SUBROUTINE roms_geom_create (self, f_conf, f_comm)
   IF (LdebugGeometry) THEN
     PRINT 10, 'ROMS_DEBUG roms_geom::create: tile = ', self%tile,              &
               ', ng = ', self%ng,                                              &
-              ', SHAPE = ', SHAPE(self%z_r),                                   &
+              ', RHO-points SHAPE = ', SHAPE(self%z_r),                        &
               '  LBi   = ', self%LBi,                                          &
               ', UBi   = ', self%UBi,                                          &
               ', LBj   = ', self%LBj,                                          &
               ', UBj   = ', self%UBj,                                          &
-              '  IstrR = ', self%bounds(2)%IstrD,                              &
-              ', IendR = ', self%bounds(2)%IendD,                              &
-              ', JstrR = ', self%bounds(2)%JstrD,                              &
-              ', JendR = ', self%bounds(2)%JendD,                              &
+              '  IstrD = ', self%bounds(2)%IstrD,                              &
+              ', IendD = ', self%bounds(2)%IendD,                              &
+              ', JstrD = ', self%bounds(2)%JstrD,                              &
+              ', JendD = ', self%bounds(2)%JendD,                              &
               '  IstrH = ', self%bounds(2)%IstrH,                              &
               ', IendH = ', self%bounds(2)%IendH,                              &
               ', JstrH = ', self%bounds(2)%JstrH,                              &
               ', JendH = ', self%bounds(2)%JendH,                              &
-              '  Istr  = ', self%bounds(2)%IstrC,                              &
-              ', Iend  = ', self%bounds(2)%IendC,                              &
-              ', Jstr  = ', self%bounds(2)%JstrC,                              &
-              ', Jend  = ', self%bounds(2)%JendC
+              '  IstrC = ', self%bounds(2)%IstrC,                              &
+              ', IendC = ', self%bounds(2)%IendC,                              &
+              ', JstrC = ', self%bounds(2)%JstrC,                              &
+              ', JendC = ', self%bounds(2)%JendC
  10 FORMAT (a,i3, a,i0, a,3(i0,1x),4(/,t38,4(a,i4)))
     CALL self%f_comm%barrier()
   END IF
@@ -778,8 +793,7 @@ SUBROUTINE roms_geom_set_lonlat (self, afieldset)
   ! Create lon/lat fields at RHO (density) data points (computational plus
   ! boundary points). Currently, ATLAS allows a single FunctionSpace which
   ! is problematic with staggered C-grids. That is, ATLAS assumes that all
-  ! the variables are at
-  ! the same location.
+  ! the variables are at the same location.
 
   cgrid = r2dvar
 

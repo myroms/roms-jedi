@@ -8,6 +8,15 @@
 ##                                                                             #
 ##      <root-dir>/roms-jedi/build/roms-jedi                                   #
 ##                                                                             #
+## Usage:                                                                      #
+##                                                                             #
+##   ./batch_test.sh [options]                                                 #
+##                                                                             #
+## Options:                                                                    #
+##                                                                             #
+##   -n [M]          Run Unit Test Cases on M processes (default M=2)          #
+##                                                                             #
+##                                                                             #
 ## To configure ROMS-JEDI in computer running SLURM, we nee to use:            #
 ##                                                                             #
 ##   ecbuild -DMPIEXEC_EXECUTABLE=$MPIRUN                                      #
@@ -83,9 +92,20 @@ done
 
 MPIrun="/usr/bin/srun --mpi=pmi2 --ntasks=2 --cpu_bind=core --distribution=block:block"
 
-export OOPS_TRACE=0                 # Set to 1 for tracing
 export MAIN_DEBUG=1
 export OOPS_DEBUG=1
+export OOPS_TRACE=0                 # Set to 1 for tracing
+
+export LdebugAnalyticInit=0         # ROMS-JEDI Classes debugging switches
+export LdebugField=0
+export LdebugFields=0
+export LdebugFieldsUtils=0
+export LdebugGeometry=0
+export LdebugLinearModel=0
+export LdebugLinearModel2Geovals=0
+export LdebugModel=0
+export LdebugModel2Geovals=0
+export LdebugTrajectory=0
 
 export OMP_NUM_THREADS=8            # Used in BUMP
 
@@ -217,19 +237,19 @@ else
   fi
 
   ic=$(( $ic + 1 ))
-  ${MPIrun} ../../bin/romsjedi_error_covariance_training.x testinput/parameters_bump_loc_cor_nicas.yaml 1>> test_${ic}.log 2>> test.err
-  if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_bump_parameters_cor_nicas .......  *Failed"
-  else
-    echo " Test #${ic}: test_romsjedi_bump_parameters_cor_nicas .......  Passed"
-  fi
-
-  ic=$(( $ic + 1 ))
   ${MPIrun} ../../bin/romsjedi_error_covariance_training.x testinput/parameters_bump_cor_nicas.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
     echo " Test #${ic}: test_romsjedi_bump_loc_parameters_cor_nicas ...  *Failed"
   else
     echo " Test #${ic}: test_romsjedi_bump_loc_parameters_cor_nicas ...  Passed"
+  fi
+
+  ic=$(( $ic + 1 ))
+  ${MPIrun} ../../bin/romsjedi_error_covariance_training.x testinput/parameters_bump_loc_cor_nicas.yaml 1>> test_${ic}.log 2>> test.err
+  if [ $? -ne 0 ] ; then
+    echo " Test #${ic}: test_romsjedi_bump_parameters_cor_nicas .......  *Failed"
+  else
+    echo " Test #${ic}: test_romsjedi_bump_parameters_cor_nicas .......  Passed"
   fi
 
   ic=$(( $ic + 1 ))
@@ -366,6 +386,38 @@ else
     echo " Test #${ic}: test_romsjedi_3denvar_fgat_dual ...............  *Failed"
   else
     echo " Test #${ic}: test_romsjedi_3denvar_fgat_dual ...............  Passed"
+  fi
+
+  ic=$(( $ic + 1 ))
+  ${MPIrun} ../../bin/romsjedi_var.x testinput/3dhyb_regular_primal.yaml 1>> test_${ic}.log 2>> test.err
+  if [ $? -ne 0 ] ; then
+    echo " Test #${ic}: test_romsjedi_3dhyb_regular_primal ............  *Failed"
+  else
+    echo " Test #${ic}: test_romsjedi_3dhyb_regular_primal ............  Passed"
+  fi
+
+  ic=$(( $ic + 1 ))
+  ${MPIrun} ../../bin/romsjedi_var.x testinput/3dhyb_regular_dual.yaml 1>> test_${ic}.log 2>> test.err
+  if [ $? -ne 0 ] ; then
+    echo " Test #${ic}: test_romsjedi_3dhyb_regular_dual ..............  *Failed"
+  else
+    echo " Test #${ic}: test_romsjedi_3dhyb_regular_dual ..............  Passed"
+  fi
+
+  ic=$(( $ic + 1 ))
+  ${MPIrun} ../../bin/romsjedi_var.x testinput/3dhyb_fgat_primal.yaml 1>> test_${ic}.log 2>> test.err
+  if [ $? -ne 0 ] ; then
+    echo " Test #${ic}: test_romsjedi_3dhyb_fgat_primal ...............  *Failed"
+  else
+    echo " Test #${ic}: test_romsjedi_3dhyb_fgat_primal ...............  Passed"
+  fi
+
+  ic=$(( $ic + 1 ))
+  ${MPIrun} ../../bin/romsjedi_var.x testinput/3dhyb_regular_dual.yaml 1>> test_${ic}.log 2>> test.err
+  if [ $? -ne 0 ] ; then
+    echo " Test #${ic}: test_romsjedi_3dhyb_fgat_dual .................  *Failed"
+  else
+    echo " Test #${ic}: test_romsjedi_3dhyb_fgat_dual .................  Passed"
   fi
 
 fi

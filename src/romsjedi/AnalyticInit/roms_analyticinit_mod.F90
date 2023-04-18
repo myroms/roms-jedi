@@ -22,17 +22,15 @@ MODULE roms_analyticinit_mod
 
 USE kinds,                ONLY : kind_real
 
-USE roms_fieldsutils_mod, ONLY : ana_fields
-
 USE ufo_geovals_mod,      ONLY : ufo_geovals
 USE ufo_locations_mod,    ONLY : ufo_locations
+
+USE roms_fieldsutils_mod, ONLY : ana_fields, LdebugAnalyticInit
 
 implicit none
 
 PRIVATE
 PUBLIC  :: roms_analytic_geovals
-
-logical :: LdebugAnalyticInit = .FALSE.
 
 ! ------------------------------------------------------------------------------
 CONTAINS

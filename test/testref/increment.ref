@@ -1,0 +1,14 @@
+Test     : Printing zero increment: 
+Test     :   Valid time: 2004-01-03T00:00:00Z
+Test     :                                ssh   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000   CheckSum= 0
+Test     :                               uocn   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000   CheckSum= 0
+Test     :                               vocn   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000   CheckSum= 0
+Test     :                               tocn   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000   CheckSum= 0
+Test     :                               socn   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000   CheckSum= 0
+Test     : Printing random increment: 
+Test     :   Valid time: 2004-01-03T00:00:00Z
+Test     :                                ssh   Min=    -3.299602052882106   Max=     3.354007694342200   Mean=    -0.032333659269947   CheckSum= 65632
+Test     :                               uocn   Min=    -4.085085272717148   Max=     5.000756632682353   Mean=    -0.007346569635614   CheckSum= 1912865
+Test     :                               vocn   Min=    -4.808865614467543   Max=     3.974069145808565   Mean=     0.000488622636807   CheckSum= 1908415
+Test     :                               tocn   Min=    -4.158204102861115   Max=     4.193120965840131   Mean=     0.002036532789605   CheckSum= 1969179
+Test     :                               socn   Min=    -4.158204102861115   Max=     4.035923057814585   Mean=     0.005342100251097   CheckSum= 1965484

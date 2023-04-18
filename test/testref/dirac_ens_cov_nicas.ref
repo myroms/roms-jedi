@@ -1,0 +1,35 @@
+Test     : Input Dirac increment:
+Test     :   Valid time: 2004-01-03T00:00:00Z
+Test     :                                ssh   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.000527148128624   CheckSum= 10
+Test     :                               uocn   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000   CheckSum= 0
+Test     :                               vocn   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000   CheckSum= 0
+Test     :                               tocn   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.000017571604287   CheckSum= 20
+Test     :                               socn   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.000017571604287   CheckSum= 10
+Test     : Covariance(hybrid) * Increment:
+Test     :   Valid time: 2004-01-03T00:00:00Z
+Test     :                                ssh   Min=    -0.000006978425148   Max=     0.001740530117067   Mean=     0.000005164610946   CheckSum= 870
+Test     :                               uocn   Min=    -0.002482707343038   Max=     0.002632007840480   Mean=     0.000000167135532   CheckSum= 154877
+Test     :                               vocn   Min=    -0.004060134268615   Max=     0.002416668474158   Mean=    -0.000001481622412   CheckSum= 154874
+Test     :                               tocn   Min=    -0.019833459628083   Max=     0.450086600595691   Mean=     0.000904347872011   CheckSum= 156234
+Test     :                               socn   Min=    -0.016807045419270   Max=     0.023241804034680   Mean=     0.000005765656327   CheckSum= 155108
+Test     : Covariance(hybrid1_ensemble) * Increment:
+Test     :   Valid time: 2004-01-03T00:00:00Z
+Test     :                                ssh   Min=    -0.000006978425148   Max=     0.001740530117067   Mean=     0.000005164610946   CheckSum= 870
+Test     :                               uocn   Min=    -0.002482707343038   Max=     0.002632007840480   Mean=     0.000000167135532   CheckSum= 154877
+Test     :                               vocn   Min=    -0.004060134268615   Max=     0.002416668474158   Mean=    -0.000001481622412   CheckSum= 154874
+Test     :                               tocn   Min=    -0.019833459628083   Max=     0.450086600595691   Mean=     0.000904347872011   CheckSum= 156234
+Test     :                               socn   Min=    -0.016807045419270   Max=     0.023241804034680   Mean=     0.000005765656327   CheckSum= 155108
+Test     : Localization(hybrid1_ensemble) * Increment:
+Test     :   Valid time: 2004-01-03T00:00:00Z
+Test     :                                ssh   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.003763480303276   CheckSum= 896
+Test     :                               uocn   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.013333356736843   CheckSum= 159634
+Test     :                               vocn   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.013369608386481   CheckSum= 159634
+Test     :                               tocn   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.012960838072082   CheckSum= 159634
+Test     :                               socn   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.012960838072082   CheckSum= 159634
+Test     : Randomized variance: 
+Test     :   Valid time: 2004-01-03T00:00:00Z
+Test     :                                ssh   Min=     0.000118125436461   Max=     0.020903447481703   Mean=     0.001977821123027   CheckSum= 64040
+Test     :                               uocn   Min=     0.000000085699841   Max=     0.002875524062658   Mean=     0.000037622042995   CheckSum= 1843926
+Test     :                               vocn   Min=     0.000000081754282   Max=     0.001829486823077   Mean=     0.000028768119506   CheckSum= 1841119
+Test     :                               tocn   Min=     0.000000072371522   Max=     3.064991491665350   Mean=     0.122959484000511   CheckSum= 1929069
+Test     :                               socn   Min=     0.000000002589125   Max=     0.480332454683389   Mean=     0.006541303130025   CheckSum= 1904129

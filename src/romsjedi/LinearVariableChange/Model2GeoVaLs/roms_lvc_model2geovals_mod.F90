@@ -21,6 +21,7 @@ USE kinds,                      ONLY : kind_real
 USE fckit_configuration_module, ONLY : fckit_configuration
 
 USE roms_field_mod,             ONLY : roms_field
+USE roms_fieldsutils_mod,       ONLY : LdebugLinearModel2Geovals
 USE roms_geom_mod,              ONLY : roms_geom,                              &
                                        roms_tile
 USE roms_increment_mod,         ONLY : roms_increment
@@ -50,13 +51,7 @@ TYPE, PUBLIC :: roms_lvc_model2geovals
 END TYPE roms_lvc_model2geovals
 
 !-------------------------------------------------------------------------------
-
 PRIVATE
-
-! Switch for printing fields information during debugging.
-
-logical :: LdebugLinearModel2Geovals = .FALSE.
-
 !-------------------------------------------------------------------------------
 CONTAINS
 !-------------------------------------------------------------------------------
@@ -119,6 +114,7 @@ SUBROUTINE roms_lvc_model2geovals_multiply (self, geom, dxm, dxg)
   TYPE (roms_field),                    pointer :: field
 
   integer                                       :: Nsur, i, lstr1, lstr2
+  real (kind=kind_real)                         :: stats(3)
   character (len=:), allocatable                :: dxg_vars(:), dxm_vars(:)
   character (len=524)                           :: dxg_string, dxm_string
 
@@ -138,8 +134,8 @@ SUBROUTINE roms_lvc_model2geovals_multiply (self, geom, dxm, dxg)
     CALL join_string (dxm_vars, SIZE(dxm%fields), dxm_string, lstr2)
 
     PRINT '(5a)', 'ROMS_DEBUG roms_lvc_model2geovals::multiply:',              &
-                  ' DXG vars: ', dxg_string(1:lstr1),                          &
-                  ' | DXM vars: ', dxm_string(1:lstr2)
+                  ' output DXG vars: ', dxg_string(1:lstr1),                   &
+                  ' | input DXM vars: ', dxm_string(1:lstr2)
   END IF
 
   ! Apply the required linear variable change to variables in the DXG vector.
@@ -149,14 +145,14 @@ SUBROUTINE roms_lvc_model2geovals_multiply (self, geom, dxm, dxg)
   DO i = 1, SIZE(dxg%fields)
 
     IF (LdebugLinearModel2Geovals .and. (geom%f_comm%rank() .eq. 0)) THEN
-      PRINT '(8a)', 'ROMS_DEBUG roms_lvc_model2geovals::multiply: '//          &
-                    'Changing DXG name = ', dxg%fields(i)%name,                &
-                    ', metadata%name = ',                                      &
-                    dxg%fields(i)%metadata%name,                               &
-                    ', metadata%getval_name = ',                               &
-                    dxg%fields(i)%metadata%getval_name,                        &
-                    ', metadata%getval_name_surface = ',                       &
-                    dxg%fields(i)%metadata%getval_name_surface
+    ! PRINT '(8a)', 'ROMS_DEBUG roms_lvc_model2geovals::multiply: '//          &
+    !               'Changing DXG name = ', dxg%fields(i)%name,                &
+    !               ', metadata%name = ',                                      &
+    !               dxg%fields(i)%metadata%name,                               &
+    !               ', metadata%getval_name = ',                               &
+    !               dxg%fields(i)%metadata%getval_name,                        &
+    !               ', metadata%getval_name_surface = ',                       &
+    !               dxg%fields(i)%metadata%getval_name_surface
     END IF
 
     CALL dxm%get (dxg%fields(i)%metadata%name, field)
@@ -168,13 +164,22 @@ SUBROUTINE roms_lvc_model2geovals_multiply (self, geom, dxm, dxg)
 
     ELSE IF (dxg%fields(i)%name .eq. field%metadata%getval_name_surface) THEN
 
-      Nsur = dxm%fields(i)%N
+      Nsur = field%N
       dxg%fields(i)%val(:,:,1) = field%val(:,:,Nsur)  !< surface field
 
     ELSE
 
       CALL abor1_ftn ('roms_lvc_model2geovals_multiply: error while '//        &
                       'processing field: '//TRIM(dxg%fields(i)%name))
+    END IF
+
+    IF (LdebugLinearModel2Geovals) THEN
+      CALL dxg%fields(i)%stats (stats)
+      IF (geom%f_comm%rank() .eq. 0) THEN
+        PRINT 10, dxg%fields(i)%name, stats(1), stats(2), INT(stats(3))
+ 10     FORMAT (2x,'- ',a30,':',t38,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,  &
+                ',  CheckSum = ', i0)
+      END IF
     END IF
 
   END DO
@@ -197,6 +202,7 @@ SUBROUTINE roms_lvc_model2geovals_multiplyAD (self, geom, dxg, dxm)
   TYPE (roms_field),                    pointer :: field
 
   integer                                       :: Nsur, i, lstr1, lstr2
+  real (kind=kind_real)                         :: stats(3)
   character (len=:), allocatable                :: dxg_vars(:), dxm_vars(:)
   character (len=524)                           :: dxg_string, dxm_string
 
@@ -216,8 +222,8 @@ SUBROUTINE roms_lvc_model2geovals_multiplyAD (self, geom, dxg, dxm)
     CALL join_string (dxm_vars, SIZE(dxm%fields), dxm_string, lstr2)
 
     PRINT '(5a)', 'ROMS_DEBUG roms_lvc_model2geovals::multiplyAD:',            &
-                  ' DXG vars: ', dxg_string(1:lstr1),                          &
-                  ' | DXM vars: ', dxm_string(1:lstr2)
+                  ' input DXG vars: ', dxg_string(1:lstr1),                    &
+                  ' | output DXM vars: ', dxm_string(1:lstr2)
   END IF
 
   ! Apply the required adjoint variable change to variables in the DXM vector.
@@ -229,14 +235,14 @@ SUBROUTINE roms_lvc_model2geovals_multiplyAD (self, geom, dxg, dxm)
   DO i = 1, SIZE(dxg%fields)
 
     IF (LdebugLinearModel2Geovals .and. (geom%f_comm%rank() .eq. 0)) THEN
-      PRINT '(8a)', 'ROMS_DEBUG roms_lvc_model2geovals::multiplyAD: '//        &
-                    'Changing DXM name = ', dxg%fields(i)%name,                &
-                    ', metadata%name = ',                                      &
-                    dxg%fields(i)%metadata%name,                               &
-                    ', metadata%getval_name = ',                               &
-                    dxg%fields(i)%metadata%getval_name,                        &
-                    ', metadata%getval_name_surface = ',                       &
-                    dxg%fields(i)%metadata%getval_name_surface
+    ! PRINT '(8a)', 'ROMS_DEBUG roms_lvc_model2geovals::multiplyAD: '//        &
+    !               'Updating DXM name = ', dxg%fields(i)%name,                &
+    !               ', metadata%name = ',                                      &
+    !               dxg%fields(i)%metadata%name,                               &
+    !               ', metadata%getval_name = ',                               &
+    !               dxg%fields(i)%metadata%getval_name,                        &
+    !               ', metadata%getval_name_surface = ',                       &
+    !               dxg%fields(i)%metadata%getval_name_surface
     END IF
 
     CALL dxm%get (dxg%fields(i)%metadata%name, field)
@@ -249,15 +255,24 @@ SUBROUTINE roms_lvc_model2geovals_multiplyAD (self, geom, dxg, dxm)
 
     ELSE IF (dxg%fields(i)%name .eq. field%metadata%getval_name_surface) THEN
 
-      Nsur = dxg%fields(i)%N
-      field%val(:,:,1) = field%val(:,:,1) +                                    &
-                         dxg%fields(i)%val(:,:,1)     !< surface field
+      Nsur = field%N
+      field%val(:,:,Nsur) = field%val(:,:,Nsur) +                              &
+                            dxg%fields(i)%val(:,:,1)  !< surface field
 
     ELSE
 
       CALL abor1_ftn ('roms_lvc_model2geovals_multiplyAD: error while '//      &
                           'processing field: '//TRIM(dxg%fields(i)%name))
 
+    END IF
+
+    IF (LdebugLinearModel2Geovals) THEN
+      CALL field%stats (stats)
+      IF (geom%f_comm%rank() .eq. 0) THEN
+        PRINT 10, field%name, stats(1), stats(2), INT(stats(3))
+ 10     FORMAT (2x,'- ',a30,':',t38,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,    &
+                ',  CheckSum = ', i0)
+      END IF
     END IF
 
   END DO
