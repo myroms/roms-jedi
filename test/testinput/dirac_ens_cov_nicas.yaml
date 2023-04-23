@@ -25,7 +25,7 @@ background error:
         localization method: SABER
         saber central block:
           saber block name: BUMP_NICAS
-          bump:
+          read:
             drivers:
               multivariate strategy: duplicated
               read local nicas: true

@@ -10,68 +10,83 @@ geometry:
   fields metadata: Data/fields_metadata.yaml
   ng: 1                                           # ROMS nested grid number
 
-input variables: &rho_vars [ssh, tocn, socn]
-
 background:
   fields_dir: jediroms_wc13/Data/
   fields_filename: wc13_roms_ini_20040103.nc   
   fields_record: 1                                # initial fields
-  state variables: [ssh, uocn, vocn, tocn, socn]
+  state variables: [ssh, tocn, socn]
   date: &date 2004-01-03T00:00:00Z                # initial fields date
 
-bump:
-  datadir: Data/bump                              # BUMP data directory
-  forced_radii: true                              # Force NICAS length-scales
-  method: cor                                     # Compute correlation parameters
-  new_nicas: true                                 # Run NICAS driver
-  resol: 6.0                                      # NICAS subgrid resolution
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: BUMP_NICAS
+    active variables: &rho_vars [ssh, tocn, socn]
+    calibration:
+      io:
+        data directory: Data/bump                     # BUMP data directory
+      drivers:
+        multivariate strategy: univariate             # NICAS multivariate strategy
+        compute nicas: true                           # Run NICAS driver
+        write local nicas: true
+#     model:
+#       do not cross mask boundaries: true
+      nicas:
+        resolution: 6.0                               # NICAS subgrid resolution
+        explicit length-scales: true
+        horizontal length-scale:
+        - groups:
+          - ssh
+          value: 250.0e3
+        - groups:
+          - tocn
+          value: 250.0e3
+        - groups:
+          - socn
+          value: 50.0e3
+        vertical length-scale:
+        - groups:
+          - tocn
+          value: 150
+        - groups:
+          - socn
+          value: 150
+      grids:
+      - model:
+          variables:
+          - ssh
+        io:
+          files prefix: wc13_bump_parameters_2d              # NetCDF-4 filename prefix: 2D correlations
+      - model:
+          variables:
+          - tocn
+          - socn
+        io:
+          files prefix: wc13_bump_parameters_3d              # NetCDF-4 filename prefix: 3D correlations
 
-  grids:
-  - prefix: wc13_bump_parameters_2d               # NetCDF-4 filename prefix: 2D correlations
-    variables: [ssh]
-    rh:                                           # Homogeneous correlation horizontal radius (m)
-      ssh: [50.0e3]
-    rv:                                           # Homogeneous correlation verical radius (m)
-      ssh: [0.0]
+      output model files:                                    # Write horizontal correlations NetCDF file
+      - parameter: cor_rh
+        file:
+          single_record: true
+          data_dir: Data/bump
+          prefix: wc13
+          exp: bump_parameters
+          type: cov_rh
+          date: *date
+      - parameter: cor_rv                                    # Write vertical correlations NetCDF file
+        file:
+          single_record: true
+          data_dir: Data/bump
+          prefix: wc13
+          exp: bump_parameters
+          type: cov_rv
+          date: *date
 
-  - prefix: wc13_bump_parameters_3d               # NetCDF-4 filename prefix: 3D correlations
-    variables: [tocn, socn]
-    rh:                                           # Homogeneous correlation horizontal radius (m)
-      tocn: [50.0e3]
-      socn: [50.0e3]
-    rv:                                           # Homogeneous correlation vertical radius (m)
-      tocn: [500]
-      socn: [500]
-  strategy: specific_univariate                   # NICAS multivariate strategy
-  verbosity: main
-  write_nicas_local: true
-
-  output:                                         # Write horizontal correlations NetCDF file
-  - parameter: cor_rh
-    data_dir: Data/bump
-    data_frequency: &frequency PT2H
-    file_policy: *frequency
-    forecast length: *frequency
-    prefix: wc13_inc
-    exp: bump_parameters
-    type: cor_rh
-    date: *date
-
-  - parameter: cor_rv                             # Write vertical correlations NetCDF file
-    data_dir: Data/bump
-    data_frequency: &frequency PT2H
-    file_policy: *frequency
-    forecast length: *frequency
-    prefix: wc13_inc
-    exp: bump_parameters
-    type: cor_rv
-    date: *date
-
-#test:
-#  reference filename: testref/parameters_bump_cov_nicas.ref
-#  float relative tolerance: 1.0e-6
-#  log output filename: testoutput/parameters_bump_cov_nicas.log
-#  test output filename: testoutput/parameters_bump_cov_nicas.out
+test:
+  reference filename: testref/parameters_bump_cov_nicas.ref
+  float relative tolerance: 1.0e-6
+  log output filename: testoutput/parameters_bump_cov_nicas.log
+  test output filename: testoutput/parameters_bump_cov_nicas.out
 
 # NOTES:
 #

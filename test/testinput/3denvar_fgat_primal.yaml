@@ -43,13 +43,13 @@ cost function:
     date: *date 
 
   background error:
-    covariance model: ensemble                   # Ensemble error covariance
+    covariance model: ensemble
     localization:
       localization method: SABER
       saber central block:
         saber block name: BUMP_NICAS
         active variables: *roms_analysis
-        bump:
+        read:
           drivers:
             multivariate strategy: duplicated
             read local nicas: true
@@ -61,8 +61,8 @@ cost function:
         date: *date
         fields_dir: Data/ensembles/
         fields_filename: wc13_roms_ensemble_mem%mem%_2004-01-03-00.00.00.nc
-        fields_record: 1                       # 2004-01-03T00:00:00Z
-#       fields_record: 49                      # 2004-01-07T00:00:00Z
+        fields_record: 1                         # 2004-01-03T00:00:00Z
+#       fields_record: 49                        # 2004-01-07T00:00:00Z
         state variables: *roms_state
       pattern: %mem%
       nmembers: 10

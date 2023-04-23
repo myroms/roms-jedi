@@ -42,6 +42,10 @@ list( APPEND romsjedi_test_input
   testinput/hofx_nomodel.yaml
   testinput/hofx_4d.yaml
   testinput/increment.yaml
+  testinput/letkf.yaml
+  testinput/letkf_3dhyb.yaml
+  testinput/letkf_split_observer.yaml
+  testinput/letkf_split_solver.yaml
   testinput/lineargetvalues.yaml
   testinput/linearmodel.yaml
   testinput/makeobs_4d.yaml
@@ -85,6 +89,10 @@ set( romsjedi_test_ref
   testref/hofx_nomodel.ref
   testref/hofx_4d.ref
   testref/increment.ref
+  testref/letkf.ref
+  testref/letkf_3dhyb.ref
+  testref/letkf_split_observer.ref
+  testref/letkf_split_solver.ref
   testref/makeobs_4d.ref
   testref/makeobs_4d_perturbed.ref
   testref/parameters_bump_cor_nicas.ref
@@ -148,6 +156,11 @@ file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/forecast)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/hofx)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/hofx/ensembles)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/increment)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/letkf)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/letkf/3dhyb)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/letkf/solver)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/letkf/split_observer)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/letkf/split_solver)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/makeobs)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/obs)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/roms)
@@ -455,9 +468,10 @@ ecbuild_add_test(
   TARGET       test_romsjedi_3denvar_regular_primal
   MPI          2
   COMMAND      romsjedi_var.x
- ARGS         testinput/3denvar_regular_primal.yaml
+  ARGS         testinput/3denvar_regular_primal.yaml
   LIBS         romsjedi
-  TEST_DEPENDS test_romsjedi_bump_loc_parameters_cor_nicas )
+  TEST_DEPENDS test_romsjedi_bump_loc_parameters_cor_nicas
+               test_romsjedi_ens_pert )
 
 ecbuild_add_test(
   TARGET       test_romsjedi_3denvar_regular_dual
@@ -465,7 +479,8 @@ ecbuild_add_test(
   COMMAND      romsjedi_var.x
   ARGS         testinput/3denvar_regular_dual.yaml
   LIBS         romsjedi
-  TEST_DEPENDS test_romsjedi_bump_loc_parameters_cor_nicas )
+  TEST_DEPENDS test_romsjedi_bump_loc_parameters_cor_nicas
+               test_romsjedi_ens_pert )
 
 ecbuild_add_test(
   TARGET       test_romsjedi_3denvar_fgat_primal
@@ -473,7 +488,8 @@ ecbuild_add_test(
   COMMAND      romsjedi_var.x
   ARGS         testinput/3denvar_fgat_primal.yaml
   LIBS         romsjedi
-  TEST_DEPENDS test_romsjedi_bump_loc_parameters_cor_nicas )
+  TEST_DEPENDS test_romsjedi_bump_loc_parameters_cor_nicas
+               test_romsjedi_ens_pert )
 
 ecbuild_add_test(
   TARGET       test_romsjedi_3denvar_fgat_dual
@@ -481,7 +497,8 @@ ecbuild_add_test(
   COMMAND      romsjedi_var.x
   ARGS         testinput/3denvar_fgat_dual.yaml
   LIBS         romsjedi
-  TEST_DEPENDS test_romsjedi_bump_loc_parameters_cor_nicas )
+  TEST_DEPENDS test_romsjedi_bump_loc_parameters_cor_nicas
+               test_romsjedi_ens_pert )
 
 ecbuild_add_test(
   TARGET       test_romsjedi_3dhyb_regular_primal
@@ -490,7 +507,8 @@ ecbuild_add_test(
   ARGS         testinput/3dhyb_regular_primal.yaml
   LIBS         romsjedi
   TEST_DEPENDS test_romsjedi_bump_parameters_cor_nicas
-               test_romsjedi_bump_loc_parameters_cor_nicas )
+               test_romsjedi_bump_loc_parameters_cor_nicas
+               test_romsjedi_ens_pert )
 
 ecbuild_add_test(
   TARGET       test_romsjedi_3dhyb_regular_dual
@@ -499,7 +517,8 @@ ecbuild_add_test(
   ARGS         testinput/3dhyb_regular_dual.yaml
   LIBS         romsjedi
   TEST_DEPENDS test_romsjedi_bump_parameters_cor_nicas
-               test_romsjedi_bump_loc_parameters_cor_nicas )
+               test_romsjedi_bump_loc_parameters_cor_nicas
+               test_romsjedi_ens_pert )
 
 ecbuild_add_test(
   TARGET       test_romsjedi_3dhyb_fgat_primal
@@ -508,7 +527,8 @@ ecbuild_add_test(
   ARGS         testinput/3dhyb_fgat_primal.yaml
   LIBS         romsjedi
   TEST_DEPENDS test_romsjedi_bump_parameters_cor_nicas
-               test_romsjedi_bump_loc_parameters_cor_nicas )
+               test_romsjedi_bump_loc_parameters_cor_nicas
+               test_romsjedi_ens_pert )
 
 ecbuild_add_test(
   TARGET       test_romsjedi_3dhyb_fgat_dual
@@ -517,4 +537,44 @@ ecbuild_add_test(
   ARGS         testinput/3dhyb_fgat_dual.yaml
   LIBS         romsjedi
   TEST_DEPENDS test_romsjedi_bump_parameters_cor_nicas
-               test_romsjedi_bump_loc_parameters_cor_nicas )
+               test_romsjedi_bump_loc_parameters_cor_nicas
+               test_romsjedi_ens_pert )
+
+#================================================================================
+# ROMS-JEDI LETKF Assimilation applications
+#================================================================================
+
+ecbuild_add_test(
+  TARGET       test_romsjedi_letkf
+  MPI          2
+  COMMAND      romsjedi_letkf.x
+  ARGS         testinput/letkf.yaml
+  LIBS         romsjedi
+  TEST_DEPENDS test_romsjedi_ens_pert )
+
+ecbuild_add_test(
+  TARGET       test_romsjedi_letkf_split_observer
+  MPI          2
+  COMMAND      romsjedi_letkf.x
+  ARGS         testinput/letkf_split_observer.yaml
+  LIBS         romsjedi
+  TEST_DEPENDS test_romsjedi_ens_pert )
+
+ecbuild_add_test(
+  TARGET       test_romsjedi_letkf_split_solver
+  MPI          2
+  COMMAND      romsjedi_letkf.x
+  ARGS         testinput/letkf_split_solver.yaml
+  LIBS         romsjedi
+  TEST_DEPENDS test_romsjedi_ens_pert
+               test_romsjedi_letkf_split_observer )
+
+ecbuild_add_test(
+  TARGET       test_romsjedi_letkf_3dhyb
+  MPI          2
+  COMMAND      romsjedi_var.x
+  ARGS         testinput/letkf_3dhyb.yaml
+  LIBS         romsjedi
+  TEST_DEPENDS test_romsjedi_bump_parameters_cor_nicas
+               test_romsjedi_bump_loc_parameters_cor_nicas
+               test_romsjedi_letkf )

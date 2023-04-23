@@ -11,79 +11,79 @@ geometry:
   project_dir: jediroms_wc13/JEDI/
   roms_stdinp: roms_wc13_20040103.in
   fields metadata: Data/fields_metadata.yaml
-  ng: 1                                           # ROMS nested grid number
-
-input variables: &rho_vars [ssh, tocn, socn]
+  ng: 1                                               # ROMS nested grid number
 
 background:
   fields_dir: jediroms_wc13/Data/
   fields_filename: wc13_roms_ini_20040103.nc   
-  fields_record: 1                                # initial fields
-  state variables: [ssh, uocn, vocn, tocn, socn]
-  date: &date 2004-01-03T00:00:00Z                # initial fields date
+  fields_record: 1                                    # initial fields
+  state variables: [ssh, tocn, socn]
+  date: &date 2004-01-03T00:00:00Z                    # initial fields date
 
-bump:
-  io:
-    data directory: Data/bump                     # BUMP data directory
-  drivers:
-    multivariate strategy: univariate             # NICAS multivariate strategy
-    compute nicas: true                           # Run NICAS driver
-    write local nicas: true
-  model:
-    do not cross mask boundaries: true
-  nicas:
-    resolution: 6.0                               # NICAS subgrid resolution
-    explicit length-scales: true
-    horizontal length-scale:
-    - groups:
-      - ssh
-      value: 250.0e3
-    - groups:
-      - tocn
-      value: 250.0e3
-    - groups:
-      - socn
-      value: 250.0e3
-    vertical length-scale:
-    - groups:
-      - ssh
-      value: 0
-    - groups:
-      - tocn
-      value: 100
-    - groups:
-      - socn
-      value: 100
-  grids:
-  - model:
-      variables:
-      - ssh
-    io:
-      files prefix: wc13_bump2d                   # NetCDF-4 filename prefix: 2D correlations
-  - model:
-      variables:
-      - tocn
-      - socn
-    io:
-      files prefix: wc13_bump3d                   # NetCDF-4 filename prefix: 3D correlations
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: BUMP_NICAS
+    active variables: &rho_vars [ssh, tocn, socn]
+    calibration:
+      drivers:
+        multivariate strategy: univariate             # NICAS multivariate strategy
+        compute nicas: true                           # Run NICAS driver
+        write local nicas: true
+      io:
+        data directory: Data/bump                     # BUMP data directory
+      model:
+        do not cross mask boundaries: true
+      nicas:
+        resolution: 6.0                               # NICAS subgrid resolution
+        explicit length-scales: true
+        horizontal length-scale:
+        - groups:
+          - ssh
+          value: 250.0e3
+        - groups:
+          - tocn
+          value: 250.0e3
+        - groups:
+          - socn
+          value: 250.0e3
+        vertical length-scale:
+        - groups:
+          - tocn
+          value: 100
+        - groups:
+          - socn
+          value: 100
+      grids:
+      - model:
+          variables:
+          - ssh
+        io:
+          files prefix: wc13_bump2d                   # NetCDF-4 filename prefix: 2D correlations
+      - model:
+          variables:
+          - tocn
+          - socn
+        io:
+          files prefix: wc13_bump3d                   # NetCDF-4 filename prefix: 3D correlations
 
-output:                                           # Write horizontal correlations NetCDF file
-- parameter: cor_rh
-  file:
-    single_record: true
-    data_dir: Data/bump
-    prefix: wc13
-    exp: bump_parameters
-    type: cor_rh
-    date: *date
-- parameter: cor_rv                               # Write vertical correlations NetCDF file
-  file:
-    single_record: true
-    data_dir: Data/bump
-    prefix: wc13
-    exp: bump_parameters
-    type: cor_rv
-    date: *date
+      output model files:                             # Write horizontal correlations NetCDF file
+      - parameter: cor_rh
+        file:
+          single_record: true
+          data_dir: Data/bump
+          prefix: wc13
+          exp: bump_parameters
+          type: cor_rh
+          date: *date
+      - parameter: cor_rv                             # Write vertical correlations NetCDF file
+        file:
+          single_record: true
+          data_dir: Data/bump
+          prefix: wc13
+          exp: bump_parameters
+          type: cor_rv
+          date: *date
 
 test:
   reference filename: testref/parameters_bump_cor_nicas.ref

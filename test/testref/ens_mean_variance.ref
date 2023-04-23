@@ -7,8 +7,8 @@ Test     :                               tocn   Min=     1.136319121821741   Max
 Test     :                               socn   Min=    31.994977122944597   Max=    34.687661831864645   Mean=    33.931722077853806   CheckSum= 1492188
 Test     : Variance: 
 Test     :   Valid time: 2004-01-03T00:00:00Z
-Test     :                                ssh   Min=     0.000119902398470   Max=     0.012168372053746   Mean=     0.001952017934691   CheckSum= 63873
-Test     :                               uocn   Min=     0.000000086259645   Max=     0.002543287377555   Mean=     0.000037792175282   CheckSum= 1840300
-Test     :                               vocn   Min=     0.000000071892758   Max=     0.001567478415510   Mean=     0.000028383639908   CheckSum= 1835460
-Test     :                               tocn   Min=     0.000000125767630   Max=     2.848914406304089   Mean=     0.123219116560054   CheckSum= 1924023
-Test     :                               socn   Min=     0.000000002426446   Max=     0.557422245035071   Mean=     0.006371391568226   CheckSum= 1897272
+Test     :                                ssh   Min=     0.000119902398470   Max=     0.012168372053746   Mean=     0.001952017934691   CheckSum= 64000
+Test     :                               uocn   Min=     0.000000086259645   Max=     0.002543287377555   Mean=     0.000037792175282   CheckSum= 1843817
+Test     :                               vocn   Min=     0.000000071892758   Max=     0.001567478415510   Mean=     0.000028383639908   CheckSum= 1838321
+Test     :                               tocn   Min=     0.000000125767630   Max=     2.848914406304089   Mean=     0.123219116560054   CheckSum= 1927313
+Test     :                               socn   Min=     0.000000002426446   Max=     0.557422245035071   Mean=     0.006371391568226   CheckSum= 1901106

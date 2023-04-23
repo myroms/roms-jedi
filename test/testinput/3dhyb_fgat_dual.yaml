@@ -50,7 +50,7 @@ cost function:
         covariance model: SABER
         saber central block:
           saber block name: BUMP_NICAS
-          bump:
+          read:
             drivers:
               multivariate strategy: univariate
               read local nicas: true
@@ -70,9 +70,8 @@ cost function:
                 files prefix: wc13_bump3d
         saber outer blocks:
         - saber block name: StdDev
-          input fields:
-          - parameter: StdDev
-            file:
+          read:
+            model file:
               fields_dir: jediroms_wc13/Data/
               fields_filename: wc13_std_i.nc     # same as ROMS native RBL4D-Var
               fields_record: 1
@@ -87,7 +86,7 @@ cost function:
           saber central block:
             saber block name: BUMP_NICAS
             active variables: *roms_analysis
-            bump:
+            read:
               drivers:
                 multivariate strategy: duplicated
                 read local nicas: true

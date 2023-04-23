@@ -1,0 +1,141 @@
+Test     : Initial state for member 1:
+Test     :   Valid time: 2004-01-03T00:00:00Z
+Test     :                                ssh   Min=    -0.277525433689793   Max=     0.338710027233020   Mean=    -0.015221955924322   CheckSum= 64461
+Test     :                               uocn   Min=    -0.449852177411815   Max=     0.451519002643489   Mean=     0.002398705482072   CheckSum= 1868021
+Test     :                               vocn   Min=    -0.558044605639364   Max=     0.347623297647337   Mean=    -0.007385931151832   CheckSum= 1864276
+Test     :                               tocn   Min=     1.133534646701516   Max=    19.906791214757138   Mean=     6.423745327584472   CheckSum= 1671564
+Test     :                               socn   Min=    31.699449748322188   Max=    34.687008618998398   Mean=    33.941611795691017   CheckSum= 1496456
+Test     : Initial state for member 2:
+Test     :   Valid time: 2004-01-03T00:00:00Z
+Test     :                                ssh   Min=    -0.320952685309010   Max=     0.332166551887869   Mean=    -0.011906045014875   CheckSum= 64504
+Test     :                               uocn   Min=    -0.478188847219122   Max=     0.461947683068552   Mean=     0.002271367975213   CheckSum= 1865882
+Test     :                               vocn   Min=    -0.571262949165323   Max=     0.366414373054261   Mean=    -0.007248970926104   CheckSum= 1862867
+Test     :                               tocn   Min=     1.111450233741757   Max=    19.904226402242344   Mean=     6.420428405341662   CheckSum= 1670680
+Test     :                               socn   Min=    31.631470026718087   Max=    34.687990324856806   Mean=    33.929510327605882   CheckSum= 1496169
+Test     : Initial state for member 3:
+Test     :   Valid time: 2004-01-03T00:00:00Z
+Test     :                                ssh   Min=    -0.270963308903544   Max=     0.266341952923320   Mean=    -0.017773337897384   CheckSum= 64612
+Test     :                               uocn   Min=    -0.462577565307963   Max=     0.453077925903211   Mean=     0.002250833803405   CheckSum= 1864741
+Test     :                               vocn   Min=    -0.560393849108384   Max=     0.348257359565245   Mean=    -0.007171908609818   CheckSum= 1865037
+Test     :                               tocn   Min=     1.122576118663918   Max=    20.005065085378654   Mean=     6.458432098178489   CheckSum= 1671853
+Test     :                               socn   Min=    31.820249670357782   Max=    34.689094925558663   Mean=    33.937169649439682   CheckSum= 1496973
+Test     : Initial state for member 4:
+Test     :   Valid time: 2004-01-03T00:00:00Z
+Test     :                                ssh   Min=    -0.315350691935702   Max=     0.284904986406300   Mean=    -0.013167874185733   CheckSum= 64935
+Test     :                               uocn   Min=    -0.456443198420954   Max=     0.478539774087642   Mean=     0.002129270076649   CheckSum= 1867643
+Test     :                               vocn   Min=    -0.559268072862768   Max=     0.355270626379479   Mean=    -0.007078742690076   CheckSum= 1863784
+Test     :                               tocn   Min=     1.135484059993448   Max=    18.860247909640890   Mean=     6.378946976565719   CheckSum= 1673008
+Test     :                               socn   Min=    31.738721946657325   Max=    34.688007679104004   Mean=    33.925625272858703   CheckSum= 1495730
+Test     : Initial state for member 5:
+Test     :   Valid time: 2004-01-03T00:00:00Z
+Test     :                                ssh   Min=    -0.315381889298514   Max=     0.258603498203702   Mean=    -0.014025913856597   CheckSum= 64468
+Test     :                               uocn   Min=    -0.458976728177177   Max=     0.462182194108728   Mean=     0.002530695086225   CheckSum= 1866890
+Test     :                               vocn   Min=    -0.553956026652249   Max=     0.346519433178732   Mean=    -0.007091222831116   CheckSum= 1864997
+Test     :                               tocn   Min=     1.137116638879395   Max=    18.958143764019869   Mean=     6.409328213477213   CheckSum= 1672218
+Test     :                               socn   Min=    31.611811776464258   Max=    34.687975006820295   Mean=    33.932652126608460   CheckSum= 1496512
+Test     : Initial state for member 6:
+Test     :   Valid time: 2004-01-03T00:00:00Z
+Test     :                                ssh   Min=    -0.311427778857608   Max=     0.258557259863839   Mean=    -0.013074336417461   CheckSum= 64817
+Test     :                               uocn   Min=    -0.470163605739004   Max=     0.466798933357315   Mean=     0.002422163617721   CheckSum= 1865795
+Test     :                               vocn   Min=    -0.555641866945796   Max=     0.351123073406703   Mean=    -0.007234345778984   CheckSum= 1863146
+Test     :                               tocn   Min=     1.130702070289718   Max=    18.835910198564999   Mean=     6.395817206241853   CheckSum= 1671120
+Test     :                               socn   Min=    31.891075947593372   Max=    34.687984473036536   Mean=    33.931644486300435   CheckSum= 1496309
+Test     : Initial state for member 7:
+Test     :   Valid time: 2004-01-03T00:00:00Z
+Test     :                                ssh   Min=    -0.330505351305851   Max=     0.279872542628575   Mean=    -0.021338761139581   CheckSum= 64791
+Test     :                               uocn   Min=    -0.468410432185625   Max=     0.457909374659495   Mean=     0.002235835621445   CheckSum= 1866689
+Test     :                               vocn   Min=    -0.564195666924258   Max=     0.360179511821028   Mean=    -0.007129798404137   CheckSum= 1863040
+Test     :                               tocn   Min=     1.138741934135479   Max=    19.278670526023305   Mean=     6.425433456012972   CheckSum= 1671359
+Test     :                               socn   Min=    31.705950558388317   Max=    34.688181098190164   Mean=    33.927261463582582   CheckSum= 1497302
+Test     : Initial state for member 8:
+Test     :   Valid time: 2004-01-03T00:00:00Z
+Test     :                                ssh   Min=    -0.290839674441768   Max=     0.255030400819378   Mean=    -0.015243634583448   CheckSum= 64552
+Test     :                               uocn   Min=    -0.449534067695014   Max=     0.451910104015890   Mean=     0.002461499828578   CheckSum= 1866194
+Test     :                               vocn   Min=    -0.548878481898220   Max=     0.350761629118999   Mean=    -0.007181415066915   CheckSum= 1864453
+Test     :                               tocn   Min=     1.131410290003313   Max=    18.368883119513185   Mean=     6.366480513500659   CheckSum= 1671945
+Test     :                               socn   Min=    31.680740335997566   Max=    34.687650338048925   Mean=    33.924992755821805   CheckSum= 1495845
+Test     : Initial state for member 9:
+Test     :   Valid time: 2004-01-03T00:00:00Z
+Test     :                                ssh   Min=    -0.309546067914638   Max=     0.290322695048094   Mean=    -0.008812524641167   CheckSum= 64692
+Test     :                               uocn   Min=    -0.461178205728116   Max=     0.453801397676351   Mean=     0.002443328027157   CheckSum= 1866058
+Test     :                               vocn   Min=    -0.560563627121787   Max=     0.344649798073855   Mean=    -0.007161886951855   CheckSum= 1863342
+Test     :                               tocn   Min=     1.135121516915500   Max=    19.533390969064108   Mean=     6.428858469583214   CheckSum= 1671628
+Test     :                               socn   Min=    31.816880750773429   Max=    34.687778485656061   Mean=    33.930110219311786   CheckSum= 1496551
+Test     : Initial state for member 10:
+Test     :   Valid time: 2004-01-03T00:00:00Z
+Test     :                                ssh   Min=    -0.332256597362326   Max=     0.236455669435901   Mean=    -0.017245197653874   CheckSum= 64454
+Test     :                               uocn   Min=    -0.458063774088511   Max=     0.455770757968913   Mean=     0.002616759851740   CheckSum= 1865900
+Test     :                               vocn   Min=    -0.561683487222530   Max=     0.347332902970626   Mean=    -0.007291239245079   CheckSum= 1863267
+Test     :                               tocn   Min=     1.132267409794400   Max=    19.442340089189337   Mean=     6.427795183866102   CheckSum= 1672154
+Test     :                               socn   Min=    31.941015091147865   Max=    34.688178753231426   Mean=    33.936642681317693   CheckSum= 1496653
+Test     : H(x) for member 1:
+Test     : SST nobs= 4952 Min=8.146581649780273, Max=18.668743133544922, RMS=13.637620585871600
+Test     : ADT nobs= 1570 Min=-0.252758651971817, Max=0.275452315807343, RMS=0.116111631476769
+Test     : H(x) for member 2:
+Test     : SST nobs= 4952 Min=8.076096534729004, Max=18.715631484985352, RMS=13.606490688281285
+Test     : ADT nobs= 1570 Min=-0.299386084079742, Max=0.353733152151108, RMS=0.121991714905569
+Test     : H(x) for member 3:
+Test     : SST nobs= 4952 Min=7.615683555603027, Max=18.937156677246094, RMS=13.744262909765443
+Test     : ADT nobs= 1570 Min=-0.235360637307167, Max=0.295154631137848, RMS=0.114635899059407
+Test     : H(x) for member 4:
+Test     : SST nobs= 4952 Min=7.959057807922363, Max=18.400714874267578, RMS=13.421211822139231
+Test     : ADT nobs= 1570 Min=-0.292106986045837, Max=0.308148682117462, RMS=0.125665352532459
+Test     : H(x) for member 5:
+Test     : SST nobs= 4952 Min=7.235898017883301, Max=18.881502151489258, RMS=13.639935982672153
+Test     : ADT nobs= 1570 Min=-0.262346923351288, Max=0.279264122247696, RMS=0.115445399519900
+Test     : H(x) for member 6:
+Test     : SST nobs= 4952 Min=7.821201801300049, Max=18.491447448730469, RMS=13.571977007806947
+Test     : ADT nobs= 1570 Min=-0.289471656084061, Max=0.280513375997543, RMS=0.118475687767709
+Test     : H(x) for member 7:
+Test     : SST nobs= 4952 Min=8.521692276000977, Max=18.655582427978516, RMS=13.610899582313362
+Test     : ADT nobs= 1570 Min=-0.297050237655640, Max=0.291034102439880, RMS=0.113691258176260
+Test     : H(x) for member 8:
+Test     : SST nobs= 4952 Min=7.369565010070801, Max=18.121471405029297, RMS=13.394160045969242
+Test     : ADT nobs= 1570 Min=-0.265405386686325, Max=0.274409592151642, RMS=0.109847501612328
+Test     : H(x) for member 9:
+Test     : SST nobs= 4952 Min=7.584244728088379, Max=19.044672012329102, RMS=13.736311252488916
+Test     : ADT nobs= 1570 Min=-0.292221307754517, Max=0.307647466659546, RMS=0.118070251711918
+Test     : H(x) for member 10:
+Test     : SST nobs= 4952 Min=8.634050369262695, Max=18.524574279785156, RMS=13.601334725941463
+Test     : ADT nobs= 1570 Min=-0.304518848657608, Max=0.264193415641785, RMS=0.110169253131181
+Test     : H(x) ensemble background mean: 
+Test     : SST nobs= 4952 Min=8.417033958435059, Max=18.286538314819335, RMS=13.585893400933760
+Test     : ADT nobs= 1570 Min=-0.256047342717648, Max=0.242639221251011, RMS=0.109048379708575
+Test     : background y - H(x): 
+Test     : SST nobs= 4952 Min=-1.784376049041748, Max=1.513474941253662, RMS=0.398526366640050
+Test     : ADT nobs= 1570 Min=-0.134153571072966, Max=0.145160580798984, RMS=0.033672381464954
+Test     : Background mean :
+Test     :   Valid time: 2004-01-03T00:00:00Z
+Test     :                                ssh   Min=    -0.280896090999848   Max=     0.235753616761472   Mean=    -0.014780958131444   CheckSum= 64626
+Test     :                               uocn   Min=    -0.461338860197330   Max=     0.458243802506403   Mean=     0.002376045937021   CheckSum= 1874915
+Test     :                               vocn   Min=    -0.559266870843583   Max=     0.351813200521627   Mean=    -0.007197546165591   CheckSum= 1872692
+Test     :                               tocn   Min=     1.136319121821741   Max=    18.898732933519376   Mean=     6.413526585035235   CheckSum= 1667265
+Test     :                               socn   Min=    31.994977122944597   Max=    34.687661831864645   Mean=    33.931722077853806   CheckSum= 1492188
+Test     : Analysis mean :
+Test     :   Valid time: 2004-01-03T00:00:00Z
+Test     :                                ssh   Min=    -0.296048952963796   Max=     0.212685980914713   Mean=    -0.016870613367890   CheckSum= 64772
+Test     :                               uocn   Min=    -0.457589503660176   Max=     0.455783366121379   Mean=     0.002404127526962   CheckSum= 1874518
+Test     :                               vocn   Min=    -0.557368530189644   Max=     0.345560050135912   Mean=    -0.007188345860689   CheckSum= 1872440
+Test     :                               tocn   Min=     1.136205160007666   Max=    18.432546469722439   Mean=     6.418399897117222   CheckSum= 1669476
+Test     :                               socn   Min=    31.949207154478412   Max=    34.687858181887250   Mean=    33.932068892487791   CheckSum= 1494223
+Test     : Analysis mean increment :
+Test     :   Valid time: 2004-01-03T00:00:00Z
+Test     :                                ssh   Min=    -0.147527402427271   Max=     0.118063597925268   Mean=    -0.002089655236445   CheckSum= 61170
+Test     :                               uocn   Min=    -0.036464073657489   Max=     0.029357472307493   Mean=     0.000028081589941   CheckSum= 1713062
+Test     :                               vocn   Min=    -0.021167786048268   Max=     0.029119553359302   Mean=     0.000009200304902   CheckSum= 1697125
+Test     :                               tocn   Min=    -2.138578643070963   Max=     1.678200989339333   Mean=     0.004873312081986   CheckSum= 1717445
+Test     :                               socn   Min=    -0.637617197298866   Max=     0.712994466063201   Mean=     0.000346814633976   CheckSum= 1531519
+Test     : Forecast variance :
+Test     :   Valid time: 2004-01-03T00:00:00Z
+Test     :                                ssh   Min=     0.000119902398470   Max=     0.012168372053746   Mean=     0.001952017934691   CheckSum= 63901
+Test     :                               uocn   Min=     0.000000086259645   Max=     0.002543287377555   Mean=     0.000037792175282   CheckSum= 1840734
+Test     :                               vocn   Min=     0.000000071892758   Max=     0.001567478415510   Mean=     0.000028383639908   CheckSum= 1835145
+Test     :                               tocn   Min=     0.000000125767630   Max=     2.848914406304090   Mean=     0.123219116560054   CheckSum= 1923768
+Test     :                               socn   Min=     0.000000002426446   Max=     0.557422245035071   Mean=     0.006371391568226   CheckSum= 1897365
+Test     : Analysis variance :
+Test     :   Valid time: 2004-01-03T00:00:00Z
+Test     :                                ssh   Min=     0.000089926075053   Max=     0.008122677997544   Mean=     0.001429618440417   CheckSum= 63718
+Test     :                               uocn   Min=     0.000000070414604   Max=     0.001992252752297   Mean=     0.000030019226094   CheckSum= 1838397
+Test     :                               vocn   Min=     0.000000064552212   Max=     0.001106710285391   Mean=     0.000022431631061   CheckSum= 1835793
+Test     :                               tocn   Min=     0.000000103578971   Max=     2.058328618504742   Mean=     0.092428935194103   CheckSum= 1920540
+Test     :                               socn   Min=     0.000000002120663   Max=     0.496671944593492   Mean=     0.005121113256458   CheckSum= 1900187
