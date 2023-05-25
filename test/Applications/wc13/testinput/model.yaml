@@ -1,0 +1,30 @@
+# ROMS-JEDI Nonlinear Model Unit Test: WC13 Application
+
+geometry:
+  project_dir: Data/wc13
+  roms_stdinp: roms_wc13_20040103.in
+  fields metadata: Data/fields_metadata.yaml
+  ng: 1                                        # ROMS nested grid number
+
+ForecastLength: &ForecastLength PT96H
+
+model test:
+  forecast length: *ForecastLength
+  final norm: 8604.91697102
+  tolerance: 1.0e-2
+  test reforecast: true
+
+model:
+  name: ROMS
+  model variables: [ssh, uocn, vocn, tocn, socn]
+  tstep: PT1800S
+  simulation length: *ForecastLength
+
+initial condition:
+  fields_dir: Data/wc13/input
+  fields_filename: wc13_roms_ini_20040103.nc
+  fields_record: 1
+  state variables: [ssh, uocn, vocn, tocn, socn]
+  date: 2004-01-03T00:00:00Z
+
+model aux control:

@@ -1,0 +1,28 @@
+Test     : Norm of input parameter StdDev: 7.7717431208294583e+03
+Test     : CostJb   : Nonlinear Jb = 0.0000000000000000e+00
+Test     : CostJo   : Nonlinear Jo(SST) = 2.9147498012345586e+03, nobs = 4952, Jo/n = 5.8860052528969276e-01, err = 4.0783752598605327e-01
+Test     : CostJo   : Nonlinear Jo(ADT) = 1.6444594270776101e+03, nobs = 1570, Jo/n = 1.0474263866736371e+00, err = 2.0313911453614535e-02
+Test     : CostFunction: Nonlinear J = 4.5592092283121692e+03
+Test     : Eigenvalue 1 : 1.4155783614141723e+02
+Test     : Norm eigenvector = 3.9604936819677818e+01
+Test     : Eigenvalue 2 : 1.2907653336815295e+02
+Test     : Norm eigenvector = 4.3412973126208691e+01
+Test     : Eigenvalue 3 : 1.2110197763808040e+02
+Test     : Norm eigenvector = 4.3398541660556440e+01
+Test     : Eigenvalue 4 : 1.0265634079420228e+02
+Test     : Norm eigenvector = 3.7291221746227791e+01
+Test     : Eigenvalue 5 : 8.2192877256286266e+01
+Test     : Norm eigenvector = 2.6569286464939996e+01
+Test     : DRPLanczosMinimizer: reduction in residual norm = 6.6066606156681959e-02
+Test     : CostFunction::addIncrement: Analysis: 
+Test     :   Valid time: 2004-01-05T00:00:00Z
+Test     :                                ssh   Min=    -0.268198264110757   Max=     0.234549444326822   Mean=    -0.013605059292124
+Test     :                               uocn   Min=    -0.347459054892129   Max=     0.461199203214349   Mean=     0.003586358700246
+Test     :                               vocn   Min=    -0.553064987459898   Max=     0.283580447706039   Mean=    -0.002371273022185
+Test     :                               tocn   Min=     1.136445473182863   Max=    18.127337885528231   Mean=     6.419212181018758
+Test     :                               socn   Min=    32.049504445902230   Max=    34.687555440161120   Mean=    33.935503036236625
+Test     :                             zocn_r   Min= -4947.840267560327447   Max=    -0.245773375763171   Mean= -1064.400608062135916
+Test     : CostJb   : Nonlinear Jb = 80.124002866345791
+Test     : CostJo   : Nonlinear Jo(SST) = 441.031282561677017, nobs = 4952, Jo/n = 0.089061244459143, err = 0.407837525986053
+Test     : CostJo   : Nonlinear Jo(ADT) = 499.297828975521270, nobs = 1570, Jo/n = 0.318024094888867, err = 0.020313911453615
+Test     : CostFunction: Nonlinear J = 1020.453114403544078

@@ -1,0 +1,71 @@
+# ROMS-JEDI Recentered Ensemble Test: WC13 Application
+#
+# Recenters ensemble around central state.
+
+geometry:
+  project_dir: Data/wc13
+  roms_stdinp: roms_wc13_20040103.in
+  fields metadata: Data/fields_metadata.yaml
+  ng: 1                                        # ROMS nested grid number
+
+recenter variables: &roms_state [ssh, uocn, vocn, tocn, socn]
+
+_file: &_file
+  date: &date 2004-01-03T00:00:00Z
+  fields_dir: Data/ensembles
+  fields_record: 1                             # 2004-01-03T00:00:00Z
+# fields_record: 49                            # 2004-01-07T00:00:00Z
+  state variables: *roms_state
+
+center:                                        # Central state
+  fields_dir: Data/wc13/input
+  fields_filename: wc13_roms_ini_20040103.nc   # initial fields for 2004-01-03T00:00:00Z
+  fields_record: 1
+  state variables: *roms_state
+  date: *date
+
+zero center: false
+
+ensemble:                                      # Ensembles to be recentered
+  - <<: *_file
+    fields_filename: wc13_roms_ensemble_mem001_2004-01-03-00.00.00.nc
+  - <<: *_file
+    fields_filename: wc13_roms_ensemble_mem002_2004-01-03-00.00.00.nc
+  - <<: *_file
+    fields_filename: wc13_roms_ensemble_mem003_2004-01-03-00.00.00.nc
+  - <<: *_file
+    fields_filename: wc13_roms_ensemble_mem004_2004-01-03-00.00.00.nc
+  - <<: *_file
+    fields_filename: wc13_roms_ensemble_mem005_2004-01-03-00.00.00.nc
+  - <<: *_file
+    fields_filename: wc13_roms_ensemble_mem006_2004-01-03-00.00.00.nc
+  - <<: *_file
+    fields_filename: wc13_roms_ensemble_mem007_2004-01-03-00.00.00.nc
+  - <<: *_file
+    fields_filename: wc13_roms_ensemble_mem008_2004-01-03-00.00.00.nc
+  - <<: *_file
+    fields_filename: wc13_roms_ensemble_mem009_2004-01-03-00.00.00.nc
+  - <<: *_file
+    fields_filename: wc13_roms_ensemble_mem010_2004-01-03-00.00.00.nc
+
+ensemble mean output:
+  single_record: true
+  data_dir: Data/ensembles
+  prefix: wc13_roms
+  exp: ensemble
+  type: mean
+  date: *date
+
+recentered output:
+  single_record: true
+  data_dir: Data/ensembles
+  prefix: wc13_roms
+  exp: ensemble
+  type: recentered
+  date: *date
+
+test:
+  reference filename: testref/ens_recenter.ref
+  float relative tolerance: 1.0e-3
+  log output filename: testoutput/ens_recenter.log
+  test output filename: testoutput/ens_recenter.out

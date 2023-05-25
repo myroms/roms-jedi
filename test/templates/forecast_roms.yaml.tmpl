@@ -1,0 +1,39 @@
+# ROMS-JEDI Nonlinear Model Forecast Unit Test: __ROMS_APPLICATION__
+
+geometry:
+  project_dir: __PROJECT_DIR__
+  roms_stdinp: __ROMS_STDINP__
+  fields metadata: Data/fields_metadata.yaml
+  ng: 1                                        # ROMS nested grid number
+
+forecast length: &ForecastLength __FORECAST_LENGTH__
+
+model:
+  name: ROMS
+  model variables: [ssh, uocn, vocn, tocn, socn]
+  tstep: __ROMS_TIMESTEP__
+  simulation length: *ForecastLength
+
+initial condition:
+  fields_dir: __FIELDS_DIR__
+  fields_filename: __ROMS_INI_PRIOR__
+  fields_record: __INI_PRIOR_RECORD__
+  date: &initial_date __INITIAL_DATE__
+  state variables: [ssh, uocn, vocn, tocn, socn]
+
+output:
+  file_policy: __OUTPUT_FILE_POLICY__a
+  frequency: &frequency __OUTPUT_FREQUENCY__
+  data_frequency: *frequency
+  data_dir: Data/forecast
+  prefix: __ROMS_APP___roms
+  exp: nlm
+  type: fct
+  date: *initial_date
+  forecast length: *ForecastLength
+
+test:
+  reference filename: testref/forecast_roms.ref
+  float relative tolerance: 1.0e-3
+  log output filename: testoutput/forecast_roms.log
+  test output filename: testoutput/forecast_roms.out

@@ -1,0 +1,178 @@
+# ROMS-JEDI Regular 3DEnVar (Dual Formulation) Test: __ROMS_APPLICATION__
+#
+# It uses ROMS 3D state vector and the 3D-Var cost function.
+# The Background Error Covariance (Be) is computed from the
+# ensemble.
+#
+# Using RPCG (Augmented Restricted Preconditioned Conjugate Gradient)
+# Minimizer, Gratton and Tshimanga, QJRMS, 135: 1573-1585 (2009).
+
+
+forecast length: &ForecastLength __FORECAST_LENGTH__
+
+model timestep:  &TimeStep __ROMS_TIMESTEP__
+
+initial date: &date __INITIAL_DATE__
+middle date:  &mid_date __MIDDLE_DATE__
+
+roms analysis:  &roms_analysis [ssh, uocn, vocn, tocn, socn]
+roms state:     &roms_state    [ssh, uocn, vocn, tocn, socn, zocn_r]
+
+cost function:
+  cost type: 3D-Var
+  window begin: *date
+  window length: *ForecastLength
+  analysis variables: *roms_analysis 
+
+  geometry: &geom
+    project_dir: __PROJECT_DIR__
+    roms_stdinp: __ROMS_STDINP__
+    fields metadata: Data/fields_metadata.yaml
+    ng: 1                                        # ROMS nested grid number
+
+  background:
+    fields_dir: __FIELDS_DIR__
+    fields_filename: __ROMS_MID_PRIOR__
+    fields_record: __INI_PRIOR_RECORD__
+    state variables: *roms_state
+    date: *mid_date                              # middle DA window
+
+  background error:
+    covariance model: ensemble
+    localization:
+      localization method: SABER
+      saber central block:
+        saber block name: BUMP_NICAS
+        active variables: *roms_analysis
+        read:
+          drivers:
+            multivariate strategy: duplicated
+            read local nicas: true
+          io:
+            data directory: Data/bump_loc
+            files prefix: __ROMS_APP___bump_loc
+    members from template:
+      template:
+        date: *mid_date
+        fields_dir: Data/ensembles
+        fields_filename: __ROMS_APP___roms_ensemble_mem%mem%___INI_DATETIME__.nc
+        fields_record: __MID_PRIOR_RECORD__
+        state variables: *roms_state
+      pattern: %mem%
+      nmembers: __NMEMBERS__
+      zero padding: 3
+
+  observations:
+    obs perturbations: false                     # default
+    observers:
+
+#   - obs space:
+#       name: InsituTemperature
+#       obsdatain:
+#         engine:
+#           type: H5File
+#           obsfile: __TEMPERATURE_OBS__
+#       obsdataout:
+#         engine:
+#           type: H5File
+#           obsfile: Data/3denvar/regular/dual/__ROMS_APP___temp_3denvar_regular.nc4
+#       simulated variables: [waterTemperature]
+#     obs operator:
+#       name: VertInterp
+#       vertical coordinate: model_level_depth_at_cell_center
+#       observation vertical coordinate: depth
+#       observation alias file: testinput/obsop_name_map.yaml
+#     obs error:
+#       covariance model: diagonal
+
+#   - obs space:
+#       name: InsituSalinity
+#       obsdatain:
+#         engine:
+#           type: H5File
+#           obsfile: __SALINITY_OBS__
+#       obsdataout:
+#         engine:
+#           type: H5File
+#           obsfile: Data/3denvar/regular/dual/__ROMS_APP___salt_3denvar_regular.nc4
+#       simulated variables: [salinity]
+#     obs operator:
+#       name: VertInterp
+#       vertical coordinate: model_level_depth_at_cell_center
+#       observation vertical coordinate: depth
+#       observation alias file: testinput/obsop_name_map.yaml
+#     obs error:
+#       covariance model: diagonal
+
+    - obs space:
+        name: SST
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile: __SST_OBS__
+        obsdataout:
+          engine:
+            type: H5File
+            obsfile: Data/3denvar/regular/dual/__ROMS_APP___sst_3denvar_regular.nc4
+        simulated variables: [seaSurfaceTemperature]
+      obs operator:
+        name: Identity
+        observation alias file: testinput/obsop_name_map.yaml
+      obs error:
+        covariance model: diagonal
+
+    - obs space:
+        name: ADT
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile: __ADT_OBS__
+        obsdataout:
+          engine:
+            type: H5File
+            obsfile: Data/3denvar/regular/dual/__ROMS_APP___adt_3denvar_regular.nc4
+        simulated variables: [absoluteDynamicTopography]
+      obs operator:
+        name: ADT
+      obs error:
+        covariance model: diagonal
+
+variational:
+  minimizer:
+    algorithm: RPCG                              # Dual Formulation
+  iterations:                                    # each item defines an outer loop
+  - geometry: *geom
+    ninner: __NINNER__
+    gradient norm reduction: 1E-10
+    test: on
+    diagnostics:                                 # Written into output IODA files
+      departures: ombg                           # OBS - H(Xb)
+    online diagnostics:
+      write increment: true
+      increment:                                 # DA increment output file
+        single_record: true
+        data_dir: Data/3denvar/regular/dual
+        prefix:__ROMS_APP___roms
+        exp: 3denvar
+        type: inc
+        date: *mid_date
+
+final:                                           # Written into output IODA files
+  diagnostics:
+    departures: oman                             # saving OBS - H(Xa) in output file
+
+output:
+  file_policy: __OUTPUT_FILE_POLICY__
+  frequency: &frequency __OUTPUT_FREQUENCY__
+  data_frequency: *frequency
+  data_dir: Data/3denvar/regular/dual
+  prefix: __ROMS_APP___roms
+  exp: 3denvar
+  type: nlm
+  date: *mid_date
+
+test:
+  reference filename: testref/3denvar_regular_dual.ref
+  float relative tolerance: 1.0e-3
+  log output filename: testoutput/3denvar_regular_dual.log
+  test output filename: testoutput/3denvar_regular_dual.out

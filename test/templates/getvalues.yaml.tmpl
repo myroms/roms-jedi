@@ -1,0 +1,49 @@
+# ROMS-JEDI GetValues Unit Test: __ROMS_APPLICATION__
+#
+# (Obsolete, it is done directly in OOPS to facilate efficient interpolations)
+
+geometry:
+  project_dir: __PROJECT_DIR__
+  roms_stdinp: __ROMS_STDINP__
+  fields metadata: Data/fields_metadata.yaml
+  ng: 1                                        # ROMS nested grid number
+
+state variables: &geovals [sea_surface_height_above_geoid,
+                           eastward_sea_water_velocity,
+                           northward_sea_water_velocity,
+                           sea_water_potential_temperature,
+                           sea_water_practical_salinity,
+                           sea_floor_depth,
+                           model_level_depth_at_cell_center]
+
+getvalues test:
+  state generate:
+    analytic init:
+      method: ana_ocnfields
+      T0: 25.0                                 # background temperature (C)
+      S0: 32.5                                 # background salinity
+      U0: 1.2                                  # background U-velocity (m/s)
+      V0: 0.7                                  # background V-velocity (m/s)
+    date: &date __INITIAL_DATE__
+    state variables: [ssh, uocn, vocn, tocn, socn, hocn, zocn_r]
+  interpolation tolerance: 0.02
+  state variables: *geovals 
+
+geovals:
+  state variables: *geovals
+
+locations:
+  window begin: __INITIAL_DATE__
+  window end: __FINAL_DATE__
+  obs space:
+    name: Random Locations
+    simulated variables: *geovals
+    generate:
+      random:
+        nobs: 10
+        lat1: 30.0
+        lat2: 48.0
+        lon1: -134.0
+        lon2: -116.0
+        random seed: 452938
+      obs errors: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]

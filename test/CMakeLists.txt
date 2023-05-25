@@ -3,127 +3,7 @@
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
-# Unit tests configuration files
-
-list( APPEND romsjedi_test_input
-  testinput/3denvar_fgat_dual.yaml
-  testinput/3denvar_fgat_primal.yaml
-  testinput/3denvar_regular_dual.yaml
-  testinput/3denvar_regular_primal.yaml
-  testinput/3dhyb_fgat_dual.yaml
-  testinput/3dhyb_fgat_primal.yaml
-  testinput/3dhyb_regular_dual.yaml
-  testinput/3dhyb_regular_primal.yaml
-  testinput/3dvar_fgat_single_obs.yaml
-  testinput/3dvar_regular_single_obs.yaml
-  testinput/3dvar_fgat_dual.yaml
-  testinput/3dvar_fgat_primal.yaml
-  testinput/3dvar_regular_dual.yaml
-  testinput/3dvar_regular_primal.yaml
-  testinput/3dvar_zero_obs.yaml
-  testinput/diffstates.yaml
-  testinput/dirac_cov_nicas.yaml
-  testinput/dirac_ens_cov_nicas.yaml
-  testinput/ens_hofx.yaml
-  testinput/ens_hofx_1.yaml
-  testinput/ens_hofx_2.yaml
-  testinput/ens_hofx_3.yaml
-  testinput/ens_hofx_4.yaml
-  testinput/ens_hofx_5.yaml
-  testinput/ens_mean_variance.yaml
-  testinput/ens_perturbation.yaml
-  testinput/ens_recenter.yaml
-  testinput/ens_variance.yaml
-  testinput/error_covariance.yaml
-  testinput/forecast_roms.yaml
-  testinput/geometry.yaml
-  testinput/geometryiterator.yaml
-  testinput/getvalues.yaml
-  testinput/hofx_nomodel.yaml
-  testinput/hofx_4d.yaml
-  testinput/increment.yaml
-  testinput/letkf.yaml
-  testinput/letkf_3dhyb.yaml
-  testinput/letkf_split_observer.yaml
-  testinput/letkf_split_solver.yaml
-  testinput/lineargetvalues.yaml
-  testinput/linearmodel.yaml
-  testinput/makeobs_4d.yaml
-  testinput/makeobs_4d_perturbed.yaml
-  testinput/model.yaml
-  testinput/obsop_name_map.yaml
-  testinput/parameters_bump_cor_nicas.yaml
-  testinput/parameters_bump_cov_nicas.yaml
-  testinput/parameters_bump_loc_cor_nicas.yaml
-  testinput/state.yaml
-  )
-
-# Unit tests reference files
-
-set( romsjedi_test_ref
-  testref/3denvar_fgat_dual.ref
-  testref/3denvar_fgat_primal.ref
-  testref/3denvar_regular_dual.ref
-  testref/3denvar_regular_primal.ref
-  testref/3dhyb_fgat_dual.ref
-  testref/3dhyb_fgat_primal.ref
-  testref/3dhyb_regular_dual.ref
-  testref/3dhyb_regular_primal.ref
-  testref/3dvar_fgat_single_obs.ref
-  testref/3dvar_regular_single_obs.ref
-  testref/3dvar_fgat_dual.ref
-  testref/3dvar_fgat_primal.ref
-  testref/3dvar_regular_dual.ref
-  testref/3dvar_regular_primal.ref
-  testref/3dvar_single_obs.ref
-  testref/3dvar_zero_obs.ref
-  testref/diffstates.ref
-  testref/dirac_cov_nicas.ref
-  testref/dirac_ens_cov_nicas.ref
-  testref/ens_hofx.ref
-  testref/ens_mean_variance.ref
-  testref/ens_perturbation.ref
-  testref/ens_recenter.ref
-  testref/ens_variance.ref
-  testref/forecast_roms.ref
-  testref/hofx_nomodel.ref
-  testref/hofx_4d.ref
-  testref/increment.ref
-  testref/letkf.ref
-  testref/letkf_3dhyb.ref
-  testref/letkf_split_observer.ref
-  testref/letkf_split_solver.ref
-  testref/makeobs_4d.ref
-  testref/makeobs_4d_perturbed.ref
-  testref/parameters_bump_cor_nicas.ref
-  testref/parameters_bump_cov_nicas.ref
-  testref/parameters_bump_loc_cor_nicas.ref
-)
-
-# Tests data files
-
-set( romsjedi_data_files
-  Data/fields_metadata.yaml
-  Data/obs/wc13_TS_20040103.nc4
-  Data/obs/wc13_TS_20040105.nc4
-  Data/obs/wc13_adt_20040103.nc4
-  Data/obs/wc13_adt_20040105.nc4
-  Data/obs/wc13_adt_single_obs_20040105.nc4
-  Data/obs/wc13_ptemp_20040103.nc4
-  Data/obs/wc13_salt_20040103.nc4
-  Data/obs/wc13_salt_20040105.nc4
-  Data/obs/wc13_sss_20040103.nc4
-  Data/obs/wc13_sst_20040103.nc4
-  Data/obs/wc13_sst_20040105.nc4
-  Data/obs/wc13_sst_single_obs_20040105.nc4
-  Data/obs/wc13_temp_20040103.nc4
-  Data/obs/wc13_temp_20040105.nc4
-  Data/obs/wc13_uv_sur_20040103.nc4
-  Data/obs/wc13_usur_20040103.nc4
-  Data/obs/wc13_vsur_20040103.nc4
-)
-
-# Create input/output directories for the tests and symlinks for all files
+# Create input/output directories for the tests and symlinks for all files.
 
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3denvar)
@@ -162,23 +42,46 @@ file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/letkf/solver)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/letkf/split_observer)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/letkf/split_solver)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/makeobs)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/obs)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/roms)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testinput)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testoutput)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testref)
 
-foreach(FILENAME ${romsjedi_data_files} ${romsjedi_test_input} ${romsjedi_test_ref})
+# Link to ROMS-JEDI application 'testinput'  subdirectories.
+
+file(GLOB testinput "${ROMSJEDI_APPLICATION_DIR}/testinput/*.yaml")
+
+foreach(FILENAME ${testinput})
+  get_filename_component(yaml ${FILENAME} NAME)
   execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
-    ${CMAKE_CURRENT_SOURCE_DIR}/${FILENAME}
-    ${CMAKE_CURRENT_BINARY_DIR}/${FILENAME} )
+    ${ROMSJEDI_APPLICATION_DIR}/testinput/${yaml}
+    ${CMAKE_CURRENT_BINARY_DIR}/testinput/${yaml} )
 endforeach()
 
-# Create symlink to jediroms_wc13 repository application
+# Link to ROMS-JEDI application 'testref' subdirectories.
 
-execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
-  ${ROMS_BUILD_DIR}/../../../jediroms_wc13
-  ${CMAKE_CURRENT_BINARY_DIR}/jediroms_wc13 )
+file(GLOB testref   "${ROMSJEDI_APPLICATION_DIR}/testref/*.ref")
+
+foreach(FILENAME ${testref})
+  get_filename_component(ref ${FILENAME} NAME)
+  execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
+    ${ROMSJEDI_APPLICATION_DIR}/testref/${ref}
+    ${CMAKE_CURRENT_BINARY_DIR}/testref/${ref} )
+endforeach()
+
+# Specify ROMS-JEDI metadata.
+
+execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
+  ${CMAKE_CURRENT_SOURCE_DIR}/fields_metadata.yaml
+  ${CMAKE_CURRENT_BINARY_DIR}/Data/fields_metadata.yaml )
+
+# Make ROMS-JEDI application link.
+
+string( TOLOWER ${ROMS_APP} romsjedi_app )
+
+execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
+  ${ROMSJEDI_APPLICATION_DIR}
+  ${CMAKE_CURRENT_BINARY_DIR}/Data/${romsjedi_app} )
 
 # Copy BASH scripts to facilitate running of Unit Tests.
 

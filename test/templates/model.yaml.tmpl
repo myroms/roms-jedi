@@ -1,0 +1,30 @@
+# ROMS-JEDI Nonlinear Model Unit Test: __ROMS_APPLICATION__
+
+geometry:
+  project_dir: __PROJECT_DIR__
+  roms_stdinp: __ROMS_STDINP__
+  fields metadata: Data/fields_metadata.yaml
+  ng: 1                                        # ROMS nested grid number
+
+ForecastLength: &ForecastLength __FORECAST_LENGTH__
+
+model test:
+  forecast length: *ForecastLength
+  final norm: 8604.91697102
+  tolerance: 1.0e-2
+  test reforecast: true
+
+model:
+  name: ROMS
+  model variables: [ssh, uocn, vocn, tocn, socn]
+  tstep: __ROMS_TIMESTEP__
+  simulation length: *ForecastLength
+
+initial condition:
+  fields_dir: __FIELDS_DIR__
+  fields_filename: __ROMS_INI_PRIOR__
+  fields_record: __INI_PRIOR_RECORD__
+  state variables: [ssh, uocn, vocn, tocn, socn]
+  date: __INITIAL_DATE__
+
+model aux control:

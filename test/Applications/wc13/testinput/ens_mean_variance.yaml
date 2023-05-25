@@ -1,0 +1,42 @@
+# ROMS-JEDI Ensemble Mean Variance Test: WC13 Application
+
+geometry:
+  project_dir: Data/wc13
+  roms_stdinp: roms_wc13_20040103.in
+  fields metadata: Data/fields_metadata.yaml
+  ng: 1                                        # ROMS nested grid number
+
+ensemble:
+  members from template:
+    template:
+      date: &date 2004-01-03T00:00:00Z 
+      fields_dir: Data/ensembles
+      fields_filename: wc13_roms_ensemble_mem%mem%_2004-01-03-00.00.00.nc
+      fields_record: 1                         # 2004-01-03T00:00:00Z
+#     fields_record: 49                        # 2004-01-07T00:00:00Z
+      state variables: &roms_state [ssh, uocn, vocn, tocn, socn]
+    pattern: %mem%
+    nmembers: 10
+    zero padding: 3
+
+variance output:
+  single_record: true
+  data_dir: Data/ensembles
+  prefix: wc13_roms
+  exp: ensemble
+  type: variance
+  date: *date
+
+mean output:
+  single_record: true
+  data_dir: Data/ensembles
+  prefix: wc13_roms
+  exp: ensemble
+  type: mean_variance
+  date: *date
+
+test:
+  reference filename: testref/ens_mean_variance.ref
+  float relative tolerance: 1.0e-3
+  log output filename: testoutput/ens_mean_variance.log
+  test output filename: testoutput/ens_mean_variance.out

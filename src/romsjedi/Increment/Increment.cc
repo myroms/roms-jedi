@@ -35,7 +35,6 @@
 #include "oops/util/Logger.h"
 
 #include "ufo/GeoVaLs.h"
-#include "ufo/Locations.h"
 
 #include "romsjedi/Geometry/Geometry.h"
 #include "romsjedi/GeometryIterator/GeometryIterator.h"
@@ -444,9 +443,9 @@ namespace romsjedi {
                       << "   Max= "      << std::fixed << std::setw(21) <<
                                             std::right << zstat[4*jj+1]
                       << "   Mean= "     << std::fixed << std::setw(21) <<
-                                            std::right << zstat[4*jj+2]
-                      << "   CheckSum= " << std::fixed << std::right <<
-                                            static_cast<int>(zstat[4*jj+3]);
+                                            std::right << zstat[4*jj+2];
+      //              << "   CheckSum= " << std::fixed << std::right <<
+      //                                    static_cast<int>(zstat[4*jj+3]);
     }
   }
 

@@ -50,6 +50,10 @@ namespace eckit {
   class Configuration;
 }
 
+namespace ufo {
+  class GeoVaLs;
+}
+
 namespace romsjedi {
   class ModelBiasIncrement;
   class Geometry;

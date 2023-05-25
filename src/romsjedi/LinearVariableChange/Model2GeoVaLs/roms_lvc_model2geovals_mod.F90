@@ -113,7 +113,8 @@ SUBROUTINE roms_lvc_model2geovals_multiply (self, geom, dxm, dxg)
 
   TYPE (roms_field),                    pointer :: field
 
-  integer                                       :: Nsur, i, lstr1, lstr2
+  integer                                       :: Nsur, i
+  integer                                       :: lstr1, lstr2
   real (kind=kind_real)                         :: stats(3)
   character (len=:), allocatable                :: dxg_vars(:), dxm_vars(:)
   character (len=524)                           :: dxg_string, dxm_string
@@ -160,12 +161,16 @@ SUBROUTINE roms_lvc_model2geovals_multiply (self, geom, dxm, dxg)
     IF ((dxg%fields(i)%name .eq. field%metadata%name) .or.                     &
         (dxg%fields(i)%name .eq. field%metadata%getval_name)) THEN
 
-      dxg%fields(i)%val(:,:,:) = field%val(:,:,:)     !< full field
+      ! Loading full field.
+
+      dxg%fields(i)%val(:,:,:) = field%val(:,:,:)
 
     ELSE IF (dxg%fields(i)%name .eq. field%metadata%getval_name_surface) THEN
 
+      ! Loading surface field.
+
       Nsur = field%N
-      dxg%fields(i)%val(:,:,1) = field%val(:,:,Nsur)  !< surface field
+      dxg%fields(i)%val(:,:,1) = field%val(:,:,Nsur)
 
     ELSE
 
@@ -177,7 +182,7 @@ SUBROUTINE roms_lvc_model2geovals_multiply (self, geom, dxm, dxg)
       CALL dxg%fields(i)%stats (stats)
       IF (geom%f_comm%rank() .eq. 0) THEN
         PRINT 10, dxg%fields(i)%name, stats(1), stats(2), INT(stats(3))
- 10     FORMAT (2x,'- ',a30,':',t38,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,  &
+ 10     FORMAT (2x,'- ',a35,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,  &
                 ',  CheckSum = ', i0)
       END IF
     END IF
@@ -201,7 +206,8 @@ SUBROUTINE roms_lvc_model2geovals_multiplyAD (self, geom, dxg, dxm)
 
   TYPE (roms_field),                    pointer :: field
 
-  integer                                       :: Nsur, i, lstr1, lstr2
+  integer                                       :: Nsur, i
+  integer                                       :: lstr1, lstr2
   real (kind=kind_real)                         :: stats(3)
   character (len=:), allocatable                :: dxg_vars(:), dxm_vars(:)
   character (len=524)                           :: dxg_string, dxm_string
@@ -250,14 +256,17 @@ SUBROUTINE roms_lvc_model2geovals_multiplyAD (self, geom, dxg, dxm)
     IF ((dxg%fields(i)%name .eq. field%metadata%name) .or.                     &
         (dxg%fields(i)%name .eq. field%metadata%getval_name)) THEN
 
-      field%val = field%val +                                                  &
-                  dxg%fields(i)%val                   !< full field
+      ! Adjoint of load full field.
+
+      field%val = field%val + dxg%fields(i)%val
 
     ELSE IF (dxg%fields(i)%name .eq. field%metadata%getval_name_surface) THEN
 
+      ! Adjoint of load surface field.
+
       Nsur = field%N
       field%val(:,:,Nsur) = field%val(:,:,Nsur) +                              &
-                            dxg%fields(i)%val(:,:,1)  !< surface field
+                            dxg%fields(i)%val(:,:,1)
 
     ELSE
 
@@ -270,7 +279,7 @@ SUBROUTINE roms_lvc_model2geovals_multiplyAD (self, geom, dxg, dxm)
       CALL field%stats (stats)
       IF (geom%f_comm%rank() .eq. 0) THEN
         PRINT 10, field%name, stats(1), stats(2), INT(stats(3))
- 10     FORMAT (2x,'- ',a30,':',t38,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,    &
+ 10     FORMAT (2x,'- ',a35,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,    &
                 ',  CheckSum = ', i0)
       END IF
     END IF

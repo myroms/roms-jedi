@@ -74,6 +74,8 @@ TYPE, PUBLIC :: roms_geom
 
   TYPE (roms_tile) :: bounds(4)              ! C-grid tile indices range
 
+  logical :: levelsAreTopDown = .FALSE.      ! k=1 (bottom), k=N (top)
+
   logical :: EWperiodic                      ! East-West periodicity switch
   logical :: NSperiodic                      ! North-South periodicity switch
 
@@ -100,17 +102,12 @@ TYPE, PUBLIC :: roms_geom
   real (kind_real), allocatable  :: pm(:,:)        ! inverse x-spacing (1/m)
   real (kind_real), allocatable  :: pn(:,:)        ! inverse y-spacing (1/m)
   real (kind_real), allocatable  :: cell_area(:,:) ! cell area (m2)
-  real (kind_real), allocatable  :: Rossby(:,:)    ! deformation radius (m)
 
   real (kind_real), allocatable  :: f_r(:,:)       ! Coriolis parameter (1/s)
   real (kind_real), allocatable  :: h_r(:,:)       ! bathymetry (m; positive)
 
   real (kind_real), allocatable  :: lonr(:,:)      ! longitude (degrees east)
   real (kind_real), allocatable  :: latr(:,:)      ! latitude (degrees north)
-  real (kind_real), allocatable  :: z_r(:,:,:)     ! RHO-depths (m, negative)
-  real (kind_real), allocatable  :: z_w(:,:,:)     ! W-depths (m, negative)
-  real (kind_real), allocatable  :: z0_r(:,:,:)    ! unvarying RHO-depths (m)
-  real (kind_real), allocatable  :: z0_w(:,:,:)    ! unvarying W-depths (m)
 
   real (kind_real), allocatable  :: rmask(:,:)     ! mask,  0=land 1=ocean
 
@@ -123,7 +120,6 @@ TYPE, PUBLIC :: roms_geom
 
   real (kind_real), allocatable  :: lonu(:,:)      ! longitude (degrees east)
   real (kind_real), allocatable  :: latu(:,:)      ! latitude (degrees north)
-  real (kind_real), allocatable  :: z_u(:,:,:)     ! depths (m, negative)
 
   real (kind_real), allocatable  :: umask(:,:)     ! mask,  0=land 1=ocean
 
@@ -136,9 +132,19 @@ TYPE, PUBLIC :: roms_geom
 
   real (kind_real), allocatable  :: lonv(:,:)      ! longitude (degrees east)
   real (kind_real), allocatable  :: latv(:,:)      ! latitude (degrees north)
-  real (kind_real), allocatable  :: z_v(:,:,:)     ! depths (m, negative)
 
   real (kind_real), allocatable  :: vmask(:,:)     ! mask,  0=land 1=ocean
+
+  ! Grid negative depths (m) are staggered RHO-, U- and V-points (cell center
+  ! and W-points (top and bottom cell faces).
+
+  real (kind_real), allocatable  :: z_r(:,:,:)     ! time varying RHO-depths
+  real (kind_real), allocatable  :: z_u(:,:,:)     ! time varying U-depths
+  real (kind_real), allocatable  :: z_v(:,:,:)     ! time varying V-depths
+  real (kind_real), allocatable  :: z_w(:,:,:)     ! time varing W-depths
+
+  real (kind_real), allocatable  :: z0_r(:,:,:)    ! unvarying RHO-depths
+  real (kind_real), allocatable  :: z0_w(:,:,:)    ! unvarying W-depths
 
   ! ATLAS FunctionSpace defining how a Field is represented in the grid domain
   ! (RHO-cell) for computational points and computational points plus tile halo.
@@ -182,7 +188,7 @@ SUBROUTINE roms_geom_create (self, f_conf, f_comm)
   USE mod_grid
   USE mod_iounits,     ONLY : Iname
   USE mod_scalars,     ONLY : EWperiodic, NSperiodic, NoError,                  &
-                              bvf_bak, exit_flag, pi
+                              exit_flag
 
   USE roms_kernel_mod, ONLY : ROMS_initialize
   USE set_depth_mod,   ONLY : set_depth0, set_depth
@@ -194,7 +200,6 @@ SUBROUTINE roms_geom_create (self, f_conf, f_comm)
   logical, save                           :: first
   integer                                 :: cgrid, i, j, k, lstr, ng, tile
   integer                                 :: MyComm
-  real (kind=kind_real)                   :: scale
   character (len=:), allocatable          :: flds_meta, project_dir, roms_stdinp
 
   ! Get MPI communicator.
@@ -248,7 +253,12 @@ SUBROUTINE roms_geom_create (self, f_conf, f_comm)
 
   ! ROMS initialization: read input script, allocate, initialize, and set grid.
 
-  Iname = TRIM(project_dir)//TRIM(roms_stdinp)
+  lstr = LEN_TRIM(project_dir)
+  IF (project_dir(lstr:lstr) .eq. CHAR(47) ) THEN
+    Iname = TRIM(project_dir) // TRIM(roms_stdinp)
+  ELSE
+    Iname = TRIM(project_dir) // CHAR(47) // TRIM(roms_stdinp)
+  END IF
 
   IF (.not.allocated(BOUNDS)) THEN       ! it is only called once
     first = .TRUE.
@@ -284,7 +294,7 @@ SUBROUTINE roms_geom_create (self, f_conf, f_comm)
   !            Arakawa C-grid          p,r,u,v:  bottom (k=1) to top (k=N)
   !                                          w:  bottom (k=0) to top (k=N)
   !                                              [levelsAreTopDown()=false]
-
+ 
   DO cgrid = 1, 4
 
     SELECT CASE (cgrid)
@@ -482,17 +492,6 @@ SUBROUTINE roms_geom_create (self, f_conf, f_comm)
     END DO
   END DO
 
-  ! Compute first baroclinic Rossby radius of deformation (N*H/(pi*f). Using
-  ! vertical scale height as H=50 m.
-
-  scale = 50.0_kind_real * SQRT(bvf_bak) / pi
-
-  DO j = self%bounds(r2dvar)%JstrD, self%bounds(r2dvar)%JendD
-    DO i = self%bounds(r2dvar)%IstrD, self%bounds(r2dvar)%IendD
-        self%Rossby(i,j) = scale / self%f_r(i,j)
-    END DO
-  END DO
-
   ! Report.
 
   IF (LdebugGeometry) THEN
@@ -551,8 +550,6 @@ SUBROUTINE roms_geom_delete (self)
   IF (allocated(self%anglev))     deallocate (self%anglev)
 
   IF (allocated(self%cell_area))  deallocate (self%cell_area)
-
-  IF (allocated(self%Rossby))     deallocate (self%Rossby)
 
   IF (allocated(self%CosAngler))  deallocate (self%CosAngler)
   IF (allocated(self%SinAngler))  deallocate (self%SinAngler)
@@ -613,6 +610,8 @@ SUBROUTINE roms_geom_clone (self, other)
 
   self%model = other%model
 
+  self%levelsAreTopDown = other%levelsAreTopDown
+
   self%EWperiodic = other%EWperiodic
   self%NSperiodic = other%NSperiodic
 
@@ -663,8 +662,6 @@ SUBROUTINE roms_geom_clone (self, other)
   self%anglev = other%anglev
 
   self%cell_area = other%cell_area
-
-  self%Rossby    = other%Rossby
 
   self%CosAngler = other%CosAngler
   self%SinAngler = other%SinAngler
@@ -756,8 +753,6 @@ SUBROUTINE roms_geom_allocate (self)
   allocate (self%anglev(LBi:UBi, LBj:UBj));       self%anglev = 0.0_kind_real
 
   allocate (self%cell_area(LBi:UBi, LBj:UBj));    self%cell_area = 0.0_kind_real
-
-  allocate (self%Rossby(LBi:UBi, LBj:UBj));       self%Rossby = 0.0_kind_real
 
   allocate (self%CosAngler(LBi:UBi, LBj:UBj));    self%CosAngler = 0.0_kind_real
   allocate (self%SinAngler(LBi:UBi, LBj:UBj));    self%SinAngler = 0.0_kind_real
@@ -889,10 +884,11 @@ SUBROUTINE roms_geom_to_fieldset (self, afieldset)
                                                   kind=atlas_real(kind_real),  &
                                                   levels=N)
   CALL afield%data (r_ptr)
+
   DO k = 1, N
-!   r_ptr(k,:) = REAL(k, kind_real)
     r_ptr(k,:) = PACK(self%z0_r(IstrH:IendH, JstrH:JendH, k), .TRUE.)
   END DO
+
   CALL afieldset%add (afield)
   CALL afield%final ()
 

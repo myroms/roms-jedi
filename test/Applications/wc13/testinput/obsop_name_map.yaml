@@ -1,0 +1,21 @@
+variable maps:
+  - name: depthBelowWaterSurface
+    alias: ocean_depth
+  - name: waterTemperature
+    alias: sea_water_temperature
+  - name: waterPotentialTemperature
+    alias: sea_water_potential_temperature
+  - name: seaSurfaceTemperature
+    alias: sea_surface_temperature
+  - name: salinity
+    alias: sea_water_salinity
+  - name: seaSurfaceSalinity
+    alias: sea_surface_salinity
+  - name: waterZonalVelocity
+    alias: sea_water_x_velocity
+  - name: waterSurfaceZonalVelocity
+    alias: surface_eastward_sea_water_velocity
+  - name: waterMeridionalVelocity
+    alias: sea_water_y_velocity
+  - name: waterSurfaceMeridionalVelocity
+    alias: surface_northward_sea_water_velocity

@@ -65,8 +65,6 @@ logical, PUBLIC :: LdebugField               = .FALSE.
 logical, PUBLIC :: LdebugFields              = .FALSE.
 logical, PUBLIC :: LdebugFieldsUtils         = .FALSE.
 logical, PUBLIC :: LdebugGeometry            = .FALSE.
-logical, PUBLIC :: LdebugGetValues           = .FALSE.
-logical, PUBLIC :: LdebugLinearGetValues     = .FALSE.
 logical, PUBLIC :: LdebugLinearModel         = .FALSE.
 logical, PUBLIC :: LdebugLinearModel2Geovals = .FALSE.
 logical, PUBLIC :: LdebugModel               = .FALSE.
@@ -590,8 +588,6 @@ SUBROUTINE roms_get_env ()
     status = get_env('LdebugFields',              LdebugFields)
     status = get_env('LdebugFieldsUtils',         LdebugFieldsUtils)
     status = get_env('LdebugGeometry',            LdebugGeometry)
-    status = get_env('LdebugGetValues',           LdebugGetValues)
-    status = get_env('LdebugLinearGetValues',     LdebugLinearGetValues)
     status = get_env('LdebugLinearModel',         LdebugLinearModel)
     status = get_env('LdebugLinearModel2Geovals', LdebugLinearModel2Geovals)
     status = get_env('LdebugModel',               LdebugModel)

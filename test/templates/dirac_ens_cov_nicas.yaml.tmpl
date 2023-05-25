@@ -1,0 +1,77 @@
+# ROMS-JEDI Dirac Ensemble Covariance Test: Delta Function perturbation Impulses
+#
+# It perturb the requested state field(s) with Dirac impulses at the
+# specified (i,j,k) grid cell.
+
+geometry:
+  project_dir: __PROJECT_DIR__
+  roms_stdinp: __ROMS_STDINP__
+  fields metadata: Data/fields_metadata.yaml
+  ng: 1                                        # ROMS nested grid number
+
+initial condition:
+  fields_dir: __FIELDS_DIR__
+  fields_filename: __ROMS_INI_PRIOR__
+  fields_record: __INI_PRIOR_RECORD__
+  date: &date _INITIAL_DATE__
+  state variables: &roms_analysis [ssh, uocn, vocn, tocn, socn]
+
+background error:
+  covariance model: hybrid
+  components:
+  - covariance:
+      covariance model: ensemble
+      localization:
+        localization method: SABER
+        saber central block:
+          saber block name: BUMP_NICAS
+          read:
+            drivers:
+              multivariate strategy: duplicated
+              read local nicas: true
+            io:
+              data directory: Data/bump_loc
+              files prefix: __ROMS_APP___bump_loc 
+      members from template:
+        template:
+          date: *date
+          fields_dir: Data/ensembles
+          fields_filename: __ROMS_APP___roms_ensemble_mem%mem%___INI_DATETIME__.nc
+          fields_record: __INI_PRIOR_RECORD__
+          state variables: *roms_analysis
+        pattern: %mem%
+        nmembers: NMEMBERS
+        zero padding: 3
+    weight:
+      value: 1.0
+
+dirac:
+  ndir:  3                                     # Size of impulse vectors
+  ixdir: [25, 30, 20]                          # X-direction index impulse location
+  iydir: [20, 10, 40]                          # Y-direction index impulse location
+  izdir: [1,  30, 30]                          # Z-direction index impulse location
+  ifdir: ['ssh', 'tocn', 'socn']               # State field to perturb
+
+output dirac:
+  file_policy: __OUTPUT_FILE_POLICY__
+  data_frequency: __OUTPUT_FREQUENCY__
+  data_dir: Data/dirac
+  prefix: __ROMS_APP___roms
+  exp: dirac_ens
+  type: inc
+  date: *date
+
+output variance:
+  file_policy: __OUTPUT_FILE_POLICY__
+  data_frequency: __OUTPUT_FREQUENCY__
+  data_dir: Data/dirac
+  prefix: __ROMS_APP___roms
+  exp: dirac_ens
+  type: var
+  date: *date                                  # alias to initial date
+
+test:
+  reference filename: testref/dirac_ens_cov_nicas.ref
+  float relative tolerance: 1.0e-3
+  log output filename: testoutput/dirac_ens_cov_nicas.log
+  test output filename: testoutput/dirac_ens_cov_nicas.out

@@ -1,0 +1,31 @@
+# ROMS-JEDI State Unit Test: __ROMS_APPLICATION__
+
+geometry:
+  project_dir: __PROJECT_DIR__
+  roms_stdinp: __ROMS_STDINP__
+  fields metadata: Data/fields_metadata.yaml
+  ng: 1                                        # ROMS nested grid number
+
+state test:
+  date: &date __INITIAL_DATE__
+
+  statefile:                                   # Reads an existing state NetCDF file
+    fields_dir: __FIELDS_DIR__
+    fields_filename: __ROMS_INI_PRIOR__
+    fields_record: __INI_PRIOR_RECORD__
+    date: *date
+    state variables: [ssh, uocn, vocn, tocn, socn]
+
+  state generate:                              # Generates an analytical state
+    analytic init:
+      method: 'ana_ocnfields'
+      T0: 25.0                                 # background temperature (C)
+      S0: 32.5                                 # background salinity
+      U0: 1.2                                  # background U-velocity (m/s)
+      V0: 0.7                                  # background V-velocity (m/s)
+    date: *date
+    state variables: [ssh, uocn, vocn, tocn, socn]
+
+  norm file: 8609.0895530693979
+  norm generated state: 9463.4685549140231
+  tolerance: 1.0e-12

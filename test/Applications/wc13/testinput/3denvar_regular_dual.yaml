@@ -1,0 +1,180 @@
+# ROMS-JEDI Regular 3DEnVar (Dual Formulation) Test: WC13 Application
+#
+# It uses ROMS 3D state vector and the 3D-Var cost function.
+# The Background Error Covariance (Be) is computed from the
+# ensemble.
+#
+# Using RPCG (Augmented Restricted Preconditioned Conjugate Gradient)
+# Minimizer, Gratton and Tshimanga, QJRMS, 135: 1573-1585 (2009).
+
+
+forecast length: &ForecastLength PT96H           # 96 hours (4 days) window ending on 2004-01-07T00:00:00Z
+                                                 # or other smaller interval
+model timestep:  &TimeStep PT1800S               # WC13 has a 30 minutes timestep
+
+initial date: &date 2004-01-03T00:00:00Z         # initial DA window
+middle date:  &mid_date 2004-01-05T00:00:00Z     # middle  DA window
+
+roms analysis:  &roms_analysis [ssh, uocn, vocn, tocn, socn]
+roms state:     &roms_state    [ssh, uocn, vocn, tocn, socn, zocn_r]
+
+cost function:
+  cost type: 3D-Var
+  window begin: *date
+  window length: *ForecastLength
+  analysis variables: *roms_analysis 
+
+  geometry: &geom
+    project_dir: Data/wc13
+    roms_stdinp: roms_wc13_20040103.in
+    fields metadata: Data/fields_metadata.yaml
+    ng: 1                                        # ROMS nested grid number
+
+  background:
+    fields_dir: Data/wc13/input
+    fields_filename: wc13_roms_ini_20040105.nc   # initial fields for 2004-01-05T00:00:00Z
+    fields_record: 1
+    state variables: *roms_state
+    date: *mid_date                              # middle DA window
+
+  background error:
+    covariance model: ensemble
+    localization:
+      localization method: SABER
+      saber central block:
+        saber block name: BUMP_NICAS
+        active variables: *roms_analysis
+        read:
+          drivers:
+            multivariate strategy: duplicated
+            read local nicas: true
+          io:
+            data directory: Data/bump_loc
+            files prefix: wc13_bump_loc
+    members from template:
+      template:
+        date: *mid_date
+        fields_dir: Data/ensembles
+        fields_filename: wc13_roms_ensemble_mem%mem%_2004-01-03-00.00.00.nc
+#       fields_record: 1                         # 2004-01-03T00:00:00Z
+        fields_record: 25                        # 2004-01-03T00:00:00Z
+#       fields_record: 49                        # 2004-01-07T00:00:00Z
+        state variables: *roms_state
+      pattern: %mem%
+      nmembers: 10
+      zero padding: 3
+
+  observations:
+    obs perturbations: false                     # default
+    observers:
+
+#   - obs space:
+#       name: InsituTemperature
+#       obsdatain:
+#         engine:
+#           type: H5File
+#           obsfile: Data/wc13/obs/wc13_temp_20040103.nc4
+#       obsdataout:
+#         engine:
+#           type: H5File
+#           obsfile: Data/3denvar/regular/dual/wc13_temp_3denvar_regular.nc4
+#       simulated variables: [waterTemperature]
+#     obs operator:
+#       name: VertInterp
+#       vertical coordinate: model_level_depth_at_cell_center
+#       observation vertical coordinate: depth
+#       observation alias file: testinput/obsop_name_map.yaml
+#     obs error:
+#       covariance model: diagonal
+
+#   - obs space:
+#       name: InsituSalinity
+#       obsdatain:
+#         engine:
+#           type: H5File
+#           obsfile: Data/wc13/obs/wc13_salt_20040103.nc4
+#       obsdataout:
+#         engine:
+#           type: H5File
+#           obsfile: Data/3denvar/regular/dual/wc13_salt_3denvar_regular.nc4
+#       simulated variables: [salinity]
+#     obs operator:
+#       name: VertInterp
+#       vertical coordinate: model_level_depth_at_cell_center
+#       observation vertical coordinate: depth
+#       observation alias file: testinput/obsop_name_map.yaml
+#     obs error:
+#       covariance model: diagonal
+
+    - obs space:
+        name: SST
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile: Data/wc13/obs/wc13_sst_20040103.nc4
+        obsdataout:
+          engine:
+            type: H5File
+            obsfile: Data/3denvar/regular/dual/wc13_sst_3denvar_regular.nc4
+        simulated variables: [seaSurfaceTemperature]
+      obs operator:
+        name: Identity
+        observation alias file: testinput/obsop_name_map.yaml
+      obs error:
+        covariance model: diagonal
+
+    - obs space:
+        name: ADT
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile: Data/wc13/obs/wc13_adt_20040103.nc4
+        obsdataout:
+          engine:
+            type: H5File
+            obsfile: Data/3denvar/regular/dual/wc13_adt_3denvar_regular.nc4
+        simulated variables: [absoluteDynamicTopography]
+      obs operator:
+        name: ADT
+      obs error:
+        covariance model: diagonal
+
+variational:
+  minimizer:
+    algorithm: RPCG                              # Dual Formulation
+  iterations:                                    # each item defines an outer loop
+  - geometry: *geom
+    ninner: 10
+    gradient norm reduction: 1E-10
+    test: on
+    diagnostics:                                 # Written into output IODA files
+      departures: ombg                           # OBS - H(Xb)
+    online diagnostics:
+      write increment: true
+      increment:                                 # DA increment output file
+        single_record: true
+        data_dir: Data/3denvar/regular/dual
+        prefix: wc13_roms
+        exp: 3denvar
+        type: inc
+        date: *mid_date
+
+final:                                           # Written into output IODA files
+  diagnostics:
+    departures: oman                             # saving OBS - H(Xa) in output file
+
+output:
+  file_policy: PT98H                             # single output file with 49 records
+  frequency: &frequency PT2H                     # write output data every 2 hours
+  data_frequency: *frequency
+  data_dir: Data/3denvar/regular/dual
+  prefix: wc13_roms
+  exp: 3denvar
+  type: nlm
+  date: *mid_date
+
+test:
+  reference filename: testref/3denvar_regular_dual.ref
+  float relative tolerance: 1.0e-3
+  log output filename: testoutput/3denvar_regular_dual.log
+  test output filename: testoutput/3denvar_regular_dual.out

@@ -1,0 +1,45 @@
+# ROMS-JEDI States Difference Unit Test: __ROMS_APPLICATION__
+
+state geometry:
+  project_dir: __PROJECT_DIR__
+  roms_stdinp: __ROMS_STDINP__
+  fields metadata: Data/fields_metadata.yaml
+  ng: 1                                        # ROMS nested grid number
+
+increment geometry:
+  project_dir: __PROJECT_DIR__
+  roms_stdinp: __ROMS_STDINP__
+  fields metadata: Data/fields_metadata.yaml
+  ng: 1                                        # ROMS nested grid number
+
+state1:
+  fields_dir: __FIELDS_DIR__
+  fields_filename: __ROMS_INI_PRIOR__
+  fields_record: __INI_PRIOR_RECORD__
+  date: &initial_date __INITIAL_DATE__
+  state variables: [ssh, uocn, vocn, tocn, socn]
+
+state2:
+  fields_dir: __FIELDS_DIR__
+  fields_filename: __ROMS_MID_PRIOR__
+  fields_record: __INI_PRIOR_RECORD__
+  date: *initial_date
+  state variables: [ssh, uocn, vocn, tocn, socn]
+
+output:                                        # state1 - state2
+  single_record: true
+  data_dir: Data/diff
+  prefix: __ROMS_APP___roms
+  exp: nlm
+  type: diffstates
+  date: *initial_date
+
+test:
+  reference filename: testref/diffstates.ref
+  float relative tolerance: 1.0e-3
+  log output filename: testoutput/diffstates.log
+  test output filename: testoutput/diffstates.out
+
+
+
+

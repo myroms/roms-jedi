@@ -1,0 +1,18 @@
+Test     : Norm of input parameter StdDev: 7.7717431208294583e+03
+Test     : CostJb   : Nonlinear Jb = 0.0000000000000000e+00
+Test     : CostJo   : Nonlinear Jo(SST) = 1.6284739375748431e+03, nobs = 4952, Jo/n = 3.2885176445372438e-01, err = 4.0783752598605327e-01
+Test     : CostJo   : Nonlinear Jo(ADT) = 1.8522426795182350e+03, nobs = 1570, Jo/n = 1.1797724073364555e+00, err = 2.0313911453614535e-02
+Test     : CostFunction: Nonlinear J = 3.4807166170930782e+03
+Test     : RPCGMinimizer: reduction in residual norm = 6.2540650178683724e-02
+Test     : CostFunction::addIncrement: Analysis: 
+Test     :   Valid time: 2004-01-03T00:00:00Z
+Test     :                                ssh   Min=    -0.286005094421101   Max=     0.224550281315888   Mean=    -0.012667535664342
+Test     :                               uocn   Min=    -0.454145642607011   Max=     0.461333151916856   Mean=     0.002519633852138
+Test     :                               vocn   Min=    -0.556183342578198   Max=     0.338128405532136   Mean=    -0.007274059173428
+Test     :                               tocn   Min=     1.135076043270023   Max=    18.470094139624802   Mean=     6.455323939405427
+Test     :                               socn   Min=    31.646041675552432   Max=    34.687604486742458   Mean=    33.929661068840240
+Test     :                             zocn_r   Min= -4947.840267560327447   Max=    -0.245773375763171   Mean= -1064.400608062135916
+Test     : CostJb   : Nonlinear Jb = 61.706994807874622
+Test     : CostJo   : Nonlinear Jo(SST) = 543.658896759504614, nobs = 4952, Jo/n = 0.109785722285845, err = 0.407837525986053
+Test     : CostJo   : Nonlinear Jo(ADT) = 1890.522028450006701, nobs = 1570, Jo/n = 1.204154158248412, err = 0.020313911453615
+Test     : CostFunction: Nonlinear J = 2495.887920017386023

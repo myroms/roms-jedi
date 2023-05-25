@@ -1,5 +1,5 @@
 !
-! (C) Copyright 2017-2021 UCAR
+! (C) Copyright 2017-2023 UCAR
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0. 
@@ -25,7 +25,7 @@ USE roms_analyticinit_mod,      ONLY : roms_analytic_geovals
 
 USE ufo_geovals_mod,            ONLY : ufo_geovals
 USE ufo_geovals_mod_c,          ONLY : ufo_geovals_registry
-USE ufo_locations_mod,          ONLY : ufo_locations
+USE ufo_sampled_locations_mod,  ONLY : ufo_sampled_locations
 
 implicit none
 
@@ -48,13 +48,13 @@ SUBROUTINE roms_analytic_geovals_c (c_key_geovals, c_locs,                   &
   real (kind=kind_real),         intent(in) :: V0             !< V-velocity
 
   TYPE (ufo_geovals), pointer               :: geovals
-  TYPE (ufo_locations)                      :: locs
+  TYPE (ufo_sampled_locations)              :: locs
   character (len=c_slen)                    :: method
 
   ! Get objects.
 
   CALL ufo_geovals_registry%get (c_key_geovals, geovals)
-  locs = ufo_locations(c_locs)
+  locs = ufo_sampled_locations(c_locs)
   CALL c_f_string (c_str, method)
 
   ! Call analytic GeoVals method.

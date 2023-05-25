@@ -307,7 +307,7 @@ else
   fi
 
   ic=$(( $ic + 1 ))
-  ${MPIrun} ../../bin/romsjedi_ens_hofx.x testinput/ens_hofx.yaml 1>> test_${ic}.log 2>> test.err
+  mpirun -n 6 ../../bin/romsjedi_ens_hofx.x testinput/ens_hofx.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
     echo " Test #${ic}: test_romsjedi_ens_hofx ........................  *Failed"
   else
@@ -424,6 +424,38 @@ else
     echo " Test #${ic}: test_romsjedi_3dhyb_fgat_dual .................  *Failed"
   else
     echo " Test #${ic}: test_romsjedi_3dhyb_fgat_dual .................  Passed"
+  fi
+
+  ic=$(( $ic + 1 ))
+  ${MPIrun} ../../bin/romsjedi_letkf.x testinput/letkf.yaml 1>> test_${ic}.log 2>> test.err
+  if [ $? -ne 0 ] ; then
+    echo " Test #${ic}: test_romsjedi_letkf ...........................  *Failed"
+  else
+    echo " Test #${ic}: test_romsjedi_letkf ...........................  Passed"
+  fi
+
+  ic=$(( $ic + 1 ))
+  ${MPIrun} ../../bin/romsjedi_letkf.x testinput/letkf_split_observer.yaml 1>> test_${ic}.log 2>> test.err
+  if [ $? -ne 0 ] ; then
+    echo " Test #${ic}: test_romsjedi_letkf_split_observer ............  *Failed"
+  else
+    echo " Test #${ic}: test_romsjedi_letkf_split_observer ............  Passed"
+  fi
+
+  ic=$(( $ic + 1 ))
+  ${MPIrun} ../../bin/romsjedi_letkf.x testinput/letkf_split_solver.yaml 1>> test_${ic}.log 2>> test.err
+  if [ $? -ne 0 ] ; then
+    echo " Test #${ic}: test_romsjedi_letkf_split_solver ..............  *Failed"
+  else
+    echo " Test #${ic}: test_romsjedi_letkf_split_solver ..............  Passed"
+  fi
+
+  ic=$(( $ic + 1 ))
+  ${MPIrun} ../../bin/romsjedi_var.x testinput/letkf_3dhyb.yaml 1>> test_${ic}.log 2>> test.err
+  if [ $? -ne 0 ] ; then
+    echo " Test #${ic}: test_romsjedi_letkf_3dhyb .....................  *Failed"
+  else
+    echo " Test #${ic}: test_romsjedi_letkf_3dhyb .....................  Passed"
   fi
 
 fi

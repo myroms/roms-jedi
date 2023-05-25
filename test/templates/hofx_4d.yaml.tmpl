@@ -1,0 +1,183 @@
+# ROMS-JEDI 4D HofX Unit Test: __ROMS_APPLICATION__
+
+geometry:
+  project_dir: __PROJECT_DIR__
+  roms_stdinp: __ROMS_STDINP__
+  fields metadata: Data/fields_metadata.yaml
+  ng: 1                                        # ROMS nested grid number
+
+forecast length: &ForecastLength __FORECAST_LENGTH__
+
+model:
+  name: ROMS
+  model variables: [ssh, uocn, vocn, tocn, socn]
+  tstep: __ROMS_TIMESTEP__
+  simulation length: *ForecastLength
+
+initial condition:
+  fields_dir: __FIELDS_DIR__
+  fields_filename: __ROMS_INI_PRIOR__
+  fields_record: __INI_PRIOR_RECORD__
+  date: __INITIAL_DATE__
+  state variables: [ssh, uocn, vocn, tocn, socn, zocn_r]
+
+window begin: __INITIAL_DATE__
+window length: *ForecastLength
+
+observations:
+  observers:
+
+  - obs space:
+      name: InsituTS
+      obsdatain:
+        engine:
+          type: H5File
+          obsfile: __TS_OBS__
+      obsdataout:
+        engine:
+          type: H5File
+          obsfile: Data/hofx/__ROMS_APP___TS_hofx_4d.nc4
+      simulated variables: [salinity, waterTemperature]
+    obs operator:
+      name: VertInterp
+      vertical coordinate: model_level_depth_at_cell_center
+      observation vertical coordinate: depth
+      observation alias file: testinput/obsop_name_map.yaml
+
+  - obs space:
+      name: InsituTemperature
+      obsdatain:
+        engine:
+          type: H5File
+          obsfile: __TEMPERATURE_OBS__
+      obsdataout:
+        engine:
+          type: H5File
+          obsfile: Data/hofx/__ROMS_APP___temp_hofx_4d.nc4
+      simulated variables: [waterTemperature]
+    obs operator:
+      name: VertInterp
+      vertical coordinate: model_level_depth_at_cell_center
+      observation vertical coordinate: depth
+      observation alias file: testinput/obsop_name_map.yaml
+
+  - obs space:
+      name: InsituSalinity
+      obsdatain:
+        engine:
+          type: H5File
+          obsfile: __SALINITY_OBS__
+      obsdataout:
+        engine:
+          type: H5File
+          obsfile: Data/hofx/__ROMS_APP___salt_hofx_4d.nc4
+      simulated variables: [salinity]
+    obs operator:
+      name: VertInterp
+      vertical coordinate: model_level_depth_at_cell_center
+      observation vertical coordinate: depth
+      observation alias file: testinput/obsop_name_map.yaml
+
+  - obs space:
+      name: SST
+      obsdatain:
+        engine:
+          type: H5File
+          obsfile: __SST_OBS__
+      obsdataout:
+        engine:
+          type: H5File
+          obsfile: Data/hofx/__ROMS_APP___sst_hofx_4d.nc4
+      simulated variables: [seaSurfaceTemperature]
+    obs operator:
+      name: Identity
+      observation alias file: testinput/obsop_name_map.yaml
+
+  - obs space:
+      name: SSS
+      obsdatain:
+        engine:
+          type: H5File
+          obsfile: __SSS_OBS__
+      obsdataout:
+        engine:
+          type: H5File
+          obsfile: Data/hofx/__ROMS_APP___sss_hofx_4d.nc4
+      simulated variables: [seaSurfaceSalinity]
+    obs operator:
+      name: Identity
+      observation alias file: testinput/obsop_name_map.yaml
+
+  - obs space:
+      name: ADT
+      obsdatain:
+        engine:
+          type: H5File
+          obsfile: __ADT_OBS__
+      obsdataout:
+        engine:
+          type: H5File
+          obsfile: Data/hofx/__ROMS_APP___adt_hofx_4d.nc4
+      simulated variables: [absoluteDynamicTopography]
+    obs operator:
+      name: ADT
+
+  - obs space:
+      name: SurfaceUV
+      obsdatain:
+        engine:
+          type: H5File
+          obsfile: __UV_SUR_OBS__
+      obsdataout:
+        engine:
+          type: H5File
+          obsfile: Data/hofx/__ROMS_APP___uv_sur_hofx_4d.nc4
+      simulated variables: [waterSurfaceZonalVelocity,
+                            waterSurfaceMeridionalVelocity]
+    obs operator:
+      name: Identity
+      observation alias file: testinput/obsop_name_map.yaml
+
+  - obs space:
+      name: SurfaceU
+      obsdatain:
+        engine:
+          type: H5File
+          obsfile: __USUR_OBS__
+      obsdataout:
+        engine:
+          type: H5File
+          obsfile: Data/hofx/__ROMS_APP___usur_hofx_4d.nc4
+      simulated variables: [waterSurfaceZonalVelocity]
+    obs operator:
+      name: Identity
+      observation alias file: testinput/obsop_name_map.yaml
+
+  - obs space:
+      name: SurfaceV
+      obsdatain:
+        engine:
+          type: H5File
+          obsfile: __VSUR_OBS__
+      obsdataout:
+        engine:
+          type: H5File
+          obsfile: Data/hofx/__ROMS_APP___vsur_hofx_4d.nc4
+      simulated variables: [waterSurfaceMeridionalVelocity]
+    obs operator:
+      name: Identity
+      observation alias file: testinput/obsop_name_map.yaml
+
+test:
+  reference filename: testref/hofx_4d.ref
+  float relative tolerance: 1.0e-3
+  log output filename: testoutput/hofx_4d.log
+  test output filename: testoutput/hofx_4d.out
+
+# NOTES:
+#
+# * Check IODA ObsSpace YAML file for metadata naming conventions:
+#
+#   JCSDA repository: ioda/share/ioda/yaml/validation/ObsSpace.yaml
+#   https://github.com/JCSDA-internal/ioda/blob/develop/share/ioda/yaml/validation/ObsSpace.yaml
+

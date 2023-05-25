@@ -1,0 +1,70 @@
+# ROMS-JEDI Recentered Ensemble Test: __ROMS_APPLICATION__
+#
+# Recenters ensemble around central state.
+
+geometry:
+  project_dir: __PROJECT_DIR__
+  roms_stdinp: __ROMS_STDINP__
+  fields metadata: Data/fields_metadata.yaml
+  ng: 1                                        # ROMS nested grid number
+
+recenter variables: &roms_state [ssh, uocn, vocn, tocn, socn]
+
+_file: &_file
+  fields_dir: Data/ensembles
+  fields_record: 1
+  date: &date __INITIAL_DATE__
+  state variables: *roms_state
+
+center:                                        # Central state
+  fields_dir: __FIELDS_DIR__
+  fields_filename: __ROMS_INI_PRIOR__
+  fields_record: __INI_PRIOR_RECORD__
+  date: *date
+  state variables: *roms_state
+
+zero center: false
+
+ensemble:                                      # Ensembles to be recentered
+  - <<: *_file
+    fields_filename: __ROMS_APP___roms_ensemble_mem001___INI_DATETIME__.nc
+  - <<: *_file
+    fields_filename: __ROMS_APP___roms_ensemble_mem002___INI_DATETIME__.nc
+  - <<: *_file
+    fields_filename: __ROMS_APP___roms_ensemble_mem003___INI_DATETIME__.nc
+  - <<: *_file
+    fields_filename: __ROMS_APP___roms_ensemble_mem004___INI_DATETIME__.nc
+  - <<: *_file
+    fields_filename: __ROMS_APP___roms_ensemble_mem005___INI_DATETIME__.nc
+  - <<: *_file
+    fields_filename: __ROMS_APP___roms_ensemble_mem006___INI_DATETIME__.nc
+  - <<: *_file
+    fields_filename: __ROMS_APP___roms_ensemble_mem007___INI_DATETIME__.nc
+  - <<: *_file
+    fields_filename: __ROMS_APP___roms_ensemble_mem008___INI_DATETIME__.nc
+  - <<: *_file
+    fields_filename: __ROMS_APP___roms_ensemble_mem009___INI_DATETIME__.nc
+  - <<: *_file
+    fields_filename: __ROMS_APP___roms_ensemble_mem010___INI_DATETIME__.nc
+
+ensemble mean output:
+  single_record: true
+  data_dir: Data/ensembles
+  prefix: __ROMS_APP___roms
+  exp: ensemble
+  type: mean
+  date: *date
+
+recentered output:
+  single_record: true
+  data_dir: Data/ensembles
+  prefix: __ROMS_APP___roms
+  exp: ensemble
+  type: recentered
+  date: *date
+
+test:
+  reference filename: testref/ens_recenter.ref
+  float relative tolerance: 1.0e-3
+  log output filename: testoutput/ens_recenter.log
+  test output filename: testoutput/ens_recenter.out

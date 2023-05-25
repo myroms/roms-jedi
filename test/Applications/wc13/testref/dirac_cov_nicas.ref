@@ -1,0 +1,23 @@
+Test     : Input Dirac increment:
+Test     :   Valid time: 2004-01-03T00:00:00Z
+Test     :                                ssh   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.000527148128624
+Test     :                               uocn   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
+Test     :                               vocn   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
+Test     :                               tocn   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.000017571604287
+Test     :                               socn   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.000017571604287
+Test     : Norm of input parameter StdDev: 7771.743120829458348
+Test     : Covariance(SABER) * Increment:
+Test     :   Valid time: 2004-01-03T00:00:00Z
+Test     :                                ssh   Min=     0.000000000000000   Max=     0.000145450015704   Mean=     0.000000076673704
+Test     :                               uocn   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
+Test     :                               vocn   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
+Test     :                               tocn   Min=     0.000000000000000   Max=     0.197643686466180   Mean=     0.000311714645905
+Test     :                               socn   Min=     0.000000000000000   Max=     0.010480930580321   Mean=     0.000010602804741
+Test     : Norm of input parameter StdDev: 7771.743120829458348
+Test     : Randomized variance: 
+Test     :   Valid time: 2004-01-03T00:00:00Z
+Test     :                                ssh   Min=     0.000062764123242   Max=     0.008370531882980   Mean=     0.000636586398011
+Test     :                               uocn   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
+Test     :                               vocn   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
+Test     :                               tocn   Min=     0.000000331223141   Max=     2.374252683688676   Mean=     0.123652577559344
+Test     :                               socn   Min=     0.000000003945971   Max=     0.650651380057333   Mean=     0.006605356619450

@@ -1,0 +1,22 @@
+# ROMS-JEDI Ensemble HofX Test: __ROMS_APPLICATION__
+#
+# In this EnsembleApplication, the MPI communicator is split between
+# the number of ensemble members.  Therefore, it needs to be run
+# with appropriate number of processes (NCPUS):
+#
+#   NCPUS = Nmembers * (NtileI * NtileJ)
+#
+# All the Unit Tests are run with ROMS 1x2 partitions (NtileI=1 and NtileJ=2).
+# Therefore, we need to run the Unit Test with 6 CPUs for Nmembers = 3.
+# So, the H(X) it will be run with 2 task each.
+
+files:
+  - testinput/ens_hofx_1.yaml
+  - testinput/ens_hofx_2.yaml
+  - testinput/ens_hofx_3.yaml
+
+test:
+  reference filename: testref/ens_hofx.ref
+  float relative tolerance: 1.0e-3
+  log output filename: testoutput/ens_hofx.log
+  test output filename: testoutput/ens_hofx.out

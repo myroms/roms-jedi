@@ -1,0 +1,47 @@
+# ROMS-JEDI Error Covariance Unit Test: __ROMS_APPLICATION__
+#
+# The covariance model is the identity operator: romsjedi-ID
+#
+# In realistic applications we will use SABER (BUMP_NICAS). However,
+# we may need a customized ROMS_ERROR in the future. 
+
+geometry:
+  project_dir: __PROJECT_DIR__
+  roms_stdinp: __ROMS_STDINP__
+  fields metadata: Data/fields_metadata.yaml
+  ng: 1                                        # ROMS nested grid number
+
+covariance test:
+  testinverse: false
+  tolerance: 1e-5
+
+analysis variables: &avars [ssh, tocn, socn]
+
+background:
+  fields_dir: __FIELDS_DIR__
+  fields_filename: __ROMS_INI_PRIOR__
+  fields_record: __INI_PRIOR_RECORD__
+  date: &date __INITIAL_DATE__
+  state variables: [ssh, uocn, vocn, tocn, socn]
+
+background error:
+  covariance model: romsjedi-ID                # Identity
+  analysis variables: *avars
+  date: *date
+  bump:
+    drivers:
+      multivariate strategy: univariate
+      write local nicas: true
+    io:
+      data directory: Data/bump
+      files prefix: __ROMS_APP___bump_cor
+  correlation:
+    grids:
+    - model:
+        variables:
+        - ssh
+      io:
+    - model:
+        variables:
+        - tocn
+        - socn

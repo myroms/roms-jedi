@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2017-2021 UCAR
+ * (C) Copyright 2017-2023 UCAR
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -23,13 +23,7 @@
 
 #include "oops/interface/AnalyticInitBase.h"
 #include "oops/util/parameters/RequiredParameter.h"
-
 #include "ufo/ObsTraits.h"
-
-namespace ufo {
-  class GeoVaLs;
-  class Locations;
-}
 
 namespace romsjedi {
 
@@ -66,7 +60,7 @@ namespace romsjedi {
     typedef AnalyticInitParameters Parameters_;
 
     explicit AnalyticInit(const Parameters_ &);
-    void fillGeoVaLs(const ufo::Locations &,
+    void fillGeoVaLs(const ufo::SampledLocations &,
                      ufo::GeoVaLs &) const override;
 
    private:

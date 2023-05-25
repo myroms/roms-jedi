@@ -1,0 +1,152 @@
+# ROMS-JEDI 3D-Var Single Observation Test: __ROMS_APPLICATION__
+#
+# It uses ROMS 3D state vector and the 3D-Var cost function. It computes 
+# the analysis increment for the initial state vector (beginning of the
+# DA window). 
+#
+# A single observation (SST and/or ADT) is used. The obervation time
+# coordinate is at the center of the 3D-Var DA window (2004-01-05T00:00:00Z).
+#
+# It does't use any Linear Model: Identity or TLM/ADM
+
+
+forecast length: &ForecastLength __FORECAST_LENGTH__
+
+model timestep:  &TimeStep __ROMS_TIMESTEP__
+
+initial date: &date __INITIAL_DATE__
+middle date:  &mid_date __MIDDLE_DATE__
+
+roms analysis:  &roms_analysis [ssh, uocn, vocn, tocn, socn]
+roms state:     &roms_state    [ssh, uocn, vocn, tocn, socn, zocn_r]
+
+cost function:
+  cost type: 3D-Var
+  window begin: *date
+  window length: *ForecastLength
+  analysis variables: *roms_analysis 
+
+  geometry: &geom
+    project_dir: __PROJECT_DIR__
+    roms_stdinp: __ROMS_STDINP__
+    fields metadata: Data/fields_metadata.yaml
+    ng: 1                                        # ROMS nested grid number
+
+  model:
+    name: ROMS
+    model variables: *roms_state
+    simulation length: *ForecastLength
+    tstep: *TimeStep
+
+  background:
+    fields_dir: __FIELDS_DIR__
+    fields_filename: __ROMS_MID_PRIOR__
+    fields_record: __INI_PRIOR_RECORD__
+    date: *mid_date                              # middle DA window
+    state variables: *roms_state
+
+  background error:
+    covariance model: SABER
+    saber central block:
+      saber block name: BUMP_NICAS
+      read:
+        drivers:
+          multivariate strategy: univariate
+          read local nicas: true
+        io:
+          data directory: Data/bump
+          files prefix: __ROMS_APP___bump_cor
+        grids:
+        - model:
+            variables:
+            - ssh
+        - model:
+            variables:
+            - tocn
+            - socn
+    saber outer blocks:
+    - saber block name: StdDev
+      read:
+        model file:
+          fields_dir: __FIELDS_DIR__
+          fields_filename: __ROMS_PRIOR_STD__
+          fields_record: 1
+          state variables: *roms_analysis
+          date: *mid_date
+
+  observations:
+    obs perturbations: false                     # default
+    observers:
+
+    - obs space:
+        name: SST
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile: __SST_SINGLE_OBS__
+        obsdataout:
+          engine:
+            type: H5File
+            obsfile: Data/3dvar/singleObs/regular/__ROMS_APP___sst_3dvar_single_obs.nc4
+        simulated variables: [seaSurfaceTemperature]
+      obs operator:
+        name: Identity
+        observation alias file: testinput/obsop_name_map.yaml
+      obs error:
+        covariance model: diagonal
+
+    - obs space:
+        name: ADT
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile:  __ADT_SINGLE_OBS__
+        obsdataout:
+          engine:
+            type: H5File
+            obsfile: Data/3dvar/singleObs/regular/__ROMS_APP___adt_3dvar_single_obs.nc4
+        simulated variables: [absoluteDynamicTopography]
+      obs operator:
+        name: ADT
+      obs error:
+        covariance model: diagonal
+
+variational:
+  minimizer:
+    algorithm: RPCG
+  iterations:                                    # each item defines an outer loop
+  - geometry: *geom
+    ninner: 5
+    gradient norm reduction: 1E-10
+    test: on
+    diagnostics:                                 # Written into output IODA files
+      departures: ombg                           # OBS - H(Xb)
+    online diagnostics:
+      write increment: true
+      increment:                                 # DA increment output file
+        single_record: true
+        data_dir: Data/3dvar/singleObs/regular
+        prefix: __ROMS_APP___roms
+        exp: 3dvar
+        type: inc
+        date: *mid_date
+
+final:                                           # Written into output IODA files
+  diagnostics:
+    departures: oman                             # saving OBS - H(Xa) in output file
+
+output:
+  file_policy: __OUTPUT_FILE_POLICY__
+  frequency: &frequency __OUTPUT_FREQUENCY__
+  data_frequency: *frequency
+  data_dir: Data/3dvar/singleObs/regular
+  prefix: __ROMS_APP___roms
+  exp: 3dvar
+  type: single_obs
+  date: *mid_date
+
+#test:
+#  reference filename: testref/3dvar_regular_single_obs.ref
+#  float relative tolerance: 1.0e-3
+#  log output filename: testoutput/3dvar_regular_single_obs.log
+#  test output filename: testoutput/3dvar_regular_single_obs.out

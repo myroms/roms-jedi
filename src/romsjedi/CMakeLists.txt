@@ -45,6 +45,7 @@ target_link_libraries( romsjedi PUBLIC oops )
 target_link_libraries( romsjedi PUBLIC saber )
 target_link_libraries( romsjedi PUBLIC ioda )
 target_link_libraries( romsjedi PUBLIC ufo )
+target_link_libraries( romsjedi PUBLIC roms )
 
 # Add source code in the sub-directories
 

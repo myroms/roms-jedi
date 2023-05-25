@@ -1,0 +1,203 @@
+# ROMS-JEDI LETKF Unit Test: __ROMS_APPLICATION__
+#
+
+geometry:
+  project_dir: __PROJECT_DIR__
+  roms_stdinp: __ROMS_STDINP__
+  fields metadata: Data/fields_metadata.yaml
+  ng: 1                                          # ROMS nested grid number
+
+window begin:  &date __INITIAL_DATE__
+window length: &ForecastLength __FORECAST_LENGTH__
+
+increment variables: &roms_analysis [ssh, uocn, vocn, tocn, socn]
+
+_obs distribution: &ObsSpaceDistribution
+  name: Halo
+  halo size: __OBS_DISTRIBUTION__
+
+_hor obs localization: &HorizontalObsLoc
+  localization method: Horizontal Gaspari-Cohn
+# localization method: Heaviside
+  lengthscale: __LOCALIZATION_HCORRELATION__
+
+_conventional vertical localization: &DepthVertObsLoc
+  localization method: Vertical localization
+  vertical lengthscale: __LOCALIZATION_VCORRELATION__
+  ioda vertical coordinate: depth
+  ioda vertical coordinate group: MetaData
+  localization function: Gaspari Cohn
+
+background:
+  members from template:
+    template:
+      date: *date
+      fields_dir: Data/ensembles
+      fields_filename: __ROMS_APP___roms_ensemble_mem%mem%____INI_DATETIME__.nc
+      fields_record: __INI_PRIOR_RECORD__
+      state variables: &roms_state [ssh, uocn, vocn, tocn, socn]
+    pattern: %mem%
+    nmembers: __NMEMBERS__
+    zero padding: 3
+
+observations:
+  obs perturbations: false                       # default
+  observers:
+
+# - obs space:
+#     name: InsituTemperature
+#     distribution: *ObsSpaceDistribution
+#     obsdatain:
+#       engine:
+#         type: H5File
+#         obsfile: Data/letkf/split_observer/__ROMS_APP___temp_letkf_split_observer.nc4
+#     obsdataout:
+#       engine:
+#         type: H5File
+#         obsfile: Data/letkf/split_solver/__ROMS_APP___temp_letkf_split_solver.nc4
+#     simulated variables: [waterTemperature]
+#   obs operator:
+#     name: VertInterp
+#     vertical coordinate: model_level_depth_at_cell_center
+#     observation vertical coordinate: depth
+#     observation alias file: testinput/obsop_name_map.yaml
+#   obs error:
+#     covariance model: diagonal
+#   obs localizations:
+#   - <<: *HorizontalObsLoc
+#   - <<: *DepthVertObsLoc
+
+# - obs space:
+#     name: InsituSalinity
+#     distribution: *ObsSpaceDistribution
+#     obsdatain:
+#       engine:
+#         type: H5File
+#         obsfile: Data/letkf/split_observer/__ROMS_APP___salt_letkf_split_observer.nc4
+#     obsdataout:
+#       engine:
+#         type: H5File
+#         obsfile: Data/letkf/split_solver/__ROMS_APP___salt_letkf_split_solver.nc4
+#     simulated variables: [salinity]
+#   obs operator:
+#     name: VertInterp
+#     vertical coordinate: model_level_depth_at_cell_center
+#     observation vertical coordinate: depth
+#     observation alias file: testinput/obsop_name_map.yaml
+#   obs error:
+#     covariance model: diagonal
+#   obs localizations:
+#   - <<: *HorizontalObsLoc
+#   - <<: *DepthVertObsLoc
+ 
+  - obs space:
+      name: SST 
+      distribution: *ObsSpaceDistribution
+      obsdatain:
+        engine:
+          type: H5File
+          obsfile: Data/letkf/split_observer/__ROMS_APP___sst_letkf_split_observer.nc4
+      obsdataout:
+        engine:
+          type: H5File
+          obsfile: Data/letkf/split_solver/__ROMS_APP___sst_letkf_split_solver.nc4
+      simulated variables: [seaSurfaceTemperature]
+    obs operator:
+      name: Identity
+      observation alias file: testinput/obsop_name_map.yaml
+    obs error:
+      covariance model: diagonal
+    obs localizations:
+    - <<: *HorizontalObsLoc
+
+  - obs space:
+      name: ADT
+      distribution: *ObsSpaceDistribution
+      obsdatain:
+        engine:
+          type: H5File
+          obsfile: Data/letkf/split_observer/__ROMS_APP___adt_letkf_split_observer.nc4
+      obsdataout:
+        engine:
+          type: H5File
+          obsfile: Data/letkf/split_solver/__ROMS_APP___adt_letkf_split_solver.nc4
+      simulated variables: [absoluteDynamicTopography]
+    obs operator:
+      name: ADT
+    obs error:
+      covariance model: diagonal
+    obs localizations:
+    - <<: *HorizontalObsLoc
+
+driver:
+  do test prints: true
+  do posterior observer: false
+  read HX from disk: true
+  save posterior ensemble: true
+  save posterior ensemble increments: true
+  save posterior mean: true
+  save posterior mean increment: true
+  save posterior variance: true
+  save prior mean: true
+  save prior variance: true
+
+local ensemble DA:
+  solver: LETKF
+  inflation:
+    rtps: 0.5
+    rtpp: 0.6
+    mult: 1.1
+
+output:                                # posterior ensemble mean:
+  single_record: true                  #   __ROMS_APP___roms_letfk_mem000_DATE.nc
+  data_dir: Data/letkf/split_solver
+  prefix: __ROMS_APP___roms            # posterior ensemble: 001-010
+  exp: letkf                           #   __ROMS_APP___roms_letfk_mem%mem%_DATE.nc
+  type: mem
+  date: *date
+
+output mean prior:                     # prior/background mean:
+  single_record: true                  #   __ROMS_APP___roms_letkf_mean_prior_DATE.nc
+  data_dir: Data/letkf/split_solver
+  prefix: __ROMS_APP___roms
+  exp: letkf
+  type: mean_prior
+  date: *date
+
+output variance prior:                 # prior (Forecast) variance:
+  single_record: true                  #   __ROMS_APP___roms_letkf_var_prior_DATE.nc
+  data_dir: Data/letkf/split_solver
+  prefix: __ROMS_APP___roms
+  exp: letkf
+  type: var_prior
+  date: *date
+
+output variance posterior:             # posterior (analysis) variance:
+  single_record: true                  #   __ROMS_APP___roms_letkf_var_posterior_DATE.nc
+  data_dir: Data/letkf/split_solver
+  prefix: __ROMS_APP___roms
+  exp: letkf
+  type: var_posterior
+  date: *date
+
+output ensemble increments:            # posterior ensemble increments:
+  single_record: true                  #   __ROMS_APP___roms_letkf_inc_mem%mem_DATE.nc
+  data_dir: Data/letkf/split_solver
+  prefix: __ROMS_APP___roms
+  exp: letkf_inc
+  type: mem
+  date: *date
+
+output increment:                      # analysys mean increment:
+  single_record: true                  #   __ROMS_APP___roms_letkf_inc_DATE.nc
+  data_dir: Data/letkf/split_solver
+  prefix: __ROMS_APP___roms
+  exp: letkf
+  type: inc
+  date: *date
+
+test:
+  reference filename: testref/letkf_split_solver.ref
+  float relative tolerance: 1.0e-3
+  log output filename: testoutput/letkf_split_solver.log
+  test output filename: testoutput/letkf_split_solver.out

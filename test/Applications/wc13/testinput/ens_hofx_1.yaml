@@ -1,0 +1,124 @@
+# ROMS-JEDI Ensemble Member 001 HofX Test: WC13 Application
+
+geometry:
+  project_dir: Data/wc13
+  roms_stdinp: roms_wc13_20040103.in
+  fields metadata: Data/fields_metadata.yaml
+  ng: 1                                        # ROMS nested grid number
+
+forecast length: &ForecastLength PT96H         # 96 hours (4 days) window ending on 2004-01-07T00:00:00Z
+                                               # or other smaller interval
+
+window begin: 2004-01-03T00:00:00Z
+window length: *ForecastLength
+
+model:
+  name: ROMS
+  model variables: [ssh, uocn, vocn, tocn, socn]
+  tstep: PT1800S                               # WC13 has a 30 minutes timestep
+  simulation length: *ForecastLength
+
+initial condition:
+  date: 2004-01-03T00:00:00Z
+  fields_dir: Data/ensembles
+  fields_filename: wc13_roms_ensemble_mem001_2004-01-03-00.00.00.nc
+  fields_record: 1
+  state variables: [ssh, uocn, vocn, tocn, socn, zocn_r]
+
+observations:
+  observers:
+
+  - obs space:
+      name: InsituTS
+      obsdatain:
+        engine:
+          type: H5File
+          obsfile: Data/wc13/obs/wc13_TS_20040103.nc4
+      obsdataout:
+        engine:
+          type: H5File
+          obsfile: Data/hofx/ensembles/wc13_TS_hofx_mem001.nc4
+      simulated variables: [salinity, waterTemperature]
+    obs operator:
+      name: VertInterp
+      vertical coordinate: model_level_depth_at_cell_center
+      observation vertical coordinate: depth
+      observation alias file: testinput/obsop_name_map.yaml
+
+  - obs space:
+      name: InsituTemperature
+      obsdatain:
+        engine:
+          type: H5File
+          obsfile: Data/wc13/obs/wc13_temp_20040103.nc4
+      obsdataout:
+        engine:
+          type: H5File
+          obsfile: Data/hofx/ensembles/wc13_temp_hofx_mem001.nc4
+      simulated variables: [waterTemperature]
+    obs operator:
+      name: VertInterp
+      vertical coordinate: model_level_depth_at_cell_center
+      observation vertical coordinate: depth
+      observation alias file: testinput/obsop_name_map.yaml
+
+  - obs space:
+      name: InsituSalinity
+      obsdatain:
+        engine:
+          type: H5File
+          obsfile: Data/wc13/obs/wc13_salt_20040103.nc4
+      obsdataout:
+        engine:
+          type: H5File
+          obsfile: Data/hofx/ensembles/wc13_salt_hofx_mem001.nc4
+      simulated variables: [salinity]
+    obs operator:
+      name: VertInterp
+      vertical coordinate: model_level_depth_at_cell_center
+      observation vertical coordinate: depth
+      observation alias file: testinput/obsop_name_map.yaml
+
+  - obs space:
+      name: SST
+      obsdatain:
+        engine:
+          type: H5File
+          obsfile: Data/wc13/obs/wc13_sst_20040103.nc4
+      obsdataout:
+        engine:
+          type: H5File
+          obsfile: Data/hofx/ensembles/wc13_sst_hofx_mem001.nc4
+      simulated variables: [seaSurfaceTemperature]
+    obs operator:
+      name: Identity
+      observation alias file: testinput/obsop_name_map.yaml
+
+  - obs space:
+      name: SSS
+      obsdatain:
+        engine:
+          type: H5File
+          obsfile: Data/wc13/obs/wc13_sss_20040103.nc4
+      obsdataout:
+        engine:
+          type: H5File
+          obsfile: Data/hofx/ensembles/wc13_sss_hofx_mem001.nc4
+      simulated variables: [seaSurfaceSalinity]
+    obs operator:
+      name: Identity
+      observation alias file: testinput/obsop_name_map.yaml
+
+  - obs space:
+      name: ADT
+      obsdatain:
+        engine:
+          type: H5File
+          obsfile: Data/wc13/obs/wc13_adt_20040103.nc4
+      obsdataout:
+        engine:
+          type: H5File
+          obsfile: Data/hofx/ensembles/wc13_adt_hofx_mem001.nc4
+      simulated variables: [absoluteDynamicTopography]
+    obs operator:
+      name: ADT

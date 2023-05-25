@@ -20,12 +20,12 @@
 
 MODULE roms_analyticinit_mod
 
-USE kinds,                ONLY : kind_real
+USE kinds,                     ONLY : kind_real
 
-USE ufo_geovals_mod,      ONLY : ufo_geovals
-USE ufo_locations_mod,    ONLY : ufo_locations
+USE ufo_geovals_mod,           ONLY : ufo_geovals
+USE ufo_sampled_locations_mod, ONLY : ufo_sampled_locations
 
-USE roms_fieldsutils_mod, ONLY : ana_fields, LdebugAnalyticInit
+USE roms_fieldsutils_mod,      ONLY : ana_fields, LdebugAnalyticInit
 
 implicit none
 
@@ -41,13 +41,13 @@ CONTAINS
 
 SUBROUTINE roms_analytic_geovals (self, locs, method, T0, S0, U0, V0)
 
-  TYPE (ufo_geovals),    intent(inout) :: self        !< GeoVaLs object
-  TYPE (ufo_locations),  intent(in   ) :: locs        !< observation locations
-  character (len=*),     intent(in   ) :: method      !< analytic method
-  real (kind=kind_real), intent(in   ) :: T0          !< background temperature
-  real (kind=kind_real), intent(in   ) :: S0          !< background salinity
-  real (kind=kind_real), intent(in   ) :: U0          !< background U-velocity
-  real (kind=kind_real), intent(in   ) :: V0          !< background V-velocity
+  TYPE (ufo_geovals),           intent(inout) :: self    !< GeoVaLs object
+  TYPE (ufo_sampled_locations), intent(in   ) :: locs    !< obs locations
+  character (len=*),            intent(in   ) :: method  !< analytic method
+  real (kind=kind_real),        intent(in   ) :: T0      !< temperature
+  real (kind=kind_real),        intent(in   ) :: S0      !< salinity
+  real (kind=kind_real),        intent(in   ) :: U0      !< U-velocity
+  real (kind=kind_real),        intent(in   ) :: V0      !< V-velocity
 
   integer                              :: iloc, ivar, ival, nloc, nvar
   real (kind=kind_real)                :: mask, value
@@ -59,7 +59,7 @@ SUBROUTINE roms_analytic_geovals (self, locs, method, T0, S0, U0, V0)
     CALL abor1_ftn ("roms_analytic_init: GeoVaLs not defined.")
   END IF
 
-  nloc = locs%nlocs()
+  nloc = locs%npaths()
   nvar = self%nvar
 
   ! Get GeoVaLs (lon,lat) locations.
@@ -89,7 +89,7 @@ SUBROUTINE roms_analytic_geovals (self, locs, method, T0, S0, U0, V0)
   IF (method .eq. 'ana_ocnfields') THEN                ! Analitical formula
 
     DO ivar = 1, nvar
-      DO iloc = 1, self%geovals(ivar)%nlocs
+      DO iloc = 1, self%geovals(ivar)%nprofiles
         DO ival = 1, self%geovals(ivar)%nval    
           value = ana_fields(TRIM(self%variables(ivar)),                       &
                              mask,                                             &
@@ -144,7 +144,7 @@ SUBROUTINE roms_analytic_geovals (self, locs, method, T0, S0, U0, V0)
           value = 0.0_kind_real
       END SELECT
 
-      DO iloc = 1, self%geovals(ivar)%nlocs
+      DO iloc = 1, self%geovals(ivar)%nprofiles
         DO ival = 1, self%geovals(ivar)%nval    
           self%geovals(ivar)%vals(ival, iloc) = value
         END DO

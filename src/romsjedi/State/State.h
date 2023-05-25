@@ -36,6 +36,10 @@ namespace eckit {
   class Configuration;
 }
 
+namespace ufo {
+  class GeoVaLs;
+}
+
 namespace romsjedi {
   class Geometry;
   class Increment;

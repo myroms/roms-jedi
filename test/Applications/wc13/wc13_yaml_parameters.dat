@@ -1,0 +1,131 @@
+###############################################################
+# WC13 application configuration parameters used to generate  #
+# ROMS-JEDI input YAML files from templates.                  #
+###############################################################
+
+# ROMS Application: tile and file prefix.
+
+__ROMS_APPLICATION__           WC13 Application
+__ROMS_APP__                   wc13
+
+# Date-Time parameters for the start of the data assimilation
+# cycle: year, month, day, hour, minutes, and seconds.
+
+YYYY                           2004
+MM                             04
+DD                             03
+hh                             00
+mm                             00
+ss                             00
+
+# Project directory relative to ROMS-JEDI execution.
+
+__PROJECT_DIR__                Data/wc13
+
+# ROMS application input field (NetCDF files) directory.
+
+__FIELDS_DIR__                 Data/wc13/input
+
+# ROMS application standard input file.
+
+__ROMS_STDINP__                roms_wc13_YYYYMMDD.in
+
+# ROMS application forecast length and timestep. It uses
+# ISO 8601 standard duration syntax.
+#
+# Notice that the WC13 application is configured to run for 96 hours
+# (4 days). However, it is possible to use a smaller interval for the
+# 'forecast length' provided it is an integer multiple the timestep
+# (1800 s). Then, ROMS internal parameters are changed to the desired
+# interval via the 'simulation length' property.
+
+__FORECAST_LENGTH__            PT96H
+__ROMS_TIMESTEP__              PT1800S
+
+# ROMS application linear models (TLM/ADM) forecast length for the
+# symmetry Unit Test only. To accelerate the test, it can be less than
+# the value PT96H specified above.
+
+__TLAD_FORECAST_LENGTH__       PT6H
+
+# Data assimilation cycle initial and final date-time, which
+# uses the ISO 8601 standard. The MIDDLE and FINAL values are
+# are computed using the INITIAL date and forecast length by
+# the replacement processing script that generates the YAML
+# files from the template.
+
+__INITIAL_DATE__               YYYY-MM-DDThh:mm:ssZ
+__MIDDLE_DATE__                MID_DATE
+__FINAL_DATE__                 FINAL_DATE
+
+# ROMS output file date-time suffix for ensemble members.
+
+__INI_DATETIME__               YYYY-MM-DD-hh.mm.ss
+
+# Number of ensemble members to generate.
+
+__MEMBERS__                    10
+__NMEMBERS__                   10
+
+# Number of variational data assimilation inner loops.
+
+__NINNER__                     10
+
+# ROMS initial and middle filenames and associated time records
+# for the prior/background state vector.
+
+__ROMS_INI_PRIOR__             wc13_roms_ini_YYYYMMDD.nc
+__INI_PRIOR_RECORD__           1
+
+__ROMS_MID_PRIOR__             wc13_roms_ini_YYYYMMDD.nc
+__MID_PRIOR_RECORD__           25
+
+# ROMS standard deviation file for background error covariance
+# modeling.
+
+__ROMS_PRIOR_STD__             wc13_roms_std_i.nc
+
+# ROMS-JEDI data assimilation NetCDF-4 (IODA Version 3) for the
+# input observations. They are separated by observation type and
+# platform to facilitate the various UFO operators for processing
+
+__ADT_OBS__                    Data/wc13/obs/wc13_adt_YYYYMMDD.nc4
+__ADT_SINGLE_OBS__             Data/wc13/obs/wc13_adt_single_obs_20040105.nc4
+__SALINITY_OBS__               Data/wc13/obs/wc13_salt_YYYYMMDD.nc4
+__SSS_OBS__                    Data/wc13/obs/wc13_sss_YYYYMMDD.nc4
+__SST_OBS__                    Data/wc13/obs/wc13_sst_YYYYMMDD.nc4
+__SST_SINGLE_OBS__             Data/wc13/obs/wc13_sst_single_obs_20040105.nc4
+__TEMPERATURE_OBS__            Data/wc13/obs/wc13_temp_YYYYMMDD.nc4
+__TS_OBS__                     Data/wc13/obs/wc13_TS_YYYYMMDD.nc4
+__UV_SUR_OBS__                 Data/wc13/obs/wc13_uv_sur_YYYYMMDD.nc4
+__USUR_OBS__                   Data/wc13/obs/wc13_usur_YYYYMMDD.nc4
+__VSUR_OBS__                   Data/wc13/obs/wc13_vsur_YYYYMMDD.nc4
+
+# Static horizontal and vertical correlations for background error
+# covariance modeling using BUMP/NICAS and hybrid weights.
+
+__STATIC_B__HCORRELATION__     160.0e+3
+__STATIC_B__VCORRELATION__     150.0
+
+__STATIC_B_WEIGHT__            0.4
+__ENSEMBLE_WEIGHT__            0.6
+
+# Ensemble horizontal and vertical correlations for localization.
+
+__LOCALIZATION_HCORRELATION__  160.0e+3
+__LOCALIZATION_VCORRELATION__  150.0
+
+# LETKF observation distribution parameter.
+
+__OBS_DISTRIBUTION__           150.0e+3
+
+# ROMS output file policy and frequency. It creates new output NetCDF
+# files every "file_policy" interval. For example, if file_policy = PT2H
+# (same as output frequency) creates 49 files over the 4-day window.
+# We can also create a single file (wc13_roms_fct_2004-01-03-00.00.00.nc)
+# with 49 records. In this case, it is advisable for file_policy > PT96H,
+# to avoid the last record being in a single file. See the logic routine
+# in "roms_fields_write", module "roms_fields_mod.F90".
+
+__OUTPUT_FILE_POLICY__         PT98H
+__OUTPUT_FREQUENCY__           PT2H

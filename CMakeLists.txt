@@ -30,39 +30,9 @@ find_package( oops   1.3.0    REQUIRED)
 find_package( saber  1.0.0    REQUIRED)
 find_package( ioda   1.0.0    REQUIRED)
 find_package( ufo    1.3.0    REQUIRED)
+find_package( roms   4.1      REQUIRED)
+
 include_directories( ${NETCDF_INCLUDE_DIRS} )
-
-# ROMS
-
-message( STATUS "here_DIR=${CMAKE_CURRENT_LIST_DIR}" )
-message( STATUS "ROMS_BUILD_DIR=${ROMS_BUILD_DIR}" )
-
-find_library( ROMS_LIBRARY
-              NAMES "libROMS.so" "libROMS.dylib"
-              DOC "ROMS library"
-              HINTS ${ROMS_BUILD_DIR}
-              PATH_SUFFIXES lib )
-
-mark_as_advanced( ROMS_LIBRARY )
-
-find_file( ROMS_INCLUDE_FILE
-           NAMES "roms_kernel_mod.mod"
-           DOC "ROMS include directory"
-           HINTS ${ROMS_BUILD_DIR}
-           PATH_SUFFIXES include modules )
-
-mark_as_advanced( ROMS_INCLUDE_FILE )
-
-if( ROMS_INCLUDE_FILE )
-    get_filename_component(ROMS_INCLUDE_FILE ${ROMS_INCLUDE_FILE} ABSOLUTE)
-    get_filename_component(ROMS_INCLUDE_DIR  ${ROMS_INCLUDE_FILE} DIRECTORY)
-endif()
-
-include_directories( ${ROMS_INCLUDE_DIR} )
-link_libraries( ${ROMS_LIBRARY} )
-
-message( STATUS "ROMS_INCLUDE_DIR = ${ROMS_INCLUDE_DIR}" )
-message( STATUS "ROMS_LIBRARY = ${ROMS_LIBRARY}" )
 
 ################################################################################
 # Sources

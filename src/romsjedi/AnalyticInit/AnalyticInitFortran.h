@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2017-2021 UCAR
+ * (C) Copyright 2017-2023 UCAR
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -24,14 +24,14 @@
 // Forward declarations
 
 namespace ufo {
-  class Locations;
+  class SampledLocations;
 }
 
 namespace romsjedi {
 
   extern "C" {
     void roms_analytic_geovals_f90(F90goms &,
-                                   const ufo::Locations &,
+                                   const ufo::SampledLocations &,
                                    const int &, const char *,
                                    const double & T0,
                                    const double & S0,

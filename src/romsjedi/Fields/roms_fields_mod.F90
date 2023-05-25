@@ -189,7 +189,6 @@ SUBROUTINE roms_fields_create (self, geom, vars)
                           ', LBi = ', geom%LBi, ', UBi = ', geom%UBi,          &
                           ', LBj = ', geom%LBj, ', UBj = ', geom%UBj,          &
                           ', N = ', geom%N
-    CALL geom%f_comm%barrier()
   END IF
 
   ! Initialize the variable parameters.
@@ -280,7 +279,7 @@ SUBROUTINE roms_fields_copy (self, rhs)
       CALL rhs_fld%stats (stats)
       IF (my_comm%rank() .eq. 0) THEN
         PRINT 10, rhs_fld%name, stats(1), stats(2), INT(stats(3))
- 10     FORMAT (2x,'- ',a30,':',t38,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,  &
+ 10     FORMAT (2x,'- ',a35,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,  &
                 ',  CheckSum = ', i0)
       END IF
     END IF
@@ -374,7 +373,7 @@ SUBROUTINE roms_fields_to_fieldset (self, geom, vars, afieldset)
       CALL field%stats (stats)
       IF (geom%f_comm%rank() .eq. 0) THEN
         PRINT 10, field%name, stats(1), stats(2), INT(stats(3))
- 10     FORMAT (2x,'- ',a30,':',t38,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,  &
+ 10     FORMAT (2x,'- ',a35,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,  &
                 ',  CheckSum = ', i0)
       END IF
     END IF
@@ -395,19 +394,19 @@ SUBROUTINE roms_fields_to_fieldset (self, geom, vars, afieldset)
     ! Get or create ATLAS field.
     
     IF (afieldset%has_field(vars%variable(ivar))) THEN
-      afield = afieldset%field(vars%variable(ivar))           ! get field
+      afield = afieldset%field(vars%variable(ivar))         ! get field
     ELSE
       afield = geom%functionspaceIncHalo%create_field(                         &
                                                    name=vars%variable(ivar),   &
                                                    kind=atlas_real(kind_real), &
                                                    levels=N)
-      CALL afieldset%add (afield)                             ! add field
+      CALL afieldset%add (afield)                           ! add field
     END IF
 
     ! Get field pointer to ATLAS and copy data.
 
     CALL afield%data (fldptr)
-    
+
     DO k = 1, N
       fldptr(k,:) = PACK(Fdat(IstrH:IendH, JstrH:JendH, k), .TRUE.)
     END DO
@@ -415,7 +414,7 @@ SUBROUTINE roms_fields_to_fieldset (self, geom, vars, afieldset)
     meta = afield%metadata()
     CALL meta%set ('interp_type', TRIM(field%interp_type))
 
-    CALL afield%final ()                                      ! release pointer
+    CALL afield%final ()                                    ! release pointer
 
   END DO
 
@@ -435,7 +434,6 @@ SUBROUTINE roms_fields_to_fieldset_ad (ad_self, geom, vars, ad_afieldset)
   TYPE (atlas_fieldset),       intent(in   ) :: ad_afieldset !< ATLAS fieldset
 
   TYPE (atlas_field)                         :: ad_afield
-  TYPE (atlas_metadata)                      :: meta
   TYPE (roms_field), pointer                 :: ad_field
 
   logical, allocatable                       :: mask(:,:)
@@ -493,7 +491,7 @@ SUBROUTINE roms_fields_to_fieldset_ad (ad_self, geom, vars, ad_afieldset)
       IF (geom%f_comm%rank() .eq. 0) THEN
         PRINT 10, ad_field%name, stats(1), stats(2), INT(stats(3)),            &
                   '(input increment)'
- 10     FORMAT (2x,'- ',a30,':',t38,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,  &
+ 10     FORMAT (2x,'- ',a35,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,  &
                 ',  CheckSum = ', i0, 3x, a)
       END IF
     END IF
@@ -610,7 +608,7 @@ SUBROUTINE roms_fields_from_fieldset (self, geom, vars, afieldset)
       CALL field%stats (stats)
       IF (geom%f_comm%rank() .eq. 0) THEN
         PRINT 10, field%name, stats(1), stats(2), INT(stats(3))
- 10     FORMAT (2x,'- ',a30,':',t38,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,  &
+ 10     FORMAT (2x,'- ',a35,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,  &
                 ',  CheckSum = ', i0)
       END IF
     END IF
@@ -1243,7 +1241,7 @@ SUBROUTINE roms_fields_add (self, rhs)
       CALL self%fields(i)%stats (stats)
       IF (my_comm%rank() .eq. 0) THEN
         PRINT 10, self%fields(i)%name, stats(1), stats(2), INT(stats(3))
- 10     FORMAT (2x,'- ',a30,':',t38,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,  &
+ 10     FORMAT (2x,'- ',a35,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,  &
                 ',  CheckSum = ', i0)
       END IF
     END IF
@@ -1279,7 +1277,7 @@ SUBROUTINE roms_fields_sub (self, rhs)
       CALL self%fields(i)%stats (stats)
       IF (my_comm%rank() .eq. 0) THEN
         PRINT 10, self%fields(i)%name, stats(1), stats(2), INT(stats(3))
- 10     FORMAT (2x,'- ',a30,':',t38,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,  &
+ 10     FORMAT (2x,'- ',a35,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,  &
                 ',  CheckSum = ', i0)
       END IF
     END IF
@@ -1309,7 +1307,7 @@ SUBROUTINE roms_fields_mul (self, c)
       CALL self%fields(i)%stats (stats)
       IF (my_comm%rank() .eq. 0) THEN
         PRINT 10, self%fields(i)%name, stats(1), stats(2), INT(stats(3))
- 10     FORMAT (2x,'- ',a30,':',t38,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,  &
+ 10     FORMAT (2x,'- ',a35,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,  &
                 ',  CheckSum = ', i0)
       END IF
     END IF
@@ -1691,7 +1689,7 @@ SUBROUTINE roms_fields_axpy (self, c, rhs)
       CALL f_lhs%stats (stats)
       IF (my_comm%rank() .eq. 0) THEN
         PRINT 10, f_lhs%name, stats(1), stats(2), INT(stats(3))
- 10     FORMAT (2x,'- ',a30,':',t38,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,  &
+ 10     FORMAT (2x,'- ',a35,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,  &
                 ',  CheckSum = ', i0)
       END IF
     END IF

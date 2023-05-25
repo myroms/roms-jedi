@@ -95,10 +95,14 @@ SUBROUTINE roms_vc_model2geovals_changeVar (self, geom, xin, xout)
         IF ((xout%fields(i)%name .eq. field%metadata%getval_name) .or.         &
             (xout%fields(i)%name .eq. field%metadata%name)) THEN
 
-          xout%fields(i)%val(:,:,:) = field%val(:,:,:)   !< full field
+          ! Loading full field.
+
+          xout%fields(i)%val(:,:,:) = field%val(:,:,:)
 
         ELSE IF (field%metadata%getval_name_surface .eq.                       &
-                 xout%fields(i)%name) THEN               !< surface Z-index
+                 xout%fields(i)%name) THEN
+
+          ! Loading surface field.
 
           Nsur = field%N
           xout%fields(i)%val(:,:,1) = field%val(:,:,Nsur)
@@ -117,7 +121,7 @@ SUBROUTINE roms_vc_model2geovals_changeVar (self, geom, xin, xout)
       CALL xout%fields(i)%stats (stats)
       IF (geom%f_comm%rank() .eq. 0) THEN
         PRINT 10, xout%fields(i)%name, stats(1), stats(2), INT(stats(3))
- 10     FORMAT (2x,'- ',a30,':',t38,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,  &
+ 10     FORMAT (2x,'- ',a35,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,  &
                 ',  CheckSum = ', i0)
       END IF
     END IF
