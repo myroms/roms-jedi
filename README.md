@@ -47,7 +47,7 @@ running some of the basic JEDI applications, as well as the available data assim
 -  We also like to define the **MPIRUN** environmental variable to specify the **MPI** executable in
    a particular computer (say, **srun**, **mpirun**, etc.). We need the full path for **ctest** to work.
    For example,
-   ```
+  ```
    setenv MPIRUN /opt/slurm/bin/srun
    ```
    Notice that we specify this executable in the **ecbuid** command.
@@ -69,14 +69,47 @@ running some of the basic JEDI applications, as well as the available data assim
    setenv LdebugTrajectory           1
    ```
 
+-  Before cloning the **`ROMS-JEDI`** interface, ensure that your **`~/.gitconfig`** has the appropriate
+   **`git-lfs`** configuration for correctly downloading **WC13** input and observation NetCDF files.
+   Otherwise, the default Unit Tests will fail. The **Git LFS** is a command line extension and
+   specification for managing large files with **Git**. A sample of the configuration file looks
+   like this:
+   ```
+   more ~/.gitconf
+
+   [user]
+        name = GivenName MiddleName FamilyName
+        email = your@email
+   [credential]
+        helper = cache --timeout=7200
+        helper = store --file ~/.my-credentials
+   [filter "lfs"]
+        clean = git-lfs clean -- %f
+        smudge = git-lfs smudge -- %f
+        process = git-lfs filter-process
+        required = true
+   ```
+
+   Alternatively, you may execute **`git lfs pull`** at your location of the **`ROMS-JEDI`** interface
+   to download a viable version of the **Git LFS** files for the remote repository in **GitHub**. Also, to
+   add the **LFS** filter to your existing **`~/.gitconfig`** automatically, you could use **`git lfs install`**.
+
+-  A **GitHub** credential file is helpful so we don't have to repeatedly type the long **GitHubAccessToken**
+   when cloning/updating all **JEDI** components' source code. 
+   ```
+   more ~/.my-credentials
+
+   https://GitHubUserName:GitHubAccessToken@github.com
+   ```
+
 -  Our strategy is to create a **Bundle** and **build** subdirectory for each application. For **WC13**
    (default), we create **Bundle_wc13** and **build_wc13** below. Please follow the following steps to
    configure **`ROMS-JEDI`** in your computer:
 
    ```
-   git clone https://github.com/JCSDA-internal/roms-jedi.git
+   git clone https://github.com/JCSDA-internal/roms-jedi.git  !> if first time in your computer
 
-   cd roms-jedi                                   !> ROMS-JEDI interface directory, <interface_dir>
+   cd roms-jedi                                               !> ROMS-JEDI interface directory, <interface_dir>
    mkdir Bundle_wc13
    cp bundle/.gitignore bundle/CMakeLists.txt Bundle_wc13
    mkdir build_wc13
@@ -85,12 +118,12 @@ running some of the basic JEDI applications, as well as the available data assim
    ecbuild -DMPIEXEC_EXECUTABLE=$MPIRUN -DMPIEXEC_NUMPROC_FLAG="-n" ../Bundle_wc13
    make -j 10
 
-   cd roms-jedi                                   !> sub-directory: <interface_dir>/build_wc13/roms-jedi
-   ctest -N                                       !> lists all the Unit Tests available
-   ctest -E -V get_                               !> runs all the Unit Tests
+   cd roms-jedi                                               !> sub-directory: <interface_dir>/build_wc13/roms-jedi
+   ctest -N                                                   !> lists all the Unit Tests available
+   ctest -E -V get_                                           !> runs all the Unit Tests
 
-   cd test/Data                                   !> sub-directory: <interface_dir>/build_wc13/roms-jedi/test/Data
-                                                  !> to check the results in various sub-directories
+   cd test/Data                                               !> sub-directory: <interface_dir>/build_wc13/roms-jedi/test/Data
+                                                              !> to check the results in various sub-directories
    ```
 
 -  For example, if running the US East Coast **DOPPIO** application (240x104x40 grid points) or any other, please follow
@@ -98,7 +131,7 @@ running some of the basic JEDI applications, as well as the available data assim
 
 
    ```
-   cd roms-jedi                                   !> ROMS-JEDI interface directory, <interface_dir>
+   cd roms-jedi                                               !> ROMS-JEDI interface directory, <interface_dir>
    mkdir Bundle_doppio
    cp bundle/.gitignore bundle/CMakeLists.txt Bundle_doppio
    mkdir build_doppio
@@ -107,16 +140,18 @@ running some of the basic JEDI applications, as well as the available data assim
    ecbuild -DMPIEXEC_EXECUTABLE=$MPIRUN -DMPIEXEC_NUMPROC_FLAG="-n" -DROMS_APP="DOPPIO" -DROMS_APP_DIR="DOPPIOpath" ../Bundle_doppio
    make -j 10
 
-   cd roms-jedi                                   !> sub-directory: <interface_dir>/build_doppio/roms-jedi
-   ctest -N                                       !> lists all the Unit Tests available
-   ctest -E -V get_                               !> runs all the Unit Test
+   cd roms-jedi                                               !> sub-directory: <interface_dir>/build_doppio/roms-jedi
+   ctest -N                                                   !> lists all the Unit Tests available
+   ctest -E -V get_                                           !> runs all the Unit Test
 
-   cd test/Data                                   !> sub-directory: <interface_dir>/build_doppio/roms-doppio/test/Data
-                                                  !> to check the results in various sub-directories
+   cd test/Data                                               !> sub-directory: <interface_dir>/build_doppio/roms-doppio/test/Data
+                                                              !> to check the results in various sub-directories
    ```
 
 -  The **ecbuild** command builds by default the **Release** (optimized) version of **`JEDI`** and **`ROMS-JEDI`**. However, if
-   debugging (**-g** option) include the directive **`-DCMAKE_BUILD_TYPE=debug`** to the **ecbuild** command.
+   debugging (**-g** options), include the directive **`-DCMAKE_BUILD_TYPE=Debug`** to the **ecbuild** command. Also, we could use
+   optimized with debugging information (**-O2 -g** options) with **`-DCMAKE_BUILD_TYPE=RelWithDebInfo`**, but it doesn't work
+   in the TotalView debugger.
 
 -  Any **`ROMS`** application can be run in **`ROMS-JEDI`** by specifying the appropriate CPP option and necessary input files. Only
    **WC13** is provided with the interface. However, we facilitate how to run such applications. Notice that the **WC13**

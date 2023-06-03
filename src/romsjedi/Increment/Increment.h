@@ -72,10 +72,6 @@ namespace romsjedi {
     OOPS_CONCRETE_PARAMETERS(IncrementDiracParameters, Parameters)
 
    public:
-    oops::RequiredParameter<int> ndir{
-      "ndir",
-      "Number Dirac Impulse in location vectors",
-      this};
     oops::RequiredParameter<std::vector<int>> ixdir{
       "ixdir",
       "Dirac Impulse grid x-direction index vector",

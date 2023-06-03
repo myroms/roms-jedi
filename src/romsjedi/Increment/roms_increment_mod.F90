@@ -19,6 +19,7 @@ MODULE roms_increment_mod
 USE kinds,                      ONLY : kind_real
 
 USE fckit_configuration_module, ONLY : fckit_configuration
+USE fckit_mpi_module,           ONLY : fckit_mpi_comm
 USE oops_variables_mod,         ONLY : oops_variables
 USE random_mod,                 ONLY : normal_distribution
 
@@ -27,6 +28,7 @@ USE datetime_mod
 USE mod_ncparam,                ONLY : r2dvar
 USE roms_field_mod,             ONLY : roms_field
 USE roms_fields_mod,            ONLY : roms_fields
+USE roms_fieldsutils_mod,       ONLY : LdebugFields
 !USE roms_convert_state_mod
 USE roms_geom_mod,              ONLY : roms_geom
 USE roms_geomIterator_mod,      ONLY : roms_geomIterator
@@ -56,6 +58,10 @@ END TYPE roms_increment
 ! ------------------------------------------------------------------------------
 
 PRIVATE
+
+! Local MPI communicator.
+
+TYPE (fckit_mpi_comm) :: my_comm
 
 ! ------------------------------------------------------------------------------
 CONTAINS
@@ -196,7 +202,7 @@ SUBROUTINE roms_increment_dirac (self, f_conf)
 
   ! Get Diracs size.
 
-  CALL f_conf%get_or_die ("ndir", ndir)
+  ndir = f_conf%get_size("ixdir")
 
   IF (( f_conf%get_size("iydir") .ne. ndir ) .or. &
       ( f_conf%get_size("izdir") .ne. ndir ) .or. &
@@ -226,8 +232,21 @@ SUBROUTINE roms_increment_dirac (self, f_conf)
 
   IstrD = self%geom%bounds(r2dvar)%IstrD
   IendD = self%geom%bounds(r2dvar)%IendD
-  JstrD = self%geom%bounds(r2dvar)%IstrD
+  JstrD = self%geom%bounds(r2dvar)%JstrD
   JendD = self%geom%bounds(r2dvar)%JendD
+
+  IF (LdebugFields .and. (my_comm%rank() .eq. 0)) THEN
+    PRINT 10, 'ROMS_DEBUG: roms_increment::dirac: tile = ', self%geom%tile,    &
+              '  IstrD = ', IstrD,                                             &
+              ', IendD = ', IendD,                                             &
+              ', JstrD = ', JstrD,                                             &
+              ', JendD = ', JendD,                                             &
+              ', ixdir = ', ixdir,                                             &
+              ', iydir = ', iydir,                                             &
+              ', izdir = ', iydir,                                             &
+              ', ifdir = ', ifdir
+    10 FORMAT (a, i3, 7(a, i0, 1x), a, a)
+  END IF
 
   ! Setup Diracs.
 
