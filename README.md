@@ -115,7 +115,7 @@ running some of the basic JEDI applications, as well as the available data assim
    mkdir build_wc13
    cd build_wc13
 
-   ecbuild -DMPIEXEC_EXECUTABLE=$MPIRUN -DMPIEXEC_NUMPROC_FLAG="-n" ../Bundle_wc13
+   ecbuild -DMPIEXEC_EXECUTABLE=$MPIRUN -DMPIEXEC_NUMPROC_FLAG="-n" -DCMAKE_BUILD_TYPE=Release ../Bundle_wc13
    make -j 10
 
    cd roms-jedi                                               !> sub-directory: <interface_dir>/build_wc13/roms-jedi
@@ -137,7 +137,7 @@ running some of the basic JEDI applications, as well as the available data assim
    mkdir build_doppio
    cd build_doppio
 
-   ecbuild -DMPIEXEC_EXECUTABLE=$MPIRUN -DMPIEXEC_NUMPROC_FLAG="-n" -DROMS_APP="DOPPIO" -DROMS_APP_DIR="DOPPIOpath" ../Bundle_doppio
+   ecbuild -DMPIEXEC_EXECUTABLE=$MPIRUN -DMPIEXEC_NUMPROC_FLAG="-n" -DROMS_APP="DOPPIO" -DROMS_APP_DIR="DOPPIOpath" -DCMAKE_BUILD_TYPE=Release ../Bundle_doppio
    make -j 10
 
    cd roms-jedi                                               !> sub-directory: <interface_dir>/build_doppio/roms-jedi
@@ -148,10 +148,10 @@ running some of the basic JEDI applications, as well as the available data assim
                                                               !> to check the results in various sub-directories
    ```
 
--  The **ecbuild** command builds by default the **Release** (optimized) version of **`JEDI`** and **`ROMS-JEDI`**. However, if
-   debugging (**-g** options), include the directive **`-DCMAKE_BUILD_TYPE=Debug`** to the **ecbuild** command. Also, we could use
-   optimized with debugging information (**-O2 -g** options) with **`-DCMAKE_BUILD_TYPE=RelWithDebInfo`**, but it doesn't work
-   in the TotalView debugger.
+-  The **ecbuild** command builds by default the **RelWithDebInfo** (**-O2 -g** options) for optimized with debugging information
+   version of **`JEDI`** and **`ROMS-JEDI`**, rendering slower execution. However for faster and optimized execution, we include
+   the include the directive **`-DCMAKE_BUILD_TYPE=Release`** to the **ecbuild** command. For debugging with TotalView, we includle
+   instead the directive **`-DCMAKE_BUILD_TYPE=Debug`**, which is much slower.
 
 -  Any **`ROMS`** application can be run in **`ROMS-JEDI`** by specifying the appropriate CPP option and necessary input files. Only
    **WC13** is provided with the interface. However, we facilitate how to run such applications. Notice that the **WC13**

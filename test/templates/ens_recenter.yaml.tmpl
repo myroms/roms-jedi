@@ -10,42 +10,26 @@ geometry:
 
 recenter variables: &roms_state [ssh, uocn, vocn, tocn, socn]
 
-_file: &_file
-  fields_dir: Data/ensembles
-  fields_record: 1
-  date: &date __INITIAL_DATE__
-  state variables: *roms_state
-
 center:                                        # Central state
   fields_dir: __FIELDS_DIR__
   fields_filename: __ROMS_INI_PRIOR__
   fields_record: __INI_PRIOR_RECORD__
-  date: *date
+  date: &date __INITIAL_DATE__
   state variables: *roms_state
 
 zero center: false
 
 ensemble:                                      # Ensembles to be recentered
-  - <<: *_file
-    fields_filename: __ROMS_APP___roms_ensemble_mem001___INI_DATETIME__.nc
-  - <<: *_file
-    fields_filename: __ROMS_APP___roms_ensemble_mem002___INI_DATETIME__.nc
-  - <<: *_file
-    fields_filename: __ROMS_APP___roms_ensemble_mem003___INI_DATETIME__.nc
-  - <<: *_file
-    fields_filename: __ROMS_APP___roms_ensemble_mem004___INI_DATETIME__.nc
-  - <<: *_file
-    fields_filename: __ROMS_APP___roms_ensemble_mem005___INI_DATETIME__.nc
-  - <<: *_file
-    fields_filename: __ROMS_APP___roms_ensemble_mem006___INI_DATETIME__.nc
-  - <<: *_file
-    fields_filename: __ROMS_APP___roms_ensemble_mem007___INI_DATETIME__.nc
-  - <<: *_file
-    fields_filename: __ROMS_APP___roms_ensemble_mem008___INI_DATETIME__.nc
-  - <<: *_file
-    fields_filename: __ROMS_APP___roms_ensemble_mem009___INI_DATETIME__.nc
-  - <<: *_file
-    fields_filename: __ROMS_APP___roms_ensemble_mem010___INI_DATETIME__.nc
+  members from template:
+    template:
+      date: *date
+      fields_dir: Data/ensembles
+      fields_filename: __ROMS_APP___roms_ensemble_mem%mem%___INI_DATETIME__.nc
+      fields_record: __INI_PRIOR_RECORD__
+      state variables: *roms_state
+    pattern: %mem%
+    nmembers: NMEMBERS
+    zero padding: 3
 
 ensemble mean output:
   single_record: true

@@ -10,43 +10,26 @@ geometry:
 
 recenter variables: &roms_state [ssh, uocn, vocn, tocn, socn]
 
-_file: &_file
-  date: &date 2004-01-03T00:00:00Z
-  fields_dir: Data/ensembles
-  fields_record: 1                             # 2004-01-03T00:00:00Z
-# fields_record: 49                            # 2004-01-07T00:00:00Z
-  state variables: *roms_state
-
 center:                                        # Central state
   fields_dir: Data/wc13/input
   fields_filename: wc13_roms_ini_20040103.nc   # initial fields for 2004-01-03T00:00:00Z
   fields_record: 1
   state variables: *roms_state
-  date: *date
+  date: &date 2004-01-03T00:00:00Z
 
 zero center: false
 
 ensemble:                                      # Ensembles to be recentered
-  - <<: *_file
-    fields_filename: wc13_roms_ensemble_mem001_2004-01-03-00.00.00.nc
-  - <<: *_file
-    fields_filename: wc13_roms_ensemble_mem002_2004-01-03-00.00.00.nc
-  - <<: *_file
-    fields_filename: wc13_roms_ensemble_mem003_2004-01-03-00.00.00.nc
-  - <<: *_file
-    fields_filename: wc13_roms_ensemble_mem004_2004-01-03-00.00.00.nc
-  - <<: *_file
-    fields_filename: wc13_roms_ensemble_mem005_2004-01-03-00.00.00.nc
-  - <<: *_file
-    fields_filename: wc13_roms_ensemble_mem006_2004-01-03-00.00.00.nc
-  - <<: *_file
-    fields_filename: wc13_roms_ensemble_mem007_2004-01-03-00.00.00.nc
-  - <<: *_file
-    fields_filename: wc13_roms_ensemble_mem008_2004-01-03-00.00.00.nc
-  - <<: *_file
-    fields_filename: wc13_roms_ensemble_mem009_2004-01-03-00.00.00.nc
-  - <<: *_file
-    fields_filename: wc13_roms_ensemble_mem010_2004-01-03-00.00.00.nc
+  members from template:
+    template:
+      date: *date
+      fields_dir: Data/ensembles
+      fields_filename: wc13_roms_ensemble_mem%mem%_2004-01-03-00.00.00.nc
+      fields_record: 1                         # 2004-01-03T00:00:00Z
+      state variables: *roms_state
+    pattern: %mem%
+    nmembers: 10
+    zero padding: 3
 
 ensemble mean output:
   single_record: true

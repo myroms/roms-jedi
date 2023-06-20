@@ -7,23 +7,35 @@
 #
 # ROMS-BUNDLE:
 #
+# The ROMS-JEDI interface has a bundle sub-directory feature to facilitate
+# running various ROMS applications. The strategy is to create a Bundle and
+# build sub-directories for each application. For example, for WC13 (default
+# application), we could create "Bundle_wc13" and "build_wc13".
+#
+# By default, ecbuild is configured with RelWithDebInfo resulting in slower
+# execution. Use -DCMAKE_BUILD_TYPE at the ecbuild command line for other
+# building options like -DCMAKE_BUILD_TYPE=Release (fast, optimized code)
+# or -DCMAKE_BUILD_TYPE=Debug for debugging (slower code).
+#
 # To build the roms-jedi interface use:
 # 
-#   mkdir build
-#   cd build
+#   mkdir Bundle_wc13 build_wc13
+#   cp bundle/.gitignore bundle/CMakeLists.txt Bundle_wc13
+#   cd build_wc13
 #
-#   ecbuild -DMPIEXEC_EXECUTABLE=$MPIRUN -DMPIEXEC_NUMPROC_FLAG="-n" -DCMAKE_BUILD_TYPE=Release ../bundle
+#   ecbuild -DMPIEXEC_EXECUTABLE=$MPIRUN -DMPIEXEC_NUMPROC_FLAG="-n" -DCMAKE_BUILD_TYPE=Release ../Bundle_wc13
 #
 # or
 #
-#   mkdir build_debug
+#   mkdir Bundle_debug build_debug
+#   cp bundle/.gitignore bundle/CMakeLists.txt Bundle_debug
 #   cd build_debug
-#   ecbuild -DMPIEXEC_EXECUTABLE=$MPIRUN -DMPIEXEC_NUMPROC_FLAG="-n" -DCMAKE_BUILD_TYPE=Debug ../bundle
+#   ecbuild -DMPIEXEC_EXECUTABLE=$MPIRUN -DMPIEXEC_NUMPROC_FLAG="-n" -DCMAKE_BUILD_TYPE=Debug ../Bundle_debug
 #
 # For other ROMS-JEDI applications, we need to additionally specify ROMS_APP and
 # ROMS_APP_DIR in the ecbuild command:
 #
-#   ecbuild ... -DROMS_APP="DOPPIO" -DROMS_APP_DIR="MyAppDirPath" ../bundle
+#   ecbuild ... -DROMS_APP="DOPPIO" -DROMS_APP_DIR="MyAppDirPath" ../Bundle_app
 #
 #-------------------------------------------------------------------------------
 
@@ -35,14 +47,24 @@ project( roms-jedi VERSION 1.0.0 LANGUAGES C CXX Fortran )
 
 include( ecbuild_bundle )
 
-# Default release mode
+message( STATUS "---------------------------------------------------------" )
+message( STATUS "By default, ecbuild is configured with RelWithDebInfo" )
+message( STATUS "resulting in slower execution. Use -DCMAKE_BUILD_TYPE" )
+message( STATUS "at the ecbuild command line for other options like" )
+message( STATUS "-DCMAKE_BUILD_TYPE=Release or -DCMAKE_BUILD_TYPE=Debug")
+message( STATUS "---------------------------------------------------------" )
 
-set( ECBUILD_DEFAULT_BUILD_TYPE Release )
+message( STATUS "BUNDLE ECBUILD_DEFAULT_BUILD_TYPE = ${ECBUILD_DEFAULT_BUILD_TYPE}" )
+message( STATUS "BUNDLE CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}" )
 
 # ROMS application (Default: WC13).
 #
 # If WC13, create a symbolic link to ROMS-JEDI source code path because we need access
 # to ROMS header file during configuration and ROMS source code processing.
+
+message( STATUS "---------------------------------------------------------" )
+message( STATUS "ROMS Application:" )
+message( STATUS "---------------------------------------------------------" )
 
 if( NOT ROMS_APP AND NOT ROMS_APP_DIR )
   set( ROMS_APP WC13 )
@@ -68,6 +90,8 @@ set( MY_CPP_FLAGS ANALYTICAL_DIR='${ROMS_APP_DIR}';HEADER_DIR='${ROMS_APP_DIR}';
 set( LIBTYPE SHARED )
 set( ROMS_EXECUTABLE OFF )
 set( MPI ON )
+
+message( STATUS "---------------------------------------------------------" )
 
 # Define bundle
 
