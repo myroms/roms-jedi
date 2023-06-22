@@ -27,12 +27,6 @@ ecbuild_add_executable( TARGET  romsjedi_diffstates.x
                         LIBS    romsjedi
                       )
 
-ecbuild_add_executable( TARGET  romsjedi_dirac.x
-                        SOURCES Dirac.cc
-                        LIBS    romsjedi
-                                saber
-                      )
-
 ecbuild_add_executable( TARGET  romsjedi_eda.x
                         SOURCES EDA.cc
                         LIBS	romsjedi
@@ -64,8 +58,8 @@ ecbuild_add_executable( TARGET  romsjedi_ens_variance.x
                         LIBS    romsjedi
                       )
 
-ecbuild_add_executable( TARGET  romsjedi_error_covariance_training.x
-                        SOURCES ErrorCovarianceTraining.cc
+ecbuild_add_executable( TARGET  romsjedi_error_covariance_toolbox.x
+                        SOURCES ErrorCovarianceToolbox.cc
                         LIBS    romsjedi
                                 saber
                       )
@@ -92,11 +86,6 @@ ecbuild_add_executable( TARGET  romsjedi_hybridgain.x
 
 ecbuild_add_executable( TARGET  romsjedi_letkf.x
                         SOURCES LETKF.cc
-                        LIBS    romsjedi
-                      )
-
-ecbuild_add_executable( TARGET  romsjedi_staticbinit.x
-                        SOURCES StaticBInit.cc
                         LIBS    romsjedi
                       )
 

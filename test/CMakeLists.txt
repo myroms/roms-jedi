@@ -230,21 +230,21 @@ ecbuild_add_test(
 ecbuild_add_test(
   TARGET       test_romsjedi_bump_parameters_cor_nicas
   MPI          2
-  COMMAND      romsjedi_error_covariance_training.x
+  COMMAND      romsjedi_error_covariance_toolbox.x
   ARGS         testinput/parameters_bump_cor_nicas.yaml
   LIBS         romsjedi )
 
 ecbuild_add_test(
   TARGET       test_romsjedi_bump_loc_parameters_cor_nicas
   MPI          2
-  COMMAND      romsjedi_error_covariance_training.x
+  COMMAND      romsjedi_error_covariance_toolbox.x
   ARGS         testinput/parameters_bump_loc_cor_nicas.yaml
   LIBS         romsjedi )
 
 ecbuild_add_test(
   TARGET       test_romsjedi_dirac_cov_nicas
   MPI          2
-  COMMAND      romsjedi_dirac.x
+  COMMAND      romsjedi_error_covariance_toolbox.x
   ARGS         testinput/dirac_cov_nicas.yaml
   LIBS         romsjedi
   TEST_DEPENDS test_romsjedi_bump_parameters_cor_nicas )
@@ -297,7 +297,7 @@ ecbuild_add_test(
 ecbuild_add_test(
   TARGET       test_romsjedi_dirac_ens_cov_nicas
   MPI          2
-  COMMAND      romsjedi_dirac.x
+  COMMAND      romsjedi_error_covariance_toolbox.x
   ARGS         testinput/dirac_ens_cov_nicas.yaml
   LIBS         romsjedi
   TEST_DEPENDS test_romsjedi_ens_pert
