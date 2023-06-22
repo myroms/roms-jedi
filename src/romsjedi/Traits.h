@@ -18,6 +18,7 @@
 #include "romsjedi/ModelBias/ModelBias.h"
 #include "romsjedi/ModelBias/ModelBiasCovariance.h"
 #include "romsjedi/ModelBias/ModelBiasIncrement.h"
+#include "romsjedi/ModelData/ModelData.h"
 #include "romsjedi/NormGradient/NormGradient.h"
 #include "romsjedi/State/State.h"
 #include "romsjedi/VariableChange/VariableChange.h"
@@ -39,6 +40,7 @@ namespace romsjedi {
     typedef romsjedi::ModelBias            ModelAuxControl;
     typedef romsjedi::ModelBiasCovariance  ModelAuxCovariance;
     typedef romsjedi::ModelBiasIncrement   ModelAuxIncrement;
+    typedef romsjedi::ModelData            ModelData;
     typedef romsjedi::NormGradient         NormGradient;
     typedef romsjedi::State                State;
     typedef romsjedi::VariableChange       VariableChange;
