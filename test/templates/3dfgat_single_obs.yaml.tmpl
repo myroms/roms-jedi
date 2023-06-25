@@ -1,10 +1,11 @@
-# ROMS-JEDI 3D-Var FGAT Single Observation Test: __ROMS_APPLICATION__
+# ROMS-JEDI 3D-FGAT Single Observation Test: __ROMS_APPLICATION__
 #
-# It uses ROMS 3D state vector and the 4D-Var cost function for a
-# 3D-FGAT (First Guess at Appropriate Time) by approximating the
-# Tangent Linear and Adjoint models with the Identity operator.
-# It computes the analysis increment for the initial state vector
-# (beginning of the DA window).
+# It uses ROMS 4D state vector and the 3D-FGAT cost function (check
+# OOPS #2195 Pull Request for details). It should produce identical
+# results as the 4D-Var cost function with Identity tangent linear
+# and adjoint operators. The B-matrix for the 3D-FGAT is valid for
+# the middle of the DA window. Thus, the analysis (first guess plus
+# increment) is written for the middle of the DA window.
 #
 # Notice that it does not require ROMS TLM and ADM kernels.
 #
@@ -14,12 +15,13 @@ forecast length: &ForecastLength __FORECAST_LENGTH__
 model timestep:  &TimeStep __ROMS_TIMESTEP__
 
 initial date: &date __INITIAL_DATE__
+middle date:  &mid_date __MIDDLE_DATE__
 
 roms analysis:  &roms_analysis [ssh, uocn, vocn, tocn, socn]
 roms state:     &roms_state    [ssh, uocn, vocn, tocn, socn, zocn_r]
 
 cost function:
-  cost type: 4D-Var
+  cost type: 3D-FGAT
   window begin: *date
   window length: *ForecastLength
   analysis variables: *roms_analysis 
@@ -85,7 +87,7 @@ cost function:
         obsdataout:
           engine:
             type: H5File
-            obsfile: Data/3dvar/singleObs/regular/__ROMS_APP___TS_3dvar_single_obs.nc4
+            obsfile: Data/3dvar/singleObs/3dfgat/__ROMS_APP___TS_3dfgat_single_obs.nc4
         simulated variables: [salinity, waterTemperature]
       obs operator:
         name: VertInterp
@@ -104,7 +106,7 @@ cost function:
         obsdataout:
           engine:
             type: H5File
-            obsfile: Data/3dvar/singleObs/fgat/__ROMS_APP___sst_3dvar_single_obs.nc4
+            obsfile: Data/3dvar/singleObs/3dfgat/__ROMS_APP___sst_3dfgat_single_obs.nc4
         simulated variables: [seaSurfaceTemperature]
       obs operator:
         name: Identity
@@ -121,7 +123,7 @@ cost function:
         obsdataout:
           engine:
             type: H5File
-            obsfile: Data/3dvar/singleObs/fgat/__ROMS_APP___adt_3dvar_single_obs.nc4
+            obsfile: Data/3dvar/singleObs/3dfgat/__ROMS_APP___adt_3dfgat_single_obs.nc4
         simulated variables: [absoluteDynamicTopography]
       obs operator:
         name: ADT
@@ -135,39 +137,32 @@ variational:
   - ninner: __NINNER__
     gradient norm reduction: 1.0e-10
     geometry: *geom
-    linear model:
-      name: Identity                             # Identity TLM/ADM
-      tstep: *TimeStep
-      increment variables: *roms_analysis
-      variable change: Identity
     diagnostics:                                 # Written into output IODA files
       departures: ombg                           # OBS - H(Xb)
     online diagnostics:
       write increment: true
       increment:                                 # DA increment output file
         single_record: true
-        data_dir: Data/3dvar/singleObs/fgat
+        data_dir: Data/3dvar/singleObs/3dfgat
         prefix: __ROMS_APP___roms
-        exp: 3dvar
+        exp: 3dfgat
         type: inc
-        date: *date
+        date: *mid_date
 
 final:                                           # Written into output IODA files
   diagnostics:
     departures: oman                             # saving OBS - H(Xa) in output file
 
-output:
-  file_policy: __OUTPUT_FILE_POLICY__
-  frequency: &frequency __OUTPUT_FREQUENCY__
-  data_frequency: *frequency
-  data_dir: Data/3dvar/singleObs/fgat
+output:                                          # Analysis (first guess plus increment)
+  single_record: true
+  data_dir: Data/3dvar/singleObs/3dfgat
   prefix: __ROMS_APP___roms
-  exp: 3dvar
-  type: single_obs
-  date: *date
+  exp: 3dfgat
+  type: ana
+  date: *mid_date
 
 #test:
-#  reference filename: testref/3dvar_fgat_single_obs.ref
+#  reference filename: testref/3dfgat_single_obs.ref
 #  float relative tolerance: 1.0e-3
-#  log output filename: testoutput/3dvar_fgat_single_obs.log
-#  test output filename: testoutput/3dvar_fgat_single_obs.out
+#  log output filename: testoutput/3dfgat_single_obs.log
+#  test output filename: testoutput/3dfgat_single_obs.out

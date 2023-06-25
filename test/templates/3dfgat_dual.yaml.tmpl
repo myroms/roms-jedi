@@ -1,10 +1,11 @@
-# ROMS-JEDI 3D-Var FGAT (Dual Formulation) Test: __ROMS_APPLICATION__
+# ROMS-JEDI 3D-FGAT (Dual Formulation) Test: __ROMS_APPLICATION__
 #
-# It uses ROMS 3D state vector and the 4D-Var cost function for a
-# 3D-FGAT (First Guess at Appropriate Time) by approximating the
-# Tangent Linear and Adjoint models with the Identity operator.
-# It computes the analysis increment for the initial state vector
-# (beginning of the DA window).
+# It uses ROMS 4D state vector and the 3D-FGAT cost function (check
+# OOPS #2195 Pull Request for details). It should produce identical
+# results as the 4D-Var cost function with Identity tangent linear
+# and adjoint operators. The B-matrix for the 3D-FGAT is valid for
+# the middle of the DA window. Thus, the analysis (first guess plus
+# increment) is written for the middle of the DA window.
 #
 # Using RPCG (Augmented Restricted Preconditioned Conjugate Gradient)
 # Minimizer, Gratton and Tshimanga, QJRMS, 135: 1573-1585 (2009).
@@ -14,12 +15,13 @@ forecast length: &ForecastLength __FORECAST_LENGTH__
 model timestep:  &TimeStep __ROMS_TIMESTEP__
 
 initial date: &date __INITIAL_DATE__
+middle date:  &mid_date __MIDDLE_DATE_
 
 roms analysis:  &roms_analysis [ssh, uocn, vocn, tocn, socn]
 roms state:     &roms_state    [ssh, uocn, vocn, tocn, socn, zocn_r]
 
 cost function:
-  cost type: 4D-Var
+  cost type: 3D-FGAT
   window begin: *date
   window length: *ForecastLength
   analysis variables: *roms_analysis 
@@ -85,7 +87,7 @@ cost function:
 #       obsdataout:
 #         engine:
 #           type: H5File
-#           obsfile: Data/3dvar/fgat/dual/__ROMS_APP___temp_3dvar_fgat.nc4
+#           obsfile: Data/3dvar/3dfgat/dual/__ROMS_APP___temp_3dfgat.nc4
 #       simulated variables: [waterTemperature]
 #     obs operator:
 #       name: VertInterp
@@ -104,7 +106,7 @@ cost function:
 #       obsdataout:
 #         engine:
 #           type: H5File
-#           obsfile: Data/3dvar/fgat/dual/__ROMS_APP___salt_3dvar_fgat.nc4
+#           obsfile: Data/3dvar/3dfgat/dual/__ROMS_APP___salt_3dfgat.nc4
 #       simulated variables: [salinity]
 #     obs operator:
 #       name: VertInterp
@@ -123,7 +125,7 @@ cost function:
         obsdataout:
           engine:
             type: H5File
-            obsfile: Data/3dvar/fgat/dual/__ROMS_APP___sst_3dvar_fgat.nc4
+            obsfile: Data/3dvar/3dfgat/dual/__ROMS_APP___sst_3dfgat.nc4
         simulated variables: [seaSurfaceTemperature]
       obs operator:
         name: Identity
@@ -140,7 +142,7 @@ cost function:
         obsdataout:
           engine:
             type: H5File
-            obsfile: Data/3dvar/fgat/dual/__ROMS_APP___adt_3dvar_fgat.nc4
+            obsfile: Data/3dvar/3dfgat/dual/__ROMS_APP___adt_3dfgat.nc4
         simulated variables: [absoluteDynamicTopography]
       obs operator:
         name: ADT
@@ -152,10 +154,6 @@ variational:
     algorithm: RPCG                              # Dual Formulation
   iterations:                                    # each item defines an outer loop
   - geometry: *geom
-    linear model:
-      name: Identity                             # Identity TLM/ADM
-      increment variables: *roms_analysis
-      tstep: *TimeStep
     ninner: __NINNER__
     gradient norm reduction: 1E-10
     test: on
@@ -165,9 +163,9 @@ variational:
       write increment: true
       increment:                                 # DA increment output file
         single_record: true
-        data_dir: Data/3dvar/fgat/dual
+        data_dir: Data/3dvar/3dfgat/dual
         prefix: __ROMS_APP___roms
-        exp: 3dvar
+        exp: 3dfgat
         type: inc
         date: *date
 
@@ -175,18 +173,18 @@ final:                                           # Written into output IODA file
   diagnostics:
     departures: oman                             # saving OBS - H(Xa) in output file
 
-output:
+output:                                          # Analysis (first guess plus increment)
   file_policy: __OUTPUT_FILE_POLICY__
   frequency: &frequency __OUTPUT_FREQUENCY__
   data_frequency: *frequency
-  data_dir: Data/3dvar/fgat/dual
+  data_dir: Data/3dvar/3dfgat/dual
   prefix: __ROMS_APP___roms
-  exp: 3dvar
-  type: nlm
+  exp: 3dfgat
+  type: ana
   date: *date
 
 test:
-  reference filename: testref/3dvar_fgat_dual.ref
+  reference filename: testref/3dfgat_dual.ref
   float relative tolerance: 1.0e-3
-  log output filename: testoutput/3dvar_fgat_dual.log
-  test output filename: testoutput/3dvar_fgat_dual.out
+  log output filename: testoutput/3dfgat_dual.log
+  test output filename: testoutput/3dfgat_dual.out

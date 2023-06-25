@@ -7,24 +7,28 @@
 
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3denvar)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3denvar/fgat/dual)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3denvar/fgat/primal)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3denvar/4dfgat/dual)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3denvar/4dfgat/primal)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3denvar/regular/dual)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3denvar/regular/primal)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dhyb)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dhyb/fgat/dual)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dhyb/fgat/primal)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dhyb/4dfgat/dual)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dhyb/4dfgat/primal)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dhyb/regular/dual)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dhyb/regular/primal)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/fgat)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/fgat/dual)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/fgat/primal)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/3dfgat)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/3dfgat/dual)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/3dfgat/primal)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/4dfgat)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/4dfgat/dual)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/4dfgat/primal)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/regular)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/regular/dual)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/regular/primal)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/singleObs)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/singleObs/fgat)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/singleObs/3dfgat)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/singleObs/4dfgat)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/singleObs/regular)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/zeroObs)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/bump)
@@ -324,10 +328,18 @@ ecbuild_add_test(
   TEST_DEPENDS test_romsjedi_bump_parameters_cor_nicas )
 
 ecbuild_add_test(
-  TARGET       test_romsjedi_3dvar_fgat_single_obs
+  TARGET       test_romsjedi_3dfgat_single_obs
   MPI          2
   COMMAND      romsjedi_var.x
-  ARGS         testinput/3dvar_fgat_single_obs.yaml
+  ARGS         testinput/3dfgat_single_obs.yaml
+  LIBS         romsjedi
+  TEST_DEPENDS test_romsjedi_bump_parameters_cor_nicas )
+
+ecbuild_add_test(
+  TARGET       test_romsjedi_4dfgat_single_obs
+  MPI          2
+  COMMAND      romsjedi_var.x
+  ARGS         testinput/4dfgat_single_obs.yaml
   LIBS         romsjedi
   TEST_DEPENDS test_romsjedi_bump_parameters_cor_nicas )
 
@@ -348,18 +360,34 @@ ecbuild_add_test(
   TEST_DEPENDS test_romsjedi_bump_parameters_cor_nicas )
 
 ecbuild_add_test(
-  TARGET       test_romsjedi_3dvar_fgat_primal
+  TARGET       test_romsjedi_3dfgat_primal
   MPI          2
   COMMAND      romsjedi_var.x
-  ARGS         testinput/3dvar_fgat_primal.yaml
+  ARGS         testinput/3dfgat_primal.yaml
   LIBS         romsjedi
   TEST_DEPENDS test_romsjedi_bump_parameters_cor_nicas )
 
 ecbuild_add_test(
-  TARGET       test_romsjedi_3dvar_fgat_dual
+  TARGET       test_romsjedi_3fgat_dual
   MPI          2
   COMMAND      romsjedi_var.x
-  ARGS         testinput/3dvar_fgat_dual.yaml
+  ARGS         testinput/3dfgat_dual.yaml
+  LIBS         romsjedi
+  TEST_DEPENDS test_romsjedi_bump_parameters_cor_nicas )
+
+ecbuild_add_test(
+  TARGET       test_romsjedi_4dfgat_primal
+  MPI          2
+  COMMAND      romsjedi_var.x
+  ARGS         testinput/4dfgat_primal.yaml
+  LIBS         romsjedi
+  TEST_DEPENDS test_romsjedi_bump_parameters_cor_nicas )
+
+ecbuild_add_test(
+  TARGET       test_romsjedi_4dfgat_dual
+  MPI          2
+  COMMAND      romsjedi_var.x
+  ARGS         testinput/4dfgat_dual.yaml
   LIBS         romsjedi
   TEST_DEPENDS test_romsjedi_bump_parameters_cor_nicas )
 
@@ -386,19 +414,19 @@ ecbuild_add_test(
                test_romsjedi_ens_pert )
 
 ecbuild_add_test(
-  TARGET       test_romsjedi_3denvar_fgat_primal
+  TARGET       test_romsjedi_3denvar_4dfgat_primal
   MPI          2
   COMMAND      romsjedi_var.x
-  ARGS         testinput/3denvar_fgat_primal.yaml
+  ARGS         testinput/3denvar_4dfgat_primal.yaml
   LIBS         romsjedi
   TEST_DEPENDS test_romsjedi_bump_loc_parameters_cor_nicas
                test_romsjedi_ens_pert )
 
 ecbuild_add_test(
-  TARGET       test_romsjedi_3denvar_fgat_dual
+  TARGET       test_romsjedi_3denvar_4dfgat_dual
   MPI          2
   COMMAND      romsjedi_var.x
-  ARGS         testinput/3denvar_fgat_dual.yaml
+  ARGS         testinput/3denvar_4dfgat_dual.yaml
   LIBS         romsjedi
   TEST_DEPENDS test_romsjedi_bump_loc_parameters_cor_nicas
                test_romsjedi_ens_pert )
@@ -424,20 +452,20 @@ ecbuild_add_test(
                test_romsjedi_ens_pert )
 
 ecbuild_add_test(
-  TARGET       test_romsjedi_3dhyb_fgat_primal
+  TARGET       test_romsjedi_3dhyb_4dfgat_primal
   MPI          2
   COMMAND      romsjedi_var.x
-  ARGS         testinput/3dhyb_fgat_primal.yaml
+  ARGS         testinput/3dhyb_4dfgat_primal.yaml
   LIBS         romsjedi
   TEST_DEPENDS test_romsjedi_bump_parameters_cor_nicas
                test_romsjedi_bump_loc_parameters_cor_nicas
                test_romsjedi_ens_pert )
 
 ecbuild_add_test(
-  TARGET       test_romsjedi_3dhyb_fgat_dual
+  TARGET       test_romsjedi_3dhyb_4dfgat_dual
   MPI          2
   COMMAND      romsjedi_var.x
-  ARGS         testinput/3dhyb_fgat_dual.yaml
+  ARGS         testinput/3dhyb_4dfgat_dual.yaml
   LIBS         romsjedi
   TEST_DEPENDS test_romsjedi_bump_parameters_cor_nicas
                test_romsjedi_bump_loc_parameters_cor_nicas

@@ -15,7 +15,12 @@
 %
 %             ${ROMS_HOME}/roms-jedi/tools/matlab
 
-Bdir  = '../../build/roms-jedi/test/Data/';
+% Set ROMS-JEDI Data sub-directory with respect the "build":
+
+%Bdir  = '../../build/roms-jedi/test/Data/';
+ Bdir  = '../../build_wc13/roms-jedi/test/Data/';
+
+% Set ROMS-JEDI Ouput NetCDF files with respect sub-directory "Bdir":
 
 Hname = strcat(Bdir, 'roms/wc13_his.nc');
 Dname = strcat(Bdir, 'dirac/wc13_roms_dirac_inc_2004-01-03-00.00.00.nc');
@@ -40,7 +45,15 @@ if (~exist('G', 'var'))
   G = get_roms_grid(Hname, Hname);
 end
 
-% Plot free surface.
+% Create PNG subdirectory.
+
+if (wrtPNG && ~exist('PNG', 'dir'))
+  unix('mkdir PNG');
+end
+
+%--------------------------------------------------------------------------
+% Plot free surface Dirac impulse.
+%--------------------------------------------------------------------------
 
 ixdir = 25; iydir = 20; izdir = 1;
 
@@ -53,8 +66,9 @@ if (wrtPNG)
 else
   title(['Free Surface:    rh=', num2str(rh)]);
 end
-
-% Plot temperature.
+%--------------------------------------------------------------------------
+% Plot temperature Dirac inpulse.
+%--------------------------------------------------------------------------
 
 ixdir = 30; iydir = 10; izdir = 30;
 
@@ -78,7 +92,9 @@ else
   title(['Temperature:    rh=', num2str(rh), ' rv=', num2str(rv)]);
 end
 
-% Plot salinity.
+%--------------------------------------------------------------------------
+% Plot salinity Dirac impulse.
+%--------------------------------------------------------------------------
 
 ixdir = 20; iydir = 40; izdir = 30;
 
