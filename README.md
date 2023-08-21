@@ -1,11 +1,9 @@
 # ROMS interface to JEDI
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;![roms-jedi logo](https://www.myroms.org/trac/ROMS-JEDI_400px.png)
-
-![roms-jedi logo](https://www.myroms.org/trac/roms_jedi_600px.png)
+![Jedi_wc12](https://github.com/JCSDA-internal/roms-jedi/assets/23062912/7542473b-df3a-4495-a226-4a3006a92e6d)
 
 The following instructions should have the steps needed to implement an interface capable of
-running some of the basic JEDI applications, as well as the available data assimilation drivers.
+running any **`ROMS-JEDI`** application, as well as the available data assimilation drivers.
 
 
 ### To get started:
@@ -13,12 +11,11 @@ running some of the basic JEDI applications, as well as the available data assim
 -  Check out the **`ROMS-JEDI`** interface repository.
 
    ```
-   git clone https://github.com/JCSDA-internal/roms-jedi.git                            (default)
-   git clone https://github.com/JCSDA-internal/roms-jedi roms-jedi.git <interface_dir>
+   git clone https://github.com/JCSDA-internal/roms-jedi.git
    ```
 
    During configuration, the latest version of **`ROMS`** source code is downloaded from
-   https://github.com/JCSDA-internal/roms_src.git. The source code includes ROMS nonlinear model
+   https://github.com/myroms/roms.git. The source code includes ROMS nonlinear model
    (**NLM**), perturbation tangent linear model (**TLM**), finite-amplitude tangent linear model
    (**RPM**), and adjoint model (**ADM**) kernels. For any **`ROMS-JEDI`** application, activate
    the **`JEDI`** C-preprocessing option when configuring **`ROMS`** header file to include the
