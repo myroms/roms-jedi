@@ -2279,6 +2279,8 @@ SUBROUTINE roms_fields_read_nf90 (self, InpRec, ncname, DateString, DateNumber)
   TYPE (roms_field), pointer                 :: field
   TYPE (roms_geom), pointer                  :: geom
 
+  integer (kind=SELECTED_INT_KIND(8))        :: Fhash
+
   integer                                    :: LocalPET, lstr, lend
   integer                                    :: i, model, ng
   integer                                    :: Cgrid, ncid, varid, vindex
@@ -2369,12 +2371,13 @@ SUBROUTINE roms_fields_read_nf90 (self, InpRec, ncname, DateString, DateNumber)
                                   LBi, UBi, LBj, UBj,                          &
                                   scale, field%MinValue, field%MaxValue,       &
                                   field%mask,                                  &
-                                  field%val(:,:,1)),                           &
+                                  field%val(:,:,1),                            &
+                                  checksum = Fhash),                           &
                        nf90_noerr, io_nf90, __LINE__, MyFile)
 
           IF (LocalPET .eq. 0) THEN
             WRITE (stdout,20) field%metadata%getval_name,                      &
-                              field%MinValue, field%MaxValue
+                              field%MinValue, field%MaxValue, Fhash
           END IF
 
         CASE ('uocn', 'vocn', 'tocn', 'socn',                                  &
@@ -2386,12 +2389,13 @@ SUBROUTINE roms_fields_read_nf90 (self, InpRec, ncname, DateString, DateNumber)
                                   LBi, UBi, LBj, UBj, LBk, UBk,                &
                                   scale, field%MinValue, field%MaxValue,       &
                                   field%mask,                                  &
-                                  field%val),                                  &
+                                  field%val,                                   &
+                                  checksum = Fhash),                           &
                        nf90_noerr, io_nf90, __LINE__, MyFile)
 
           IF (LocalPET .eq. 0) THEN
             WRITE (stdout,20) field%metadata%getval_name,                      &
-                              field%MinValue, field%MaxValue
+                              field%MinValue, field%MaxValue, Fhash
           END IF
 
       END SELECT
@@ -2466,7 +2470,8 @@ SUBROUTINE roms_fields_read_nf90 (self, InpRec, ncname, DateString, DateNumber)
 
   10 FORMAT (/,1x,'ROMS_FIELDS::read_nf90 - ',a,t75,a,/,26x,                   &
              '(Grid=',i2.2,', datenum=',f0.4,', File: ',a,', Rec= ',i0,')')
-  20 FORMAT (24x,'- ',a,/,27x,'(Min = ',1p,e15.8,' Max = ',1p,e15.8,')')
+  20 FORMAT (24x,'- ',a,/,27x,'(Min = ',1p,e15.8,' Max = ',1p,e15.8,           &
+             ' CheckSum = ',i0,')')
 
 END SUBROUTINE roms_fields_read_nf90
 
@@ -2484,10 +2489,11 @@ SUBROUTINE roms_fields_write_nf90 (self, S, romsTime)
   TYPE (roms_field), pointer                 :: field
   TYPE (roms_geom), pointer                  :: geom
   integer                                    :: Fcount, LocalPET, lstr, lend
-  integer                                    :: Cgrid, varid, vindex
+  integer                                    :: Cgrid, idfld, varid, vindex
   integer                                    :: i, model, ng
   integer                                    :: LBi, UBi, LBj, UBj, LBk, UBk
   real (kind=kind_real)                      :: DateNumber, scale
+  real (kind=kind_real)                      :: stats(3)
   character (len=22)                         :: DateString
   character (len=1024)                       :: Message
 
@@ -2547,6 +2553,7 @@ SUBROUTINE roms_fields_write_nf90 (self, S, romsTime)
     IF (field%io_has_var(geom, vindex)) THEN
 
       Cgrid = field%metadata%Cgrid
+      idfld = roms_metadata_index(field%name)
 
       LBi = LBOUND(field%val, DIM=1)
       UBi = UBOUND(field%val, DIM=1)
@@ -2558,6 +2565,8 @@ SUBROUTINE roms_fields_write_nf90 (self, S, romsTime)
       field%OutNCname = TRIM(S(ng)%name)
       field%OutNCid   = S(ng)%ncid
       field%OutRec    = S(ng)%Rindex
+
+      CALL field%stats (stats)
 
       lstr = MAX(22, LEN_TRIM(DateString))
       IF (allocated(field%DateTimeString)) THEN
@@ -2575,7 +2584,7 @@ SUBROUTINE roms_fields_write_nf90 (self, S, romsTime)
         CASE ('ssh', 'u2docn', 'v2docn',                                       &
               'DU_avg1', 'DV_avg1', 'DU_avg2', 'DV_avg2')      ! 2D variables
 
-          CALL nc_err (nf_fwrite2d(ng, model, S(ng)%ncid, varid,               &
+          CALL nc_err (nf_fwrite2d(ng, model, S(ng)%ncid, idfld, varid,        &
                                    S(ng)%Rindex, Cgrid,                        &
                                    LBi, UBi, LBj, UBj, scale,                  &
                                    field%mask,                                 &
@@ -2585,13 +2594,14 @@ SUBROUTINE roms_fields_write_nf90 (self, S, romsTime)
                        nf90_noerr, io_nf90, __LINE__, MyFile)
 
           IF (LocalPET .eq. 0) THEN
-            PRINT 10, field%name, field%MinValue, field%MaxValue
+            PRINT 10, field%name, field%MinValue, field%MaxValue,              &
+                      S(ng)%Rindex, INT(stats(3), KIND=8)
           END IF
 
         CASE ('uocn', 'vocn', 'tocn', 'socn',                                  &
               'Kvocn', 'Ktocn', 'Ksocn')                       ! 3D variables
 
-          CALL nc_err (nf_fwrite3d(ng, model, S(ng)%ncid, varid,               &
+          CALL nc_err (nf_fwrite3d(ng, model, S(ng)%ncid, idfld, varid,        &
                                    S(ng)%Rindex, Cgrid,                        &
                                    LBi, UBi, LBj, UBj, LBk, UBk, scale,        &
                                    field%mask,                                 &
@@ -2601,7 +2611,8 @@ SUBROUTINE roms_fields_write_nf90 (self, S, romsTime)
                        nf90_noerr, io_nf90, __LINE__, MyFile)
 
           IF (LocalPET .eq. 0) THEN
-            PRINT 10, field%name, field%MinValue, field%MaxValue
+            PRINT 10, field%name, field%MinValue, field%MaxValue,              &
+                      S(ng)%Rindex, INT(stats(3), KIND=8)
           END IF
 
       END SELECT
@@ -2635,7 +2646,8 @@ SUBROUTINE roms_fields_write_nf90 (self, S, romsTime)
   IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
     CALL abor1_ftn (TRIM(Message))
 
-  10 FORMAT (2x,'- ',a,':',t13,'Min = ',1p,e15.8,',  Max = ',1p,e15.8)
+  10 FORMAT (2x,'- ',a,':',t13,'Min = ',1p,e15.8,',  Max = ',1p,e15.8,         &
+             ',  Rec = ',i3,',  CheckSum = ',i0)
 
 END SUBROUTINE roms_fields_write_nf90
 
@@ -2659,6 +2671,8 @@ SUBROUTINE roms_fields_read_pio (self, InpRec, ncname, DateString, DateNumber)
   TYPE (roms_geom), pointer                  :: geom
   TYPE (IO_desc_t), pointer                  :: ioDesc
   TYPE (My_VarDesc)                          :: pioVar
+
+  integer (kind=SELECTED_INT_KIND(8))        :: Fhash
 
   integer                                    :: LocalPET, i, lstr, lend, ng
   integer                                    :: Cgrid, fld_kind, model, vindex
@@ -2807,12 +2821,13 @@ SUBROUTINE roms_fields_read_pio (self, InpRec, ncname, DateString, DateNumber)
                                   LBi, UBi, LBj, UBj,                          &
                                   scale, field%MinValue, field%MaxValue,       &
                                   field%mask,                                  &
-                                  field%val(:,:,1)),                           &
+                                  field%val(:,:,1),                            &
+                                  checksum = Fhash),                           &
                        PIO_noerr, io_pio, __LINE__, MyFile)
 
           IF (LocalPET .eq. 0) THEN
             WRITE (stdout,20) field%metadata%getval_name,                      &
-                              field%MinValue, field%MaxValue
+                              field%MinValue, field%MaxValue, Fhash
           END IF
 
         CASE ('uocn', 'vocn', 'tocn', 'socn',                                  &
@@ -2824,12 +2839,13 @@ SUBROUTINE roms_fields_read_pio (self, InpRec, ncname, DateString, DateNumber)
                                   LBi, UBi, LBj, UBj, LBk, UBk,                &
                                   scale, field%MinValue, field%MaxValue,       &
                                   field%mask,                                  &
-                                  field%val),                                  &
+                                  field%val,                                   &
+                                  checksum = Fhash),                           &
                        PIO_noerr, io_pio, __LINE__, MyFile)
 
           IF (LocalPET .eq. 0) THEN
             WRITE (stdout,20) field%metadata%getval_name,                      &
-                              field%MinValue, field%MaxValue
+                              field%MinValue, field%MaxValue, Fhash
           END IF
 
       END SELECT
@@ -2886,7 +2902,8 @@ SUBROUTINE roms_fields_read_pio (self, InpRec, ncname, DateString, DateNumber)
 
   10 FORMAT (/,1x,'ROMS_FIELDS::read_pio  - ',a,t75,a,/,26x,                   &
              '(Grid=',i2.2,', datenum=',f0.4,', File: ',a,', Rec= ',i0,')')
-  20 FORMAT (24x,'- ',a,/,27x,'(Min = ',1p,e15.8,' Max = ',1p,e15.8,')')
+  20 FORMAT (24x,'- ',a,/,27x,'(Min = ',1p,e15.8,' Max = ',1p,e15.8,           &
+             'CheckSum = ',i0,')')
 
 END SUBROUTINE roms_fields_read_pio
 
@@ -2908,10 +2925,11 @@ SUBROUTINE roms_fields_write_pio (self, S, romsTime)
   TYPE (My_VarDesc)                          :: pioVar
 
   integer                                    :: Fcount, LocalPET, lstr, lend
-  integer                                    :: Cgrid, fld_kind, vindex
+  integer                                    :: Cgrid, fld_kind, idfld, vindex
   integer                                    :: i, model, ng
   integer                                    :: LBi, UBi, LBj, UBj, LBk, UBk
   real (kind=kind_real)                      :: DateNumber, scale
+  real (kind=kind_real)                      :: stats(3)
   character (len=22)                         :: DateString
   character (len=1024)                       :: Message
 
@@ -2971,6 +2989,8 @@ SUBROUTINE roms_fields_write_pio (self, S, romsTime)
     IF (field%io_has_var(geom, vindex)) THEN
 
       Cgrid = field%metadata%Cgrid
+      idfld = roms_metadata_index(field%name)
+
 
       LBi = LBOUND(field%val, DIM=1)
       UBi = UBOUND(field%val, DIM=1)
@@ -2982,6 +3002,8 @@ SUBROUTINE roms_fields_write_pio (self, S, romsTime)
       field%OutNCname = TRIM(S(ng)%name)
       field%OutNCid   = S(ng)%pioFile%fh
       field%OutRec    = S(ng)%Rindex
+
+      CALL field%stats (stats)
 
       lstr = MAX(22, LEN_TRIM(DateString))
       IF (allocated(field%DateTimeString)) THEN
@@ -3057,33 +3079,35 @@ SUBROUTINE roms_fields_write_pio (self, S, romsTime)
         CASE ('ssh', 'u2docn', 'v2docn',                                       &
               'DU_avg1', 'DV_avg1', 'DU_avg2', 'DV_avg2')      ! 2D variables
 
-          CALL nc_err (nf_fwrite2d(ng, model, S(ng)%pioFile,                   &
+          CALL nc_err (nf_fwrite2d(ng, model, S(ng)%pioFile, idfld,            &
                                    pioVar, S(ng)%Rindex, ioDesc,               &
                                    LBi, UBi, LBj, UBj, scale,                  &
                                    field%mask,                                 &
                                    field%val(:,:,1),                           &
-                                   MinValue = Fmin,                            &
-                                   MaxValue = Fmax),                           &
+                                   MinValue = field%MinValue,                  &
+                                   MaxValue = field%MaxValue),                 &
                        PIO_noerr, io_pio, __LINE__, MyFile)
 
           IF (LocalPET .eq. 0) THEN
-            PRINT 10, field%name, Fmin, Fmax
+            PRINT 10, field%name, field%MinValue, field%MaxValue,              &
+                      S(ng)%Rindex, INT(stats(3), KIND=8)
           END IF
 
         CASE ('uocn', 'vocn', 'tocn', 'socn',                                  &
               'Kvocn', 'Ktocn', 'Ksocn')                       ! 3D variables
 
-          CALL nc_err (nf_fwrite3d(ng, model, S(ng)%pioFile,                   &
+          CALL nc_err (nf_fwrite3d(ng, model, S(ng)%pioFile, idfld,            &
                                    pioVar, S(ng)%Rindex, ioDesc,               &
                                    LBi, UBi, LBj, UBj, LBk, UBk, scale,        &
                                    field%mask,                                 &
                                    field%val,                                  &
-                                   MinValue = Fmin,                            &
-                                   MaxValue = Fmax),                           &
+                                   MinValue = field%MinValue,                  &
+                                   MaxValue = field%MaxValue),                 &
                        PIO_noerr, io_pio, __LINE__, MyFile)
 
           IF (LocalPET .eq. 0) THEN
-            PRINT 10, field%name, Fmin, Fmax
+            PRINT 10, field%name, field%MinValue, field%MaxValue,              &
+                      S(ng)%Rindex, INT(stats(3), KIND=8)
           END IF
 
       END SELECT
@@ -3117,7 +3141,8 @@ SUBROUTINE roms_fields_write_pio (self, S, romsTime)
   IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
     CALL abor1_ftn (TRIM(Message))
 
-  10 FORMAT (2x,'- ',a,':',t13,'Min = ',1p,e15.8,',  Max = ',1p,e15.8)
+  10 FORMAT (2x,'- ',a,':',t13,'Min = ',1p,e15.8,',  Max = ',1p,e15.8,         &
+             ',  Rec = ',i3,',  CheckSum = ',i0)
 
 END SUBROUTINE roms_fields_write_pio
 

@@ -106,81 +106,84 @@ endforeach()
 
 ecbuild_add_test(
   TARGET       test_romsjedi_geometry
-  MPI          2
+  MPI          ${MPI_NCPUS}
   SOURCES      executables/TestGeometry.cc
   ARGS         testinput/geometry.yaml
   LIBS         romsjedi )
 
 ecbuild_add_test(
  TARGET        test_romsjedi_geometryiterator
- MPI           2
+ MPI           ${MPI_NCPUS}
  SOURCES       executables/TestGeometryIterator.cc
  ARGS          testinput/geometryiterator.yaml
  LIBS          romsjedi )
 
 ecbuild_add_test(
   TARGET       test_romsjedi_state
-  MPI          2
+  MPI          ${MPI_NCPUS}
   SOURCES      executables/TestState.cc
   ARGS         testinput/state.yaml
   LIBS         romsjedi )
 
 #ecbuild_add_test(
 #  TARGET       test_romsjedi_getvalues
-#  MPI          2
+#  MPI          ${MPI_NCPUS}
 #  SOURCES      executables/TestGetValues.cc
 #  ARGS         testinput/getvalues.yaml
 #  LIBS         romsjedi )
 
 ecbuild_add_test(
   TARGET       test_romsjedi_increment
-  MPI          2
+  MPI          ${MPI_NCPUS}
   SOURCES      executables/TestIncrement.cc
   ARGS         testinput/increment.yaml
   LIBS         romsjedi )
 
 #ecbuild_add_test(
 #  TARGET       test_romsjedi_lineargetvalues
-#  MPI          2
+#  MPI          ${MPI_NCPUS}
 #  SOURCES      executables/TestLinearGetValues.cc
 #  ARGS         testinput/lineargetvalues.yaml
 #  LIBS         romsjedi )
 
 ecbuild_add_test(
   TARGET       test_romsjedi_model
-  MPI          2
+  MPI          ${MPI_NCPUS}
   SOURCES      executables/TestModel.cc
   ARGS         testinput/model.yaml
   LIBS         romsjedi )
 
 ecbuild_add_test(
   TARGET       test_romsjedi_linearmodel
-  MPI          2
+  MPI          ${MPI_NCPUS}
   SOURCES      executables/TestLinearModel.cc
   ARGS         testinput/linearmodel.yaml
   LIBS         romsjedi )
 
 ecbuild_add_test(
   TARGET       test_romsjedi_error_covariance
-  MPI          2
+  MPI          ${MPI_NCPUS}
   SOURCES      executables/TestErrorCovariance.cc
   ARGS         testinput/error_covariance.yaml
   LIBS         romsjedi )
 
 #ecbuild_add_test(
 #  TARGET       test_romsjedi_modelauxcontrol
+#  MPI          ${MPI_NCPUS}
 #  SOURCES      executables/TestModelAuxControl.cc
 #  ARGS         testinput/modelaux.yaml
 #  LIBS         romsjedi )
 
 #ecbuild_add_test(
 #  TARGET       test_romsjedi_modelauxcovariance
+#  MPI          ${MPI_NCPUS}
 #  SOURCES      executables/TestModelAuxCovariance.cc
 #  ARGS         testinput/modelaux.yaml
 #  LIBS         romsjedi )
 
 #ecbuild_add_test(
 #  TARGET       test_romsjedi_modelauxincrement
+#  MPI          ${MPI_NCPUS}
 #  SOURCES      executables/TestModelAuxIncrement.cc
 #  ARGS         testinput/modelaux.yaml
 #  LIBS         romsjedi )
@@ -191,63 +194,63 @@ ecbuild_add_test(
 
 ecbuild_add_test(
   TARGET       test_romsjedi_hofx_nomodel
-  MPI          2
+  MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_hofx_nomodel.x
   ARGS         testinput/hofx_nomodel.yaml
   TEST_DEPENDS test_romsjedi_geometry  )
 
 ecbuild_add_test(
   TARGET       test_romsjedi_hofx_4d
-  MPI          2
+  MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_hofx.x
   ARGS         testinput/hofx_4d.yaml
   TEST_DEPENDS test_romsjedi_geometry  )
 
 ecbuild_add_test(
   TARGET       test_romsjedi_makeobs_4d
-  MPI          2
+  MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_hofx.x
   ARGS         testinput/makeobs_4d.yaml
   TEST_DEPENDS test_romsjedi_hofx_4d )
 
 ecbuild_add_test(
   TARGET       test_romsjedi_makeobs_4d_perturbed
-  MPI          2
+  MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_hofx.x
   ARGS         testinput/makeobs_4d_perturbed.yaml
   TEST_DEPENDS test_romsjedi_hofx_4d )
 
 ecbuild_add_test(
   TARGET       test_romsjedi_diffstates
-  MPI          2
+  MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_diffstates.x
   ARGS         testinput/diffstates.yaml
   LIBS         romsjedi )
 
 ecbuild_add_test(
   TARGET       test_romsjedi_forecast_roms
-  MPI          2
+  MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_forecast.x
   ARGS         testinput/forecast_roms.yaml
   LIBS         romsjedi )
 
 ecbuild_add_test(
   TARGET       test_romsjedi_bump_parameters_cor_nicas
-  MPI          2
+  MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_error_covariance_toolbox.x
   ARGS         testinput/parameters_bump_cor_nicas.yaml
   LIBS         romsjedi )
 
 ecbuild_add_test(
   TARGET       test_romsjedi_bump_loc_parameters_cor_nicas
-  MPI          2
+  MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_error_covariance_toolbox.x
   ARGS         testinput/parameters_bump_loc_cor_nicas.yaml
   LIBS         romsjedi )
 
 ecbuild_add_test(
   TARGET       test_romsjedi_dirac_cov_nicas
-  MPI          2
+  MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_error_covariance_toolbox.x
   ARGS         testinput/dirac_cov_nicas.yaml
   LIBS         romsjedi
@@ -261,14 +264,14 @@ ecbuild_add_test(
 
 ecbuild_add_test(
   TARGET       test_romsjedi_ens_pert
-  MPI          2
+  MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_ens_pert.x
   ARGS         testinput/ens_perturbation.yaml
   LIBS         romsjedi )
 
 ecbuild_add_test(
   TARGET       test_romsjedi_ens_variance
-  MPI          2
+  MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_ens_variance.x
   ARGS         testinput/ens_variance.yaml
   LIBS         romsjedi
@@ -276,7 +279,7 @@ ecbuild_add_test(
 
 ecbuild_add_test(
   TARGET       test_romsjedi_ens_mean_variance
-  MPI          2
+  MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_ens_mean_variance.x
   ARGS         testinput/ens_mean_variance.yaml
   LIBS         romsjedi
@@ -284,7 +287,7 @@ ecbuild_add_test(
 
 ecbuild_add_test(
   TARGET       test_romsjedi_ens_recenter
-  MPI          2
+  MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_ens_recenter.x
   ARGS         testinput/ens_recenter.yaml
   LIBS         romsjedi
@@ -292,7 +295,7 @@ ecbuild_add_test(
 
 ecbuild_add_test(
   TARGET       test_romsjedi_ens_hofx
-  MPI          6
+  MPI          ${MPI_3xNCPUS}
   COMMAND      romsjedi_ens_hofx.x
   ARGS         testinput/ens_hofx.yaml
   LIBS         romsjedi
@@ -300,7 +303,7 @@ ecbuild_add_test(
 
 ecbuild_add_test(
   TARGET       test_romsjedi_dirac_ens_cov_nicas
-  MPI          2
+  MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_error_covariance_toolbox.x
   ARGS         testinput/dirac_ens_cov_nicas.yaml
   LIBS         romsjedi
@@ -313,7 +316,7 @@ ecbuild_add_test(
 
 ecbuild_add_test(
   TARGET       test_romsjedi_3dvar_zero_obs
-  MPI          2
+  MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_var.x
   ARGS         testinput/3dvar_zero_obs.yaml
   LIBS         romsjedi
@@ -321,7 +324,7 @@ ecbuild_add_test(
 
 ecbuild_add_test(
   TARGET       test_romsjedi_3dvar_regular_single_obs
-  MPI          2
+  MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_var.x
   ARGS         testinput/3dvar_regular_single_obs.yaml
   LIBS         romsjedi
@@ -329,7 +332,7 @@ ecbuild_add_test(
 
 ecbuild_add_test(
   TARGET       test_romsjedi_3dfgat_single_obs
-  MPI          2
+  MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_var.x
   ARGS         testinput/3dfgat_single_obs.yaml
   LIBS         romsjedi
@@ -337,7 +340,7 @@ ecbuild_add_test(
 
 ecbuild_add_test(
   TARGET       test_romsjedi_4dfgat_single_obs
-  MPI          2
+  MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_var.x
   ARGS         testinput/4dfgat_single_obs.yaml
   LIBS         romsjedi
@@ -345,7 +348,7 @@ ecbuild_add_test(
 
 ecbuild_add_test(
   TARGET       test_romsjedi_3dvar_regular_primal
-  MPI          2
+  MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_var.x
   ARGS         testinput/3dvar_regular_primal.yaml
   LIBS         romsjedi
@@ -353,7 +356,7 @@ ecbuild_add_test(
 
 ecbuild_add_test(
   TARGET       test_romsjedi_3dvar_regular_dual
-  MPI          2
+  MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_var.x
   ARGS         testinput/3dvar_regular_dual.yaml
   LIBS         romsjedi
@@ -361,7 +364,7 @@ ecbuild_add_test(
 
 ecbuild_add_test(
   TARGET       test_romsjedi_3dfgat_primal
-  MPI          2
+  MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_var.x
   ARGS         testinput/3dfgat_primal.yaml
   LIBS         romsjedi
@@ -369,7 +372,7 @@ ecbuild_add_test(
 
 ecbuild_add_test(
   TARGET       test_romsjedi_3fgat_dual
-  MPI          2
+  MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_var.x
   ARGS         testinput/3dfgat_dual.yaml
   LIBS         romsjedi
@@ -377,7 +380,7 @@ ecbuild_add_test(
 
 ecbuild_add_test(
   TARGET       test_romsjedi_4dfgat_primal
-  MPI          2
+  MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_var.x
   ARGS         testinput/4dfgat_primal.yaml
   LIBS         romsjedi
@@ -385,7 +388,7 @@ ecbuild_add_test(
 
 ecbuild_add_test(
   TARGET       test_romsjedi_4dfgat_dual
-  MPI          2
+  MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_var.x
   ARGS         testinput/4dfgat_dual.yaml
   LIBS         romsjedi
@@ -397,7 +400,7 @@ ecbuild_add_test(
 
 ecbuild_add_test(
   TARGET       test_romsjedi_3denvar_regular_primal
-  MPI          2
+  MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_var.x
   ARGS         testinput/3denvar_regular_primal.yaml
   LIBS         romsjedi
@@ -406,7 +409,7 @@ ecbuild_add_test(
 
 ecbuild_add_test(
   TARGET       test_romsjedi_3denvar_regular_dual
-  MPI          2
+  MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_var.x
   ARGS         testinput/3denvar_regular_dual.yaml
   LIBS         romsjedi
@@ -415,7 +418,7 @@ ecbuild_add_test(
 
 ecbuild_add_test(
   TARGET       test_romsjedi_3denvar_4dfgat_primal
-  MPI          2
+  MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_var.x
   ARGS         testinput/3denvar_4dfgat_primal.yaml
   LIBS         romsjedi
@@ -424,7 +427,7 @@ ecbuild_add_test(
 
 ecbuild_add_test(
   TARGET       test_romsjedi_3denvar_4dfgat_dual
-  MPI          2
+  MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_var.x
   ARGS         testinput/3denvar_4dfgat_dual.yaml
   LIBS         romsjedi
@@ -433,7 +436,7 @@ ecbuild_add_test(
 
 ecbuild_add_test(
   TARGET       test_romsjedi_3dhyb_regular_primal
-  MPI          2
+  MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_var.x
   ARGS         testinput/3dhyb_regular_primal.yaml
   LIBS         romsjedi
@@ -443,7 +446,7 @@ ecbuild_add_test(
 
 ecbuild_add_test(
   TARGET       test_romsjedi_3dhyb_regular_dual
-  MPI          2
+  MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_var.x
   ARGS         testinput/3dhyb_regular_dual.yaml
   LIBS         romsjedi
@@ -453,7 +456,7 @@ ecbuild_add_test(
 
 ecbuild_add_test(
   TARGET       test_romsjedi_3dhyb_4dfgat_primal
-  MPI          2
+  MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_var.x
   ARGS         testinput/3dhyb_4dfgat_primal.yaml
   LIBS         romsjedi
@@ -463,7 +466,7 @@ ecbuild_add_test(
 
 ecbuild_add_test(
   TARGET       test_romsjedi_3dhyb_4dfgat_dual
-  MPI          2
+  MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_var.x
   ARGS         testinput/3dhyb_4dfgat_dual.yaml
   LIBS         romsjedi
@@ -477,7 +480,7 @@ ecbuild_add_test(
 
 ecbuild_add_test(
   TARGET       test_romsjedi_letkf
-  MPI          2
+  MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_letkf.x
   ARGS         testinput/letkf.yaml
   LIBS         romsjedi
@@ -485,7 +488,7 @@ ecbuild_add_test(
 
 ecbuild_add_test(
   TARGET       test_romsjedi_letkf_split_observer
-  MPI          2
+  MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_letkf.x
   ARGS         testinput/letkf_split_observer.yaml
   LIBS         romsjedi
@@ -493,7 +496,7 @@ ecbuild_add_test(
 
 ecbuild_add_test(
   TARGET       test_romsjedi_letkf_split_solver
-  MPI          2
+  MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_letkf.x
   ARGS         testinput/letkf_split_solver.yaml
   LIBS         romsjedi
@@ -502,7 +505,7 @@ ecbuild_add_test(
 
 ecbuild_add_test(
   TARGET       test_romsjedi_letkf_3dhyb
-  MPI          2
+  MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_var.x
   ARGS         testinput/letkf_3dhyb.yaml
   LIBS         romsjedi

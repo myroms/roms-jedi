@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2017-2021 UCAR
+ * (C) Copyright 2017-2023 UCAR
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -76,13 +76,11 @@ namespace romsjedi {
   class LinearModel: public oops::interface::LinearModelBase<Traits>,
                      private util::ObjectCounter<LinearModel> {
    public:
-    typedef LinearModelParameters Parameters_;
-
     static const std::string classname() {return "romsjedi::LinearModel";}
 
   // Constructor/destructor
 
-    LinearModel(const Geometry &, const LinearModelParameters &);
+    LinearModel(const Geometry &, const eckit::Configuration &);
     ~LinearModel();
 
   // Set the trajectory
@@ -115,7 +113,7 @@ namespace romsjedi {
     F90model keySelf_;
     util::Duration tstep_;
     std::map< util::DateTime, F90traj> trajmap_;
-    const oops::Variables lmvars_;
+    oops::Variables lmvars_;
   };
 
 // -----------------------------------------------------------------------------

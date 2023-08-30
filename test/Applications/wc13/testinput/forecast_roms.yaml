@@ -8,24 +8,27 @@ geometry:
   ng: 1                                        # ROMS nested grid number
 
 forecast length: &ForecastLength PT96H         # 96 hours (4 days) window ending on 2004-01-07T00:00:00Z
+#forecast length: &ForecastLength PT6H         # 6 hours window ending on 2004-01-07T00:00:00Z
                                                # or other smaller interval
 
 model:
   name: ROMS
   model variables: [ssh, uocn, vocn, tocn, socn]
   tstep: PT1800S                               # WC13 has a 30 minutes timestep
+# tstep: PT6H                                  # WC13 has a 30 minutes timestep
   simulation length: *ForecastLength
 
 initial condition:
   fields_dir: Data/wc13/input
   fields_filename: wc13_roms_ini_20040103.nc   # initial fields for 2004-01-03T00:00:00Z
   fields_record: 1
-  state variables: [ssh, uocn, vocn, tocn, socn]
+  state variables: [ssh, u2docn, v2docn, uocn, vocn, tocn, socn, Ktocn, Ksocn, Kvocn]
   date: &initial_date 2004-01-03T00:00:00Z
 
 output:
   file_policy: PT98H                           # single output file with 49 records (see NOTES)
   frequency: &frequency PT2H                   # write output data every 2 hours
+# frequency: &frequency PT1800S                # write output data every 2 hours
   data_frequency: *frequency
   data_dir: Data/forecast
   prefix: wc13_roms

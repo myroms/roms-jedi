@@ -40,19 +40,23 @@ namespace romsjedi {
 // -----------------------------------------------------------------------------
 
   LinearModel::LinearModel(const Geometry & resol,
-                           const Parameters_ & params)
+                           const eckit::Configuration & config)
     : keySelf_(0),
-      tstep_(params.tstep),
+      tstep_(),
       trajmap_(),
-      lmvars_(params.lmvars)
+      lmvars_()
   {
   oops::Log::trace() << "LinearModel::LinearModel starting" << std::endl;
+
+  // Store time step
+
+  tstep_ = util::Duration(config.getString("tstep"));
 
   // Implementation
 
   roms_linearModel_create_f90(keySelf_,
                               resol.toFortran(),
-                              params.toConfiguration());
+                              config);
   oops::Log::trace() << "LinearModel::LinearModel done" << std::endl;
   }
 

@@ -57,6 +57,16 @@ message( STATUS "---------------------------------------------------------" )
 message( STATUS "BUNDLE ECBUILD_DEFAULT_BUILD_TYPE = ${ECBUILD_DEFAULT_BUILD_TYPE}" )
 message( STATUS "BUNDLE CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}" )
 
+# Set number of mpi-processes to use (default, MPIEXEC_NUMPROC=2)
+
+if ( NOT MPIEXEC_NUMPROC )
+  set( MPI_NCPUS 2 )
+  math( EXPR MPI_3xNCPUS "${MPI_NCPUS} * 3")
+else()
+  set( MPI_NCPUS ${MPIEXEC_NUMPROC} )
+  math( EXPR MPI_3xNCPUS "${MPI_NCPUS} * 3")
+endif()
+
 # ROMS application (Default: WC13).
 #
 # If WC13, create a symbolic link to ROMS-JEDI source code path because we need access
@@ -84,6 +94,8 @@ endif()
 
 message( STATUS "ROMSJEDI_APPLICATION=${ROMSJEDI_APPLICATION}" )
 message( STATUS "ROMSJEDI_APPLICATION_DIR=${ROMSJEDI_APPLICATION_DIR}" )
+message( STATUS "MPIEXEC_NUMPROC=${MPI_NCPUS}" )
+message( STATUS "MPIEXEC_NUMPROC_ENS_HOFX=${MPI_3xNCPUS}" )
 
 set( MY_HEADER_DIR ${ROMS_APP_DIR} )
 set( MY_CPP_FLAGS ANALYTICAL_DIR='${ROMS_APP_DIR}';HEADER_DIR='${ROMS_APP_DIR}';ROOT_DIR='${CMAKE_CURRENT_SOURCE_DIR}/roms';MPI )
@@ -108,7 +120,7 @@ endif()
 
 # Required repositories
 
- ecbuild_bundle( PROJECT roms       GIT "https://github.com/JCSDA-internal/roms_src.git"     BRANCH master  UPDATE )
+ ecbuild_bundle( PROJECT roms       GIT "https://github.com/myroms/roms.git"                 BRANCH develop UPDATE )
  ecbuild_bundle( PROJECT oops       GIT "https://github.com/jcsda-internal/oops.git"         BRANCH develop UPDATE )
 #ecbuild_bundle( PROJECT vader      GIT "https://github.com/jcsda-internal/vader.git"        BRANCH develop UPDATE )
  ecbuild_bundle( PROJECT saber      GIT "https://github.com/jcsda-internal/saber.git"        BRANCH develop UPDATE )

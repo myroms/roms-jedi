@@ -3,16 +3,16 @@ Test     : CostJb   : Nonlinear Jb = 0.0000000000000000e+00
 Test     : CostJo   : Nonlinear Jo(SST) = 2.9147498012345586e+03, nobs = 4952, Jo/n = 5.8860052528969276e-01, err = 4.0783752598605327e-01
 Test     : CostJo   : Nonlinear Jo(ADT) = 1.6444594270776101e+03, nobs = 1570, Jo/n = 1.0474263866736371e+00, err = 2.0313911453614535e-02
 Test     : CostFunction: Nonlinear J = 4.5592092283121692e+03
-Test     : RPCGMinimizer: reduction in residual norm = 5.6179196845116144e-02
+Test     : RPCGMinimizer: reduction in residual norm = 5.7348209788263139e-02
 Test     : CostFunction::addIncrement: Analysis: 
 Test     :   Valid time: 2004-01-05T00:00:00Z
-Test     :                                ssh   Min=    -0.273466116894297   Max=     0.234712890350656   Mean=    -0.015607727030243
-Test     :                               uocn   Min=    -0.357480957813405   Max=     0.440036558049674   Mean=     0.003539005017060
-Test     :                               vocn   Min=    -0.553064987459898   Max=     0.283580447706039   Mean=    -0.002040168372900
-Test     :                               tocn   Min=     1.136482192449890   Max=    18.013656068731891   Mean=     6.418596054282229
-Test     :                               socn   Min=    32.036432018102985   Max=    34.687596253302139   Mean=    33.935592088939700
+Test     :                                ssh   Min=    -0.273613022668035   Max=     0.234720515739347   Mean=    -0.015413774371008
+Test     :                               uocn   Min=    -0.357549771977897   Max=     0.440132628049444   Mean=     0.003537996249724
+Test     :                               vocn   Min=    -0.553064987459898   Max=     0.283580447706039   Mean=    -0.002033207648983
+Test     :                               tocn   Min=     1.136480551194058   Max=    18.015241749535836   Mean=     6.418646407223696
+Test     :                               socn   Min=    32.037602939146971   Max=    34.687596545589635   Mean=    33.935619726905628
 Test     :                             zocn_r   Min= -4947.840267560327447   Max=    -0.245773375763171   Mean= -1064.400608062135916
-Test     : CostJb   : Nonlinear Jb = 112.321115426691620
-Test     : CostJo   : Nonlinear Jo(SST) = 329.112913087264133, nobs = 4952, Jo/n = 0.066460604419884, err = 0.407837525986053
-Test     : CostJo   : Nonlinear Jo(ADT) = 237.957708748626175, nobs = 1570, Jo/n = 0.151565419585112, err = 0.020313911453615
-Test     : CostFunction: Nonlinear J = 679.391737262581955
+Test     : CostJb   : Nonlinear Jb = 111.263717639389455
+Test     : CostJo   : Nonlinear Jo(SST) = 333.189821028217807, nobs = 4952, Jo/n = 0.067283889545278, err = 0.407837525986053
+Test     : CostJo   : Nonlinear Jo(ADT) = 223.232835627224574, nobs = 1570, Jo/n = 0.142186519507786, err = 0.020313911453615
+Test     : CostFunction: Nonlinear J = 667.686374294831808

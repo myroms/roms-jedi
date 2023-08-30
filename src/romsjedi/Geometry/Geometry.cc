@@ -10,7 +10,7 @@
  * \details These C++ functions creates/clones/destroys the Geometry object
  *          for a particular ROMS-JEDI application.
  *
- * \author  Hernan G. Arango (Rutgers University)
+ * \author  Hernan G. Arango (Rutgers University)
  * \date    April 2021
  */
 
@@ -19,6 +19,7 @@
 #include "atlas/grid.h"
 #include "atlas/util/Config.h"
 
+#include "eckit/config/Configuration.h"
 #include "eckit/config/YAMLConfiguration.h"
 #include "oops/util/abor1_cpp.h"
 
@@ -30,10 +31,10 @@ namespace romsjedi {
 // -----------------------------------------------------------------------------
 /// Geometry constructor.
 
-  Geometry::Geometry(const GeometryParameters & params,
+  Geometry::Geometry(const eckit::Configuration & config,
                      const eckit::mpi::Comm & comm) : comm_(comm) {
     roms_geom_create_f90(keyGeom_,
-                         params.toConfiguration(),
+                         config,
                          &comm);
 
     // Set ATLAS lon/lat field with and without halos

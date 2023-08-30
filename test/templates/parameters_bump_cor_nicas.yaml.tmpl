@@ -15,7 +15,7 @@ geometry:
 
 background:
   fields_dir: __FIELDS_DIR__
-  fields_filename: __ROMS_PRIOR__   
+  fields_filename: __ROMS_INI_PRIOR__   
   fields_record: __INI_PRIOR_RECORD__
   state variables: [ssh, tocn, socn]
   date: &date __INITIAL_DATE__
@@ -46,20 +46,20 @@ background error:
         horizontal length-scale:
         - groups:
           - ssh
-          value: __STATIC_B_HCORRELATION__
+          value: __STATIC_B_HCORRELATION_SSH__
         - groups:
           - tocn
-          value: __STATIC_B_HCORRELATION__
+          value: __STATIC_B_HCORRELATION_TOCN__
         - groups:
           - socn
-          value: __STATIC_B_HCORRELATION__
+          value: __STATIC_B_HCORRELATION_SOCN__
         vertical length-scale:
         - groups:
           - tocn
-          value: __STATIC_B_VCORRELATION__
+          value: __STATIC_B_VCORRELATION_TOCN__
         - groups:
           - socn
-          value: __STATIC_B_VCORRELATION__
+          value: __STATIC_B_VCORRELATION_SOCN__
       grids:
       - model:
           variables:

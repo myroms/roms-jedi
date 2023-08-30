@@ -1,4 +1,4 @@
-#define ZERO_TRAJECTORY
+#undef ZERO_TRAJECTORY
 
 ! (C) Copyright 2017-2023 UCAR
 !
@@ -198,14 +198,14 @@ END SUBROUTINE roms_linearModel_delete
 SUBROUTINE roms_linearModel_initialize_ad (self, incr, vdate)
 
   USE mod_scalars,  ONLY : INItime, dt, ntimes
-  USE mod_stepping, ONLY : nstp
+  USE mod_stepping, ONLY : kstp, nstp
 
   CLASS (roms_linearModel), intent(inout) :: self    !< LinearModel object
   CLASS (roms_increment),   intent(inout) :: incr    !< Increment object
   TYPE (datetime),          intent(in   ) :: vdate   !< Increment valid DateTime
 
-  integer                                 :: LocalPET, MyComm, Tindex, ng
-  integer                                 :: my_ntimes
+  integer                                 :: LocalPET, MyComm, my_ntimes, ng
+  integer                                 :: Tindex2d, Tindex3d
   character (len=22)                      :: CurrentDateString
 
   !> Get MPI communicator and PET rank. Get nested grid number.
@@ -252,9 +252,10 @@ SUBROUTINE roms_linearModel_initialize_ad (self, incr, vdate)
 
   !> Load JEDI initial state fields into ROMS NLM arrays.
 
-  Tindex = nstp(ng)                                  !> timestep index
+  Tindex2d = kstp(ng)                              ! timestep 2D index
+  Tindex3d = nstp(ng)                              ! timestep 3D index
 
-  CALL jedi2roms_incr (ng, iADM, Tindex, incr, CurrentDateString)
+  CALL jedi2roms_incr (ng, iADM, Tindex2d, Tindex3d, incr, CurrentDateString)
 
   !> ROMS-JEDI phase 2 initialization. Compleate the initialization using
   !> the state fields loaded above. Compute depths, density, and horizontal
@@ -280,14 +281,14 @@ END SUBROUTINE roms_linearModel_initialize_ad
 SUBROUTINE roms_linearModel_initialize_tl (self, incr, vdate)
 
   USE mod_scalars,  ONLY : INItime, dt, ntimes
-  USE mod_stepping, ONLY : nnew
+  USE mod_stepping, ONLY : kstp, nstp
 
   CLASS (roms_linearModel), intent(inout) :: self    !< LinearModel object
   CLASS (roms_increment),   intent(inout) :: incr    !< Increment object
   TYPE (datetime),          intent(in   ) :: vdate   !< Increment valid DateTime
 
-  integer                                 :: LocalPET, MyComm, Tindex, ng
-  integer                                 :: my_ntimes
+  integer                                 :: LocalPET, MyComm, my_ntimes, ng
+  integer                                 :: Tindex2d, Tindex3d
   character (len=22)                      :: CurrentDateString
 
   !> Get MPI communicator and PET rank. Get nested grid number.
@@ -332,11 +333,13 @@ SUBROUTINE roms_linearModel_initialize_tl (self, incr, vdate)
     ntimes(ng) = my_ntimes
   END IF
 
-  !> Load JEDI initial state fields into ROMS TLM arrays.
+  !> Load JEDI initial state fields into ROMS TLM arrays. At initialization,
+  !> all time indices are set to one.
 
-  Tindex = nnew(ng)                                  !> timestep index
+  Tindex2d = kstp(ng)                              ! timestep 2D index
+  Tindex3d = nstp(ng)                              ! timestep 3D index
 
-  CALL jedi2roms_incr (ng, iTLM, Tindex, incr, CurrentDateString)
+  CALL jedi2roms_incr (ng, iTLM, Tindex2d, Tindex3d, incr, CurrentDateString)
 
   !> ROMS-JEDI phase 2 initialization. Compleate the initialization using
   !> the state fields loaded above. Compute depths, density, and horizontal
@@ -344,9 +347,27 @@ SUBROUTINE roms_linearModel_initialize_tl (self, incr, vdate)
 
   CALL ROMS_initializeP2 (iTLM)
   IF (exit_flag .ne. NoError) THEN
-    CALL abor1_ftn ("roms_linearModel::initialize_tl: "//                    &
+    CALL abor1_ftn ("roms_linearModel::initialize_tl: "//                      &
                     "Error in ROMS_initializeP2")
   END IF
+
+  !> Perform TLROMS the first half timestep, the NLM kernel updates the
+  !> initial state lateral boundary conditions and recomputes vertically
+  !> integrated momentum for timelevel "nstp".
+
+  CALL ROMS_run (self%RunInterval, kernel=iTLM)
+  IF (exit_flag .ne. NoError) THEN
+    IF ((LEN_TRIM(blowup_string).gt.0).and.LocalPET) THEN
+      PRINT '(a,/,2a)','roms_model::initialize Abnormal termination: BLOWUP.', &
+                       'REASON: ', TRIM(blowup_string)
+    END IF
+    CALL abor1_ftn ("roms_model::initialize Error while calling ROMS_run")
+  END IF
+
+  !> TLROMS applied lateral boundary conditions to the initial increment
+  !> vector. Pass the outdated increment vector back to JEDI.
+
+  CALL roms2jedi_incr (ng, iTLM, Tindex2d, Tindex3d, incr, CurrentDateString)
 
   !> Write out OOPS initial increment.
 
@@ -364,14 +385,14 @@ SUBROUTINE roms_linearModel_step_ad (self, Incr, Traj, vdate)
 
   USE dateclock_mod, ONLY : time_string
   USE mod_scalars,   ONLY : jic, ntend, time4jedi
-  USE mod_stepping,  ONLY : nstp
+  USE mod_stepping,  ONLY : kstp, knew, nstp, nnew
 
   CLASS (roms_linearModel), intent(inout) :: self    !< LinearModel object
   CLASS (roms_increment),   intent(inout) :: Incr    !< Increment object
   CLASS (roms_trajectory),  intent(in   ) :: Traj    !< Trajectory object
   TYPE (datetime),          intent(inout) :: vdate   !< Increment valid DateTime
 
-  integer                                 :: Tindex, ng
+  integer                                 :: Tindex2d, Tindex3d, ng
   character (len=20)                      :: DateString
 
   ! Initialize.
@@ -392,7 +413,7 @@ SUBROUTINE roms_linearModel_step_ad (self, Incr, Traj, vdate)
   ! multiple time level stepping. So, we need to figure out how to use such a
   ! previous state as a forcing term without affecting the time stepping.
 
-! CALL jedi2roms_incr (ng, iADM, Tindex, Incr, DateString)
+! CALL jedi2roms_incr (ng, iADM, Tindex2d, Tindex3d, Incr, DateString)
 
   ! Timestep backward ADROMS by the specified RunInterval (often a single
   ! timestep) in seconds. Recall that ROMS kernels have a predictor/corrector
@@ -417,13 +438,16 @@ SUBROUTINE roms_linearModel_step_ad (self, Incr, Traj, vdate)
   CALL time_string (self%time, self%roms_datetime)
 
   IF (jic(ng).ne.ntend(ng)) THEN
-!   Tindex = -1                            ! use full solution adjoint state
-    Tindex = nnew(ng)
+!   Tindex3d = -1                          ! use full solution adjoint state
+!   Tindex3d = -1
+    Tindex2d = knew(ng)
+    Tindex3d = nnew(ng)
   ELSE
-    Tindex = nstp(ng)                      ! use time level index for last step
+    Tindex2d = kstp(ng)
+    Tindex3d = nstp(ng)                    ! use time level index for last step
   END IF
 
-  CALL roms2jedi_incr (ng, iADM, Tindex, Incr, self%roms_datetime)
+  CALL roms2jedi_incr (ng, iADM, Tindex2d, Tindex3d, Incr, self%roms_datetime)
 
 END SUBROUTINE roms_linearModel_step_ad
 
@@ -442,7 +466,7 @@ SUBROUTINE roms_linearModel_step_tl (self, Incr, Traj, vdate)
   CLASS (roms_trajectory),  intent(in   ) :: Traj    !< Trajectory object
   TYPE (datetime),          intent(inout) :: vdate   !< Increment valid DateTime
 
-  integer                                 :: Tindex, ng
+  integer                                 :: Tindex2d, Tindex3d, ng
   character (len=22)                      :: CurrentDateString
 
   ! Initialize.
@@ -467,7 +491,7 @@ SUBROUTINE roms_linearModel_step_tl (self, Incr, Traj, vdate)
   ! multiple time level stepping. So, we need to figure out how to use such a
   ! previous state as a forcing term without affecting the time stepping.
 
-! CALL jedi2roms_incr (ng, iTLM, Tindex, Incr, CurrentDateString)
+! CALL jedi2roms_incr (ng, iTLM, Tindex2d, Tindex3d, Incr, CurrentDateString)
 
   ! Advance TLROMS by the specified RunInterval (often a single timestep) in
   ! seconds. Recall that ROMS kernels have a predictor/corrector time-stepping
@@ -490,12 +514,14 @@ SUBROUTINE roms_linearModel_step_tl (self, Incr, Traj, vdate)
   CALL time_string (time(ng), self%roms_datetime)
 
   IF (jic(ng).lt.ntend(ng)) THEN
-    Tindex = nnew(ng)                  ! current solution at end of tl_main3d
+    Tindex2d = knew(ng)
+    Tindex3d = nnew(ng)                ! current solution at end of tl_main3d
   ELSE
-    Tindex = nrhs(ng)                  ! last 2 steps use previous index because
+    Tindex3d = kstp(ng)
+    Tindex3d = nrhs(ng)                ! last 2 steps use previous index because
   END IF                               ! delayed output
 
-  CALL roms2jedi_incr (ng, iTLM, Tindex, Incr, self%roms_datetime)
+  CALL roms2jedi_incr (ng, iTLM, Tindex2d, Tindex3d, Incr, self%roms_datetime)
 
 END SUBROUTINE roms_linearModel_step_tl
 
@@ -527,12 +553,12 @@ SUBROUTINE roms_linearModel_finalize_ad (self, Incr)
   ! variables in several ROMS structures are initialized to zero, as it is
   ! done in ROMS native adjoint-based algorithms.
 
-!  CALL initialize_coupling (self%ng, self%tile, iADM)
-!  CALL initialize_forces   (self%ng, self%tile, iADM)
-!  CALL initialize_grid     (self%ng, self%tile, iADM)
-!  CALL initialize_mixing   (self%ng, self%tile, iADM)
-!  CALL initialize_ocean    (self%ng, self%tile, iNLM)
-!  CALL initialize_ocean    (self%ng, self%tile, iADM)
+  CALL initialize_coupling (self%ng, self%tile, iADM)
+  CALL initialize_forces   (self%ng, self%tile, iADM)
+  CALL initialize_grid     (self%ng, self%tile, iADM)
+  CALL initialize_mixing   (self%ng, self%tile, iADM)
+  CALL initialize_ocean    (self%ng, self%tile, iNLM)
+  CALL initialize_ocean    (self%ng, self%tile, iADM)
 
 END SUBROUTINE roms_linearModel_finalize_ad
 
@@ -563,11 +589,11 @@ SUBROUTINE roms_linearModel_finalize_tl (self, Incr)
   ! the variables in several ROMS structures are initialized to zero, as it is
   ! done in ROMS native adjoint-based algorithms.
 
-!  CALL initialize_coupling (self%ng, self%tile, 0)
-!  CALL initialize_forces   (self%ng, self%tile, iTLM)
-!  CALL initialize_grid     (self%ng, self%tile, iTLM)
-!  CALL initialize_ocean    (self%ng, self%tile, iNLM)
-!  CALL initialize_ocean    (self%ng, self%tile, iTLM)
+  CALL initialize_coupling (self%ng, self%tile, 0)
+  CALL initialize_forces   (self%ng, self%tile, iTLM)
+  CALL initialize_grid     (self%ng, self%tile, iTLM)
+  CALL initialize_ocean    (self%ng, self%tile, iNLM)
+  CALL initialize_ocean    (self%ng, self%tile, iTLM)
 
 END SUBROUTINE roms_linearModel_finalize_tl
 
@@ -746,7 +772,7 @@ END SUBROUTINE jedi2roms_traj
 !> It loads JEDI increment fields into respective ROMS tangent linear or
 !! adjoint fields.
 
-SUBROUTINE jedi2roms_incr (ng, kernel, Tindex, Incr, DateString)
+SUBROUTINE jedi2roms_incr (ng, kernel, Tindex2d, Tindex3d, Incr, DateString)
 
   USE dateclock_mod, ONLY : time_string
   USE mod_ocean,     ONLY : OCEAN
@@ -754,7 +780,8 @@ SUBROUTINE jedi2roms_incr (ng, kernel, Tindex, Incr, DateString)
 
   integer,                        intent(in   ) :: ng          !< nested grid
   integer,                        intent(in   ) :: kernel      !< ROMS kernel ID
-  integer,                        intent(in   ) :: Tindex      !< time index
+  integer,                        intent(in   ) :: Tindex2d    !< 2D time index
+  integer,                        intent(in   ) :: Tindex3d    !< 3D time index
   CLASS (roms_increment), target, intent(inout) :: Incr        !< Increment
   character (len=*),              intent(in   ) :: DateString  !< DateTime
 
@@ -773,7 +800,8 @@ SUBROUTINE jedi2roms_incr (ng, kernel, Tindex, Incr, DateString)
 
     IF (LdebugLinearModel .and. (my_comm%rank() .eq. 0))                       &
       PRINT 10, 'ROMS_DEBUG jedi2roms_incr: Loading increments into TL ROMS',  &
-                SIZE(Incr%fields), jic(ng), Tindex, TRIM(DateString)
+                SIZE(Incr%fields), jic(ng), Tindex2d, Tindex3d,                &
+                TRIM(DateString)
 
     DO i=1, SIZE(Incr%fields)
 
@@ -788,14 +816,14 @@ SUBROUTINE jedi2roms_incr (ng, kernel, Tindex, Incr, DateString)
 
       SELECT CASE (field%name)
          CASE ('ssh')                                   !> free-surface
-           OCEAN(ng)%tl_zeta(:,:,Tindex) = field%val(:,:,1)
+           OCEAN(ng)%tl_zeta(:,:,Tindex2d) = field%val(:,:,1)
          CASE ('uocn')                                  !> 3D U-momentum
-           OCEAN(ng)%tl_u(:,:,:,Tindex) = field%val
+           OCEAN(ng)%tl_u(:,:,:,Tindex3d) = field%val
          CASE ('vocn')                                  !> 3D V-momentum
-           OCEAN(ng)%tl_v(:,:,:,Tindex) = field%val
+           OCEAN(ng)%tl_v(:,:,:,Tindex3d) = field%val
          CASE ('tocn', 'socn')                          !> tracers
            itrc = roms_tracer_index(field%name)
-           OCEAN(ng)%tl_t(:,:,:,Tindex,itrc) = field%val
+           OCEAN(ng)%tl_t(:,:,:,Tindex3d,itrc) = field%val
          CASE DEFAULT
            CALL abor1_ftn ("jedi2roms_incr: Cannot find option for field: "// &
                            TRIM(field%name))
@@ -807,7 +835,8 @@ SUBROUTINE jedi2roms_incr (ng, kernel, Tindex, Incr, DateString)
 
     IF (LdebugLinearModel .and. (my_comm%rank() .eq. 0))                       &
       PRINT 10, 'ROMS_DEBUG jedi2roms_incr: Loading increments into AD ROMS',  &
-                SIZE(Incr%fields), jic(ng), Tindex, TRIM(DateString)
+                SIZE(Incr%fields), jic(ng), Tindex2d, Tindex3d,                &
+                TRIM(DateString)
 
     DO i=1, SIZE(Incr%fields)
 
@@ -822,14 +851,14 @@ SUBROUTINE jedi2roms_incr (ng, kernel, Tindex, Incr, DateString)
 
       SELECT CASE (field%name)
          CASE ('ssh')                                   !> free-surface
-           OCEAN(ng)%ad_zeta(:,:,Tindex) = field%val(:,:,1)
+           OCEAN(ng)%ad_zeta(:,:,Tindex2d) = field%val(:,:,1)
          CASE ('uocn')                                  !> 3D U-momentum
-           OCEAN(ng)%ad_u(:,:,:,Tindex) = field%val
+           OCEAN(ng)%ad_u(:,:,:,Tindex3d) = field%val
          CASE ('vocn')                                  !> 3D V-momentum
-           OCEAN(ng)%ad_v(:,:,:,Tindex) = field%val
+           OCEAN(ng)%ad_v(:,:,:,Tindex3d) = field%val
          CASE ('tocn', 'socn')                          !> tracers
            itrc = roms_tracer_index(field%name)
-           OCEAN(ng)%ad_t(:,:,:,Tindex,itrc) = field%val
+           OCEAN(ng)%ad_t(:,:,:,Tindex3d,itrc) = field%val
          CASE DEFAULT
            CALL abor1_ftn ("jedi2roms_incr: Cannot find option for field: "//  &
                            TRIM(field%name))
@@ -839,8 +868,8 @@ SUBROUTINE jedi2roms_incr (ng, kernel, Tindex, Incr, DateString)
 
   END IF ROMS_KERNEL
 
-  10 FORMAT (1x,a,', Nfields = ',i2,', timestep = ',i5.5,', timelevel = ',i0,  &
-             ', date: ',a)
+  10 FORMAT (1x,a,', Nfields = ',i2,', timestep = ',i5.5,', timelevel = (',i0, &
+             ', ',i0,'), date: ',a)
   20 FORMAT (19x,'- ',a,': ',a,/,22x,'(Min = ',1p,e15.8,' Max = ',1p,e15.8,    &
              ')',t93,'Checksum = ',i0)
 
@@ -850,7 +879,7 @@ END SUBROUTINE jedi2roms_incr
 !> It loads either ROMS tangent linear or adjoint state solution into increment
 !! object.
 
-SUBROUTINE roms2jedi_incr (ng, kernel, Tindex, Incr, DateString)
+SUBROUTINE roms2jedi_incr (ng, kernel, Tindex2d, Tindex3d, Incr, DateString)
 
   USE dateclock_mod, ONLY : time_string
   USE mod_ocean,     ONLY : OCEAN
@@ -859,7 +888,8 @@ SUBROUTINE roms2jedi_incr (ng, kernel, Tindex, Incr, DateString)
 
   integer,                        intent(in   ) :: ng          !< nested grid
   integer,                        intent(in   ) :: kernel      !< ROMS kernel
-  integer,                        intent(in   ) :: Tindex      !< time level
+  integer,                        intent(in   ) :: Tindex2d    !< 2D time level
+  integer,                        intent(in   ) :: Tindex3d    !< 3D time level
   CLASS (roms_increment), target, intent(inout) :: Incr        !< Increment
   character (len=*),              intent(in   ) :: DateString  !< DateTime
 
@@ -879,8 +909,8 @@ SUBROUTINE roms2jedi_incr (ng, kernel, Tindex, Incr, DateString)
 
     IF (LdebugLinearModel .and. (my_comm%rank() .eq. 0))                       &
       PRINT 10, 'ROMS_DEBUG roms2jedi_incr: Loading TL ROMS increments '//     &
-                'into JEDI', SIZE(Incr%fields), jic(ng)-1, Tindex,             &
-                TRIM(DateString)
+                'into JEDI', SIZE(Incr%fields), jic(ng)-1, Tindex2d,           &
+                Tindex3d, TRIM(DateString)
 
     DO i=1, SIZE(Incr%fields)
 
@@ -889,17 +919,17 @@ SUBROUTINE roms2jedi_incr (ng, kernel, Tindex, Incr, DateString)
       SELECT CASE (field%name)
 
         CASE ('ssh')                                           !> free-surface
-          field%val(:,:,1) = OCEAN(ng)%tl_zeta(:,:,kstp(ng))
+          field%val(:,:,1) = OCEAN(ng)%tl_zeta(:,:,Tindex2d)
 
         CASE ('uocn')                                          !> 3D U-momentum
-          field%val = OCEAN(ng)%tl_u(:,:,:,Tindex)
+          field%val = OCEAN(ng)%tl_u(:,:,:,Tindex3d)
 
         CASE ('vocn')                                          !> 3D V-momentum
-          field%val = OCEAN(ng)%tl_v(:,:,:,Tindex)
+          field%val = OCEAN(ng)%tl_v(:,:,:,Tindex3d)
 
         CASE ('tocn', 'socn')                                  !> tracers
           itrc = roms_tracer_index(field%name)
-          field%val = OCEAN(ng)%tl_t(:,:,:,Tindex,itrc)
+          field%val = OCEAN(ng)%tl_t(:,:,:,Tindex3d,itrc)
 
         CASE DEFAULT
           CALL abor1_ftn ("roms2jedi_incr: Cannot find option for field: " //  &
@@ -920,8 +950,8 @@ SUBROUTINE roms2jedi_incr (ng, kernel, Tindex, Incr, DateString)
 
     IF (LdebugLinearModel .and. (my_comm%rank() .eq. 0))                       &
       PRINT 10, 'ROMS_DEBUG roms2jedi_incr: Loading AD ROMS increments '//     &
-                'into JEDI', SIZE(Incr%fields), jic(ng), Tindex,               &
-                TRIM(DateString)
+                'into JEDI', SIZE(Incr%fields), jic(ng), Tindex2d,             &
+                Tindex3d, TRIM(DateString)
 
     DO i=1, SIZE(Incr%fields)
 
@@ -937,26 +967,26 @@ SUBROUTINE roms2jedi_incr (ng, kernel, Tindex, Incr, DateString)
       ! in two-time levels and are added in the "_sol" arrays for output and
       ! exchange purposes.
 
-      IF (Tindex.le.0) THEN
+      IF (Tindex3d.le.0) THEN
 
         SELECT CASE (field%name)
 
           CASE ('ssh')                                         !> free-surface
-            field%val(Is:Ie,Js:Je,1) = OCEAN(ng)%ad_zeta_sol(Is:Ie,Js:Je)
+            field%val(:,:,1) = OCEAN(ng)%ad_zeta_sol
 
           CASE ('uocn')                                        !> 3D U-momentum
-            field%val(Is:Ie,Js:Je,:) = OCEAN(ng)%ad_u_sol(Is:Ie,Js:Je,:)
+            field%val = OCEAN(ng)%ad_u_sol
 
           CASE ('vocn')                                        !> 3D V-momentum
-            field%val(Is:Ie,Js:Je,:) = OCEAN(ng)%ad_v_sol(Is:Ie,Js:Je,:)
+            field%val = OCEAN(ng)%ad_v_sol
 
           CASE ('tocn', 'socn')                                !> tracers
             itrc = roms_tracer_index(field%name)
-            field%val(Is:Ie,Js:Je,:) = OCEAN(ng)%ad_t_sol(Is:Ie,Js:Je,:,itrc)
+            field%val = OCEAN(ng)%ad_t_sol(:,:,:,itrc)
 
           CASE DEFAULT
             CALL abor1_ftn ("roms2jedi_incr: Cannot find option for field: "// &
-                          TRIM(field%name))
+                            TRIM(field%name))
 
         END SELECT
 
@@ -967,22 +997,21 @@ SUBROUTINE roms2jedi_incr (ng, kernel, Tindex, Incr, DateString)
         SELECT CASE (field%name)
 
           CASE ('ssh')                                         !> free-surface
-            field%val(Is:Ie,Js:Je,1) = OCEAN(ng)%ad_zeta(Is:Ie,Js:Je,kstp(ng))
-!           field%val(Is:Ie,Js:Je,1) = OCEAN(ng)%ad_zeta_sol(Is:Ie,Js:Je)
+            field%val(:,:,1) = OCEAN(ng)%ad_zeta(:,:,Tindex2d)
 
           CASE ('uocn')                                        !> 3D U-momentum
-            field%val(Is:Ie,Js:Je,:) = OCEAN(ng)%ad_u(Is:Ie,Js:Je,:,Tindex)
+            field%val = OCEAN(ng)%ad_u(:,:,:,Tindex3d)
 
           CASE ('vocn')                                        !> 3D V-momentum
-            field%val(Is:Ie,Js:Je,:) = OCEAN(ng)%ad_v(Is:Ie,Js:Je,:,Tindex)
+            field%val = OCEAN(ng)%ad_v(:,:,:,Tindex3d)
 
           CASE ('tocn', 'socn')                                !> tracers
             itrc = roms_tracer_index(field%name)
-            field%val(Is:Ie,Js:Je,:) = OCEAN(ng)%ad_t(Is:Ie,Js:Je,:,Tindex,itrc)
+            field%val = OCEAN(ng)%ad_t(:,:,:,Tindex3d,itrc)
 
           CASE DEFAULT
             CALL abor1_ftn ("roms2jedi_incr: Cannot find option for field: "// &
-                          TRIM(field%name))
+                            TRIM(field%name))
 
         END SELECT
 
@@ -999,8 +1028,8 @@ SUBROUTINE roms2jedi_incr (ng, kernel, Tindex, Incr, DateString)
 
   END IF ROMS_KERNEL
 
-  10 FORMAT (1x,a,', Nfields = ',i2,', timestep = ',i5.5,', timelevel = ',i0,  &
-             ', date: ',a)
+  10 FORMAT (1x,a,', Nfields = ',i2,', timestep = ',i5.5,', timelevel = (',i0, &
+             ', ',i0,'), date: ',a)
   20 FORMAT (19x,'- ',a,': ',a,/,22x,'(Min = ',1p,e15.8,' Max = ',1p,e15.8,    &
              ')',t93,'Checksum = ',i0)
 

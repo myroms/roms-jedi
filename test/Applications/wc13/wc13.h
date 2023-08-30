@@ -49,6 +49,8 @@
 
 #define JEDI
 
+#define DEBUGGING
+
 #define ANA_BSFLUX
 #define ANA_BTFLUX
 #define ANA_SPONGE

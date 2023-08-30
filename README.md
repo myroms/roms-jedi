@@ -134,16 +134,23 @@ running any **`ROMS-JEDI`** application, as well as the available data assimilat
    mkdir build_doppio
    cd build_doppio
 
-   ecbuild -DMPIEXEC_EXECUTABLE=$MPIRUN -DMPIEXEC_NUMPROC_FLAG="-n" -DROMS_APP="DOPPIO" -DROMS_APP_DIR="DOPPIOpath" -DCMAKE_BUILD_TYPE=Release ../Bundle_doppio
+   ecbuild -DMPIEXEC_EXECUTABLE=$MPIRUN -DMPIEXEC_NUMPROC_FLAG="-n" -DMPIEXEC_NUMPROC=12 -DROMS_APP=DOPPIO -DROMS_APP_DIR=DOPPIOpath -DCMAKE_BUILD_TYPE=Release ../Bundle_doppio
    make -j 10
 
    cd roms-jedi                                               !> sub-directory: <interface_dir>/build_doppio/roms-jedi
    ctest -N                                                   !> lists all the Unit Tests available
-   ctest -E -V get_                                           !> runs all the Unit Test
+   ctest -E -V get_                                           !> runs all the Unit Tests
 
-   cd test/Data                                               !> sub-directory: <interface_dir>/build_doppio/roms-doppio/test/Data
+   cd test/Data                                               !> sub-directory: <interface_dir>/build_doppio/roms-jedi/test/Data
                                                               !> to check the results in various sub-directories
    ```
+
+   **`DOPPIOpath`** is a directory in your computer containing the **DOPPIO** configuration and input files. Use the default
+   **WC13** set up in **`roms-jedi/test/Applications/wc13`** as an example of configuring any other **`ROMS`** application.
+
+-  If the directive **`-DMPIEXEC_NUMPROC`** is not specified,  the **`ROMS-JEDI`** interface will run the Unit Test cases and
+   data assimilation algorithms with **two (2)** processes by default. Because of efficiency and memory requirements, many MPI
+   processes will be needed in larger applications.
 
 -  The **ecbuild** command builds by default the **RelWithDebInfo** (**-O2 -g** options) for optimized with debugging information
    version of **`JEDI`** and **`ROMS-JEDI`**, rendering slower execution. However for faster and optimized execution, we include

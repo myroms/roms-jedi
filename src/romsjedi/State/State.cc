@@ -14,6 +14,7 @@
 
 #include "atlas/field.h"
 
+#include "eckit/config/LocalConfiguration.h"
 #include "eckit/exception/Exceptions.h"
 
 #include "oops/base/Variables.h"
@@ -41,10 +42,10 @@ namespace romsjedi {
                const util::DateTime & vt)
     : time_(vt),
       vars_(vars),
-      geom_(new Geometry(geom))
+      geom_(geom)
   {
     roms_state_create_f90(keyFlds_,
-                          geom_->toFortran(),
+                          geom_.toFortran(),
                           vars_);
     Log::debug() << classname() << ":State created " << vars_
                  << std::endl;
@@ -53,28 +54,32 @@ namespace romsjedi {
 // -----------------------------------------------------------------------------
 
   State::State(const Geometry & geom,
-               const Parameters_ & params)
-    : time_(params.date),
-      vars_(params.vars),
-      geom_(new Geometry(geom))
+               const eckit::Configuration & config)
+    : time_(),
+      vars_(config, "state variables"),
+      geom_(geom)
   {
     util::DateTime * dtp = &time_;
     oops::Variables vars(vars_);
     roms_state_create_f90(keyFlds_,
-                          geom_->toFortran(),
+                          geom_.toFortran(),
                           vars);
-    if (params.FieldsFileName.value() != boost::none) {
+
+    if (config.has("analytic init")) {
+      Log::trace() << classname() << ":State generated analytically"
+                   << std::endl;
+      std::string dt;
+      config.get("date", dt);
+      time_ = util::DateTime(dt);
+      roms_state_analytic_f90(toFortran(),
+                              config,
+                              &dtp);
+    } else {
       Log::trace() << classname() << ":State read from file"
                    << std::endl;
       roms_state_read_file_f90(toFortran(),
-                               params.toConfiguration(),
+                               config,
                                &dtp);
-    } else if (params.analyticInit.value() != boost::none) {
-      Log::trace() << classname() << ":State generated analytically"
-                   << std::endl;
-      roms_state_analytic_f90(toFortran(),
-                              params.toConfiguration(),
-                              &dtp);
     }
   }
 
@@ -84,10 +89,10 @@ namespace romsjedi {
                const State & other)
     : vars_(other.vars_),
       time_(other.time_),
-      geom_(new Geometry(geom))
+      geom_(geom)
   {
     roms_state_create_f90(keyFlds_,
-                          geom_->toFortran(),
+                          geom_.toFortran(),
                           vars_);
     roms_state_change_resol_f90(toFortran(),
                                 other.keyFlds_);
@@ -100,10 +105,10 @@ namespace romsjedi {
   State::State(const State & other)
     : vars_(other.vars_),
       time_(other.time_),
-      geom_(new Geometry(*other.geom_))
+      geom_(other.geom_)
   {
     roms_state_create_f90(keyFlds_,
-                          geom_->toFortran(),
+                          geom_.toFortran(),
                           vars_);
     roms_state_copy_f90(toFortran(),
                         other.toFortran());
@@ -123,7 +128,6 @@ namespace romsjedi {
 
   State & State::operator=(const State & rhs) {
     time_ = rhs.time_;
-    vars_ = rhs.variables();
     roms_state_copy_f90(toFortran(),
                         rhs.toFortran());
     return *this;
@@ -174,7 +178,7 @@ namespace romsjedi {
   State & State::operator+=(const Increment & dx) {
     ASSERT(validTime() == dx.validTime());
     // Interpolate increment to analysis grid
-    Increment dx_hr(*geom_, dx);
+    Increment dx_hr(geom_, dx);
     // Add increment to background state
     roms_state_add_incr_f90(toFortran(),
                             dx_hr.toFortran());
@@ -185,12 +189,12 @@ namespace romsjedi {
 /// I/O and diagnostics
 // -----------------------------------------------------------------------------
 
-  void State::read(const Parameters_ & params) {
+  void State::read(const eckit::Configuration & config) {
     Log::trace() << classname() << ":read starting"
                  << std::endl;
     util::DateTime * dtp = &time_;
     roms_state_read_file_f90(toFortran(),
-                             params.toConfiguration(),
+                             config,
                              &dtp);
     Log::trace() << classname() <<":read done"
                  << std::endl;
@@ -198,12 +202,12 @@ namespace romsjedi {
 
 // -----------------------------------------------------------------------------
 
-  void State::analytic_init(const Parameters_ & params) {
+  void State::analytic_init(const eckit::Configuration & config) {
     util::DateTime * dtp = &time_;
     Log::trace() << classname() << ":analytic_init starting"
                  << std::endl;
     roms_state_analytic_f90(toFortran(),
-                            params.toConfiguration(),
+                            config,
                             &dtp);
     Log::trace() << classname() << ":analytic_init done"
                  << std::endl;
@@ -211,12 +215,12 @@ namespace romsjedi {
 
 // -----------------------------------------------------------------------------
 
-  void State::write(const WriteParameters_ & params) const {
+  void State::write(const eckit::Configuration & config) const {
     const util::DateTime * dtp = &time_;
     Log::trace() << classname() << ":write starting"
                  << std::endl;
     roms_state_write_file_f90(toFortran(),
-                              params.toConfiguration(),
+                              config,
                               &dtp);
     Log::trace() << classname() <<":write done"
                  << std::endl;
@@ -253,7 +257,7 @@ namespace romsjedi {
   size_t State::serialSize() const {
     size_t nn;
     roms_state_serial_size_f90(toFortran(),
-                               geom_->toFortran(),
+                               geom_.toFortran(),
                                nn);
     nn += 1;                                      // Magic factor
     nn += time_.serialSize();                     // Date and time
@@ -267,12 +271,12 @@ namespace romsjedi {
       // Serialize the field
       size_t nn;
       roms_state_serial_size_f90(toFortran(),
-                                 geom_->toFortran(),
+                                 geom_.toFortran(),
                                  nn);
       std::vector<double> vect_field(nn, 0);
       vect.reserve(vect.size() + nn + 1 + time_.serialSize());
       roms_state_serialize_f90(toFortran(),
-                               geom_->toFortran(),
+                               geom_.toFortran(),
                                nn,
                                vect_field.data());
       vect.insert(vect.end(), vect_field.begin(), vect_field.end());
@@ -287,7 +291,7 @@ namespace romsjedi {
   void State::deserialize(const std::vector<double> & vect, size_t & index) {
     // Deserialize the field
     roms_state_deserialize_f90(toFortran(),
-                               geom_->toFortran(),
+                               geom_.toFortran(),
                                vect.size(),
                                vect.data(),
                                index);
@@ -356,7 +360,7 @@ namespace romsjedi {
     Log::debug() << classname() << ":toFieldSet vars = " << vars_
                  << std::endl;
     roms_state_to_fieldset_f90(toFortran(),
-                               geom_->toFortran(),
+                               geom_.toFortran(),
                                vars_,
                                fset.get());
     Log::trace() << classname() << ":toFieldSet done"
@@ -371,7 +375,7 @@ namespace romsjedi {
     Log::debug() << classname() << ":fromFieldSet vars = " << vars_
                  << std::endl;
     roms_state_from_fieldset_f90(toFortran(),
-                                 geom_->toFortran(),
+                                 geom_.toFortran(),
                                  vars_,
                                  fset.get());
     Log::trace() << classname() << ":fromFieldSet done"
@@ -388,7 +392,7 @@ namespace romsjedi {
 
 // -----------------------------------------------------------------------------
 
-  std::shared_ptr<const Geometry> State::geometry() const {return geom_;}
+  const Geometry & State::geometry() const {return geom_;}
 
 // -----------------------------------------------------------------------------
 

@@ -140,9 +140,6 @@ namespace romsjedi {
                 public util::Serializable,
                 private util::ObjectCounter<State> {
    public:
-     typedef StateParameters Parameters_;
-     typedef StateWriteParameters WriteParameters_;
-
       static const std::string classname() {return "romsjedi::State";}
 
       /// Constructor, destructor
@@ -151,7 +148,7 @@ namespace romsjedi {
             const oops::Variables &,
             const util::DateTime &);
       State(const Geometry &,
-            const Parameters_ &);
+            const eckit::Configuration &);
       State(const Geometry &,
             const State &);
       State(const State &);
@@ -185,9 +182,9 @@ namespace romsjedi {
 
       /// I/O and diagnostics
 
-      void read(const Parameters_ &);
-      void analytic_init(const Parameters_ &);
-      void write(const WriteParameters_ &) const;
+      void read(const eckit::Configuration &);
+      void analytic_init(const eckit::Configuration &);
+      void write(const eckit::Configuration &) const;
       double norm() const;
 
       const util::DateTime & validTime() const;
@@ -201,7 +198,7 @@ namespace romsjedi {
 
       /// Utilities
 
-      std::shared_ptr<const Geometry> geometry() const;
+      const Geometry & geometry() const;
       const oops::Variables & variables() const {return vars_;}
 
       /// Get values as Atlas FieldSet
@@ -221,7 +218,7 @@ namespace romsjedi {
    private:
     void print(std::ostream &) const override;
     F90flds keyFlds_;
-    std::shared_ptr<const Geometry> geom_;
+    const Geometry & geom_;
     oops::Variables vars_;
     util::DateTime time_;
   };

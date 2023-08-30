@@ -8,6 +8,8 @@
 #include <ostream>
 #include <string>
 
+#include "eckit/config/Configuration.h"
+
 #include "oops/util/Logger.h"
 
 #include "romsjedi/Geometry/Geometry.h"
@@ -22,10 +24,14 @@ namespace romsjedi {
 // -----------------------------------------------------------------------------
 
   LinearVariableChange::LinearVariableChange(const Geometry & geom,
-                                             const Parameters_ & params)
+                                             const eckit::Configuration &
+                                                          config)
     : geom_(new Geometry(geom)),
-      params_(params),
-      linearVariableChange_() {}
+      linearVariableChange_()
+  {
+    params_.deserialize(config);
+    eckit::LocalConfiguration variableChangeConfig = params_.toConfiguration();
+  }
 
 // -----------------------------------------------------------------------------
 
@@ -67,7 +73,7 @@ namespace romsjedi {
     }
 
   // Create output state
-    Increment dxout(*dx.geometry(), vars, dx.validTime());
+    Increment dxout(dx.geometry(), vars, dx.validTime());
 
   // Call variable change
     linearVariableChange_->multiply(dx, dxout);
@@ -101,7 +107,7 @@ namespace romsjedi {
     }
 
   // Create output state
-    Increment dxout(*dx.geometry(), vars, dx.validTime());
+    Increment dxout(dx.geometry(), vars, dx.validTime());
 
   // Call variable change
     linearVariableChange_->multiplyInverse(dx, dxout);
@@ -134,7 +140,7 @@ namespace romsjedi {
     }
 
   // Create output state
-    Increment dxout(*dx.geometry(), vars, dx.validTime());
+    Increment dxout(dx.geometry(), vars, dx.validTime());
 
   // Call variable change
     linearVariableChange_->multiplyAD(dx, dxout);
@@ -167,7 +173,7 @@ namespace romsjedi {
     }
 
   // Create output state
-    Increment dxout(*dx.geometry(), vars, dx.validTime());
+    Increment dxout(dx.geometry(), vars, dx.validTime());
 
   // Call variable change
     linearVariableChange_->multiplyInverseAD(dx, dxout);

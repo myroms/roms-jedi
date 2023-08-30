@@ -5,11 +5,11 @@ Test     :                               uocn   Min=     0.000000000000000   Max
 Test     :                               vocn   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
 Test     :                               tocn   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.000017571604287
 Test     :                               socn   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.000017571604287
-Test     : Norm of input parameter StdDev: 7771.743120829532927
+Test     : Norm of input parameter StdDev: 7771.743120829458348
 Test     : Covariance(SABER) * Increment:
 Test     :   Valid time: 2004-01-03T00:00:00Z
-Test     :                                ssh   Min=     0.000000000000000   Max=     0.000145450015704   Mean=     0.000000076673704
+Test     :                                ssh   Min=     0.000000000000000   Max=     0.000145450015704   Mean=     0.000000085306109
 Test     :                               uocn   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
 Test     :                               vocn   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
-Test     :                               tocn   Min=     0.000000000000000   Max=     0.197643686466180   Mean=     0.000311714645905
-Test     :                               socn   Min=     0.000000000000000   Max=     0.010480930580321   Mean=     0.000010602804741
+Test     :                               tocn   Min=     0.000000000000000   Max=     0.197644583999802   Mean=     0.000316391599123
+Test     :                               socn   Min=     0.000000000000000   Max=     0.010483995742084   Mean=     0.000011032956482

@@ -21,12 +21,10 @@
 #include <ostream>
 #include <string>
 
-#include "oops/util/Duration.h"
-#include "oops/interface/ModelBase.h"
 #include "oops/base/Variables.h"
+#include "oops/interface/ModelBase.h"
+#include "oops/util/Duration.h"
 #include "oops/util/ObjectCounter.h"
-#include "oops/util/parameters/Parameters.h"
-#include "oops/util/parameters/RequiredParameter.h"
 
 // Forward declarations
 
@@ -40,39 +38,16 @@ namespace romsjedi {
 
 namespace romsjedi {
 
-  /// Model Parameters Class. The property 'name' is already part of the
-  /// default schema.
-
-  class ModelParameters : public oops::ModelParametersBase {
-    OOPS_CONCRETE_PARAMETERS(ModelParameters, ModelParametersBase)
-
-   public:
-    oops::RequiredParameter<oops::Variables> vars{
-      "model variables",
-      "Model State variables to process",
-      this};
-    oops::RequiredParameter<util::Duration> tstep{
-      "tstep",
-      "Model time step",
-      this};
-    oops::RequiredParameter<util::Duration> SimulationLength{
-      "simulation length",
-      "Model simulation length period",
-      this};
-  };
-
   // ROMS NLM Model Class
 
   class Model : public oops::interface::ModelBase<Traits>,
                 private util::ObjectCounter<Model> {
    public:
-    typedef ModelParameters Parameters_;
-
     static const std::string classname() {return "romsjedi::Model";}
 
     // Constructors / Destructor
 
-    Model(const Geometry &, const ModelParameters &);
+    Model(const Geometry &, const eckit::Configuration &);
     ~Model();
 
     // Model stages: Initialze, Step, and Finalize

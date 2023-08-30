@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2021 UCAR.
+ * (C) Copyright 2021-2023 UCAR.
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -10,8 +10,13 @@
 
 #include "boost/none_t.hpp"
 
+#include "oops/base/VariableChangeParametersBase.h"
 #include "oops/mpi/mpi.h"
 #include "oops/util/Logger.h"
+#include "oops/util/parameters/OptionalParameter.h"
+#include "oops/util/parameters/Parameter.h"
+#include "oops/util/parameters/Parameters.h"
+#include "oops/util/parameters/RequiredParameter.h"
 
 #include "romsjedi/Geometry/Geometry.h"
 #include "romsjedi/State/State.h"
@@ -21,9 +26,13 @@ namespace romsjedi {
 
 // -----------------------------------------------------------------------------
 
-  VariableChange::VariableChange(const Parameters_ & params,
+  VariableChange::VariableChange(const eckit::Configuration & config,
                                  const Geometry & geometry) {
+    VariableChangeParametersWrapper params;
+    params.deserialize(config);
+
   // Create the variable change
+
     variableChange_.reset(VariableChangeFactory::create(geometry,
                                   params.variableChangeParameters.value()));
   }
@@ -42,7 +51,7 @@ namespace romsjedi {
                        << x.variables() << std::endl;
 
   // Create output state
-    State xout(*x.geometry(), vars, x.validTime());
+    State xout(x.geometry(), vars, x.validTime());
 
   // Call variable change
     variableChange_->changeVar(x, xout);
@@ -65,7 +74,7 @@ namespace romsjedi {
                        << std::endl;
 
   // Create output state
-    State xout(*x.geometry(), vars, x.validTime());
+    State xout(x.geometry(), vars, x.validTime());
 
   // Call variable change
     variableChange_->changeVarInverse(x, xout);

@@ -76,13 +76,11 @@ namespace romsjedi {
   class Geometry : public util::Printable,
                    private util::ObjectCounter<Geometry> {
    public:
-    typedef GeometryParameters Parameters_;
-
     static const std::string classname() {return "romsjedi::Geometry";}
 
     // constructors and destructor
 
-    explicit Geometry(const GeometryParameters & parameters,
+    explicit Geometry(const eckit::Configuration &,
                       const eckit::mpi::Comm &);
     Geometry(const Geometry &);
     ~Geometry();

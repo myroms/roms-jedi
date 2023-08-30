@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2021-2022 UCAR.
+ * (C) Copyright 2021-2023 UCAR.
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -12,6 +12,8 @@
 #include <string>
 
 #include <boost/ptr_container/ptr_vector.hpp>
+
+#include "eckit/config/Configuration.h"
 
 #include "oops/base/LinearVariableChangeParametersBase.h"
 #include "oops/util/parameters/OptionalParameter.h"
@@ -31,9 +33,9 @@ namespace romsjedi {
     static const std::string classname() {
       return "romsjedi::LinearVariableChange";}
 
-    typedef LinearVariableChangeParametersWrapper Parameters_;
+    explicit LinearVariableChange(const Geometry &,
+                                  const eckit::Configuration &);
 
-    explicit LinearVariableChange(const Geometry &, const Parameters_ &);
     ~LinearVariableChange();
 
     void changeVarTraj(const State &,
@@ -50,7 +52,7 @@ namespace romsjedi {
 
    private:
     void print(std::ostream &) const override;
-    Parameters_ params_;
+    LinearVariableChangeParametersWrapper params_;
     std::shared_ptr<const Geometry> geom_;
     std::unique_ptr<LinearVariableChangeBase> linearVariableChange_;
   };

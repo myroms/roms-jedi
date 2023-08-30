@@ -17,9 +17,12 @@
 #include "eckit/config/Configuration.h"
 #include "eckit/exception/Exceptions.h"
 
+#include "oops/base/ParameterTraitsVariables.h"
 #include "oops/util/abor1_cpp.h"
 #include "oops/util/DateTime.h"
 #include "oops/util/Logger.h"
+#include "oops/util/parameters/Parameters.h"
+#include "oops/util/parameters/RequiredParameter.h"
 
 #include "romsjedi/Traits.h"
 #include "romsjedi/Geometry/Geometry.h"
@@ -32,6 +35,27 @@ using oops::Log;
 
 namespace romsjedi {
 
+  /// Model Parameters Class. The property 'name' is already part of the
+  /// default schema.
+
+  class ModelParameters : public oops::Parameters {
+    OOPS_CONCRETE_PARAMETERS(ModelParameters, Parameters)
+
+   public:
+    oops::RequiredParameter<oops::Variables> vars{
+      "model variables",
+      "Model State variables to process",
+      this};
+    oops::RequiredParameter<util::Duration> tstep{
+      "tstep",
+      "Model time step",
+      this};
+    oops::RequiredParameter<util::Duration> SimulationLength{
+      "simulation length",
+      "Model simulation length period",
+      this};
+  };
+
 // ----------------------------------------------------------------------------
 
   static oops::interface::ModelMaker<Traits, Model> modelmaker_("ROMS");
@@ -39,15 +63,18 @@ namespace romsjedi {
 // ----------------------------------------------------------------------------
 
   Model::Model(const Geometry & resol,
-               const ModelParameters & params)
+               const eckit::Configuration & config)
     : keyConfig_(0),
-      tstep_(params.tstep),
+      tstep_(0),
       geom_(new Geometry(resol)),
-      vars_(params.vars)
+      vars_()
   {
     Log::trace() << "Model::Model" << std::endl;
     Log::trace() << "Model vars: " << vars_ << std::endl;
-    roms_model_create_f90(params.toConfiguration(),
+    ModelParameters params;
+    params.deserialize(config);
+    tstep_ = util::Duration(config.getString("tstep"));
+    roms_model_create_f90(config,
                           geom_->toFortran(),
                           keyConfig_);
     oops::Log::trace() << "Model created" << std::endl;

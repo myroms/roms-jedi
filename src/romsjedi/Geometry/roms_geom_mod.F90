@@ -247,7 +247,7 @@ SUBROUTINE roms_geom_create (self, f_conf, f_comm)
   IF (.not.f_conf%get("iterator dimension", self%iterator_dimension))          &
     self%iterator_dimension = 2
 
-  ! Retrieve ROMS-JEDI debuggin switch from system environmental variables.
+  ! Retrieve ROMS-JEDI debugging switch from system environmental variables.
 
   CALL roms_get_env ()
 

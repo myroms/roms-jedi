@@ -23,6 +23,8 @@
 #include <string>
 #include <vector>
 
+#include "eckit/config/Configuration.h"
+
 #include "oops/base/LocalIncrement.h"
 #include "oops/base/Variables.h"
 #include "oops/util/DateTime.h"
@@ -206,7 +208,7 @@ namespace romsjedi {
   double dot_product_with(const Increment &) const;
   void schur_product_with(const Increment &);
   void random();
-  void dirac(const DiracParameters_ &);
+  void dirac(const eckit::Configuration &);
 
   /// Getpoint/Setpoint
 
@@ -226,8 +228,8 @@ namespace romsjedi {
 
   /// I/O and diagnostics
 
-  void read(const ReadParameters_ &);
-  void write(const WriteParameters_ &) const;
+  void read(const eckit::Configuration &);
+  void write(const eckit::Configuration &) const;
   double norm() const;
   std::vector<double> rmsByLevel(const std::string &) const;
 
@@ -244,7 +246,7 @@ namespace romsjedi {
 
   /// Utilities
 
-  std::shared_ptr<const Geometry> geometry() const;
+  const Geometry & geometry() const {return geom_;}
 
   const util::DateTime & validTime() const;
   util::DateTime & validTime();
@@ -262,7 +264,7 @@ namespace romsjedi {
     void print(std::ostream &) const;
 
     F90flds keyFlds_;
-    std::shared_ptr<const Geometry> geom_;
+    const Geometry & geom_;
     oops::Variables vars_;
     util::DateTime time_;
   };

@@ -7,22 +7,26 @@ Test     :                               tocn   Min=     0.000000000000000   Max
 Test     :                               socn   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.000017571604287
 Test     : Covariance(hybrid) * Increment:
 Test     :   Valid time: 2004-01-03T00:00:00Z
-Test     :                                ssh   Min=    -0.000017691444854   Max=     0.000503979944804   Mean=     0.000000346839237
-Test     :                               uocn   Min=    -0.001556187088418   Max=     0.000655654294960   Mean=    -0.000000797274674
-Test     :                               vocn   Min=    -0.001785941643796   Max=     0.000521167975268   Mean=    -0.000000918468180
-Test     :                               tocn   Min=    -0.012919634469778   Max=     0.118840156123334   Mean=     0.000106022452997
-Test     :                               socn   Min=    -0.003539789056793   Max=     0.009587103586566   Mean=     0.000007061901737
+Test     :                                ssh   Min=    -0.000019659300758   Max=     0.000535150206900   Mean=     0.000000463733455
+Test     :                               uocn   Min=    -0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
+Test     :                               vocn   Min=    -0.000000000000000   Max=     0.000000000000000   Mean=    -0.000000000000000
+Test     :                               tocn   Min=    -0.012645851442539   Max=     0.119615487090981   Mean=     0.000107981811748
+Test     :                               socn   Min=    -0.003722442246333   Max=     0.009318816859270   Mean=     0.000007109929065
 Test     : Covariance(hybrid1_ensemble) * Increment:
 Test     :   Valid time: 2004-01-03T00:00:00Z
-Test     :                                ssh   Min=    -0.000017691444854   Max=     0.000503979944804   Mean=     0.000000346839237
-Test     :                               uocn   Min=    -0.001556187088418   Max=     0.000655654294960   Mean=    -0.000000797274674
-Test     :                               vocn   Min=    -0.001785941643796   Max=     0.000521167975268   Mean=    -0.000000918468180
-Test     :                               tocn   Min=    -0.012919634469778   Max=     0.118840156123334   Mean=     0.000106022452997
-Test     :                               socn   Min=    -0.003539789056793   Max=     0.009587103586566   Mean=     0.000007061901737
+Test     :                                ssh   Min=    -0.000019659300758   Max=     0.000535150206900   Mean=     0.000000463733455
+Test     :                               uocn   Min=    -0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
+Test     :                               vocn   Min=    -0.000000000000000   Max=     0.000000000000000   Mean=    -0.000000000000000
+Test     :                               tocn   Min=    -0.012645851442539   Max=     0.119615487090981   Mean=     0.000107981811748
+Test     :                               socn   Min=    -0.003722442246333   Max=     0.009318816859270   Mean=     0.000007109929065
+Test     : Localization(hybrid1_ensemble_localization) diagnostics:
+Test     : - Localization at zero separation:
+Test     :   + Value for variable ssh, subwindow 0, at (longitude, latitude, vertical index) point (-125.66667, 36.66667, 1): 9.9999999999999967e-01
+Test     :   + Value for variable tocn, subwindow 0, at (longitude, latitude, vertical index) point (-124.00000, 33.33333, 30): 9.9999999999999967e-01
 Test     : Localization(hybrid1_ensemble) * Increment:
 Test     :   Valid time: 2004-01-03T00:00:00Z
-Test     :                                ssh   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.001180718952158
-Test     :                               uocn   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.005282477860116
-Test     :                               vocn   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.005296840225152
-Test     :                               tocn   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.005134891499238
-Test     :                               socn   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.005134891499238
+Test     :                                ssh   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.001310921378271
+Test     :                               uocn   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.005433685784923
+Test     :                               vocn   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.005448459264491
+Test     :                               tocn   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.005281874848391
+Test     :                               socn   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.005281874848391

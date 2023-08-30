@@ -42,6 +42,7 @@ PUBLIC  :: roms_create_ncfile
 PUBLIC  :: roms_date2time
 PUBLIC  :: roms_get_env
 PUBLIC  :: roms_gen_filename
+PUBLIC  :: roms_metadata_index
 PUBLIC  :: roms_tracer_index
 
 PRIVATE :: roms_create_ncfile_nf90
@@ -598,6 +599,87 @@ SUBROUTINE roms_get_env ()
 END SUBROUTINE roms_get_env
 
 ! ------------------------------------------------------------------------------
+!> It set ROMS metadata variable index from ROMS-JEDI internal metadata name.
+
+FUNCTION roms_metadata_index (name) RESULT (var_index)
+
+  USE mod_ncparam
+  USE mod_scalars, ONLY : itemp, isalt
+
+  character (len=*), intent(in) :: name
+
+  integer                       :: var_index      !< returned value
+  character (len=1024)          :: Message
+
+  ! Set ROMS native variable index.
+
+  SELECT CASE (TRIM(name))
+    CASE ('ssh')
+      var_index = idFsur
+    CASE ('u2docn')
+      var_index = idUbar
+    CASE ('v2docn')
+      var_index = idVbar
+    CASE ('DU_avg1')
+      var_index = idUfx1
+    CASE ('DV_avg1')
+      var_index = idVfx1
+    CASE ('DU_avg2')
+      var_index = idUfx2
+    CASE ('DV_avg2')
+      var_index = idVfx2
+    CASE ('uocn')
+      var_index = idUvel
+    CASE ('vocn')
+      var_index = idVvel
+    CASE ('tocn')
+      var_index = idTvar(itemp)
+    CASE ('socn')
+      var_index = idTvar(isalt)
+    CASE ('Ktocn')
+      var_index = idTdif
+    CASE ('Ksocn')
+      var_index = idSdif
+    CASE ('Kvocn')
+      var_index = idVvis
+    CASE ('hocn')
+      var_index = idtopo
+    CASE ('z0ocn_r', 'zocn_r')
+      var_index = idpthR
+    CASE ('z0ocn_w', 'zocn_w')
+      var_index = idpthW
+    CASE ('Pair')
+      var_index = idpair
+    CASE ('Uwind')
+      var_index = idUair
+    CASE ('Vwind')
+      var_index = idVair
+    CASE ('sustr')
+      var_index = idUsms
+    CASE ('svstr')
+      var_index = idVsms
+    CASE ('shflux')
+      var_index = idTsur(itemp)
+    CASE ('ssflux')
+      var_index = idTsur(isalt)
+    CASE ('latent')
+      var_index = idLhea
+    CASE ('sensible')
+      var_index = idShea
+    CASE ('lwrad')
+      var_index = idLrad
+    CASE ('swrad')
+      var_index = idSrad
+    CASE DEFAULT
+      WRITE (Message,'(2a)')                                                   &
+            'roms_metadata_index: Cannot find an option for variable: ',       &
+            TRIM(name)
+      CALL abor1_ftn (TRIM(Message))
+  END SELECT
+
+END FUNCTION roms_metadata_index
+
+! ------------------------------------------------------------------------------
 !> It set ROMS tracer index from ROMS-JEDI internal metadata name.
 
 FUNCTION roms_tracer_index (name) RESULT (tracer_index)
@@ -726,7 +808,7 @@ SUBROUTINE roms_create_ncfile_nf90 (ng, model, LocalPET, S, metadata)
   integer                      :: i, itrc
   integer                      :: DimIDs(nDimID)
   integer                      :: r2dgrd(3), u2dgrd(3), v2dgrd(3)
-  integer                      :: r3dgrd(4), u3dgrd(4), v3dgrd(4)
+  integer                      :: r3dgrd(4), u3dgrd(4), v3dgrd(4), w3dgrd(4)
   real (kind=kind_real)        :: Aval(6)
   character (len=120)          :: Vinfo(25)
   character (len=256)          :: ncname
@@ -806,9 +888,10 @@ SUBROUTINE roms_create_ncfile_nf90 (ng, model, LocalPET, S, metadata)
   u2dgrd = (/ DimIDs(2), DimIDs(6), DimIDs(12) /)
   v2dgrd = (/ DimIDs(3), DimIDs(7), DimIDs(12) /)
 
-  r3dgrd = (/ DimIDs(1), DimIDs(5), DimIDs(9), DimIDs(12) /)
-  u3dgrd = (/ DimIDs(2), DimIDs(6), DimIDs(9), DimIDs(12) /) 
-  v3dgrd = (/ DimIDs(3), DimIDs(7), DimIDs(9), DimIDs(12) /)
+  r3dgrd = (/ DimIDs(1), DimIDs(5), DimIDs(9),  DimIDs(12) /)
+  u3dgrd = (/ DimIDs(2), DimIDs(6), DimIDs(9),  DimIDs(12) /) 
+  v3dgrd = (/ DimIDs(3), DimIDs(7), DimIDs(9),  DimIDs(12) /)
+  w3dgrd = (/ DimIDs(1), DimIDs(5), DimIDs(10), DimIDs(12) /)
 
   ! Define time-recordless information variables.
 
@@ -916,6 +999,49 @@ SUBROUTINE roms_create_ncfile_nf90 (ng, model, LocalPET, S, metadata)
 
         CALL nc_err (def_var(ng, model, S(ng)%ncid, S(ng)%Tid(itrc),           &
                              NF_FOUT, 4, r3dgrd, Aval, Vinfo, ncname),         &
+                     nf90_noerr, io_nf90, __LINE__, MyFile)
+
+      CASE ('Ktocn')                           !< vertical T-diffusion
+
+        Vinfo( 1)=Vname(1,idTdif)
+        Vinfo( 2)=Vname(2,idTdif)
+        Vinfo(21)=metadata(i)%getval_name
+        Vinfo( 3)=Vname(3,idTdif)
+        Vinfo(16)=Vname(1,idtime)
+        Vinfo(22)='coordinates'
+        Aval(5)=REAL(w3dvar,r8)
+
+        CALL nc_err (def_var(ng, model, S(ng)%ncid, S(ng)%Vid(idTdif),         &
+                             NF_FOUT, 4, w3dgrd, Aval, Vinfo, ncname),         &
+                     nf90_noerr, io_nf90, __LINE__, MyFile)
+
+      CASE ('Ksocn')                           !< vertical S-diffusion
+
+        Vinfo( 1)=Vname(1,idSdif)
+        Vinfo( 2)=Vname(2,idSdif)
+        Vinfo(21)=metadata(i)%getval_name
+        Vinfo( 3)=Vname(3,idSdif)
+        Vinfo(16)=Vname(1,idtime)
+        Vinfo(22)='coordinates'
+        Aval(5)=REAL(w3dvar,r8)
+
+        CALL nc_err (def_var(ng, model, S(ng)%ncid, S(ng)%Vid(idSdif),         &
+                             NF_FOUT, 4, w3dgrd, Aval, Vinfo, ncname),         &
+                     nf90_noerr, io_nf90, __LINE__, MyFile)
+
+
+      CASE ('Kvocn')                           !< vertical viscosity
+
+        Vinfo( 1)=Vname(1,idVvis)
+        Vinfo( 2)=Vname(2,idVvis)
+        Vinfo(21)=metadata(i)%getval_name
+        Vinfo( 3)=Vname(3,idVvis)
+        Vinfo(16)=Vname(1,idtime)
+        Vinfo(22)='coordinates'
+        Aval(5)=REAL(w3dvar,r8)
+
+        CALL nc_err (def_var(ng, model, S(ng)%ncid, S(ng)%Vid(idVvis),         &
+                             NF_FOUT, 4, w3dgrd, Aval, Vinfo, ncname),         &
                      nf90_noerr, io_nf90, __LINE__, MyFile)
 
       CASE DEFAULT
@@ -1153,108 +1279,121 @@ SUBROUTINE roms_def_info_nf90 (ng, model, LocalPET, ncid, DimIDs, ncname)
 
   ! Bathymetry.
 
-  Vinfo( 1)='h'
-  Vinfo( 2)='bathymetry at RHO-points'
-  Vinfo( 3)='meter'
+  Vinfo( 1)=Vname(1,idtopo)
+  Vinfo( 2)=Vname(2,idtopo)
+  Vinfo( 3)=Vname(3,idtopo)
+  Vinfo(14)=Vname(4,idtopo)
+  Vinfo(21)=Vname(6,idtopo)
   Vinfo(22)='coordinates'
-  Aval(5)=REAL(r2dvar,r8)
+  Aval(5)=REAL(Iinfo(1,idtopo,ng),r8)
   CALL nc_err (def_var(ng, model, ncid, varid, NF_TYPE,                        &
                        2, r2dgrd, Aval, Vinfo, ncname),                        &
                nf90_noerr, io_nf90, __LINE__, MyFile)
 
   ! Grid coordinates of RHO-points.
 
-  Vinfo( 1)='lon_rho'
-  Vinfo( 2)='longitude of RHO-points'
-  Vinfo( 3)='degree_east'
-  Vinfo(21)='longitude'
+  Vinfo( 1)=Vname(1,idLonR)
+  Vinfo( 2)=Vname(2,idLonR)
+  Vinfo( 3)=Vname(3,idLonR)
+  Vinfo(14)=Vname(4,idLonR)
+  Vinfo(21)=Vname(6,idLonR)
   CALL nc_err (def_var(ng, model, ncid, varid, NF_TYPE,                        &
                        2, r2dgrd, Aval, Vinfo, ncname),                        &
                nf90_noerr, io_nf90, __LINE__, MyFile)
 
-  Vinfo( 1)='lat_rho'
-  Vinfo( 2)='latitude of RHO-points'
-  Vinfo( 3)='degree_north'
-  Vinfo(21)='latitude'
+  Vinfo( 1)=Vname(1,idLatR)
+  Vinfo( 2)=Vname(2,idLatR)
+  Vinfo( 3)=Vname(3,idLatR)
+  Vinfo(14)=Vname(4,idLatR)
+  Vinfo(21)=Vname(6,idLatR)
   CALL nc_err (def_var(ng, model, ncid, varid, NF_TYPE,                        &
                        2, r2dgrd, Aval, Vinfo, ncname),                        &
                nf90_noerr, io_nf90, __LINE__, MyFile)
 
   ! Grid coordinates of U-points.
 
-  Vinfo( 1)='lon_u'
-  Vinfo( 2)='longitude of U-points'
-  Vinfo( 3)='degree_east'
-  Vinfo(21)='longitude'
+  Vinfo( 1)=Vname(1,idLonU)
+  Vinfo( 2)=Vname(2,idLonU)
+  Vinfo( 3)=Vname(3,idLonU)
+  Vinfo(14)=Vname(4,idLonU)
+  Vinfo(21)=Vname(6,idLonU)
   CALL nc_err (def_var(ng, model, ncid, varid, NF_TYPE,                        &
                        2, u2dgrd, Aval, Vinfo, ncname),                        &
                nf90_noerr, io_nf90, __LINE__, MyFile)
 
-  Vinfo( 1)='lat_u'
-  Vinfo( 2)='latitude of U-points'
-  Vinfo( 3)='degree_north'
-  Vinfo(21)='latitude'
+  Vinfo( 1)=Vname(1,idLatU)
+  Vinfo( 2)=Vname(2,idLatU)
+  Vinfo( 3)=Vname(3,idLatU)
+  Vinfo(14)=Vname(4,idLatU)
+  Vinfo(21)=Vname(6,idLatU)
   CALL nc_err (def_var(ng, model, ncid, varid, NF_TYPE,                        &
                        2, u2dgrd, Aval, Vinfo, ncname),                        &
                nf90_noerr, io_nf90, __LINE__, MyFile)
 
   ! Grid coordinates of V-points.
 
-  Vinfo( 1)='lon_v'
-  Vinfo( 2)='longitude of V-points'
-  Vinfo( 3)='degree_east'
-  Vinfo(21)='longitude'
+  Vinfo( 1)=Vname(1,idLonV)
+  Vinfo( 2)=Vname(2,idLonV)
+  Vinfo( 3)=Vname(3,idLonV)
+  Vinfo(14)=Vname(4,idLonV)
+  Vinfo(21)=Vname(6,idLonV)
   CALL nc_err (def_var(ng, model, ncid, varid, NF_TYPE,                        &
                        2, v2dgrd, Aval, Vinfo, ncname),                        &
                nf90_noerr, io_nf90, __LINE__, MyFile)
 
-  Vinfo( 1)='lat_v'
-  Vinfo( 2)='latitude of V-points'
-  Vinfo( 3)='degree_north'
-  Vinfo(21)='latitude'
+  Vinfo( 1)=Vname(1,idLatV)
+  Vinfo( 2)=Vname(2,idLatV)
+  Vinfo( 3)=Vname(3,idLatV)
+  Vinfo(14)=Vname(4,idLatV)
+  Vinfo(21)=Vname(6,idLatV)
   CALL nc_err (def_var(ng, model, ncid, varid, NF_TYPE,                        &
                        2, v2dgrd, Aval, Vinfo, ncname),                        &
                nf90_noerr, io_nf90, __LINE__, MyFile)
 
   ! Angle between XI-axis and EAST at RHO-points.
 
-  Vinfo( 1)='angle'
-  Vinfo( 2)='angle between XI-axis and EAST'
-  Vinfo( 3)='radians'
+  Vinfo( 1)=Vname(1,idangR)
+  Vinfo( 2)=Vname(2,idangR)
+  Vinfo( 3)=Vname(3,idangR)
+  Vinfo(14)=Vname(4,idangR)
+  Vinfo(21)=Vname(6,idangR)
   Vinfo(22)='coordinates'
-  Aval(5)=REAL(r2dvar,r8)
+  Aval(5)=REAL(Iinfo(1,idangR,ng),r8)
   CALL nc_err (def_var(ng, model, ncid, varid, NF_TYPE,                        &
                        2, r2dgrd, Aval, Vinfo, ncname),                        &
                nf90_noerr, io_nf90, __LINE__, MyFile)
 
   !  Masking fields at RHO-, U-, and V-points.
 
-  Vinfo( 1)='mask_rho'
-  Vinfo( 2)='mask on RHO-points'
+  Vinfo( 1)=Vname(1,idmskR)
+  Vinfo( 2)=Vname(2,idmskR)
   Vinfo( 9)='land'
   Vinfo(10)='water'
+  Vinfo(21)=Vname(6,idmskR)
   Vinfo(22)='coordinates'
-  Aval(5)=REAL(r2dvar,r8)
+  Aval(5)=REAL(Iinfo(1,idmskR,ng),r8)
   CALL nc_err (def_var(ng, model, ncid, varid, NF_TYPE,                        &
                        2, r2dgrd, Aval, Vinfo, ncname),                        &
                nf90_noerr, io_nf90, __LINE__, MyFile)
 
-  Vinfo( 1)='mask_u'
-  Vinfo( 2)='mask on U-points'
+  Vinfo( 1)=Vname(1,idmskU)
+  Vinfo( 2)=Vname(2,idmskU)
   Vinfo( 9)='land'
   Vinfo(10)='water'
+  Vinfo(21)=Vname(6,idmskU)
   Vinfo(22)='coordinates'
-  Aval(5)=REAL(u2dvar,r8)
+  Aval(5)=REAL(Iinfo(1,idmskU,ng),r8)
   CALL nc_err (def_var(ng, model, ncid, varid, NF_TYPE,                        &
                        2, u2dgrd, Aval, Vinfo, ncname),                        &
                nf90_noerr, io_nf90, __LINE__, MyFile)
 
-  Vinfo( 1)='mask_v'
-  Vinfo( 2)='mask on V-points'
+  Vinfo( 1)=Vname(1,idmskV)
+  Vinfo( 2)=Vname(2,idmskV)
   Vinfo( 9)='land'
   Vinfo(10)='water'
+  Vinfo(21)=Vname(6,idmskV)
   Vinfo(22)='coordinates'
-  Aval(5)=REAL(v2dvar,r8)
+  Aval(5)=REAL(Iinfo(1,idmskV,ng),r8)
   CALL nc_err (def_var(ng, model, ncid, varid, NF_TYPE,                        &
                        2, v2dgrd, Aval, Vinfo, ncname),                        &
                nf90_noerr, io_nf90, __LINE__, MyFile)
@@ -1383,9 +1522,9 @@ SUBROUTINE roms_wrt_info_nf90 (ng, model, ncid, ncname)
 
   ! Bathymetry.
 
-  IF (find_string(var_name, n_var, 'h', varid)) THEN
+  IF (find_string(var_name, n_var, TRIM(Vname(1,idtopo)), varid)) THEN
     scale=1.0_kind_real
-    CALL nc_err (nf_fwrite2d(ng, model, ncid, varid, 0, r2dvar,                &
+    CALL nc_err (nf_fwrite2d(ng, model, ncid, idtopo, varid, 0, r2dvar,        &
                              LBi, UBi, LBj, UBj, scale,                        &
                              GRID(ng) % rmask,                                 &
                              GRID(ng) % h,                                     &
@@ -1395,9 +1534,9 @@ SUBROUTINE roms_wrt_info_nf90 (ng, model, ncid, ncname)
 
   !  Grid coordinates of RHO-points.
 
-  IF (find_string(var_name, n_var, 'lon_rho', varid)) THEN
+  IF (find_string(var_name, n_var, TRIM(Vname(1,idLonR)), varid)) THEN
     scale=1.0_kind_real
-    CALL nc_err (nf_fwrite2d(ng, model, ncid, varid, 0, r2dvar,                &
+    CALL nc_err (nf_fwrite2d(ng, model, ncid, idLonR, varid, 0, r2dvar,        &
                              LBi, UBi, LBj, UBj, scale,                        &
                              GRID(ng) % rmask,                                 &
                              GRID(ng) % lonr,                                  &
@@ -1405,9 +1544,9 @@ SUBROUTINE roms_wrt_info_nf90 (ng, model, ncid, ncname)
                  nf90_noerr, io_nf90, __LINE__, MyFile)
   END IF
 
-  IF (find_string(var_name, n_var, 'lat_rho', varid)) THEN
+  IF (find_string(var_name, n_var, TRIM(Vname(1,idLatR)), varid)) THEN
     scale=1.0_kind_real
-    CALL nc_err (nf_fwrite2d(ng, model, ncid, varid, 0, r2dvar,                &
+    CALL nc_err (nf_fwrite2d(ng, model, ncid, idLatR, varid, 0, r2dvar,        &
                              LBi, UBi, LBj, UBj, scale,                        &
                              GRID(ng) % rmask,                                 &
                              GRID(ng) % latr,                                  &
@@ -1417,9 +1556,9 @@ SUBROUTINE roms_wrt_info_nf90 (ng, model, ncid, ncname)
 
   ! Grid coordinates of U-points.
 
-  IF (find_string(var_name, n_var, 'lon_u', varid)) THEN
+  IF (find_string(var_name, n_var, TRIM(Vname(1,idLonU)), varid)) THEN
     scale=1.0_kind_real
-    CALL nc_err (nf_fwrite2d(ng, model, ncid, varid, 0, u2dvar,                &
+    CALL nc_err (nf_fwrite2d(ng, model, ncid, idLonU, varid, 0, u2dvar,        &
                              LBi, UBi, LBj, UBj, scale,                        &
                              GRID(ng) % umask,                                 &
                              GRID(ng) % lonu,                                  &
@@ -1427,9 +1566,9 @@ SUBROUTINE roms_wrt_info_nf90 (ng, model, ncid, ncname)
                  nf90_noerr, io_nf90, __LINE__, MyFile)
   END IF
 
-  IF (find_string(var_name, n_var, 'lat_u', varid)) THEN
+  IF (find_string(var_name, n_var, TRIM(Vname(1,idLatU)), varid)) THEN
     scale=1.0_dp
-    CALL nc_err (nf_fwrite2d(ng, model, ncid, varid, 0, u2dvar,                &
+    CALL nc_err (nf_fwrite2d(ng, model, ncid, idLatU, varid, 0, u2dvar,        &
                              LBi, UBi, LBj, UBj, scale,                        &
                              GRID(ng) % umask,                                 &
                              GRID(ng) % latu,                                  &
@@ -1439,9 +1578,9 @@ SUBROUTINE roms_wrt_info_nf90 (ng, model, ncid, ncname)
 
   ! Grid coordinates of V-points.
 
-  IF (find_string(var_name, n_var, 'lon_v', varid)) THEN
+  IF (find_string(var_name, n_var, TRIM(Vname(1,idLonV)), varid)) THEN
     scale=1.0_kind_real
-    CALL nc_err (nf_fwrite2d(ng, model, ncid, varid, 0, v2dvar,                &
+    CALL nc_err (nf_fwrite2d(ng, model, ncid, idLonV, varid, 0, v2dvar,        &
                              LBi, UBi, LBj, UBj, scale,                        &
                              GRID(ng) % vmask,                                 &
                              GRID(ng) % lonv,                                  &
@@ -1449,9 +1588,9 @@ SUBROUTINE roms_wrt_info_nf90 (ng, model, ncid, ncname)
                  nf90_noerr, io_nf90, __LINE__, MyFile)
   END IF
 
-  IF (find_string(var_name, n_var, 'lat_v', varid)) THEN
+  IF (find_string(var_name, n_var, TRIM(Vname(1,idLatV)), varid)) THEN
     scale=1.0_kind_real
-    CALL nc_err (nf_fwrite2d(ng, model, ncid, varid, 0, v2dvar,                &
+    CALL nc_err (nf_fwrite2d(ng, model, ncid, idLatV, varid, 0, v2dvar,        &
                              LBi, UBi, LBj, UBj, scale,                        &
                              GRID(ng) % vmask,                                 &
                              GRID(ng) % latv,                                  &
@@ -1461,9 +1600,9 @@ SUBROUTINE roms_wrt_info_nf90 (ng, model, ncid, ncname)
 
   ! Angle between XI-axis and EAST at RHO-points.
 
-  IF (find_string(var_name, n_var, 'angle', varid)) THEN
+  IF (find_string(var_name, n_var, TRIM(Vname(1,idangR)), varid)) THEN
     scale=1.0_kind_real
-    CALL nc_err (nf_fwrite2d(ng, model, ncid, varid, 0, r2dvar,                &
+    CALL nc_err (nf_fwrite2d(ng, model, ncid, idangR, varid, 0, r2dvar,        &
                              LBi, UBi, LBj, UBj, scale,                        &
                              GRID(ng) % rmask,                                 &
                              GRID(ng) % angler,                                &
@@ -1473,9 +1612,9 @@ SUBROUTINE roms_wrt_info_nf90 (ng, model, ncid, ncname)
 
   ! Masking fields at RHO-, U-, and V-points.
 
-  IF (find_string(var_name, n_var, 'mask_rho', varid)) THEN
+  IF (find_string(var_name, n_var, TRIM(Vname(1,idmskR)), varid)) THEN
     scale=1.0_kind_real
-    CALL nc_err (nf_fwrite2d(ng, model, ncid, varid, 0, r2dvar,                &
+    CALL nc_err (nf_fwrite2d(ng, model, ncid, idmskR, varid, 0, r2dvar,        &
                              LBi, UBi, LBj, UBj, scale,                        &
                              GRID(ng) % rmask,                                 &
                              GRID(ng) % rmask,                                 &
@@ -1483,9 +1622,9 @@ SUBROUTINE roms_wrt_info_nf90 (ng, model, ncid, ncname)
                  nf90_noerr, io_nf90, __LINE__, MyFile)
   END IF
 
-  IF (find_string(var_name, n_var, 'mask_u', varid)) THEN
+  IF (find_string(var_name, n_var, TRIM(Vname(1,idmskU)), varid)) THEN
     scale=1.0_kind_real
-    CALL nc_err (nf_fwrite2d(ng, model, ncid, varid, 0, u2dvar,                &
+    CALL nc_err (nf_fwrite2d(ng, model, ncid, idmskU, varid, 0, u2dvar,        &
                              LBi, UBi, LBj, UBj, scale,                        &
                              GRID(ng) % umask,                                 &
                              GRID(ng) % umask,                                 &
@@ -1493,9 +1632,9 @@ SUBROUTINE roms_wrt_info_nf90 (ng, model, ncid, ncname)
                  nf90_noerr, io_nf90, __LINE__, MyFile)
   END IF
 
-  IF (find_string(var_name, n_var, 'mask_v', varid)) THEN
+  IF (find_string(var_name, n_var, TRIM(Vname(1,idmskV)), varid)) THEN
     scale=1.0_kind_real
-    CALL nc_err (nf_fwrite2d(ng, model, ncid, varid, 0, v2dvar,                &
+    CALL nc_err (nf_fwrite2d(ng, model, ncid, idmskV, varid, 0, v2dvar,        &
                              LBi, UBi, LBj, UBj, scale,                        &
                              GRID(ng) % vmask,                                 &
                              GRID(ng) % vmask,                                 &
@@ -1987,108 +2126,121 @@ SUBROUTINE roms_def_info_pio (ng, model, LocalPET, pioFile, DimIDs, ncname)
 
   ! Bathymetry.
 
-  Vinfo( 1)='h'
-  Vinfo( 2)='bathymetry at RHO-points'
-  Vinfo( 3)='meter'
+  Vinfo( 1)=Vname(1,idtopo)
+  Vinfo( 2)=Vname(2,idtopo)
+  Vinfo( 3)=Vname(3,idtopo)
+  Vinfo(14)=Vname(4,idtopo)
+  Vinfo(21)=Vname(6,idtopo)
   Vinfo(22)='coordinates'
-  Aval(5)=REAL(r2dvar,r8)
+  Aval(5)=REAL(Iinfo(1,idtopo,ng),r8)
   CALL nc_err (def_var(ng, model, pioFile, pioVar, PIO_TYPE,                   &
                        2, r2dgrd, Aval, Vinfo, ncname),                        &
                PIO_noerr, io_pio, __LINE__, MyFile)
 
   ! Grid coordinates of RHO-points.
 
-  Vinfo( 1)='lon_rho'
-  Vinfo( 2)='longitude of RHO-points'
-  Vinfo( 3)='degree_east'
-  Vinfo(21)='longitude'
+  Vinfo( 1)=Vname(1,idLonR)
+  Vinfo( 2)=Vname(2,idLonR)
+  Vinfo( 3)=Vname(3,idLonR)
+  Vinfo(14)=Vname(4,idLonR)
+  Vinfo(21)=Vname(6,idLonR)
   CALL nc_err (def_var(ng, model, pioFile, pioVar, PIO_TYPE,                   &
                        2, r2dgrd, Aval, Vinfo, ncname),                        &
                PIO_noerr, io_pio, __LINE__, MyFile)
 
-  Vinfo( 1)='lat_rho'
-  Vinfo( 2)='latitude of RHO-points'
-  Vinfo( 3)='degree_north'
-  Vinfo(21)='latitude'
+  Vinfo( 1)=Vname(1,idLatR)
+  Vinfo( 2)=Vname(2,idLatR)
+  Vinfo( 3)=Vname(3,idLatR)
+  Vinfo(14)=Vname(4,idLatR)
+  Vinfo(21)=Vname(6,idLatR)
   CALL nc_err (def_var(ng, model, pioFile, pioVar, PIO_TYPE,                   &
                        2, r2dgrd, Aval, Vinfo, ncname),                        &
                PIO_noerr, io_pio, __LINE__, MyFile)
 
   ! Grid coordinates of U-points.
 
-  Vinfo( 1)='lon_u'
-  Vinfo( 2)='longitude of U-points'
-  Vinfo( 3)='degree_east'
-  Vinfo(21)='longitude'
+  Vinfo( 1)=Vname(1,idLonU)
+  Vinfo( 2)=Vname(2,idLonU)
+  Vinfo( 3)=Vname(3,idLonU)
+  Vinfo(14)=Vname(4,idLonU)
+  Vinfo(21)=Vname(6,idLonU)
   CALL nc_err (def_var(ng, model, pioFile, pioVar, PIO_TYPE,                   &
                        2, u2dgrd, Aval, Vinfo, ncname),                        &
                PIO_noerr, io_pio, __LINE__, MyFile)
 
-  Vinfo( 1)='lat_u'
-  Vinfo( 2)='latitude of U-points'
-  Vinfo( 3)='degree_north'
-  Vinfo(21)='latitude'
+  Vinfo( 1)=Vname(1,idLatU)
+  Vinfo( 2)=Vname(2,idLatU)
+  Vinfo( 3)=Vname(3,idLatU)
+  Vinfo(14)=Vname(4,idLatU)
+  Vinfo(21)=Vname(6,idLatU)
   CALL nc_err (def_var(ng, model, pioFile, pioVar, PIO_TYPE,                   &
                        2, u2dgrd, Aval, Vinfo, ncname),                        &
                PIO_noerr, io_pio, __LINE__, MyFile)
 
   ! Grid coordinates of V-points.
 
-  Vinfo( 1)='lon_v'
-  Vinfo( 2)='longitude of V-points'
-  Vinfo( 3)='degree_east'
-  Vinfo(21)='longitude'
+  Vinfo( 1)=Vname(1,idLonV)
+  Vinfo( 2)=Vname(2,idLonV)
+  Vinfo( 3)=Vname(3,idLonV)
+  Vinfo(14)=Vname(4,idLonV)
+  Vinfo(21)=Vname(6,idLonV)
   CALL nc_err (def_var(ng, model, pioFile, pioVar, PIO_TYPE,                   &
                        2, v2dgrd, Aval, Vinfo, ncname),                        &
                PIO_noerr, io_pio, __LINE__, MyFile)
 
-  Vinfo( 1)='lat_v'
-  Vinfo( 2)='latitude of V-points'
-  Vinfo( 3)='degree_north'
-  Vinfo(21)='latitude'
+  Vinfo( 1)=Vname(1,idLatV)
+  Vinfo( 2)=Vname(2,idLatV)
+  Vinfo( 3)=Vname(3,idLatV)
+  Vinfo(14)=Vname(4,idLatV)
+  Vinfo(21)=Vname(6,idLatV)
   CALL nc_err (def_var(ng, model, pioFile, pioVar, PIO_TYPE,                   &
                        2, v2dgrd, Aval, Vinfo, ncname),                        &
                PIO_noerr, io_pio, __LINE__, MyFile)
 
   ! Angle between XI-axis and EAST at RHO-points.
 
-  Vinfo( 1)='angle'
-  Vinfo( 2)='angle between XI-axis and EAST'
-  Vinfo( 3)='radians'
+  Vinfo( 1)=Vname(1,idangR)
+  Vinfo( 2)=Vname(2,idangR)
+  Vinfo( 3)=Vname(3,idangR)
+  Vinfo(14)=Vname(4,idangR)
+  Vinfo(21)=Vname(6,idangR)
   Vinfo(22)='coordinates'
-  Aval(5)=REAL(r2dvar,r8)
+  Aval(5)=REAL(Iinfo(1,idangR,ng),r8)
   CALL nc_err (def_var(ng, model, pioFile, pioVar, PIO_TYPE,                   &
                        2, r2dgrd, Aval, Vinfo, ncname),                        &
                PIO_noerr, io_pio, __LINE__, MyFile)
 
   !  Masking fields at RHO-, U-, and V-points.
 
-  Vinfo( 1)='mask_rho'
-  Vinfo( 2)='mask on RHO-points'
+  Vinfo( 1)=Vname(1,idmskR)
+  Vinfo( 2)=Vname(2,idmskR)
   Vinfo( 9)='land'
   Vinfo(10)='water'
+  Vinfo(21)=Vname(6,idmskR)
   Vinfo(22)='coordinates'
-  Aval(5)=REAL(r2dvar,r8)
+  Aval(5)=REAL(Iinfo(1,idmskR,ng),r8)
   CALL nc_err (def_var(ng, model, pioFile, pioVar, PIO_TYPE,                   &
                        2, r2dgrd, Aval, Vinfo, ncname),                        &
                PIO_noerr, io_pio, __LINE__, MyFile)
 
-  Vinfo( 1)='mask_u'
-  Vinfo( 2)='mask on U-points'
+  Vinfo( 1)=Vname(1,idmskU)
+  Vinfo( 2)=Vname(2,idmskU)
   Vinfo( 9)='land'
   Vinfo(10)='water'
+  Vinfo(21)=Vname(6,idmskU)
   Vinfo(22)='coordinates'
-  Aval(5)=REAL(u2dvar,r8)
+  Aval(5)=REAL(Iinfo(1,idmskU,ng),r8)
   CALL nc_err (def_var(ng, model, pioFile, pioVar, PIO_TYPE,                   &
                        2, u2dgrd, Aval, Vinfo, ncname).                        &
                PIO_noerr, io_pio, __LINE__, MyFile)
 
-  Vinfo( 1)='mask_v'
-  Vinfo( 2)='mask on V-points'
+  Vinfo( 1)=Vname(1,idmskV)
+  Vinfo( 2)=Vname(2,idmskV)
   Vinfo( 9)='land'
   Vinfo(10)='water'
+  Vinfo(21)=Vname(6,idmskV)
   Vinfo(22)='coordinates'
-  Aval(5)=REAL(v2dvar,r8)
+  Aval(5)=REAL(Iinfo(1,idmskV,ng),r8)
   CALL nc_err (def_var(ng, model, pioFile, pioVar, PIO_TYPE,                   &
                        2, v2dgrd, Aval, Vinfo, ncname),                        &
                PIO_noerr, io_pio, __LINE__, MyFile)
@@ -2219,7 +2371,7 @@ SUBROUTINE roms_wrt_info_pio (ng, model, pioFile, ncname)
 
   ! Bathymetry.
 
-  IF (pio_netcdf_find_var(ng, model, pioFile, 'h',                             &
+  IF (pio_netcdf_find_var(ng, model, pioFile, TRIM(Vname(1,idtopo)),           &
                           pioVar%vd)) THEN
     scale=1.0_kind_real
     pioVar%gtype=r2dvar
@@ -2230,7 +2382,7 @@ SUBROUTINE roms_wrt_info_pio (ng, model, pioFile, ncname)
       pioVar%dkind=PIO_real
       ioDesc => ioDesc_sp_r2dvar(ng)
     END IF
-    CALL nc_err (nf_fwrite2d(ng, model, pioFile, pioVar,                       &
+    CALL nc_err (nf_fwrite2d(ng, model, pioFile, idtopo, pioVar,               &
                              0, ioDesc,                                        &
                              LBi, UBi, LBj, UBj, scale,                        &
                              GRID(ng) % rmask,                                 &
@@ -2241,7 +2393,7 @@ SUBROUTINE roms_wrt_info_pio (ng, model, pioFile, ncname)
 
   !  Grid coordinates of RHO-points.
 
-  IF (pio_netcdf_find_var(ng, model, pioFile, 'lon_rho',                       &
+  IF (pio_netcdf_find_var(ng, model, pioFile, TRIM(Vname(1,idLonR)),           &
                           pioVar%vd)) THEN
     scale=1.0_kind_real
     pioVar%gtype=r2dvar
@@ -2252,7 +2404,7 @@ SUBROUTINE roms_wrt_info_pio (ng, model, pioFile, ncname)
       pioVar%dkind=PIO_real
       ioDesc => ioDesc_sp_r2dvar(ng)
     END IF
-    CALL nc_err (nf_fwrite2d(ng, model, pioFile, pioVar,                       &
+    CALL nc_err (nf_fwrite2d(ng, model, pioFile, idLonR, pioVar,               &
                              0, ioDesc,                                        &
                              LBi, UBi, LBj, UBj, scale,                        &
                              GRID(ng) % rmask,                                 &
@@ -2261,7 +2413,7 @@ SUBROUTINE roms_wrt_info_pio (ng, model, pioFile, ncname)
                  nf90_noerr, io_nf90, __LINE__, MyFile)
   END IF
 
-  IF (pio_netcdf_find_var(ng, model, pioFile, 'lat_rho',                       &
+  IF (pio_netcdf_find_var(ng, model, pioFile, TRIM(Vname(1,idLatR)),           &
                           pioVar%vd)) THEN
     scale=1.0_kind_real
     pioVar%gtype=r2dvar
@@ -2272,7 +2424,7 @@ SUBROUTINE roms_wrt_info_pio (ng, model, pioFile, ncname)
       pioVar%dkind=PIO_real
       ioDesc => ioDesc_sp_r2dvar(ng)
     END IF
-    CALL nc_err (nf_fwrite2d(ng, model, pioFile, pioVar,                       &
+    CALL nc_err (nf_fwrite2d(ng, model, pioFile, idLatR, pioVar,               &
                              0, ioDesc,                                        &
                              LBi, UBi, LBj, UBj, scale,                        &
                              GRID(ng) % rmask,                                 &
@@ -2283,7 +2435,7 @@ SUBROUTINE roms_wrt_info_pio (ng, model, pioFile, ncname)
 
   ! Grid coordinates of U-points.
 
-  IF (pio_netcdf_find_var(ng, model, pioFile, 'lon_u',                         &
+  IF (pio_netcdf_find_var(ng, model, pioFile, TRIM(Vname(1,idLonU)),           &
                           pioVar%vd)) THEN
     scale=1.0_kind_real
     pioVar%gtype=u2dvar
@@ -2294,7 +2446,7 @@ SUBROUTINE roms_wrt_info_pio (ng, model, pioFile, ncname)
       pioVar%dkind=PIO_real
       ioDesc => ioDesc_sp_u2dvar(ng)
     END IF
-    CALL nc_err (nf_fwrite2d(ng, model, pioFile, pioVar,                       &
+    CALL nc_err (nf_fwrite2d(ng, model, pioFile, idLonU, pioVar,               &
                              0, ioDesc,                                        &
                              LBi, UBi, LBj, UBj, scale,                        &
                              GRID(ng) % umask,                                 &
@@ -2303,7 +2455,7 @@ SUBROUTINE roms_wrt_info_pio (ng, model, pioFile, ncname)
                  nf90_noerr, io_nf90, __LINE__, MyFile)
   END IF
 
-  IF (pio_netcdf_find_var(ng, model, pioFile, 'lat_u',                         &
+  IF (pio_netcdf_find_var(ng, model, pioFile, TRIM(Vname(1,idLatU)),           &
                           pioVar%vd)) THEN
     scale=1.0_dp
     pioVar%gtype=u2dvar
@@ -2314,7 +2466,7 @@ SUBROUTINE roms_wrt_info_pio (ng, model, pioFile, ncname)
       pioVar%dkind=PIO_real
       ioDesc => ioDesc_sp_u2dvar(ng)
     END IF
-    CALL nc_err (nf_fwrite2d(ng, model, pioFile, pioVar,                       &
+    CALL nc_err (nf_fwrite2d(ng, model, pioFile, idLatU, pioVar,               &
                              0, ioDesc,                                        &
                              LBi, UBi, LBj, UBj, scale,                        &
                              GRID(ng) % umask,                                 &
@@ -2325,7 +2477,7 @@ SUBROUTINE roms_wrt_info_pio (ng, model, pioFile, ncname)
 
   ! Grid coordinates of V-points.
 
-  IF (pio_netcdf_find_var(ng, model, pioFile, 'lon_v',                         &
+  IF (pio_netcdf_find_var(ng, model, pioFile, TRIM(Vname(1,idLonV)),           &
                           pioVar%vd)) THEN
     scale=1.0_kind_real
     pioVar%gtype=v2dvar
@@ -2336,7 +2488,7 @@ SUBROUTINE roms_wrt_info_pio (ng, model, pioFile, ncname)
       pioVar%dkind=PIO_real
       ioDesc => ioDesc_sp_v2dvar(ng)
     END IF
-    CALL nc_err (nf_fwrite2d(ng, model, pioFile, pioVar,                       &
+    CALL nc_err (nf_fwrite2d(ng, model, pioFile, idLonV, pioVar,               &
                              0, ioDesc,                                        &
                              LBi, UBi, LBj, UBj, scale,                        &
                              GRID(ng) % vmask,                                 &
@@ -2345,7 +2497,7 @@ SUBROUTINE roms_wrt_info_pio (ng, model, pioFile, ncname)
                  nf90_noerr, io_nf90, __LINE__, MyFile)
   END IF
 
-  IF (pio_netcdf_find_var(ng, model, pioFile, 'lat_v',                         &
+  IF (pio_netcdf_find_var(ng, model, pioFile, TRIM(Vname(1,idLatV)),           &
                           pioVar%vd)) THEN
     scale=1.0_kind_real
     pioVar%gtype=v2dvar
@@ -2356,7 +2508,7 @@ SUBROUTINE roms_wrt_info_pio (ng, model, pioFile, ncname)
       pioVar%dkind=PIO_real
       ioDesc => ioDesc_sp_v2dvar(ng)
     END IF
-    CALL nc_err (nf_fwrite2d(ng, model, pioFile, pioVar,                       &
+    CALL nc_err (nf_fwrite2d(ng, model, pioFile, idLatV, pioVar,               &
                              0, ioDesc,                                        &
                              LBi, UBi, LBj, UBj, scale,                        &
                              GRID(ng) % vmask,                                 &
@@ -2368,7 +2520,7 @@ SUBROUTINE roms_wrt_info_pio (ng, model, pioFile, ncname)
   ! Angle between XI-axis and EAST at RHO-points.
 
 
-  IF (pio_netcdf_find_var(ng, model, pioFile, 'angle',                         &
+  IF (pio_netcdf_find_var(ng, model, pioFile, TRIM(Vname(1,idangR)),           &
                           pioVar%vd)) THEN
     scale=1.0_kind_real
     pioVar%gtype=r2dvar
@@ -2379,7 +2531,7 @@ SUBROUTINE roms_wrt_info_pio (ng, model, pioFile, ncname)
       pioVar%dkind=PIO_real
       ioDesc => ioDesc_sp_r2dvar(ng)
     END IF
-    CALL nc_err (nf_fwrite2d(ng, model, pioFile, pioVar,                       &
+    CALL nc_err (nf_fwrite2d(ng, model, pioFile, idangR, pioVar,               &
                              0, ioDesc,                                        &
                              LBi, UBi, LBj, UBj, scale,                        &
                              GRID(ng) % rmask,                                 &
@@ -2390,7 +2542,7 @@ SUBROUTINE roms_wrt_info_pio (ng, model, pioFile, ncname)
 
   ! Masking fields at RHO-, U-, and V-points.
 
-  IF (pio_netcdf_find_var(ng, model, pioFile, 'mask_rho',                      &
+  IF (pio_netcdf_find_var(ng, model, pioFile, TRIM(Vname(1,idmskR)),           &
                           pioVar%vd)) THEN
     scale=1.0_kind_real
     pioVar%gtype=r2dvar
@@ -2401,7 +2553,7 @@ SUBROUTINE roms_wrt_info_pio (ng, model, pioFile, ncname)
       pioVar%dkind=PIO_real
       ioDesc => ioDesc_sp_r2dvar(ng)
     END IF
-    CALL nc_err (nf_fwrite2d(ng, model, pioFile, pioVar,                       &
+    CALL nc_err (nf_fwrite2d(ng, model, pioFile, idmskR, pioVar,               &
                              0, ioDesc,                                        &
                              LBi, UBi, LBj, UBj, scale,                        &
                              GRID(ng) % rmask,                                 &
@@ -2410,7 +2562,7 @@ SUBROUTINE roms_wrt_info_pio (ng, model, pioFile, ncname)
                  nf90_noerr, io_nf90, __LINE__, MyFile)
   END IF
 
-  IF (pio_netcdf_find_var(ng, model, pioFile, 'mask_u',                        &
+  IF (pio_netcdf_find_var(ng, model, pioFile, TRIM(Vname(1,idmskU)),           &
                           pioVar%vd)) THEN
     scale=1.0_kind_real
     pioVar%gtype=u2dvar
@@ -2421,7 +2573,7 @@ SUBROUTINE roms_wrt_info_pio (ng, model, pioFile, ncname)
       pioVar%dkind=PIO_real
       ioDesc => ioDesc_sp_u2dvar(ng)
     END IF
-    CALL nc_err (nf_fwrite2d(ng, model, pioFile, pioVar,                       &
+    CALL nc_err (nf_fwrite2d(ng, model, pioFile, idmskU, pioVar,               &
                              0, ioDesc,                                        &
                              LBi, UBi, LBj, UBj, scale,                        &
                              GRID(ng) % umask,                                 &
@@ -2430,7 +2582,7 @@ SUBROUTINE roms_wrt_info_pio (ng, model, pioFile, ncname)
                  nf90_noerr, io_nf90, __LINE__, MyFile)
   END IF
 
-  IF (pio_netcdf_find_var(ng, model, pioFile, 'mask_v',                        &
+  IF (pio_netcdf_find_var(ng, model, pioFile, TRIM(Vname(1,idmskV)),           &
                           pioVar%vd)) THEN
     scale=1.0_kind_real
     pioVar%gtype=v2dvar
@@ -2441,7 +2593,7 @@ SUBROUTINE roms_wrt_info_pio (ng, model, pioFile, ncname)
       pioVar%dkind=PIO_real
       ioDesc => ioDesc_sp_v2dvar(ng)
     END IF
-    CALL nc_err (nf_fwrite2d(ng, model, pioFile, pioVar,                       &
+    CALL nc_err (nf_fwrite2d(ng, model, pioFile, idmskV, pioVar,               &
                              0, ioDesc,                                        &
                              LBi, UBi, LBj, UBj, scale,                        &
                              GRID(ng) % vmask,                                 &

@@ -1,4 +1,4 @@
-# ROMS-JEDI Regular 3D-Var (Dual Formulation) Test: __ROMS_APPLICATION__
+# ROMS-JEDI Regular 3D-Var (Dual Formulation) Test: WC13 Application
 #
 # It uses ROMS 3D state vector and the 3D-Var cost function. It computes 
 # the analysis increment for the initial state vector (beginning of the
