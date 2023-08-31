@@ -880,7 +880,7 @@ SUBROUTINE roms_geom_to_fieldset (self, afieldset)
   ! Add vertical level unit: time-independent depths at RHO-points 
   !                          (negative, levelsAreTopDown = .FALSE.)
 
-  afield = self%functionspaceIncHalo%create_field(name='vunit',                &
+  afield = self%functionspaceIncHalo%create_field(name='vert_coord',           &
                                                   kind=atlas_real(kind_real),  &
                                                   levels=N)
   CALL afield%data (r_ptr)
@@ -906,7 +906,7 @@ SUBROUTINE roms_geom_to_fieldset (self, afieldset)
 
   ! Add halo mask.
 
-  afield = self%functionspaceIncHalo%create_field(name='hmask',                &
+  afield = self%functionspaceIncHalo%create_field(name='owned',                &
                                                   kind=atlas_integer(KIND(0)), &
                                                   levels=1)
   allocate (hmask(self%LBi:self%UBi, self%LBj:self%UBj))

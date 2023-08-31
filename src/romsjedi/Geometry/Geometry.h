@@ -106,8 +106,8 @@ namespace romsjedi {
           {return functionSpaceIncHalo_;}
     atlas::FunctionSpace & functionSpace() {return functionSpaceIncHalo_;}
 
-    const atlas::FieldSet & extraFields() const {return extraFields_;}
-    atlas::FieldSet & extraFields() {return extraFields_;}
+    const atlas::FieldSet & fields() const {return fields_;}
+    atlas::FieldSet & fields() {return fields_;}
 
     void latlon(std::vector<double> &,
                 std::vector<double> &,
@@ -127,7 +127,7 @@ namespace romsjedi {
 
     atlas::FunctionSpace functionSpace_;
     atlas::FunctionSpace functionSpaceIncHalo_;
-    atlas::FieldSet extraFields_;
+    atlas::FieldSet fields_;
   };
 }  // namespace romsjedi
 

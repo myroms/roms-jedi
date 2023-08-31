@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2019-2022 UCAR
+ * (C) Copyright 2019-2023 UCAR
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -57,7 +57,7 @@ namespace romsjedi {
     // Fill ATLAS fieldset
 
     roms_geom_to_fieldset_f90(keyGeom_,
-                              extraFields_.get());
+                              fields_.get());
   }
 
 // -----------------------------------------------------------------------------
@@ -77,10 +77,10 @@ namespace romsjedi {
                                                   functionSpace_.get(),
                                                   functionSpaceIncHalo_.get());
 
-    extraFields_ = atlas::FieldSet();
-    for (int jfield = 0; jfield < other.extraFields_->size(); ++jfield) {
-      atlas::Field atlasField = other.extraFields_->field(jfield);
-      extraFields_->add(atlasField);
+    fields_ = atlas::FieldSet();
+    for (int jfield = 0; jfield < other.fields_->size(); ++jfield) {
+      atlas::Field atlasField = other.fields_->field(jfield);
+      fields_->add(atlasField);
     }
   }
 
