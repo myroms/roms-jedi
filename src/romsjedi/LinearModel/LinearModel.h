@@ -27,8 +27,6 @@
 #include "oops/util/Duration.h"
 #include "oops/util/ObjectCounter.h"
 #include "oops/util/Printable.h"
-#include "oops/util/parameters/Parameters.h"
-#include "oops/util/parameters/RequiredParameter.h"
 
 #include "romsjedi/Traits.h"
 
@@ -41,35 +39,6 @@ namespace eckit {
 namespace romsjedi {
 
 // -----------------------------------------------------------------------------
-
-  /// Linear Model Parameters Class. The property 'name' is already part of
-  /// the default schema.
-
-  class LinearModelParameters : public oops::LinearModelParametersBase {
-    OOPS_CONCRETE_PARAMETERS(LinearModelParameters, LinearModelParametersBase)
-
-   public:
-    oops::RequiredParameter<oops::Variables> lmvars{
-      "lm variables",
-      "Linear Model State variables to process",
-      this};
-    oops::RequiredParameter<util::DateTime> date{
-      "date",
-      "Linear Model initial condition date/time",
-      this};
-    oops::RequiredParameter<util::Duration> tstep{
-      "tstep",
-      "Linear Model time step",
-      this};
-    oops::RequiredParameter<util::Duration> SimulationLength{
-      "simulation length",
-      "Model simulation length period",
-      this};
-    oops::RequiredParameter<eckit::LocalConfiguration> traj{
-      "trajectory",
-      "Nonlinear Trajectory parameters",
-      this};
-  };
 
   // ROMS Linear Model definition.
 
