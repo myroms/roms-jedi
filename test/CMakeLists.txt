@@ -270,14 +270,6 @@ ecbuild_add_test(
   LIBS         romsjedi )
 
 ecbuild_add_test(
-  TARGET       test_romsjedi_ens_variance
-  MPI          ${MPI_NCPUS}
-  COMMAND      romsjedi_ens_variance.x
-  ARGS         testinput/ens_variance.yaml
-  LIBS         romsjedi
-  TEST_DEPENDS test_romsjedi_ens_pert )
-
-ecbuild_add_test(
   TARGET       test_romsjedi_ens_mean_variance
   MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_ens_mean_variance.x

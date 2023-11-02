@@ -53,11 +53,6 @@ ecbuild_add_executable( TARGET  romsjedi_ens_recenter.x
                         LIBS    romsjedi
                       )
 
-ecbuild_add_executable( TARGET  romsjedi_ens_variance.x
-                        SOURCES EnsVariance.cc
-                        LIBS    romsjedi
-                      )
-
 ecbuild_add_executable( TARGET  romsjedi_error_covariance_toolbox.x
                         SOURCES ErrorCovarianceToolbox.cc
                         LIBS    romsjedi

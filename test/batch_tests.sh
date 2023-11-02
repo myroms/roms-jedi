@@ -109,7 +109,6 @@ elif [ ${ALL_TEST} -eq 2 ]; then
   ctest -VV -R test_romsjedi_bump_loc_parameters_cor_nicas
   ctest -VV -R test_romsjedi_dirac_cov_nicas
   ctest -VV -R test_romsjedi_ens_pert
-  ctest -VV -R test_romsjedi_ens_variance
   ctest -VV -R test_romsjedi_ens_mean_variance
   ctest -VV -R test_romsjedi_ens_recenter
   ctest -VV -R test_romsjedi_ens_hofx
@@ -282,14 +281,6 @@ else
     echo " Test #${ic}: test_romsjedi_ens_pert ........................  *Failed"
   else
     echo " Test #${ic}: test_romsjedi_ens_pert ........................  Passed"
-  fi
-
-  ic=$(( $ic + 1 ))
-  ${MPIrun} ../../bin/romsjedi_ens_variance.x testinput/ens_variance.yaml 1>> test_${ic}.log 2>> test.err
-  if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_ens_variance ....................  *Failed"
-  else
-    echo " Test #${ic}: test_romsjedi_ens_variance ....................  Passed"
   fi
 
   ic=$(( $ic + 1 ))
