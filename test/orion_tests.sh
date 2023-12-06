@@ -9,7 +9,7 @@
 ##                                                                             #
 ## Usage:                                                                      #
 ##                                                                             #
-##   ./batch_test.sh [options]                                                 #
+##   ./orion_test.sh [options]                                                 #
 ##                                                                             #
 ## Options:                                                                    #
 ##                                                                             #
@@ -152,7 +152,7 @@ elif [ ${ALL_TEST} -eq 2 ]; then
   ctest -VV -R test_romsjedi_bump_loc_parameters_cor_nicas
   ctest -VV -R test_romsjedi_dirac_cov_nicas
   ctest -VV -R test_romsjedi_ens_pert
-  ctest -VV -R test_romsjedi_ens_mean_variance
+  ctest -VV -R test_romsjedi_ens_meanandvariance
   ctest -VV -R test_romsjedi_ens_recenter
   ctest -VV -R test_romsjedi_ens_hofx
   ctest -VV -R test_romsjedi_dirac_ens_cov_nicas
@@ -327,11 +327,11 @@ else
   fi
 
   ic=$(( $ic + 1 ))
-  ${MPIrun} ../../bin/romsjedi_ens_mean_variance.x testinput/ens_mean_variance.yaml 1>> test_${ic}.log 2>> test.err
+  ${MPIrun} ../../bin/romsjedi_ens_meanandvariance.x testinput/ens_meanandvariance.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_ens_mean_variance ...............  *Failed"
+    echo " Test #${ic}: test_romsjedi_ens_meanandvariance .............  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_ens_mean_variance ...............  Passed"
+    echo " Test #${ic}: test_romsjedi_ens_meanandvariance .............  Passed"
   fi
 
   ic=$(( $ic + 1 ))

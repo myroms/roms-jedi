@@ -69,7 +69,6 @@ namespace romsjedi {
   // Accessor functions
 
     const util::Duration & timeResolution() const override {return tstep_;}
-    const oops::Variables & variables() const override {return lmvars_;}
 
    private:
     void print(std::ostream &) const override;
@@ -82,7 +81,6 @@ namespace romsjedi {
     F90model keySelf_;
     util::Duration tstep_;
     std::map< util::DateTime, F90traj> trajmap_;
-    oops::Variables lmvars_;
   };
 
 // -----------------------------------------------------------------------------

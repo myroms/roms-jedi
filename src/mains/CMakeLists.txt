@@ -38,8 +38,8 @@ ecbuild_add_executable( TARGET  romsjedi_ens_hofx.x
                         LIBS    romsjedi
                       )
 
-ecbuild_add_executable( TARGET  romsjedi_ens_mean_variance.x
-                        SOURCES EnsMeanVariance.cc
+ecbuild_add_executable( TARGET  romsjedi_ens_meanandvariance.x
+                        SOURCES EnsMeanAndVariance.cc
                         LIBS    romsjedi
                       )
 

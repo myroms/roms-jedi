@@ -270,10 +270,10 @@ ecbuild_add_test(
   LIBS         romsjedi )
 
 ecbuild_add_test(
-  TARGET       test_romsjedi_ens_mean_variance
+  TARGET       test_romsjedi_ens_meanandvariance
   MPI          ${MPI_NCPUS}
-  COMMAND      romsjedi_ens_mean_variance.x
-  ARGS         testinput/ens_mean_variance.yaml
+  COMMAND      romsjedi_ens_meanandvariance.x
+  ARGS         testinput/ens_meanandvariance.yaml
   LIBS         romsjedi
   TEST_DEPENDS test_romsjedi_ens_pert )
 
@@ -363,7 +363,7 @@ ecbuild_add_test(
   TEST_DEPENDS test_romsjedi_bump_parameters_cor_nicas )
 
 ecbuild_add_test(
-  TARGET       test_romsjedi_3fgat_dual
+  TARGET       test_romsjedi_3dfgat_dual
   MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_var.x
   ARGS         testinput/3dfgat_dual.yaml

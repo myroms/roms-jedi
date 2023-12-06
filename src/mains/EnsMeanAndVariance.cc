@@ -12,6 +12,6 @@
 
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);
-  oops::EnsMeanAndVariance<romsjedi::Traits> var;
-  return run.execute(var);
+  oops::EnsMeanAndVariance<romsjedi::Traits> ens_moments;
+  return run.execute(ens_moments);
 }

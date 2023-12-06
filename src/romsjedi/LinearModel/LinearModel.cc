@@ -43,8 +43,7 @@ namespace romsjedi {
                            const eckit::Configuration & config)
     : keySelf_(0),
       tstep_(),
-      trajmap_(),
-      lmvars_()
+      trajmap_()
   {
   oops::Log::trace() << "LinearModel::LinearModel starting" << std::endl;
 
