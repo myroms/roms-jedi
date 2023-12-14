@@ -204,12 +204,13 @@ variational:
     online diagnostics:
       write increment: true
       increment:                                   # DA increment output file
-        single_record: true
-        data_dir: Data/3dhyb/4dfgat/primal
-        prefix: wc13_roms
-        exp: 3dhyb
-        type: inc
-        date: *date
+        state component:
+          single_record: true
+          data_dir: Data/3dhyb/4dfgat/primal
+          prefix: wc13_roms
+          exp: 3dhyb
+          type: inc
+          date: *date
 
 final:                                             # Written into output IODA files
   diagnostics:

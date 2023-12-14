@@ -160,12 +160,13 @@ variational:
     online diagnostics:
       write increment: true
       increment:                                 # DA increment output file
-        single_record: true
-        data_dir: Data/3denvar/regular/primal
-        prefix: wc13_roms
-        exp: 3denvar
-        type: inc
-        date: *mid_date
+        state component:
+          single_record: true
+          data_dir: Data/3denvar/regular/primal
+          prefix: wc13_roms
+          exp: 3denvar
+          type: inc
+          date: *mid_date
 
 final:                                           # Written into output IODA files
   diagnostics:

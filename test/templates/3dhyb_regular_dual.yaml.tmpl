@@ -185,12 +185,13 @@ variational:
     online diagnostics:
       write increment: true
       increment:                                   # DA increment output file
-        single_record: true
-        data_dir: Data/3dhyb/regular/dual
-        prefix: __ROMS_APP___roms
-        exp: 3dhyb
-        type: inc
-        date: *mid_date
+        state component:
+          single_record: true
+          data_dir: Data/3dhyb/regular/dual
+          prefix: __ROMS_APP___roms
+          exp: 3dhyb
+          type: inc
+          date: *mid_date
 
 final:                                             # Written into output IODA files
   diagnostics:

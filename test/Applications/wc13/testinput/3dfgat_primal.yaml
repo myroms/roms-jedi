@@ -39,7 +39,7 @@ cost function:
 
   background:
     fields_dir: Data/wc13/input
-    fields_filename: wc13_roms_ini_20040103.nc   # initial fields for 2004-01-03T00:00:00Z
+    fields_filename: wc13_roms_ini_20040105.nc   # initial fields for 2004-01-05T00:00:00Z
     fields_record: 1
     state variables: *roms_state
     date: *date 
@@ -169,12 +169,13 @@ variational:
     online diagnostics:
       write increment: true
       increment:                                 # DA increment output file
-        single_record: true
-        data_dir: Data/3dvar/3dfgat/primal
-        prefix: wc13_roms
-        exp: 3dfgat
-        type: inc
-        date: *mid_date
+        state component:
+          single_record: true
+          data_dir: Data/3dvar/3dfgat/primal
+          prefix: wc13_roms
+          exp: 3dfgat
+          type: inc
+          date: *mid_date
 
 final:                                           # Written into output IODA files
   diagnostics:

@@ -40,7 +40,7 @@ cost function:
 
   background:
     fields_dir: __FIELDS_DIR__
-    fields_filename: __ROMS_INI_PRIOR__
+    fields_filename: __ROMS_MID_PRIOR__
     fields_record: __INI_PRIOR_RECORD__
     state variables: *roms_state
     date: *date 
@@ -162,12 +162,13 @@ variational:
     online diagnostics:
       write increment: true
       increment:                                 # DA increment output file
-        single_record: true
-        data_dir: Data/3dvar/3dfgat/dual
-        prefix: __ROMS_APP___roms
-        exp: 3dfgat
-        type: inc
-        date: *date
+        state component:
+          single_record: true
+          data_dir: Data/3dvar/3dfgat/dual
+          prefix: __ROMS_APP___roms
+          exp: 3dfgat
+          type: inc
+          date: *date
 
 final:                                           # Written into output IODA files
   diagnostics:

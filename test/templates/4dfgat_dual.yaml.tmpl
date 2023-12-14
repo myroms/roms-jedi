@@ -165,12 +165,13 @@ variational:
     online diagnostics:
       write increment: true
       increment:                                 # DA increment output file
-        single_record: true
-        data_dir: Data/3dvar/4dfgat/dual
-        prefix: __ROMS_APP___roms
-        exp: 3dvar
-        type: inc
-        date: *date
+        state component:
+          single_record: true
+          data_dir: Data/3dvar/4dfgat/dual
+          prefix: __ROMS_APP___roms
+          exp: 3dvar
+          type: inc
+          date: *date
 
 final:                                           # Written into output IODA files
   diagnostics:
