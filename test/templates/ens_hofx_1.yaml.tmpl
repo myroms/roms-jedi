@@ -8,8 +8,9 @@ geometry:
 
 forecast length: &ForecastLength __FORECAST_LENGTH__
 
-window begin: __INITIAL_DATE__
-window length: *ForecastLength
+time window:
+  begin: __INITIAL_DATE__
+  length: *ForecastLength
 
 model:
   name: ROMS

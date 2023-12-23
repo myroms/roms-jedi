@@ -13,8 +13,9 @@ state:
   date: __MIDDLE_DATE__
   state variables: [ssh, uocn, vocn, tocn, socn, z0ocn_r]
 
-window begin: __INITIAL_DATE__
-window length: __FORECAST_LENGTH__
+time window:
+  begin: __INITIAL_DATE__
+  length: __FORECAST_LENGTH__
 
 observations:
   observers:

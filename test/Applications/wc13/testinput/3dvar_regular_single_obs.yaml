@@ -22,8 +22,9 @@ roms state:     &roms_state    [ssh, uocn, vocn, tocn, socn, zocn_r]
 
 cost function:
   cost type: 3D-Var
-  window begin: *date
-  window length: *ForecastLength
+  time window:
+    begin: *date
+    length: *ForecastLength
   analysis variables: *roms_analysis 
 
   geometry: &geom

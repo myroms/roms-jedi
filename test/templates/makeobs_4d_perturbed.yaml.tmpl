@@ -21,8 +21,9 @@ initial condition:
   date: __INITIAL_DATE__
   state variables: [ssh, uocn, vocn, tocn, socn, z0ocn_r]
 
-window begin: __INITIAL_DATE__
-window length: *ForecastLength
+time window:
+  begin: __INITIAL_DATE__
+  length: *ForecastLength
 
 observations:
   obs perturbations: true

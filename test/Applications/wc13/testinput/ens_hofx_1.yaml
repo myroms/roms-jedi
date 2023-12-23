@@ -9,8 +9,9 @@ geometry:
 forecast length: &ForecastLength PT96H         # 96 hours (4 days) window ending on 2004-01-07T00:00:00Z
                                                # or other smaller interval
 
-window begin: 2004-01-03T00:00:00Z
-window length: *ForecastLength
+time window:
+  begin: 2004-01-03T00:00:00Z
+  length: *ForecastLength
 
 model:
   name: ROMS

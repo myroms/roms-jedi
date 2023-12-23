@@ -21,8 +21,9 @@ state:
   date: 2004-01-05T00:00:00Z
   state variables: [ssh, uocn, vocn, tocn, socn, z0ocn_r]
 
-window begin: 2004-01-03T00:00:00Z
-window length: P4D                             # 4-day window ending on 2004-01-07T00:00:00Z
+time window:
+  begin: 2004-01-03T00:00:00Z
+  length: P4D                                  # 4-day window ending on 2004-01-07T00:00:00Z
                                                # or other smaller interval
 
 observations:

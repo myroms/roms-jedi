@@ -33,8 +33,9 @@ geovals:
   state variables: *geovals
 
 locations:
-  window begin: __INITIAL_DATE__
-  window end: __FINAL_DATE__
+  time window:
+    begin: __INITIAL_DATE__
+    end: __FINAL_DATE__
   obs space:
     name: Random Locations
     simulated variables: *geovals

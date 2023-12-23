@@ -6,8 +6,9 @@ geometry:
   fields metadata: Data/fields_metadata.yaml
   ng: 1                                          # ROMS nested grid number
 
-window begin:  &date 2004-01-03T00:00:00Z
-window length: &ForecastLength PT96H
+time window:
+  begin:  &date 2004-01-03T00:00:00Z
+  length: &ForecastLength PT96H
 
 increment variables: &roms_analysis [ssh, uocn, vocn, tocn, socn]
 

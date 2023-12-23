@@ -23,8 +23,9 @@ initial condition:
   fields_record: 1
   state variables: [ssh, uocn, vocn, tocn, socn, z0ocn_r]
 
-window begin: 2004-01-03T00:00:00Z
-window length: *ForecastLength
+time window:
+  begin: 2004-01-03T00:00:00Z
+  length: *ForecastLength
 
 observations:
   obs perturbations: true
