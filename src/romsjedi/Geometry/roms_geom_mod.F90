@@ -1,4 +1,4 @@
-! (C) Copyright 2017-2023 UCAR
+! (C) Copyright 2017-2024 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -21,11 +21,10 @@ MODULE roms_geom_mod
 
 USE kinds,                      ONLY : kind_real
 
-USE atlas_module,               ONLY : atlas_functionspace,                    &
+USE atlas_module,               ONLY : atlas_functionspace_NodeColumns,        &
                                        atlas_field,                            &
                                        atlas_fieldset,                         &
                                        atlas_geometry,                         &
-                                       atlas_indexkdtree,                      &
                                        atlas_integer,                          &
                                        atlas_real
 
@@ -146,11 +145,13 @@ TYPE, PUBLIC :: roms_geom
   real (kind_real), allocatable  :: z0_r(:,:,:)    ! unvarying RHO-depths
   real (kind_real), allocatable  :: z0_w(:,:,:)    ! unvarying W-depths
 
-  ! ATLAS FunctionSpace defining how a Field is represented in the grid domain
-  ! (RHO-cell) for computational points and computational points plus tile halo.
+  ! ATLAS Mesh: A Field is represented in the grid domain (RHO-cell) that
+  ! includes computational points plus tile halo.
 
-  TYPE (atlas_functionspace) :: functionspace
-  TYPE (atlas_functionspace) :: functionspaceIncHalo
+  TYPE (atlas_functionspace_NodeColumns) :: functionspace
+  TYPE (atlas_fieldset)                  :: fieldset
+
+  integer, allocatable                   :: atlas_ij2node(:,:)
 
   ! Fortran and C/C++ interoperability toolkit: MPI coomunicator object.
 
@@ -162,14 +163,12 @@ TYPE, PUBLIC :: roms_geom
 
   CONTAINS
 
-  PROCEDURE :: create        => roms_geom_create
-  PROCEDURE :: clone         => roms_geom_clone
-  PROCEDURE :: delete        => roms_geom_delete
+  PROCEDURE :: init                    => roms_geom_init
+  PROCEDURE :: end                     => roms_geom_end
+  PROCEDURE :: clone                   => roms_geom_clone
 
-  PROCEDURE :: set_lonlat    => roms_geom_set_lonlat
-  PROCEDURE :: to_fieldset   => roms_geom_to_fieldset
-  PROCEDURE :: atlas2struct  => roms_geom_atlas2struct
-  PROCEDURE :: struct2atlas  => roms_geom_struct2atlas
+  PROCEDURE :: init_fieldset           => roms_geom_init_fieldset
+  PROCEDURE :: mesh_valid_nodes_cells  => roms_geom_mesh_valid_nodes_cells
 
 END TYPE roms_geom
 
@@ -182,7 +181,7 @@ CONTAINS
 ! ------------------------------------------------------------------------------
 !> Setup geometry object by calling "ROMS_initialize".
 
-SUBROUTINE roms_geom_create (self, f_conf, f_comm)
+SUBROUTINE roms_geom_init (self, f_conf, f_comm)
 
   USE mod_param
   USE mod_grid
@@ -198,8 +197,10 @@ SUBROUTINE roms_geom_create (self, f_conf, f_comm)
   TYPE (fckit_mpi_comm),      intent(in)  :: f_comm       !< MPI communicator
 
   logical, save                           :: first
+
   integer                                 :: cgrid, i, j, k, lstr, ng, tile
   integer                                 :: MyComm
+
   character (len=:), allocatable          :: flds_meta, project_dir, roms_stdinp
 
   ! Get MPI communicator.
@@ -495,7 +496,7 @@ SUBROUTINE roms_geom_create (self, f_conf, f_comm)
   ! Report.
 
   IF (LdebugGeometry) THEN
-    PRINT 10, 'ROMS_DEBUG roms_geom::create: tile = ', self%tile,              &
+    PRINT 10, 'ROMS_DEBUG roms_geom::init: tile = ', self%tile,                &
               ', ng = ', self%ng,                                              &
               ', RHO-points SHAPE = ', SHAPE(self%z_r),                        &
               '  LBi   = ', self%LBi,                                          &
@@ -514,16 +515,16 @@ SUBROUTINE roms_geom_create (self, f_conf, f_comm)
               ', IendC = ', self%bounds(2)%IendC,                              &
               ', JstrC = ', self%bounds(2)%JstrC,                              &
               ', JendC = ', self%bounds(2)%JendC
- 10 FORMAT (a,i3, a,i0, a,3(i0,1x),4(/,t38,4(a,i4)))
+ 10 FORMAT (a,i3, a,i0, a,3(i0,1x),4(/,t29,4(a,i4)))
     CALL self%f_comm%barrier()
   END IF
 
-END SUBROUTINE roms_geom_create
+END SUBROUTINE roms_geom_init
 
 ! ------------------------------------------------------------------------------
 !> Geometry object destructor: deallocate all arrays.
 
-SUBROUTINE roms_geom_delete (self)
+SUBROUTINE roms_geom_end (self)
 
   CLASS (roms_geom), intent(out)  :: self                 !< Geometry object
 
@@ -567,9 +568,8 @@ SUBROUTINE roms_geom_delete (self)
   IF (allocated(self%z0_w))       deallocate (self%z0_w)
 
   CALL self%functionspace%final ()
-  CALL self%functionspaceIncHalo%final ()
 
-END SUBROUTINE roms_geom_delete
+END SUBROUTINE roms_geom_end
 
 ! ------------------------------------------------------------------------------
 !> Clone geometry object, self = other.
@@ -682,31 +682,27 @@ SUBROUTINE roms_geom_clone (self, other)
 
   CALL other%fieldsinfo%clone (self%fieldsinfo)
 
-  ! Clone ATLAS function space.
+  ! Clone ATLAS indices mapping.
 
-  self%functionspace = atlas_functionspace(                                    &
-                       other%functionspace%c_ptr() )
-
-  self%functionspaceIncHalo = atlas_functionspace(                             &
-                              other%functionspaceIncHalo%c_ptr() )
+  self%atlas_ij2node = other%atlas_ij2node
 
   ! Report.
 
   IF (LdebugGeometry) THEN
-    PRINT '(a,12(a,i0),a,3(i0,1x))', 'ROMS_DEBUG roms_geom::clone: ',          &
-                                     ' tile = ', self%tile,                    &
-                                     ', ng = ', self%ng,                       &
-                                     ', LBi = ', self%LBi,                     &
-                                     ', UBi = ', self%UBi,                     &
-                                     ', LBj = ', self%LBj,                     &
-                                     ', UBj = ', self%UBj,                     &
-                                     ', LBk = ', self%LBk,                     &
-                                     ', UBk = ', self%UBk,                     &
-                                     ', Istr = ', self%bounds(2)%IstrC,        &
-                                     ', Iend = ', self%bounds(2)%IendC,        &
-                                     ', Jstr = ', self%bounds(2)%JstrC,        &
-                                     ', Jend = ', self%bounds(2)%JendC,        &
-                                     ', SHAPE = ', SHAPE(self%z_r)
+    PRINT 10, 'ROMS_DEBUG roms_geom::clone: tile = ', self%tile,               &
+              ', ng = ', self%ng,                                              &
+              ', RHO-points SHAPE = ', SHAPE(self%z_r),                        &
+              '  LBi   = ', self%LBi,                                          &
+              ', UBi   = ', self%UBi,                                          &
+              ', LBj   = ', self%LBj,                                          &
+              ', UBj   = ', self%UBj,                                          &
+              ', LBk   = ', self%LBk,                                          &
+              ', UBk   = ', self%UBk,                                          &
+              '  IstrC = ', self%bounds(2)%IstrC,                              &
+              ', IendC = ', self%bounds(2)%IendC,                              &
+              ', JstrC = ', self%bounds(2)%JstrC,                              &
+              ', JendC = ', self%bounds(2)%JendC
+ 10 FORMAT (a,i3, a,i0, a,3(i0,1x),/,t28,6(a,i4),/,t28,4(a,i4))
     CALL self%f_comm%barrier() 
   END IF
 
@@ -769,238 +765,158 @@ SUBROUTINE roms_geom_allocate (self)
   allocate (self%z0_r(LBi:UBi,LBj:UBj, LBk:UBk)); self%z0_r = 0.0_kind_real
   allocate (self%z0_w(LBi:UBi,LBj:UBj,   0:UBk)); self%z0_w = 0.0_kind_real
 
+  allocate (self%atlas_ij2node(LBi:UBi,LBj:UBj)); self%atlas_ij2node = -1
+
 END SUBROUTINE roms_geom_allocate
-
-! ------------------------------------------------------------------------------
-!> Set ATLAS **lonlat** and **lonlat_incl_halo** FieldSets at density points.
-
-SUBROUTINE roms_geom_set_lonlat (self, afieldset)
-
-  CLASS (roms_geom),     intent(inout) :: self            !< Geometry object
-  TYPE (atlas_fieldset), intent(inout) :: afieldset       !< ATLAS fieldset
-
-  TYPE (atlas_field)                   :: afield
-  integer                              :: cgrid
-  integer                              :: IstrD, IendD, JstrD, JendD
-  integer                              :: IstrH, IendH, JstrH, JendH
-  real (kind_real), pointer            :: r_ptr(:,:)
-
-  ! Create lon/lat fields at RHO (density) data points (computational plus
-  ! boundary points). Currently, ATLAS allows a single FunctionSpace which
-  ! is problematic with staggered C-grids. That is, ATLAS assumes that all
-  ! the variables are at the same location.
-
-  cgrid = r2dvar
-
-  IstrD = self%bounds(cgrid)%IstrD
-  IendD = self%bounds(cgrid)%IendD
-  JstrD = self%bounds(cgrid)%JstrD
-  JendD = self%bounds(cgrid)%JendD
-
-  afield = atlas_field(name="lonlat",                                          &
-                       kind=atlas_real(kind_real),                             &
-                       shape=(/2,(IendD-IstrD+1)*(JendD-JstrD+1)/))
-
-  CALL afield%data (r_ptr)
-
-  r_ptr(1,:) = PACK(self%lonr(IstrD:IendD, JstrD:JendD), .TRUE.)
-  r_ptr(2,:) = PACK(self%latr(IstrD:IendD, JstrD:JendD), .TRUE.)
-
-  CALL afieldset%add (afield)
-  CALL afield%final ()
-
-  ! Add object that includes (lon,lat) of the computational grid plus tile
-  ! halo points. At the domain edges, it also include the boundary point.
-
-
-  IstrH = self%bounds(cgrid)%IstrH
-  IendH = self%bounds(cgrid)%IendH
-  JstrH = self%bounds(cgrid)%JstrH
-  JendH = self%bounds(cgrid)%JendH
-
-  nullify (r_ptr)
-
-  afield = atlas_field(name="lonlat_inc_halos",                                &
-                       kind=atlas_real(kind_real),                             &
-                       shape=(/2,(IendH-IstrH+1)*(JendH-JstrH+1)/))
-
-  CALL afield%data (r_ptr)
-                          
-  r_ptr(1,:) = PACK(self%lonr(IstrH:IendH, JstrH:JendH), .TRUE.)
-  r_ptr(2,:) = PACK(self%latr(IstrH:IendH, JstrH:JendH), .TRUE.)
-
-  CALL afieldset%add (afield)
-  CALL afield%final ()
-
-END SUBROUTINE roms_geom_set_lonlat
 
 ! ------------------------------------------------------------------------------
 !> Fill ATLAS fieldset with cell area, vertical level units, and geographical
 !! mask at density points.
 
-SUBROUTINE roms_geom_to_fieldset (self, afieldset)
+SUBROUTINE roms_geom_init_fieldset (self)
 
   CLASS (roms_geom),     intent(inout) :: self            !< Geometry object
-  TYPE (atlas_fieldset), intent(inout) :: afieldset       !< ATLAS fieldset
 
-  TYPE (atlas_field)                   :: afield
-  integer                              :: IstrC, IendC, JstrC, JendC
-  integer                              :: IstrH, IendH, JstrH, JendH
-  integer                              :: N, cgrid, k
-  integer, allocatable                 :: hmask(:,:)
-  integer, pointer                     :: i_ptr(:,:)
-  real (kind_real), pointer            :: r_ptr(:,:)
+  TYPE (atlas_field)                   :: Area, Gmask, Owned, VertCoord
+  integer                              :: IstrD, IendD, JstrD, JendD
+  integer                              :: N, cgrid, i, j, k, nc
+  integer, pointer                     :: Gmask_ptr(:,:), Owned_ptr(:,:)
+  real (kind_real), pointer            :: Area_ptr(:,:), VertCoord_ptr(:,:)
 
-  ! Initialize. Currently, ATLAS allows a single function space which is
-  ! problematic with staggered C-grids. That is, ATLAS assumes that all
-  ! the variables are at the same location.
+  ! Initialize. ATLAS assumes that all the variables are located at the
+  ! grid center (A-grid).
 
-  cgrid = r2dvar                           ! RHO-points, grid cell center
+  cgrid = r2dvar                         ! RHO-points, grid cell center
 
-  IstrC = self%bounds(cgrid)%IstrC
-  IendC = self%bounds(cgrid)%IendC
-  JstrC = self%bounds(cgrid)%JstrC
-  JendC = self%bounds(cgrid)%JendC
-  IstrH = self%bounds(cgrid)%IstrH
-  IendH = self%bounds(cgrid)%IendH
-  JstrH = self%bounds(cgrid)%JstrH
-  JendH = self%bounds(cgrid)%JendH
+  IstrD = self%bounds(cgrid)%IstrD       ! starting data I-index
+  IendD = self%bounds(cgrid)%IendD       ! ending   data I-index
+  JstrD = self%bounds(cgrid)%JstrD       ! starting data J-index
+  JendD = self%bounds(cgrid)%JendD       ! ending   data J-index
   N     = self%N
 
-  ! Add grid cell area at RHO-points.
+  ! Add grid cell area (m2) at RHO-points.
 
-  afield = self%functionspaceIncHalo%create_field(name='area',                &
-                                                  kind=atlas_real(kind_real), &
-                                                  levels=1)
-  CALL afield%data (r_ptr)
-  r_ptr(1,:) = PACK(self%cell_area(IstrH:IendH, JstrH:JendH), .TRUE.)
-  CALL afieldset%add (afield)
-  CALL afield%final ()
+  Area = self%functionspace%create_field(name='area',                         &
+                                         kind=atlas_real(kind_real),          &
+                                         levels=1)
+  CALL self%fieldset%add (Area)
+  CALL area%data (Area_ptr)
 
-  ! Add vertical level unit: time-independent depths at RHO-points 
+  ! Add vertical level unit: time-independent depths (m) at RHO-points 
   !                          (negative, levelsAreTopDown = .FALSE.)
+  ! BUMP vertical distances will the same units.
 
-  afield = self%functionspaceIncHalo%create_field(name='vert_coord',           &
-                                                  kind=atlas_real(kind_real),  &
-                                                  levels=N)
-  CALL afield%data (r_ptr)
+  VertCoord = self%functionspace%create_field(name='vert_coord',               &
+                                              kind=atlas_real(kind_real),      &
+                                              levels=N)
+  CALL self%fieldset%add (VertCoord)
+  CALL VertCoord%data (VertCoord_ptr)
 
-  DO k = 1, N
-    r_ptr(k,:) = PACK(self%z0_r(IstrH:IendH, JstrH:JendH, k), .TRUE.)
+  ! Add geographical land/sea mask at RHO-points with values of land=0 and
+  ! sea=1.
+
+  Gmask = self%functionspace%create_field(name='gmask',                        &
+                                          kind=atlas_integer(KIND(0)),         &
+                                          levels=N)
+  CALL self%fieldset%add (Gmask)
+  CALL Gmask%data (Gmask_ptr)
+
+  ! Add owned 2D mask: An integer array with one at owned points and zero at
+  ! ghost grid points. Here, owned indicates possessed by a single process
+  ! associated with the tile partition. It does not require a halo exchange. 
+
+  Owned = self%functionspace%create_field(name='owned',                        &
+                                          kind=atlas_integer(KIND(0)),         &
+                                          levels=1)
+  CALL self%fieldset%add (Owned)
+  CALL Owned%data (Owned_ptr)
+  Owned_ptr = 0                                ! intialize to unowned
+
+  ! Fill the 2D data pointers at Data RHO-points (computational plus lateral
+  ! boundary conditions points).
+
+  DO j = JstrD, JendD
+    DO i = IstrD, IendD
+      nc = self%atlas_ij2node(i,j)
+      Area_ptr(1,nc) = self%cell_area(i,j)
+      owned_ptr(1,nc) = 1                      ! point owned by parallel task
+    END DO
   END DO
 
-  CALL afieldset%add (afield)
-  CALL afield%final ()
+  ! Fill the 3D data pointers at Data RHO-points (computational plus lateral
+  ! boundary conditions points).
 
-  ! Add geographical land/sea mask at RHO-points.
-
-  afield = self%functionspaceIncHalo%create_field(name='gmask',                &
-                                                  kind=atlas_integer(KIND(0)), &
-                                                  levels=N)
-  CALL afield%data (i_ptr)
   DO k = 1, N
-    i_ptr(k,:) = INT(PACK(self%rmask(IstrH:IendH, JstrH:JendH), .TRUE.))
+    DO j = JstrD, JendD
+      DO i = IstrD, IendD
+        nc = self%atlas_ij2node(i,j)
+        Gmask_ptr(k,nc) = INT(self%rmask(i,j))
+        VertCoord_ptr(k,nc) = self%z0_r(i,j,k)
+      END DO
+    END DO
   END DO
-  CALL afieldset%add (afield)
-  CALL afield%final ()
 
-  ! Add halo mask.
+  ! ATLAS Parallel halo exchange.
 
-  afield = self%functionspaceIncHalo%create_field(name='owned',                &
-                                                  kind=atlas_integer(KIND(0)), &
-                                                  levels=1)
-  allocate (hmask(self%LBi:self%UBi, self%LBj:self%UBj))
-  hmask = 0
-  hmask(IstrC:IendC, JstrC:JendC) = 1
-  CALL afield%data (i_ptr)
-  i_ptr(1,:) = PACK(hmask(IstrH:IendH, JstrH:JendH), .TRUE.)
-  CALL afieldset%add (afield)
-  CALL afield%final ()
-  deallocate (hmask)
+  CALL Area%halo_exchange ()
+  CALL Gmask%halo_exchange ()
+  CALL VertCoord%halo_exchange ()
 
-END SUBROUTINE roms_geom_to_fieldset
+  ! Done, cleanup.
+
+  CALL Area%final ()
+  CALL Gmask%final ()
+  CALL Owned%final ()
+  CALL VertCoord%final ()  
+
+END SUBROUTINE roms_geom_init_fieldset
 
 ! ------------------------------------------------------------------------------
-!> Convert an ATLAS fieldset (dx_atlas) to a ROMS-JEDI structured field (dx).
+!> Determines the valid grid nodes and grid cells per parallel tile for
+!  ATLAS mesh generation.
 
-SUBROUTINE roms_geom_atlas2struct (self, dx, dx_atlas)
+SUBROUTINE roms_geom_mesh_valid_nodes_cells (self, nodes, cells)
 
-  CLASS (roms_geom),     intent(in   ) :: self            !< Geometry object
-  real (kind=kind_real), intent(inout) :: dx(self%LBi:,                        &
-                                             self%LBj:)   !< structured field
-  TYPE (fieldset_type),  intent(inout) :: dx_atlas        !< ATLAS fieldset
+  CLASS (roms_geom),    intent(in ) :: self               !< Geometry object
+  logical, allocatable, intent(out) :: nodes(:,:)         !< 2D grid vertices
+  logical, allocatable, intent(out) :: cells(:,:)         !< grid cells
 
-  TYPE (atlas_field)                   :: afield
-  logical, allocatable                 :: fmask(:,:)
-  integer                              :: IstrH, IendH, JstrH, JendH
-  integer                              :: cgrid
-  real (kind_real), pointer            :: r_ptr(:,:)
+  integer                           :: IstrD, IendD, JstrD, JendD
+  integer                           :: cgrid, ng, tile
 
-  ! Initialize. Currently, ATLAS allows a single function space which is
-  ! problematic with staggered C-grids. That is, ATLAS assumes that all
-  ! the variables are at the same location.
+  ! Grid parameters.
 
-  cgrid = r2dvar
+  ng    = self%ng                        ! nested grid number
+  cgrid = r2dvar                         ! staggered C-grid RHO-type (0:L,0:M)
+  tile  = self%tile                      ! parallel partition tile
 
-  IstrH = self%bounds(cgrid)%IstrH
-  IendH = self%bounds(cgrid)%IendH
-  JstrH = self%bounds(cgrid)%JstrH
-  JendH = self%bounds(cgrid)%JendH
+  IstrD = self%bounds(cgrid)%IstrD       ! starting Data I-index
+  IendD = self%bounds(cgrid)%IendD       ! ending   Data I-index
+  JstrD = self%bounds(cgrid)%JstrD       ! starting Data J-index
+  JendD = self%bounds(cgrid)%JendD       ! ending   Data J-index
 
-  allocate ( fmask(IstrH:IendH, JstrH:JendH) )
-  fmask = .TRUE.
+  ! Allocate grid nodes and cells at Data RHO-points (computational plus
+  ! lateral boundary conditions points).
 
-  ! Unpack field from ATLAS.
+  allocate ( cells(IstrD:IendD-1, JstrD:JendD-1) )   ! cells are 1 less in (I,J)
+  allocate ( nodes(IstrD:IendD,   JstrD:JendD) )
 
-  afield = dx_atlas%field('var')
-  CALL afield%data (r_ptr)
-  dx(IstrH:IendH, JstrH:JendH) = UNPACK(r_ptr(1,:), fmask,                     &
-                                        dx(IstrH:IendH, JstrH:JendH))
-  CALL afield%final ()
+  ! Initialize to valid points.
 
-  deallocate ( fmask )
+  nodes = .TRUE.
+  cells = .TRUE.
 
-END SUBROUTINE roms_geom_atlas2struct
+  IF (LdebugGeometry) THEN
+    PRINT 10, 'ROMS_DEBUG: roms_geom::valid_nodes_cells: tile = ', self%tile,  &
+              ', ng = ', self%ng,                                              &
+              ', 2D SHAPE = ',SHAPE(nodes),                                    &
+              '  nodes = ', COUNT(nodes),                                      &
+              ', quads = ', COUNT(cells)
+ 10 FORMAT (a,i3, a,i0, a,2(i0,1x),/,t41,2(a,i0))
+    CALL self%f_comm%barrier ()
+  END IF
 
-! ------------------------------------------------------------------------------
-!> Convert a ROMS-JEDI structured field (dx) to an ATLAS fieldset (dx_atlas).
-
-SUBROUTINE roms_geom_struct2atlas (self, dx, dx_atlas)
-
-  CLASS (roms_geom),     intent(in   ) :: self            !< Geometry object
-  real (kind=kind_real), intent(inout) :: dx(self%LBi:,                        &
-                                             self%LBj:)   !< Structured field
-  TYPE (fieldset_type),  intent(out  ) :: dx_atlas        !< ATLAS fieldset
-
-  TYPE (atlas_field)                   :: afield
-  integer                              :: IstrH, IendH, JstrH, JendH
-  integer                              :: cgrid
-  real (kind_real), pointer            :: r_ptr(:,:)
-
-  ! Initialize. Currently, ATLAS allows a single function space which is
-  ! problematic with staggered C-grids. That is, ATLAS assumes that all
-  ! the variables are at the same location.
-
-  cgrid = r2dvar
-
-  IstrH = self%bounds(cgrid)%IstrH
-  IendH = self%bounds(cgrid)%IendH
-  JstrH = self%bounds(cgrid)%JstrH
-  JendH = self%bounds(cgrid)%JendH
-
-  ! Add structured field to ATLAS.
-
-  dx_atlas = atlas_fieldset()
-  afield = self%functionspace%create_field('var',                              &
-                                           kind=atlas_real(kind_real),         &
-                                           levels=1)
-
-  CALL dx_atlas%add (afield)
-  CALL afield%data (r_ptr)
-  r_ptr(1,:) = PACK(dx(IstrH:IendH, JstrH:JendH), .TRUE.)
-  CALL afield%final ()
-
-END SUBROUTINE roms_geom_struct2atlas
+END SUBROUTINE roms_geom_mesh_valid_nodes_cells
 
 ! ------------------------------------------------------------------------------
 

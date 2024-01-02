@@ -85,11 +85,11 @@ namespace romsjedi {
     Geometry(const Geometry &);
     ~Geometry();
 
-    // negative depths; vertical levels are bottom (k=1) to top (k=N)
+    // Negative depths; vertical levels are bottom (k=1) to top (k=N)
 
     bool levelsAreTopDown() const {return false;}
 
-    // accessors
+    // Accessors
 
     GeometryIterator begin() const;
     GeometryIterator end() const;
@@ -102,12 +102,11 @@ namespace romsjedi {
     const int& toFortran() const {return keyGeom_;}
     const eckit::mpi::Comm & getComm() const {return comm_;}
 
-    const atlas::FunctionSpace & functionSpace() const
-          {return functionSpaceIncHalo_;}
-    atlas::FunctionSpace & functionSpace() {return functionSpaceIncHalo_;}
+    const atlas::FunctionSpace & functionSpace() const {return functionSpace_;}
+    // atlas::FunctionSpace & functionSpace() {return functionSpace_;}
 
     const atlas::FieldSet & fields() const {return fields_;}
-    atlas::FieldSet & fields() {return fields_;}
+    // atlas::FieldSet & fields() {return fields_;}
 
     void latlon(std::vector<double> &,
                 std::vector<double> &,
@@ -125,8 +124,7 @@ namespace romsjedi {
     int keyGeom_;
     const eckit::mpi::Comm & comm_;
 
-    atlas::FunctionSpace functionSpace_;
-    atlas::FunctionSpace functionSpaceIncHalo_;
+    atlas::functionspace::NodeColumns functionSpace_;
     atlas::FieldSet fields_;
   };
 }  // namespace romsjedi

@@ -89,7 +89,6 @@ TYPE, PUBLIC :: roms_fields
   ! ATLAS.
 
   PROCEDURE :: to_fieldset     => roms_fields_to_fieldset
-  PROCEDURE :: to_fieldset_ad  => roms_fields_to_fieldset_ad
   PROCEDURE :: from_fieldset   => roms_fields_from_fieldset
 
   ! Field getters and checkers.
@@ -331,9 +330,8 @@ SUBROUTINE roms_fields_to_fieldset (self, geom, vars, afieldset)
   TYPE (roms_field), pointer                 :: field
 
   integer                                    :: IstrD, IendD, JstrD, JendD
-  integer                                    :: IstrH, IendH, JstrH, JendH
   integer                                    :: LBi, UBi, LBj, UBj, N
-  integer                                    :: cgrid, ivar, k
+  integer                                    :: cgrid, i, ivar, j, k, nc
   real (kind=kind_real)                      :: stats(3)
   real (kind=kind_real), allocatable         :: Fdat(:,:,:)
   real (kind=kind_real), pointer             :: fldptr(:,:)
@@ -353,11 +351,6 @@ SUBROUTINE roms_fields_to_fieldset (self, geom, vars, afieldset)
   IendD = geom%bounds(cgrid)%IendD
   JstrD = geom%bounds(cgrid)%JstrD
   JendD = geom%bounds(cgrid)%JendD
-
-  IstrH = geom%bounds(cgrid)%IstrH
-  IendH = geom%bounds(cgrid)%IendH
-  JstrH = geom%bounds(cgrid)%JstrH
-  JendH = geom%bounds(cgrid)%JendH
 
   ! Allocate temporary field array.
 
@@ -396,10 +389,9 @@ SUBROUTINE roms_fields_to_fieldset (self, geom, vars, afieldset)
     IF (afieldset%has_field(vars%variable(ivar))) THEN
       afield = afieldset%field(vars%variable(ivar))         ! get field
     ELSE
-      afield = geom%functionspaceIncHalo%create_field(                         &
-                                                   name=vars%variable(ivar),   &
-                                                   kind=atlas_real(kind_real), &
-                                                   levels=N)
+      afield = geom%functionspace%create_field(name=vars%variable(ivar),       &
+                                               kind=atlas_real(kind_real),     &
+                                               levels=N)
       CALL afieldset%add (afield)                           ! add field
     END IF
 
@@ -408,7 +400,12 @@ SUBROUTINE roms_fields_to_fieldset (self, geom, vars, afieldset)
     CALL afield%data (fldptr)
 
     DO k = 1, N
-      fldptr(k,:) = PACK(Fdat(IstrH:IendH, JstrH:JendH, k), .TRUE.)
+      DO j = JstrD, JendD
+        DO i = IstrD, IendD
+          nc = self%geom%atlas_ij2node(i,j)
+          fldptr(k,nc) = Fdat(i,j,k)
+        END DO
+      END DO
     END DO
 
     meta = afield%metadata()
@@ -423,137 +420,6 @@ SUBROUTINE roms_fields_to_fieldset (self, geom, vars, afieldset)
 END SUBROUTINE roms_fields_to_fieldset
 
 ! ------------------------------------------------------------------------------
-!> It loads adjoint Fields data, usually observation forcing: transpose[H(X)],
-!  into ATLAS FieldSet object. It is the adjoint of "roms_fields_to_fieldset".
-
-SUBROUTINE roms_fields_to_fieldset_ad (ad_self, geom, vars, ad_afieldset)
-
-  CLASS (roms_fields), target, intent(inout) :: ad_self      !< Fields object
-  TYPE (roms_geom), target,    intent(in   ) :: geom         !< Geometry object
-  TYPE (oops_variables),       intent(in   ) :: vars         !< OOPS variables
-  TYPE (atlas_fieldset),       intent(in   ) :: ad_afieldset !< ATLAS fieldset
-
-  TYPE (atlas_field)                         :: ad_afield
-  TYPE (roms_field), pointer                 :: ad_field
-
-  logical, allocatable                       :: mask(:,:)
-  integer                                    :: IstrD, IendD, JstrD, JendD
-  integer                                    :: IstrH, IendH, JstrH, JendH
-  integer                                    :: LBi, UBi, LBj, UBj, N, ni, nj
-  integer                                    :: cgrid, ivar, k
-  real (kind=kind_real)                      :: info(4), stats(3)
-  real (kind=kind_real), allocatable         :: ad_Fdat(:,:,:)
-  real (kind=kind_real), pointer             :: ad_fldptr(:,:)
-
-  ! Get tile bounds. Currently, ATLAS allows a single function space which is
-  ! problematic with staggered C-grids. That is, ATLAS assumes that all the
-  ! variables are at the same location (cell center, A-grid).
-
-  LBi = geom%LBi
-  UBi = geom%UBi
-  LBj = geom%LBj
-  UBj = geom%UBj
-
-  cgrid = r2dvar                                 ! RHO-points (cell-center)
-
-  IstrD = geom%bounds(cgrid)%IstrD
-  IendD = geom%bounds(cgrid)%IendD
-  JstrD = geom%bounds(cgrid)%JstrD
-  JendD = geom%bounds(cgrid)%JendD
-
-  IstrH = geom%bounds(cgrid)%IstrH
-  IendH = geom%bounds(cgrid)%IendH
-  JstrH = geom%bounds(cgrid)%JstrH
-  JendH = geom%bounds(cgrid)%JendH
-
-  ni = IendH - IstrH + 1
-  nj = JendH - JstrH + 1
-
-  ! Allocate temporary field array.
-
-  allocate ( ad_Fdat(LBi:UBi, LBj:UBj, geom%N) )
-
-  IF (LdebugFields) THEN
-    allocate ( mask(IstrH:IendH, JstrH:JendH) )
-    mask = geom%rmask(IstrH:IendH, JstrH:JendH) > 0
-  END IF
-
-  ! Adjoint of load field data into the ATLAS FieldSet object.
-
-  DO ivar = 1, vars%nvars()
-
-    ! Get JEDI adjoint field from structure.
-
-    CALL ad_self%get (vars%variable(ivar), ad_field)
-
-    IF (LdebugFields) THEN
-      CALL ad_field%stats (stats)
-      IF (geom%f_comm%rank() .eq. 0) THEN
-        PRINT 10, ad_field%name, stats(1), stats(2), INT(stats(3)),            &
-                  '(input increment)'
- 10     FORMAT (2x,'- ',a35,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,  &
-                ',  CheckSum = ', i0, 3x, a)
-      END IF
-    END IF
-
-    ! Get ATLAS field from adjoint FieldSet object. Then, get data pointer.
-
-    ad_afield = ad_afieldset%field(vars%variable(ivar))   
-    CALL ad_afield%data (ad_fldptr)
-
-    ! Adjoint of pack field to ATLAS: load unpacked pointer data into local
-    !                                 temporary array "ad_Fdat" level-by-level.
-
-    N = ad_field%N
-    ad_Fdat = 0.0_kind_real
-
-    DO k = 1, N
-      ad_Fdat(IstrH:IendH,JstrH:JendH,k) = RESHAPE(ad_fldptr(k,:), (/ni, nj/))
-    END DO
-
-    IF (LdebugFields) THEN
-      CALL field_info (ad_Fdat(IstrH:IendH,JstrH:JendH,:),                     &
-                       mask(IstrH:,JstrH:), info)
-      IF (geom%f_comm%rank() .eq. 0) THEN
-        PRINT 10, ad_field%name, info(1), info(2), INT(info(4)),               &
-                  '(data from ATLAS)'
-      END IF
-    END IF
-
-    ! Perform adjoint halo exchange.
-
-     CALL ad_mp_exchange3d (geom%ng, geom%tile, iADM, 1,                        &
-                            LBi, UBi, LBj, UBj, 1, N,                           &
-                            geom%NghostPoints,                                  &
-                            geom%EWperiodic, geom%NSperiodic,                   &
-                            ad_Fdat)
-
-    ! Adjoint of copy state field into ATLAS FieldSet.
-
-    ad_field%val(IstrD:IendD,JstrD:JendD,1:N) =                                &
-                                   ad_field%val(IstrD:IendD,JstrD:JendD,1:N)+  &
-                                   ad_Fdat(IstrD:IendD,JstrD:JendD,1:N)
-
-    IF (LdebugFields) THEN
-      CALL ad_field%stats (stats)
-      IF (geom%f_comm%rank() .eq. 0) THEN
-        PRINT 10, ad_field%name, stats(1), stats(2), INT(stats(3)),            &
-                  '(output increment)'
-      END IF
-    END IF
-
-    ! Release pointer.
-
-    CALL ad_afield%final ()                                      
-
-  END DO
-
-  deallocate (ad_Fdat) 
-  IF (LdebugFields) deallocate (mask)
-
-END SUBROUTINE roms_fields_to_fieldset_ad
-
-! ------------------------------------------------------------------------------
 !> It fills Fields object with data from the ATLAS object.
 
 SUBROUTINE roms_fields_from_fieldset (self, geom, vars, afieldset)
@@ -566,8 +432,8 @@ SUBROUTINE roms_fields_from_fieldset (self, geom, vars, afieldset)
   TYPE (roms_field), pointer                 :: field
   TYPE (atlas_field)                         :: afield
 
-  integer                                    :: IstrH, IendH, JstrH, JendH
-  integer                                    :: cgrid, ivar, k
+  integer                                    :: IstrD, IendD, JstrD, JendD
+  integer                                    :: cgrid, i, ivar, j, k, nc
   real (kind=kind_real)                      :: stats(3)
   real (kind=kind_real), pointer             :: fldptr(:,:)
 
@@ -575,16 +441,14 @@ SUBROUTINE roms_fields_from_fieldset (self, geom, vars, afieldset)
 
   CALL self%zeros ()
 
-  ! Retrieve field increments from the ATLAS object. Currently, ATLAS allows a
-  ! single function space which is problematic with staggered C-grids. That is,
-  ! ATLAS assumes that all the variables are at the same location.
+  ! Retrieve field increments from the ATLAS object.
 
   cgrid = r2dvar                                 ! RHO-points (cell-center)
 
-  IstrH = geom%bounds(cgrid)%IstrH
-  IendH = geom%bounds(cgrid)%IendH
-  JstrH = geom%bounds(cgrid)%JstrH
-  JendH = geom%bounds(cgrid)%JendH
+  IstrD = geom%bounds(cgrid)%IstrD
+  IendD = geom%bounds(cgrid)%IendD
+  JstrD = geom%bounds(cgrid)%JstrD
+  JendD = geom%bounds(cgrid)%JendD
 
   DO ivar = 1, vars%nvars()
 
@@ -599,9 +463,12 @@ SUBROUTINE roms_fields_from_fieldset (self, geom, vars, afieldset)
     CALL afield%data (fldptr)
 
     DO k = 1, field%N
-      field%val(IstrH:IendH,JstrH:JendH,k) = RESHAPE(fldptr(k,:),              &
-                                                     (/IendH-IstrH+1,          &
-                                                       JendH-JstrH+1/))
+      DO j = JstrD, JendD
+        DO i = IstrD, IendD
+          nc = self%geom%atlas_ij2node(i,j)
+          field%val(i,j,k) = fldptr(k,nc)
+        END DO
+      END DO
     END DO
 
     IF (LdebugFields) THEN
@@ -1761,7 +1628,7 @@ SUBROUTINE roms_fields_gstats (fld, nf, gstat)
   real (kind=kind_real), intent(inout) :: gstat(4, nf)   !> [min, max, average]
 
   logical, allocatable                 :: mask(:,:)
-  integer                              :: IstrC, IendC, JstrC, JendC, n
+  integer                              :: IstrD, IendD, JstrD, JendD, n
   real (kind=kind_real)                :: my_water_cells, water_cells
   real (kind=kind_real)                :: buffer(4)
   TYPE (roms_field),           pointer :: field
@@ -1774,19 +1641,19 @@ SUBROUTINE roms_fields_gstats (fld, nf, gstat)
 
     ! Indices for computational domain.
 
-    IstrC = field%bounds%IstrC
-    IendC = field%bounds%IendC
-    JstrC = field%bounds%JstrC
-    JendC = field%bounds%JendC
+    IstrD = field%bounds%IstrD
+    IendD = field%bounds%IendD
+    JstrD = field%bounds%JstrD
+    JendD = field%bounds%JendD
 
     ! Get the mask and the total number of grid cells.
 
-    allocate ( mask(IstrC:IendC, JstrC:JendC) )
+    allocate ( mask(IstrD:IendD, JstrD:JendD) )
 
     IF (.not. ASSOCIATED(field%mask)) THEN
       mask = .true.
     ELSE
-      mask = field%mask(IstrC:IendC, JstrC:JendC) > 0.0
+      mask = field%mask(IstrD:IendD, JstrD:JendD) > 0.0
     END IF
     my_water_cells = COUNT(mask)
 
@@ -1795,7 +1662,7 @@ SUBROUTINE roms_fields_gstats (fld, nf, gstat)
 
     ! Calculate global min/max/mean.
 
-    CALL field_info (field%val(IstrC:IendC, JstrC:JendC,:), mask, buffer)
+    CALL field_info (field%val(IstrD:IendD, JstrD:JendD,:), mask, buffer)
 
     CALL fld%geom%f_comm%allreduce (buffer(1), gstat(1,n), fckit_mpi_min())
     CALL fld%geom%f_comm%allreduce (buffer(2), gstat(2,n), fckit_mpi_max())

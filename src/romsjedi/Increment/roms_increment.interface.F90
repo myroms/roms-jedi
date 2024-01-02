@@ -380,33 +380,6 @@ SUBROUTINE roms_increment_to_fieldset_c (c_key_self, c_key_geom, c_vars,       &
 END SUBROUTINE roms_increment_to_fieldset_c
 
 ! ------------------------------------------------------------------------------
-!> Loads adjoint increment object data into ATLAS object.
-
-SUBROUTINE roms_increment_to_fieldset_ad_c (c_key_self, c_key_geom, c_vars,    &
-                                            c_afieldset)                       &
-                          BIND (c, name='roms_increment_to_fieldset_ad_f90')
-
-  integer (c_int),     intent(in) :: c_key_self     !< Increment fields pointer
-  integer (c_int),     intent(in) :: c_key_geom     !< Geometry pointer
-  TYPE (c_ptr), value, intent(in) :: c_vars         !< List of Variables
-  TYPE (c_ptr), value, intent(in) :: c_afieldset    !< ATLAS FieldSet
-
-  TYPE (roms_increment), pointer  :: self
-  TYPE (roms_geom),  pointer      :: geom
-  TYPE (oops_variables)           :: vars
-  TYPE (atlas_fieldset)           :: afieldset
-
-  CALL roms_increment_registry%get (c_key_self, self)
-  CALL roms_geom_registry%get (c_key_geom, geom)
-
-  vars = oops_variables(c_vars)
-  afieldset = atlas_fieldset(c_afieldset)
-
-  CALL self%to_fieldset_ad (geom, vars, afieldset)
-
-END SUBROUTINE roms_increment_to_fieldset_ad_c
-
-! ------------------------------------------------------------------------------
 !> Fills increment object with data from the ATLAS object.
 
 SUBROUTINE roms_increment_from_fieldset_c (c_key_self, c_key_geom, c_vars,     &

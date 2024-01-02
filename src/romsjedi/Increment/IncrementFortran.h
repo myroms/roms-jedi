@@ -105,11 +105,6 @@ namespace romsjedi {
                                         const oops::Variables &,
                                         atlas::field::FieldSetImpl *);
 
-    void roms_increment_to_fieldset_ad_f90(const F90flds &,
-                                           const F90geom &,
-                                           const oops::Variables &,
-                                           const atlas::field::FieldSetImpl *);
-
     void roms_increment_from_fieldset_f90(const F90flds &,
                                           const F90geom &,
                                           const oops::Variables &,

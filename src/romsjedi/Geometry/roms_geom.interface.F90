@@ -1,5 +1,5 @@
 
-! (C) Copyright 2017-2021 UCAR
+! (C) Copyright 2017-2024 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -18,22 +18,26 @@ MODULE roms_geom_mod_c
 
 USE iso_c_binding
 
-USE atlas_module,               ONLY : atlas_fieldset,                       &
-                                       atlas_functionspace
+USE atlas_module,               ONLY : atlas_field,                          &
+                                       atlas_fieldset,                       &
+                                       atlas_functionspace_NodeColumns
 USE fckit_configuration_module, ONLY : fckit_configuration
 USE fckit_mpi_module,           ONLY : fckit_mpi_comm
+USE kinds,                      ONLY : kind_real
 USE oops_variables_mod,         ONLY : oops_variables
 
 USE mod_ncparam,                ONLY : r2dvar
+USE mod_param,                  ONLY : iNLM
+USE mp_exchange_mod,            ONLY : mp_exchange2d
 
 USE roms_fields_metadata_mod,   ONLY : roms_field_metadata
+USE roms_fieldsutils_mod,       ONLY : LdebugGeometry
 USE roms_geom_mod,              ONLY : roms_geom
 USE roms_geom_reg,              ONLY : roms_geom_registry
 
 implicit none
 
 PRIVATE
-
 ! ------------------------------------------------------------------------------
 CONTAINS
 ! ------------------------------------------------------------------------------
@@ -41,8 +45,8 @@ CONTAINS
 ! ------------------------------------------------------------------------------
 !> Setup geometry object
 
-SUBROUTINE roms_geom_create_c (c_key_self, c_conf, c_comm)                     &
-                        BIND (c, name='roms_geom_create_f90')
+SUBROUTINE roms_geom_init_c (c_key_self, c_conf, c_comm)                       &
+                       BIND (c, name='roms_geom_init_f90')
 
   integer (c_int),     intent(inout) :: c_key_self
   TYPE (c_ptr), value, intent(in   ) :: c_conf
@@ -54,9 +58,9 @@ SUBROUTINE roms_geom_create_c (c_key_self, c_conf, c_comm)                     &
   CALL roms_geom_registry%add (c_key_self)
   CALL roms_geom_registry%get (c_key_self, self)
 
-  CALL self%create (fckit_configuration(c_conf), fckit_mpi_comm(c_comm))
+  CALL self%init (fckit_configuration(c_conf), fckit_mpi_comm(c_comm))
 
-END SUBROUTINE roms_geom_create_c
+END SUBROUTINE roms_geom_init_c
 
 ! ------------------------------------------------------------------------------
 !> Clone geometry object
@@ -80,8 +84,8 @@ END SUBROUTINE roms_geom_clone_c
 ! ------------------------------------------------------------------------------
 !> Geometry destructor
 
-SUBROUTINE roms_geom_delete_c (c_key_self)                                     &
-                         BIND (c, name='roms_geom_delete_f90')
+SUBROUTINE roms_geom_end_c (c_key_self)                                         &
+                      BIND (c, name='roms_geom_end_f90')
 
   integer(c_int), intent(inout) :: c_key_self
 
@@ -89,10 +93,10 @@ SUBROUTINE roms_geom_delete_c (c_key_self)                                     &
 
   CALL roms_geom_registry%get (c_key_self, self)
 
-  CALL self%delete ()
+  CALL self%end ()
   CALL roms_geom_registry%remove (c_key_self)
 
-END SUBROUTINE roms_geom_delete_c
+END SUBROUTINE roms_geom_end_c
 
 ! ------------------------------------------------------------------------------
 !> Get begin and end of local tile geometry
@@ -199,62 +203,254 @@ END SUBROUTINE roms_geom_get_num_levels_c
 ! ------------------------------------------------------------------------------
 !> Set ATLAS FunctionSpace pointers.
 
-SUBROUTINE roms_geom_set_atlas_functionspace_pointer_c (c_key_self,            &
-                                                        c_FuncSpace,           &
-                                                        c_FuncSpaceIncHalo)    &
-           BIND (c, name='roms_geom_set_atlas_functionspace_pointer_f90')
+SUBROUTINE roms_geom_init_atlas_c (c_key_self, c_functionspace, c_fieldset)    &
+                             BIND (c, name='roms_geom_init_atlas_f90')
 
   integer (c_int),     intent(in) :: c_key_self         !< Key to Geometry object
-  TYPE (c_ptr), value, intent(in) :: c_FuncSpace        !< Key to ATLAS function
-  TYPE (c_ptr), value, intent(in) :: c_FuncSpaceIncHalo !< Key to ATLAS function
+  TYPE (c_ptr), value, intent(in) :: c_functionspace    !< Key to FunctionSpace
+  TYPE (c_ptr), value, intent(in) :: c_fieldset         !< Key to FieldSet
 
   TYPE (roms_geom), pointer       :: self
 
   CALL roms_geom_registry%get (c_key_self, self)
 
-  self%functionspace = atlas_functionspace(c_FuncSpace)
-  self%functionspaceIncHalo = atlas_functionspace(c_FuncSpaceIncHalo)
+  self%functionspace = atlas_functionspace_NodeColumns(c_functionspace)
 
-END SUBROUTINE roms_geom_set_atlas_functionspace_pointer_c
+  ! Fill in the Geometry FieldSet.
+
+  self%fieldset = atlas_fieldset(c_fieldset)
+  CALL self%init_fieldset ()
+
+END SUBROUTINE roms_geom_init_atlas_c
 
 ! ------------------------------------------------------------------------------
-!> Set ATLAS **lonlat** and **lonlat_incl_halos** FieldSets.
+!> Determine the number of nodes and number of quadrilaterals cells that are
+!  needed by ATLAS mesh.
 
-SUBROUTINE roms_geom_set_lonlat_c (c_key_self, c_afieldset)                    &
-                             BIND (c, name='roms_geom_set_lonlat_f90')
+SUBROUTINE roms_geom_get_mesh_size_c (c_key_self, c_nodes, c_quads)            &
+                                BIND (c, name='roms_geom_get_mesh_size_f90')
 
-  integer (c_int),     intent(in) :: c_key_self        !< Key to Geometry object
-  TYPE (c_ptr), value, intent(in) :: c_afieldset       !< Key to ATLAS fieldset
+  integer (c_int), intent(in ) :: c_key_self
+  integer (c_int), intent(out) :: c_nodes
+  integer (c_int), intent(out) :: c_quads
 
-  TYPE (roms_geom), pointer       :: self
-  TYPE (atlas_fieldset)           :: afieldset
+  TYPE (roms_geom), pointer    :: self
+
+  logical, allocatable         :: valid_nodes(:,:), valid_cells(:,:)
 
   CALL roms_geom_registry%get (c_key_self, self)
-  afieldset = atlas_fieldset(c_afieldset)
 
-  CALL self%set_lonlat (afieldset)
+  CALL self%mesh_valid_nodes_cells (valid_nodes, valid_cells)
 
-END SUBROUTINE roms_geom_set_lonlat_c
+  c_nodes = COUNT(valid_nodes)
+  c_quads = COUNT(valid_cells)
+
+END SUBROUTINE roms_geom_get_mesh_size_c
 
 ! ------------------------------------------------------------------------------
-!> Fill ATLAS fieldset with cell area, vertical level units, and geographical
-!! mask.
+!> Generate the node and quadrilateral information that is needed by the C++
+!! interface of Geometry::Geometry() to create a connected mesh in ATLAS.
 
-SUBROUTINE roms_geom_to_fieldset_c (c_key_self, c_afieldset)                   &
-                              BIND (c, name='roms_geom_to_fieldset_f90')
+SUBROUTINE roms_geom_gen_mesh_c (c_key_self, c_nodes, c_lon, c_lat, c_ghosts,  &
+                                 c_global_index, c_remote_index, c_tile_index, &
+                                 c_quad_nodes, c_quad_node_list)               &
+                           BIND (c, name='roms_geom_gen_mesh_f90')
 
-  integer (c_int),    intent(in) :: c_key_self      !< Key to Geometry object
-  type(c_ptr), value, intent(in) :: c_afieldset     !< Key to ATLAS fieldset
+  integer (c_int), intent(in)    :: c_key_self
+  integer (c_int), intent(in)    :: c_nodes, c_quad_nodes
+  integer (c_int), intent(inout) :: c_ghosts(c_nodes)
+  integer (c_int), intent(inout) :: c_global_index(c_nodes)
+  integer (c_int), intent(inout) :: c_remote_index(c_nodes)
+  integer (c_int), intent(inout) :: c_tile_index(c_nodes)
+  integer (c_int), intent(inout) :: c_quad_node_list(c_quad_nodes)
+
+  real (c_double), intent(inout) :: c_lon(c_nodes)
+  real (c_double), intent(inout) :: c_lat(c_nodes)
+
+  logical, parameter             :: Verbose = .FALSE.
+  logical, allocatable           :: valid_nodes(:,:), valid_cells(:,:)
+
+  integer                        :: Isize, Ioff, Joff
+  integer                        :: IstrC, IendC, JstrC, JendC
+  integer                        :: IstrD, IendD, JstrD, JendD
+  integer                        :: LBi, LBj, UBi, UBj
+  integer                        :: cgrid, i, ic, ij, j, jc, nc, ng, nq, tile
+
+  real (kind_real), allocatable  :: global_index(:,:)
+  real (kind_real), allocatable  :: local_index(:,:)
+  real (kind_real), allocatable  :: tile_index(:,:)
+
+  character (len=254)            :: Message
 
   TYPE (roms_geom), pointer      :: self
-  TYPE (atlas_fieldset)          :: afieldset
 
   CALL roms_geom_registry%get (c_key_self, self)
-  afieldset = atlas_fieldset(c_afieldset)
 
-  CALL self%to_fieldset (afieldset)
+  ! Grid parameters.
 
-END SUBROUTINE roms_geom_to_fieldset_c
+  ng = self%ng                           ! nested grid number
+  tile = self%tile                       ! parallel partition tile
+
+  cgrid = r2dvar                         ! staggered C-grid RHO-type (0:L,0:M)
+
+  LBi = self%LBi                         ! I-dimension Lower bound
+  UBi = self%UBi                         ! I-dimension Upper bound
+  LBj = self%LBj                         ! J-dimension Lower bound
+  UBj = self%UBj                         ! J-dimension Upper bound
+
+  IstrD = self%bounds(cgrid)%IstrD       ! starting Data I-index
+  IendD = self%bounds(cgrid)%IendD       ! ending   Data I-index
+  JstrD = self%bounds(cgrid)%JstrD       ! starting Data J-index
+  JendD = self%bounds(cgrid)%JendD       ! ending   Data J-index
+
+  Isize = self%Lm + 2                    ! I-size for linear 2D index (Lm+2)
+  Ioff  = 1                              ! because indices are 1-based
+  Joff  = 0                              ! because indices are 1-based
+
+  ! Allocate to ROMS state range bounds since we are using its parallel
+  ! halo exchange, which is limited to floating-point arrays.
+
+  allocate ( global_index(LBi:UBi, LBj:UBj) )
+  allocate ( local_index (LBi:UBi, LBj:UBj) )
+  allocate ( tile_index  (LBi:UBi, LBj:UBj) )
+
+  ! Set ATLAS MeshBuilder arrays for RHO-points:
+  !
+  !   global_index - A 1-based global index linear counter corresponding to the
+  !                  Fortran column-major order (continuous in memory) matrix.
+  !                  Notice the Ioff and Joff offsets since RHO-points indices
+  !                  start at zero in ROMS.
+  !   local_index  - A 1-based local index on the parallel tile partion that
+  !                  owns the point. It is returned as "remote_index" with
+  !                  remote_index_base=1
+  !   tile_index   - A 0-based rank of tile partition (task) woening the point.
+
+  ic = 0
+
+  DO j = JstrD, JendD
+    jc = (j-Joff)*Isize
+    DO i = IstrD, IendD
+      ic = ic + 1
+      global_index(i,j) = REAL(i+Ioff+jc, kind_real)
+      local_index (i,j) = REAL(ic, kind_real)
+      tile_index  (i,j) = REAL(tile, kind_real)
+    END DO
+  END DO
+
+  ! Fill parallel halo points: operation on floating-point data.
+
+  CALL mp_exchange2d (ng, tile, iNLM, 3,                                       &
+                      LBi, UBi, LBj, UBj,                                      &
+                      self%NghostPoints,                                       &
+                      self%EWperiodic, self%NSperiodic,                        &
+                      global_index,                                            &
+                      local_index,                                             &
+                      tile_index)
+
+  ! Find which RHO-points are skipped (lateral boundary conditions).
+
+  CALL self%mesh_valid_nodes_cells (valid_nodes, valid_cells)
+
+  ! In ATLAS, the ghost points are filled by different parallel tasks with
+  ! halo exchanges.
+
+  c_ghosts = 1                           ! unowned ghost points
+
+  ! Fill in the node arrays on computational points to return to the C++
+  ! interface. Save linear mapping from (i,j) to node count and vice versa.
+
+  nc = 0
+
+  DO j = JstrD, JendD
+    DO i = IstrD, IendD
+
+      nc = nc + 1                        ! 1-based node count: local per tile
+
+      c_ghosts(nc) = 0
+
+      self%atlas_ij2node(i,j) = nc
+
+      c_lon(nc) = self%lonr(i,j)
+      c_lat(nc) = self%latr(i,j)
+
+      c_global_index(nc) = INT(global_index(i,j))
+      c_remote_index(nc) = INT(local_index(i,j))
+      c_tile_index  (nc) = INT(tile_index(i,j))
+
+    END DO
+  END DO
+
+  ! Fill in the quadrilateral cell node list (corners).
+
+  nq = 1
+                 
+  DO j = JstrD, JendD-1
+    DO i = IstrD, IendD-1
+      c_quad_node_list(nq  ) = INT(global_index(i  ,j  ))
+      c_quad_node_list(nq+1) = INT(global_index(i  ,j+1))
+      c_quad_node_list(nq+2) = INT(global_index(i+1,j+1))
+      c_quad_node_list(nq+3) = INT(global_index(i+1,j  ))
+      nq = nq + 4
+    END DO
+  END DO
+
+  ! If requested, Report mesh parameters and arrays.
+
+  IF (LdebugGeometry) THEN
+    PRINT 10, 'ROMS_DEBUG roms_geom::gen_mesh_c: tile = ', tile,               &
+                                     ', ng = ', ng,                            &
+                                     ', 2D SHAPE = ',SHAPE(self%atlas_ij2node),&
+                                     '  LBi   = ', LBi,                        &
+                                     ', UBi   = ', UBi,                        &
+                                     ', LBj   = ', LBj,                        &
+                                     ', UBj   = ', UBj,                        &
+                                     '  IstrD = ', self%bounds(cgrid)%IstrD,   &
+                                     ', IendD = ', self%bounds(cgrid)%IendD,   &
+                                     ', JstrD = ', self%bounds(cgrid)%JstrD,   &
+                                     ', JendD = ', self%bounds(cgrid)%JendD,   &
+                                     '  nodes = ', c_nodes,                    &
+                                     '  counted = ', nc,                       &
+                                     '  quads = ', c_quad_nodes,               &
+                                     '  counted = ', nq-1
+ 10 FORMAT (a,i3,a,i0,a,2(i0,1x),2(/,t33,4(a,i4)),/,t33,2(a,i0),/,t33,2(a,i0))
+    CALL self%f_comm%barrier()
+
+    IF (Verbose) THEN                                  ! Fortran unit per task
+      WRITE (100+tile,20) 'i', 'j', 'tile', 'ghost',                           &
+                          'node', 'ij2node', 'local',                          &
+                          'g(i,j)', 'g(i+1,j)', 'g(i,j+1)', 'g(i+1,j+1)'
+ 20   FORMAT (2(4x,a),2(2x,a),6x,a,3x,a,5x,a,4x,a,3(2x,a),/)
+
+      ic = 0
+      DO j = JstrD, JendD-1
+        DO i = IstrD, IendD-1
+          ic = ic + 1
+          ij = self%atlas_ij2node(i,j)
+          WRITE (100+tile,30) i, j, INT(tile_index(i,j)), c_ghosts(ij),        &
+                              ic, ij, INT(local_index(i,j)),                   &
+                              INT(global_index(i  ,j  )),                      &
+                              INT(global_index(i+1,j  )),                      &
+                              INT(global_index(i  ,j+1)),                      &
+                              INT(global_index(i+1,j+1))
+ 30       FORMAT (2i5,1x,i5,2x,i5,8i10)
+        END DO
+      END DO
+    END IF
+  END IF
+
+  IF (c_nodes .ne. nc) THEN
+    WRITE (Message,'(2(i0,a))') c_nodes,' and nc = ',nc,' are not equal.'
+    CALL abor1_ftn ("roms_geom::gen_mesh_c: Error c_nodes = " //               &
+                    TRIM(Message))
+  END IF
+
+  IF (c_quad_nodes .ne. nq-1) THEN
+    WRITE (Message,'(2(i0,a))') c_quad_nodes,' and nc = ',nq,' are not equal.'
+    CALL abor1_ftn ("roms_geom::gen_mesh: Error c_quad_nodes = " //            &
+                    TRIM(Message))
+  END IF
+
+END SUBROUTINE roms_geom_gen_mesh_c
 
 ! ------------------------------------------------------------------------------
 

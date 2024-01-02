@@ -40,7 +40,7 @@ cost function:
 
   background:
     fields_dir: __FIELDS_DIR__
-    fields_filename: __ROMS_MID_PRIOR__
+    fields_filename: __ROMS_INI_PRIOR__
     fields_record: __INI_PRIOR_RECORD__
     date: *date 
     state variables: *roms_state
@@ -72,7 +72,7 @@ cost function:
           fields_filename: __ROMS_PRIOR_STD__
           fields_record: 1
           state variables: *roms_analysis
-          date: *date 
+          date: *mid_date 
 
   observations:
     obs perturbations: false                     # default
@@ -155,12 +155,13 @@ variational:
     online diagnostics:
       max eigenvectors: 5
       eigenvector:
-        single_record: true
-        data_dir: Data/3dvar/3dfgat/primal
-        prefix: __ROMS_APP___roms
-        exp: 3dfgat_eigenvecs
-        type: krylov
-        date: *date
+        state component:
+          single_record: true
+          data_dir: Data/3dvar/3dfgat/primal
+          prefix: __ROMS_APP___roms
+          exp: 3dfgat_eigenvecs
+          type: krylov
+          date: *mid_date
   iterations:                                    # each item defines an outer loop
   - ninner: __NINNER__
     gradient norm reduction: 1.0e-10

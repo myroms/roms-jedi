@@ -145,12 +145,13 @@ variational:
     online diagnostics:
       max eigenvectors: 5
       eigenvector:
-        single_record: true
-        data_dir: Data/3denvar/regular/primal
-        prefix: wc13_roms
-        exp: 3denvar_eigenvecs
-        type: krylov
-        date: *mid_date
+        state component:
+          single_record: true
+          data_dir: Data/3denvar/regular/primal
+          prefix: wc13_roms
+          exp: 3denvar_eigenvecs
+          type: krylov
+          date: *mid_date
   iterations:                                    # each item defines an outer loop
   - geometry: *geom
     ninner: 10

@@ -185,12 +185,13 @@ variational:
     online diagnostics:
       max eigenvectors: 5
       eigenvector:
-        single_record: true
-        data_dir: Data/3dhyb/4dfgat/primal
-        prefix: wc13_roms
-        exp: 3dhyb_eigenvecs
-        type: krylov
-        date: *date
+        state component:
+          single_record: true
+          data_dir: Data/3dhyb/4dfgat/primal
+          prefix: wc13_roms
+          exp: 3dhyb_eigenvecs
+          type: krylov
+          date: *date
   iterations:                                      # each item defines an outer loop
   - ninner: 10
     gradient norm reduction: 1.0e-10

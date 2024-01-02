@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2017-2021 UCAR
+ * (C) Copyright 2017-2024 UCAR
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -19,6 +19,7 @@
 #define ROMSJEDI_GEOMETRY_GEOMETRYFORTRAN_H_
 
 #include "oops/base/Variables.h"
+
 #include "romsjedi/Fortran.h"
 
 // Forward declarations
@@ -41,14 +42,14 @@ namespace eckit {
 namespace romsjedi {
 
   extern "C" {
-    void roms_geom_create_f90(F90geom &,
-                              const eckit::Configuration &,
-                              const eckit::mpi::Comm *);
+    void roms_geom_init_f90(F90geom &,
+                            const eckit::Configuration &,
+                            const eckit::mpi::Comm *);
+
+    void roms_geom_end_f90(F90geom &);
 
     void roms_geom_clone_f90(F90geom &,
                              const F90geom &);
-
-    void roms_geom_delete_f90(F90geom &);
 
     void roms_geom_info_f90(const F90geom &,
                             int &, int &, int &, int &, int &, int &,
@@ -62,15 +63,17 @@ namespace romsjedi {
                                       const size_t &,
                                       size_t[]);
 
-    void roms_geom_set_lonlat_f90(const F90geom &,
+    void roms_geom_get_mesh_size_f90(const F90geom &,
+                                     int &, int&);
+
+    void roms_geom_gen_mesh_f90(const F90geom &,
+                                const int &, double[], double[],
+                                int[], int[], int[], int[],
+                                const int &, int[]);
+
+    void roms_geom_init_atlas_f90(const F90geom &,
+                                  atlas::functionspace::FunctionSpaceImpl *,
                                   atlas::field::FieldSetImpl *);
-
-    void roms_geom_set_atlas_functionspace_pointer_f90(const F90geom &,
-                                    atlas::functionspace::FunctionSpaceImpl *,
-                                    atlas::functionspace::FunctionSpaceImpl *);
-
-    void roms_geom_to_fieldset_f90(const F90geom &,
-                                   atlas::field::FieldSetImpl *);
   }
 }  // namespace romsjedi
 

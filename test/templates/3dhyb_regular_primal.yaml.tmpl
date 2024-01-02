@@ -178,12 +178,13 @@ variational:
     online diagnostics:
       max eigenvectors: 5
       eigenvector:
-        single_record: true
-        data_dir: Data/3dhyb/regular/primal
-        prefix: __ROMS_APP___roms
-        exp: 3dhyb_eigenvecs
-        type: krylov
-        date: *mid_date
+        state component:
+          single_record: true
+          data_dir: Data/3dhyb/regular/primal
+          prefix: __ROMS_APP___roms
+          exp: 3dhyb_eigenvecs
+          type: krylov
+          date: *mid_date
   iterations:                                      # each item defines an outer loop
   - geometry: *geom
     ninner: __NINNER__

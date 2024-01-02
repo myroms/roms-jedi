@@ -371,22 +371,8 @@ namespace romsjedi {
                                    geom_.toFortran(),
                                    vars_,
                                    fset.get());
+    fset.haloExchange();
     Log::trace() << classname() << ":toFieldSet done"
-                 << std::endl;
-  }
-
-// -----------------------------------------------------------------------------
-
-  void Increment::toFieldSetAD(const atlas::FieldSet & fset) {
-    Log::trace() << classname() << ":toFieldSetAD starting"
-                 << std::endl;
-    Log::debug() << classname() << ":toFieldSetAD vars = " << vars_
-                 << std::endl;
-    roms_increment_to_fieldset_ad_f90(toFortran(),
-                                      geom_.toFortran(),
-                                      vars_,
-                                      fset.get());
-    Log::trace() << classname() << ":toFieldSetAD done"
                  << std::endl;
   }
 

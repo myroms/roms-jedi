@@ -1,33 +1,33 @@
-Test     : Input Dirac increment:
-Test     :   Valid time: 2004-01-03T00:00:00Z
-Test     :                                ssh   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.000527148128624
-Test     :                               uocn   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
-Test     :                               vocn   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
-Test     :                               tocn   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.000017571604287
-Test     :                               socn   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.000017571604287
-Test     : Covariance(hybrid) * Increment:
-Test     :   Valid time: 2004-01-03T00:00:00Z
-Test     :                                ssh   Min=    -0.000019659300758   Max=     0.000535150206900   Mean=     0.000000463733455
-Test     :                               uocn   Min=    -0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
-Test     :                               vocn   Min=    -0.000000000000000   Max=     0.000000000000000   Mean=    -0.000000000000000
-Test     :                               tocn   Min=    -0.012645851442539   Max=     0.119615487090981   Mean=     0.000107981811748
-Test     :                               socn   Min=    -0.003722442246333   Max=     0.009318816859270   Mean=     0.000007109929065
-Test     : Covariance(hybrid1_ensemble) * Increment:
-Test     :   Valid time: 2004-01-03T00:00:00Z
-Test     :                                ssh   Min=    -0.000019659300758   Max=     0.000535150206900   Mean=     0.000000463733455
-Test     :                               uocn   Min=    -0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
-Test     :                               vocn   Min=    -0.000000000000000   Max=     0.000000000000000   Mean=    -0.000000000000000
-Test     :                               tocn   Min=    -0.012645851442539   Max=     0.119615487090981   Mean=     0.000107981811748
-Test     :                               socn   Min=    -0.003722442246333   Max=     0.009318816859270   Mean=     0.000007109929065
-Test     : Localization(hybrid1_ensemble_localization) diagnostics:
-Test     : - Localization at zero separation:
-Test     :   + Value for variable ssh, subwindow 0, at (longitude, latitude, vertical index) point (-125.66667, 36.66667, 1): 9.9999999999999967e-01
-Test     :   + Value for variable tocn, subwindow 0, at (longitude, latitude, vertical index) point (-124.00000, 33.33333, 30): 9.9999999999999967e-01
-Test     :   + Value for variable socn, subwindow 0, at (longitude, latitude, vertical index) point (-127.33333, 43.33333, 30): 1.0000000000000000e+00
-Test     : Localization(hybrid1_ensemble) * Increment:
-Test     :   Valid time: 2004-01-03T00:00:00Z
-Test     :                                ssh   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.001310921378271
-Test     :                               uocn   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.005433685784923
-Test     :                               vocn   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.005448459264491
-Test     :                               tocn   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.005281874848391
-Test     :                               socn   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.005281874848391
+Input Dirac increment:
+  Valid time: 2004-01-03T00:00:00Z
+                               ssh   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.000491883915396
+                              uocn   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
+                              vocn   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
+                              tocn   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.000016396130513
+                              socn   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.000016396130513
+Covariance(hybrid) * Increment:
+  Valid time: 2004-01-03T00:00:00Z
+                               ssh   Min=    -0.000008305987894   Max=     0.000937485825664   Mean=     0.000000744082070
+                              uocn   Min=    -0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
+                              vocn   Min=    -0.000000000000000   Max=     0.000000000000000   Mean=    -0.000000000000000
+                              tocn   Min=    -0.010910093137234   Max=     0.131116330646243   Mean=     0.000105127142662
+                              socn   Min=    -0.015042364482940   Max=     0.005596173193845   Mean=    -0.000010650301648
+Covariance(hybrid1_ensemble) * Increment:
+  Valid time: 2004-01-03T00:00:00Z
+                               ssh   Min=    -0.000008305987894   Max=     0.000937485825664   Mean=     0.000000744082070
+                              uocn   Min=    -0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
+                              vocn   Min=    -0.000000000000000   Max=     0.000000000000000   Mean=    -0.000000000000000
+                              tocn   Min=    -0.010910093137234   Max=     0.131116330646243   Mean=     0.000105127142662
+                              socn   Min=    -0.015042364482940   Max=     0.005596173193845   Mean=    -0.000010650301648
+Localization(hybrid1_ensemble_localization) diagnostics:
+- Localization at zero separation:
+  + Value for variable ssh, subwindow 0, at (longitude, latitude, vertical index) point (-125.66667, 36.66667, 1): 1.0000000000000000e+00
+  + Value for variable tocn, subwindow 0, at (longitude, latitude, vertical index) point (-124.00000, 33.33333, 30): 1.0000000000000002e+00
+  + Value for variable socn, subwindow 0, at (longitude, latitude, vertical index) point (-127.33333, 43.33333, 30): 1.0000000000000002e+00
+Localization(hybrid1_ensemble) * Increment:
+  Valid time: 2004-01-03T00:00:00Z
+                               ssh   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.001223225703187
+                              uocn   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.005065579670070
+                              vocn   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.005075844269199
+                              tocn   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.004928537426167
+                              socn   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.004928537426167

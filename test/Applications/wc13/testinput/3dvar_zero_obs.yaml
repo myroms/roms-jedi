@@ -40,7 +40,7 @@ cost function:
 
   background:
     fields_dir: Data/wc13/input
-    fields_filename: wc13_roms_ini_20040103.nc   # initial fields for 2004-01-03T00:00:00Z
+    fields_filename: wc13_roms_ini_20040105.nc   # initial fields for 2004-01-05T00:00:00Z
     fields_record: 1
     state variables: *roms_state
     date: *mid_date                              # middle DA window

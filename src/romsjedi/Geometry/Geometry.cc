@@ -1,5 +1,5 @@
-/*
- * (C) Copyright 2019-2023 UCAR
+ /*
+ * (C) Copyright 2019-2024 UCAR
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -10,21 +10,26 @@
  * \details These C++ functions creates/clones/destroys the Geometry object
  *          for a particular ROMS-JEDI application.
  *
- * \author  Hernan G. Arango (Rutgers University)
+ * \author  Hernan G. Arango (Rutgers University)
  * \date    April 2021
  */
 
-#include "atlas/field.h"
-#include "atlas/functionspace.h"
-#include "atlas/grid.h"
-#include "atlas/util/Config.h"
+#include <algorithm>
 
+#include "atlas/functionspace.h"
+#include "atlas/mesh/actions/BuildHalo.h"
+#include "atlas/mesh/Mesh.h"
+#include "atlas/mesh/MeshBuilder.h"
+#include "atlas/output/Gmsh.h"
 #include "eckit/config/Configuration.h"
 #include "eckit/config/YAMLConfiguration.h"
 #include "oops/util/abor1_cpp.h"
+#include "oops/util/Logger.h"
 
 #include "romsjedi/Geometry/Geometry.h"
 #include "romsjedi/GeometryIterator/GeometryIterator.h"
+
+using oops::Log;
 
 namespace romsjedi {
 
@@ -33,31 +38,137 @@ namespace romsjedi {
 
   Geometry::Geometry(const eckit::Configuration & config,
                      const eckit::mpi::Comm & comm) : comm_(comm) {
-    roms_geom_create_f90(keyGeom_,
-                         config,
-                         &comm);
+    Log::trace() << classname() << ":Geometry setup starting"
+                 << std::endl;
+    roms_geom_init_f90(keyGeom_,
+                       config,
+                       &comm);
+    Log::trace() << classname() << ":Geometry setup done"
+                 << std::endl;
 
-    // Set ATLAS lon/lat field with and without halos
+    // Setup the ATLAS FunctionSpace
 
-    atlas::FieldSet lonlat;
-    roms_geom_set_lonlat_f90(keyGeom_,
-                             lonlat.get());
+    {
+      using atlas::gidx_t;
+      using atlas::idx_t;
 
-    functionSpace_ = atlas::functionspace::PointCloud
-                            (lonlat->field("lonlat"));
-    functionSpaceIncHalo_ = atlas::functionspace::PointCloud
-                                   (lonlat->field("lonlat_inc_halos"));
+      int num_nodes;
+      int num_quad_elements;
 
-    // Set ATLAS function space pointer in Fortran
+      Log::trace() << classname() << ":Geometry ATLAS mesh starting"
+                   << std::endl;
 
-    roms_geom_set_atlas_functionspace_pointer_f90(keyGeom_,
-                                                  functionSpace_.get(),
-                                                  functionSpaceIncHalo_.get());
+      roms_geom_get_mesh_size_f90(keyGeom_,
+                                  num_nodes,
+                                  num_quad_elements);
 
-    // Fill ATLAS fieldset
+      std::vector<double> lons(num_nodes);
+      std::vector<double> lats(num_nodes);
+      std::vector<int> ghosts(num_nodes);
+      std::vector<int> global_indices(num_nodes);
+      std::vector<int> remote_indices(num_nodes);
+      std::vector<int> partitions(num_nodes);
 
-    roms_geom_to_fieldset_f90(keyGeom_,
-                              fields_.get());
+      const int num_quad_nodes = num_quad_elements * 4;
+      std::vector<int> raw_quad_nodes(num_quad_nodes);
+
+      roms_geom_gen_mesh_f90(keyGeom_,
+                             num_nodes,
+                             lons.data(),
+                             lats.data(),
+                             ghosts.data(),
+                             global_indices.data(),
+                             remote_indices.data(),
+                             partitions.data(),
+                             num_quad_nodes,
+                             raw_quad_nodes.data());
+
+      // Calculate global quadrilateral numbering offset per PET.
+
+      std::vector<int> num_elements_per_rank(comm_.size());
+      comm_.allGather(num_quad_elements,
+                      num_elements_per_rank.begin(),
+                      num_elements_per_rank.end());
+
+      int global_element_index = 0;
+      for (size_t i = 0; i < comm_.rank(); ++i) {
+        global_element_index += num_elements_per_rank[i];
+      }
+
+      // Convert some of the temporary arrays into a form ATLAS expects
+
+      std::vector<gidx_t> atlas_global_indices(num_nodes);
+      std::transform(global_indices.begin(),
+                     global_indices.end(),
+                     atlas_global_indices.begin(),
+                     [](const int index) {return atlas::gidx_t{index};});
+
+      std::vector<idx_t> atlas_remote_indices(num_nodes);
+      std::transform(remote_indices.begin(),
+                     remote_indices.end(),
+                     atlas_remote_indices.begin(),
+                     [](const int index) {return atlas::idx_t{index};});
+
+      // ROMS does not have triangles
+
+      std::vector<std::array<gidx_t, 3>> tri_boundary_nodes{};
+      std::vector<gidx_t> tri_global_indices{};
+
+      std::vector<std::array<gidx_t, 4>> quad_boundary_nodes(num_quad_elements);
+      std::vector<gidx_t> quad_global_indices(num_quad_elements);
+
+      for (size_t quad = 0; quad < num_quad_elements; ++quad) {
+        for (size_t i = 0; i < 4; ++i) {
+          quad_boundary_nodes[quad][i] = raw_quad_nodes[4*quad + i];
+        }
+        quad_global_indices[quad] = global_element_index++;
+      }
+
+      // Build the mesh
+
+      const atlas::idx_t remote_index_base = 1;  // 1-based indexing of Fortran
+
+      eckit::LocalConfiguration config{};
+      config.set("mpi_comm", comm_.name());
+
+      const atlas::mesh::MeshBuilder mesh_builder{};
+
+      atlas::Mesh mesh = mesh_builder(lons, lats,
+                                      ghosts,
+                                      atlas_global_indices,
+                                      atlas_remote_indices,
+                                      remote_index_base,
+                                      partitions,
+                                      tri_boundary_nodes,
+                                      tri_global_indices,
+                                      quad_boundary_nodes,
+                                      quad_global_indices,
+                                      config);
+
+      atlas::mesh::actions::build_halo(mesh, 1);
+      functionSpace_ = atlas::functionspace::NodeColumns(mesh, config);
+
+      // Optionaly, Save output for viewing with Gmsh.
+      // Enable viewing halos per task.
+
+      if (config.getBool("gmsh save", false)) {
+        std::string filename = config.getString("gmsh filename", "out.msh");
+        atlas::output::Gmsh gmsh(filename,
+                                 atlas::util::Config("coordinates", "xyz")
+                                 | atlas::util::Config("ghost", true));
+        gmsh.write(mesh);
+      }
+    }
+
+    // Set ATLAS FunctionSpace in Fortran, and fill in the
+    // geometry FieldSet from the fortran side.
+
+    roms_geom_init_atlas_f90(keyGeom_,
+                             functionSpace_.get(),
+                             fields_.get());
+
+    Log::trace() << classname() << ":Geometry ATLAS mesh done"
+                 << std::endl;
   }
 
 // -----------------------------------------------------------------------------
@@ -68,27 +179,17 @@ namespace romsjedi {
     roms_geom_clone_f90(keyGeom_,
                         other.keyGeom_);
 
-
-    functionSpace_ = atlas::functionspace::PointCloud
-                            (other.functionSpace_->lonlat());
-    functionSpaceIncHalo_ = atlas::functionspace::PointCloud
-                                   (other.functionSpaceIncHalo_->lonlat());
-    roms_geom_set_atlas_functionspace_pointer_f90(keyGeom_,
-                                                  functionSpace_.get(),
-                                                  functionSpaceIncHalo_.get());
-
-    fields_ = atlas::FieldSet();
-    for (int jfield = 0; jfield < other.fields_->size(); ++jfield) {
-      atlas::Field atlasField = other.fields_->field(jfield);
-      fields_->add(atlasField);
-    }
+    functionSpace_ = atlas::functionspace::NodeColumns(other.functionSpace_);
+    roms_geom_init_atlas_f90(keyGeom_,
+                             functionSpace_.get(),
+                             fields_.get());
   }
 
 // -----------------------------------------------------------------------------
 /// Geometry destructor.
 
   Geometry::~Geometry() {
-    roms_geom_delete_f90(keyGeom_);
+    roms_geom_end_f90(keyGeom_);
   }
 
 // -----------------------------------------------------------------------------
@@ -135,27 +236,42 @@ namespace romsjedi {
 
 
 // -----------------------------------------------------------------------------
-/// It returns the latitudes/longitudes according to the halo switch.
+/// It returns the latitudes/longitudes.
 
-void Geometry::latlon(std::vector<double> & lats,
-                      std::vector<double> & lons,
-                      const bool halo) const {
-  const atlas::FunctionSpace * fspace;
-  if (halo) {
-    fspace = &functionSpaceIncHalo_;
-  } else {
-    fspace = &functionSpace_;
+  void Geometry::latlon(std::vector<double> & lats,
+                        std::vector<double> & lons,
+                        const bool halo) const {
+    // Get the number of total grid points (including halo)
+
+    int gridSizeWithHalo = functionSpace_.size();
+    auto vLonlat = atlas::array::make_view<double, 2>(functionSpace_.lonlat());
+
+    // Count the number of owned non-ghost points
+
+    auto vGhost = atlas::array::make_view<int, 1>(functionSpace_.ghost());
+    int gridSizeNoHalo = 0;
+    for (size_t i = 0; i < gridSizeWithHalo; i++) {
+      if (vGhost(i) == 0) gridSizeNoHalo++;
+    }
+
+    // Allocate arrays
+
+    int gridSize = (halo) ? gridSizeWithHalo : gridSizeNoHalo;
+    lons.resize(gridSize);
+    lats.resize(gridSize);
+
+    // Fill
+
+    int idx = 0;
+    for (size_t i=0; i < gridSizeWithHalo; i++) {
+      if (!halo && vGhost(i)) continue;
+      double lon = vLonlat(i, 0);
+      double lat = vLonlat(i, 1);
+      lats[idx] = lat;
+      lons[idx++] = lon;
+    }
+    ASSERT(idx == gridSize);
   }
-  const auto lonlat = atlas::array::make_view<double, 2>(fspace->lonlat());
-  const size_t npts = fspace->size();
-  lats.resize(npts);
-  lons.resize(npts);
-  for (size_t jj = 0; jj < npts; ++jj) {
-    lats[jj] = lonlat(jj, 1);
-    lons[jj] = lonlat(jj, 0);
-    if (lons[jj] < 0.0) lons[jj] += 360.0;
-  }
-}
 
 // -----------------------------------------------------------------------------
 /// It prints Geometry information.
@@ -165,8 +281,12 @@ void Geometry::latlon(std::vector<double> & lats,
     int tile;
     int LBi, UBi, LBj, UBj;
     int Istr, Iend, Jstr, Jend;
-    roms_geom_info_f90(keyGeom_, nx, ny, nz, tile, LBi, UBi, LBj, UBj,
+
+    roms_geom_info_f90(keyGeom_,
+                       nx, ny, nz, tile,
+                       LBi, UBi, LBj, UBj,
                        Istr, Iend, Jstr, Jend);
+
     os << "Geometry::print" << std::endl;
     os << "  Lm = " << nx << ", Mm  = " << ny << ", N = " << nz << std::endl;
     os << "  tile = " << tile << ", LBi = " << LBi << ", UBi = " << UBi

@@ -216,7 +216,7 @@ END SUBROUTINE roms_model_delete
 SUBROUTINE roms_model_initialize (self, state, vdate)
 
   USE mod_ncparam,  ONLY : Ngrids
-  USE mod_scalars,  ONLY : INItime, dt, ntimes, time
+  USE mod_scalars,  ONLY : INItime, dt, ntimes, sec2day, tdays, time
   USE mod_stepping, ONLY : kstp, nstp
 
   CLASS (roms_model), intent(inout) :: self    !< ROMS NLM object
@@ -272,6 +272,7 @@ SUBROUTINE roms_model_initialize (self, state, vdate)
   INItime(ng)  = romsTime(ng)                      ! ROMS initial time (s)
   self%INItime = romsTime(ng)                      ! JEDI initial time (s)
   time(ng)     = romsTime(ng)                      ! Current ROMS time (s)
+  tdays(ng)    = time(ng)*sec2day                  ! Current ROMS time (days)
 
   !> Load JEDI initial state fields into ROMS NLM arrays. At initialization,
   !> all time indices are set to one.

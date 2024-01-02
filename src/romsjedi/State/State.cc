@@ -363,6 +363,7 @@ namespace romsjedi {
                                geom_.toFortran(),
                                vars_,
                                fset.get());
+    fset.haloExchange();
     Log::trace() << classname() << ":toFieldSet done"
                  << std::endl;
   }
