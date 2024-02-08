@@ -1,22 +1,22 @@
 Norm of input parameter StdDev: 7.7717431208294583e+03
 CostJb   : Nonlinear Jb = 0.0000000000000000e+00
-CostJo   : Nonlinear Jo(SST) = 3.0489214445281395e+03, nobs = 4876, Jo/n = 6.2529151856606635e-01, err = 4.0783752598605327e-01
+CostJo   : Nonlinear Jo(SST) = 3.0492588414693087e+03, nobs = 4876, Jo/n = 6.2536071400108872e-01, err = 4.0783752598605327e-01
 CostJo   : Nonlinear Jo(ADT) = 1.7514582875318642e+03, nobs = 1570, Jo/n = 1.1155785270903593e+00, err = 2.0313911453614535e-02
-CostFunction: Nonlinear J = 4.8003797320600042e+03
-RPCGMinimizer: reduction in residual norm = 4.7100724314990690e-02
+CostFunction: Nonlinear J = 4.8007171290011729e+03
+RPCGMinimizer: reduction in residual norm = 4.6966684014128533e-02
 CostFunction::addIncrement: Analysis: 
   Valid time: 2004-01-03T00:00:00Z
-                               ssh   Min=    -0.281405031100375   Max=     0.219722706738866   Mean=    -0.013061670174386
+                               ssh   Min=    -0.281405361236071   Max=     0.219727945475687   Mean=    -0.013060238680980
                               uocn   Min=    -0.446971292212522   Max=     0.456028027289591   Mean=     0.001900466381031
                               vocn   Min=    -0.551383331006554   Max=     0.329409302652754   Mean=    -0.008603990000599
-                              tocn   Min=     1.113311665316177   Max=    18.405093873356488   Mean=     6.441222341390109
-                              socn   Min=    31.913544665185302   Max=    34.689664764584805   Mean=    33.941287615622549
+                              tocn   Min=     1.113311665316177   Max=    18.402128088954914   Mean=     6.441246548890880
+                              socn   Min=    31.913544665185302   Max=    34.689664764584805   Mean=    33.941287834011888
                             zocn_r   Min= -4947.840267560327447   Max=    -0.245773375763171   Mean= -1072.647945779628117
 
 
 
 
-CostJb   : Nonlinear Jb = 103.779107418260139
-CostJo   : Nonlinear Jo(SST) = 637.737990177094503, nobs = 4876, Jo/n = 0.130791220298830, err = 0.407837525986053
-CostJo   : Nonlinear Jo(ADT) = 1862.825386994993551, nobs = 1570, Jo/n = 1.186512985347130, err = 0.020313911453615
-CostFunction: Nonlinear J = 2604.342484590348249
+CostJb   : Nonlinear Jb = 104.052348287149115
+CostJo   : Nonlinear Jo(SST) = 637.653971375184710, nobs = 4876, Jo/n = 0.130773989207380, err = 0.407837525986053
+CostJo   : Nonlinear Jo(ADT) = 1862.915377918793638, nobs = 1570, Jo/n = 1.186570304406875, err = 0.020313911453615
+CostFunction: Nonlinear J = 2604.621697581127137
