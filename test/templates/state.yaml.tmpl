@@ -14,7 +14,7 @@ state test:
     fields_filename: __ROMS_INI_PRIOR__
     fields_record: __INI_PRIOR_RECORD__
     date: *date
-    state variables: [ssh, uocn, vocn, tocn, socn]
+    state variables: &roms_state [ssh, uocn, vocn, tocn, socn]
 
   state generate:                              # Generates an analytical state
     analytic init:
@@ -24,7 +24,9 @@ state test:
       U0: 1.2                                  # background U-velocity (m/s)
       V0: 0.7                                  # background V-velocity (m/s)
     date: *date
-    state variables: [ssh, uocn, vocn, tocn, socn]
+    state variables: *roms_state
+
+  construct to variables: *roms_state
 
   norm file: 8609.0895530693979
   norm generated state: 9463.4685549140231

@@ -26,8 +26,7 @@
 #include "romsjedi/Increment/Increment.h"
 #include "romsjedi/State/State.h"
 #include "romsjedi/State/StateFortran.h"
-
-#include "ufo/GeoVaLs.h"
+#include "romsjedi/VariableChange/VariableChange.h"
 
 using oops::Log;
 
@@ -98,6 +97,32 @@ namespace romsjedi {
                                 other.keyFlds_);
     Log::trace() << classname() << ":State created by interpolation"
                  << std::endl;
+  }
+
+// -----------------------------------------------------------------------------
+
+  State::State(const oops::Variables & vars,
+               const State & other)
+    : vars_(other.vars_),
+      time_(other.time_),
+      geom_(other.geom_)
+
+  {
+    roms_state_create_f90(keyFlds_,
+                          geom_.toFortran(),
+                          vars_);
+    roms_state_copy_f90(toFortran(),
+                        other.toFortran());
+
+    // TODO(HGA): Any variable change needs to go here, but is not current used
+    //            now. I assume that in the future some variable changes, say
+    //            for MyVar, will be needed.
+
+    // eckit::LocalConfiguration varChangeConfig;
+    // varChangeConfig.set("variable change name", "MyVar");
+    // VariableChange MyVar (varChangeConfig, geom_);
+    // MyVar.changeVar(*this, vars);
+    Log::trace() << "State::State created with variable change." << std::endl;
   }
 
 // -----------------------------------------------------------------------------
