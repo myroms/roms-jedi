@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2017-2023 UCAR
+ * (C) Copyright 2017-2024 UCAR
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -21,15 +21,16 @@
 
 #include <string>
 
+#include "eckit/config/LocalConfiguration.h"
 #include "oops/interface/AnalyticInitBase.h"
+#include "oops/util/parameters/Parameters.h"
 #include "oops/util/parameters/RequiredParameter.h"
 #include "ufo/ObsTraits.h"
 
 namespace romsjedi {
 
-  class AnalyticInitParameters : public oops::AnalyticInitParametersBase {
-    OOPS_CONCRETE_PARAMETERS(AnalyticInitParameters,
-                             AnalyticInitParametersBase)
+  class AnalyticInitParameters : public oops::Parameters {
+    OOPS_CONCRETE_PARAMETERS(AnalyticInitParameters, Parameters)
 
    public:
     oops::RequiredParameter<double> T0{
@@ -57,14 +58,13 @@ namespace romsjedi {
   class AnalyticInit :
         public oops::interface::AnalyticInitBase<ufo::ObsTraits> {
    public:
-    typedef AnalyticInitParameters Parameters_;
+    explicit AnalyticInit(const eckit::Configuration &);
 
-    explicit AnalyticInit(const Parameters_ &);
     void fillGeoVaLs(const ufo::SampledLocations &,
                      ufo::GeoVaLs &) const override;
 
    private:
-    const Parameters_ options_;
+    eckit::LocalConfiguration config_;
   };
 
 // -----------------------------------------------------------------------------
