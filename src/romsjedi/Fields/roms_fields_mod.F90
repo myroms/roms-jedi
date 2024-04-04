@@ -1,4 +1,4 @@
-! (C) Copyright 2017-2023 UCAR
+! (C) Copyright 2017-2024 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://Qwww.apache.org/licenses/LICENSE-2.0.
@@ -316,7 +316,9 @@ END SUBROUTINE roms_fields_delete
 
 ! ------------------------------------------------------------------------------
 !> It loads Fields data into ATLAS FieldSet object. It includes computational
-!  points, boundary points, and halo.
+!  points, boundary points, and halo. The fields that are returned have halos
+!  (minus the invalid and duplicate halo points), and field values at these
+!  halo points are set to zero.
 
 SUBROUTINE roms_fields_to_fieldset (self, geom, vars, afieldset)
 
@@ -395,10 +397,12 @@ SUBROUTINE roms_fields_to_fieldset (self, geom, vars, afieldset)
       CALL afieldset%add (afield)                           ! add field
     END IF
 
-    ! Get field pointer to ATLAS and copy data.
+    ! Get field pointer to ATLAS and copy data. The pointer is inialized to and
+    ! owned values are overwritten.
 
     CALL afield%data (fldptr)
 
+    fldptr = 0.0_kind_real
     DO k = 1, N
       DO j = JstrD, JendD
         DO i = IstrD, IendD
@@ -411,7 +415,8 @@ SUBROUTINE roms_fields_to_fieldset (self, geom, vars, afieldset)
     meta = afield%metadata()
     CALL meta%set ('interp_type', TRIM(field%interp_type))
 
-    CALL afield%final ()                                    ! release pointer
+    CALL afield%set_dirty (.TRUE.)           ! mark halos as being out-of-date
+    CALL afield%final ()                     ! release pointer
 
   END DO
 

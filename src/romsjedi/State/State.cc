@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2017-2022 UCAR
+ * (C) Copyright 2017-2024 UCAR
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -388,7 +388,6 @@ namespace romsjedi {
                                geom_.toFortran(),
                                vars_,
                                fset.get());
-    fset.haloExchange();
     Log::trace() << classname() << ":toFieldSet done"
                  << std::endl;
   }
