@@ -234,45 +234,6 @@ namespace romsjedi {
     return lvls;
   }
 
-
-// -----------------------------------------------------------------------------
-/// It returns the latitudes/longitudes.
-
-  void Geometry::latlon(std::vector<double> & lats,
-                        std::vector<double> & lons,
-                        const bool halo) const {
-    // Get the number of total grid points (including halo)
-
-    int gridSizeWithHalo = functionSpace_.size();
-    auto vLonlat = atlas::array::make_view<double, 2>(functionSpace_.lonlat());
-
-    // Count the number of owned non-ghost points
-
-    auto vGhost = atlas::array::make_view<int, 1>(functionSpace_.ghost());
-    int gridSizeNoHalo = 0;
-    for (size_t i = 0; i < gridSizeWithHalo; i++) {
-      if (vGhost(i) == 0) gridSizeNoHalo++;
-    }
-
-    // Allocate arrays
-
-    int gridSize = (halo) ? gridSizeWithHalo : gridSizeNoHalo;
-    lons.resize(gridSize);
-    lats.resize(gridSize);
-
-    // Fill
-
-    int idx = 0;
-    for (size_t i=0; i < gridSizeWithHalo; i++) {
-      if (!halo && vGhost(i)) continue;
-      double lon = vLonlat(i, 0);
-      double lat = vLonlat(i, 1);
-      lats[idx] = lat;
-      lons[idx++] = lon;
-    }
-    ASSERT(idx == gridSize);
-  }
-
 // -----------------------------------------------------------------------------
 /// It prints Geometry information.
 

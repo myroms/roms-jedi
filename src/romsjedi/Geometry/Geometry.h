@@ -108,15 +108,6 @@ namespace romsjedi {
     const atlas::FieldSet & fields() const {return fields_;}
     // atlas::FieldSet & fields() {return fields_;}
 
-    void latlon(std::vector<double> &,
-                std::vector<double> &,
-                const bool) const;
-    void latlon(std::vector<double> &,
-                std::vector<double> &,
-                const bool,
-                const char,
-                const bool) const;
-
    private:
     Geometry & operator=(const Geometry &);
     void print(std::ostream &) const;
