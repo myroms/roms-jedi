@@ -297,7 +297,7 @@ SUBROUTINE roms_model_initialize (self, state, vdate)
 
   CALL ROMS_run (self%RunInterval, kernel=iNLM)
   IF (exit_flag .ne. NoError) THEN
-    IF ((LEN_TRIM(blowup_string).gt.0).and.LocalPET) THEN
+    IF ((LEN_TRIM(blowup_string).gt.0) .and. (LocalPET.eq.0)) THEN
       PRINT '(a,/,2a)','roms_model::initialize Abnormal termination: BLOWUP.', &
                        'REASON: ', TRIM(blowup_string)
     END IF

@@ -1,5 +1,6 @@
 #undef ZERO_TRAJECTORY
 
+
 ! (C) Copyright 2017-2023 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
@@ -357,7 +358,7 @@ SUBROUTINE roms_linearModel_initialize_tl (self, incr, vdate)
 
   CALL ROMS_run (self%RunInterval, kernel=iTLM)
   IF (exit_flag .ne. NoError) THEN
-    IF ((LEN_TRIM(blowup_string).gt.0).and.LocalPET) THEN
+    IF ((LEN_TRIM(blowup_string).gt.0) .and. (LocalPET.eq.0)) THEN
       PRINT '(a,/,2a)','roms_model::initialize Abnormal termination: BLOWUP.', &
                        'REASON: ', TRIM(blowup_string)
     END IF

@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2019-2021 UCAR
+ * (C) Copyright 2019-2024 UCAR
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -21,40 +21,18 @@
 #include "oops/util/abor1_cpp.h"
 #include "oops/util/DateTime.h"
 #include "oops/util/Logger.h"
-#include "oops/util/parameters/Parameters.h"
-#include "oops/util/parameters/RequiredParameter.h"
 
 #include "romsjedi/Traits.h"
 #include "romsjedi/Geometry/Geometry.h"
 #include "romsjedi/Model/Model.h"
 #include "romsjedi/Model/ModelFortran.h"
+#include "romsjedi/Model/ModelParameters.h"
 #include "romsjedi/ModelBias/ModelBias.h"
 #include "romsjedi/State/State.h"
 
 using oops::Log;
 
 namespace romsjedi {
-
-  /// Model Parameters Class. The property 'name' is already part of the
-  /// default schema.
-
-  class ModelParameters : public oops::Parameters {
-    OOPS_CONCRETE_PARAMETERS(ModelParameters, Parameters)
-
-   public:
-    oops::RequiredParameter<oops::Variables> vars{
-      "model variables",
-      "Model State variables to process",
-      this};
-    oops::RequiredParameter<util::Duration> tstep{
-      "tstep",
-      "Model time step",
-      this};
-    oops::RequiredParameter<util::Duration> SimulationLength{
-      "simulation length",
-      "Model simulation length period",
-      this};
-  };
 
 // ----------------------------------------------------------------------------
 
