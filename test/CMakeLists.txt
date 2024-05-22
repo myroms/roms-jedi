@@ -34,6 +34,7 @@ file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/zeroObs)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/bump)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/bump_loc)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/diff)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/diffusion)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/dirac)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/ensembles)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/forecast)
@@ -242,6 +243,13 @@ ecbuild_add_test(
   LIBS         romsjedi )
 
 ecbuild_add_test(
+  TARGET       test_romsjedi_parameters_diffusion
+  MPI          ${MPI_NCPUS}
+  COMMAND      romsjedi_error_covariance_toolbox.x
+  ARGS         testinput/parameters_diffusion.yaml
+  LIBS         romsjedi )
+
+ecbuild_add_test(
   TARGET       test_romsjedi_bump_loc_parameters_cor_nicas
   MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_error_covariance_toolbox.x
@@ -255,6 +263,14 @@ ecbuild_add_test(
   ARGS         testinput/dirac_cov_nicas.yaml
   LIBS         romsjedi
   TEST_DEPENDS test_romsjedi_bump_parameters_cor_nicas )
+
+ecbuild_add_test(
+  TARGET       test_romsjedi_dirac_diffusion
+  MPI          ${MPI_NCPUS}
+  COMMAND      romsjedi_error_covariance_toolbox.x
+  ARGS         testinput/dirac_diffusion.yaml
+  LIBS         romsjedi
+  TEST_DEPENDS test_romsjedi_parameters_diffusion )
 
 #================================================================================
 # ROMS-JEDI Ensemble applications

@@ -1,0 +1,47 @@
+# ROMS-JEDI SABER Pseudo-Diffusion Training Parameters (diffusion) Test: WC13 Application
+#
+# It sets correlation parameters to model the background error covariance
+# using SABER diffusion operator.
+
+geometry:
+  project_dir: Data/wc13
+  roms_stdinp: roms_wc13_20040103.in
+  fields metadata: Data/fields_metadata.yaml
+  ng: 1                                               # ROMS nested grid number
+
+background:
+  fields_dir: Data/wc13/input
+  fields_filename: wc13_roms_ini_20040103.nc   
+  fields_record: 1                                    # initial fields
+  state variables: [ssh, tocn, socn]
+  date: &date 2004-01-03T00:00:00Z                    # initial fields date
+
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: diffusion
+    calibration:
+      normalization:
+        iterations: 1000                              # Ramdomization approach
+      groups:
+      - horizontal:
+          fixed value: 160.0e3
+        write:
+          filepath: Data/diffusion
+          files prefix: wc13_diffusion_hcor_160
+      - horizontal:
+          fixed value: 80.0e3
+        write:
+          filepath: Data/diffusion
+          files prefix: wc13_diffusion_hcor_80
+      - vertical:
+          levels: 10
+        write:
+          filepath: Data/diffusion
+          files prefix: wc13_diffusion_vcor
+
+test:
+  reference filename: testref/parameters_diffusion.ref
+  float relative tolerance: 1.0e-3
+  log output filename: testoutput/parameters_diffusion.log
+  test output filename: testoutput/parameters_diffusion.out
