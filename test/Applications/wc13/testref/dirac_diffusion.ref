@@ -1,0 +1,13 @@
+Input Dirac increment:
+  Valid time: 2004-01-03T00:00:00Z
+                               ssh   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.000491883915396
+                              tocn   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.000016396130513
+                              socn   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.000016396130513
+Norm of input parameter StdDev: 7542.728693496970664
+Adjoint test for block StdDev passed
+Adjoint test for block diffusion passed
+Covariance(SABER) * Increment:
+  Valid time: 2004-01-03T00:00:00Z
+                               ssh   Min=     0.000000000000000   Max=     0.000159300707210   Mean=     0.000003238596344
+                              tocn   Min=     0.000000000000000   Max=     0.221412693517443   Mean=     0.000797943475033
+                              socn   Min=     0.000000000000000   Max=     0.008176103766976   Mean=     0.000023758403914
