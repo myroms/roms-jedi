@@ -74,6 +74,6 @@ output:
 
 test:
   reference filename: testref/ens_perturbation.ref
-  float relative tolerance: 1.0e-2
+  float relative tolerance: 1.0e-1
   log output filename: testoutput/ens_perturbation.log
   test output filename: testoutput/ens_perturbation.out

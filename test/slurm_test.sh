@@ -143,8 +143,10 @@ elif [ ${ALL_TEST} -eq 2 ]; then
   ctest -VV -R test_romsjedi_diffstates
   ctest -VV -R test_romsjedi_forecast_roms
   ctest -VV -R test_romsjedi_bump_parameters_cor_nicas
+  ctest -VV -R test_romsjedi_parameters_diffusion
   ctest -VV -R test_romsjedi_bump_loc_parameters_cor_nicas
   ctest -VV -R test_romsjedi_dirac_cov_nicas
+  ctest -VV -R test_romsjedi_dirac_diffusion
   ctest -VV -R test_romsjedi_ens_pert
   ctest -VV -R test_romsjedi_ens_meanandvariance
   ctest -VV -R test_romsjedi_ens_recenter
@@ -297,6 +299,14 @@ else
   fi
 
   ic=$(( $ic + 1 ))
+  ${MPIrun} ../../bin/romsjedi_error_covariance_toolbox.x testinput/parameters_diffusion.yaml 1>> test_${ic}.log 2>> test.err
+  if [ $? -ne 0 ] ; then
+    echo " Test #${ic}: test_romsjedi_parameters_diffusion ............  *Failed"
+  else
+    echo " Test #${ic}: test_romsjedi_parameters_diffusion ............  Passed"
+  fi
+
+  ic=$(( $ic + 1 ))
   ${MPIrun} ../../bin/romsjedi_error_covariance_toolbox.x testinput/parameters_bump_loc_cor_nicas.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
     echo " Test #${ic}: test_romsjedi_bump_loc_parameters_cor_nicas ... *Failed"
@@ -306,6 +316,14 @@ else
 
   ic=$(( $ic + 1 ))
   ${MPIrun} ../../bin/romsjedi_error_covariance_toolbox.x testinput/dirac_cov_nicas.yaml 1>> test_${ic}.log 2>> test.err
+  if [ $? -ne 0 ] ; then
+    echo " Test #${ic}: test_romsjedi_dirac_cov_nicas .................  *Failed"
+  else
+    echo " Test #${ic}: test_romsjedi_dirac_cov_nicas .................  Passed"
+  fi
+
+  ic=$(( $ic + 1 ))
+  ${MPIrun} ../../bin/romsjedi_error_covariance_toolbox.x testinput/dirac_diffusion.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
     echo " Test #${ic}: test_romsjedi_dirac_cov_nicas .................  *Failed"
   else
