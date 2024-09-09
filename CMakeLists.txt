@@ -1,4 +1,4 @@
-# (C) Copyright 2019-2021 UCAR.
+# (C) Copyright 2019-2024 UCAR.
 #
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -8,7 +8,7 @@
 ################################################################################
 
 cmake_minimum_required( VERSION 3.12 )
-project( roms-jedi VERSION 1.0.0 LANGUAGES C CXX Fortran)
+project( roms-jedi VERSION 1.0 LANGUAGES C CXX Fortran)
 
 find_package(ecbuild 3.3.2 REQUIRED)
 include( ecbuild_system NO_POLICY_SCOPE )
@@ -46,10 +46,6 @@ add_subdirectory( test )
 # print the summary of the configuration
 
 ecbuild_print_summary()
-
-
-
-
 
 
 

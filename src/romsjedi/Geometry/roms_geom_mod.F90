@@ -134,6 +134,10 @@ TYPE, PUBLIC :: roms_geom
 
   real (kind_real), allocatable  :: vmask(:,:)     ! mask,  0=land 1=ocean
 
+  ! Grid level thickness (m), cell center,
+
+  real (kind_real), allocatable  :: Hz(:,:,:)
+
   ! Grid negative depths (m) are staggered RHO-, U- and V-points (cell center
   ! and W-points (top and bottom cell faces).
 
@@ -144,6 +148,11 @@ TYPE, PUBLIC :: roms_geom
 
   real (kind_real), allocatable  :: z0_r(:,:,:)    ! unvarying RHO-depths
   real (kind_real), allocatable  :: z0_w(:,:,:)    ! unvarying W-depths
+
+
+  ! Vertical coordinate type in ATLAS FunctionSpace: "depths" or "levels"
+
+  character (len=10) :: vertCoord_type
 
   ! ATLAS Mesh: A Field is represented in the grid domain (RHO-cell) that
   ! includes computational points plus tile halo.
@@ -179,7 +188,7 @@ CONTAINS
 ! ------------------------------------------------------------------------------
 
 ! ------------------------------------------------------------------------------
-!> Setup geometry object by calling "ROMS_initialize".
+!> Setup geometry object by calling "ROMS_initializeP1".
 
 SUBROUTINE roms_geom_init (self, f_conf, f_comm)
 
@@ -189,7 +198,7 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
   USE mod_scalars,     ONLY : EWperiodic, NSperiodic, NoError,                  &
                               exit_flag
 
-  USE roms_kernel_mod, ONLY : ROMS_initialize
+  USE roms_kernel_mod, ONLY : ROMS_initializeP1
   USE set_depth_mod,   ONLY : set_depth0, set_depth
 
   CLASS (roms_geom),          intent(out) :: self         !< Geometry object
@@ -201,7 +210,8 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
   integer                                 :: cgrid, i, j, k, lstr, ng, tile
   integer                                 :: MyComm
 
-  character (len=:), allocatable          :: flds_meta, project_dir, roms_stdinp
+  character (len=:), allocatable          :: flds_meta, project_dir
+  character (len=:), allocatable          :: roms_stdinp, vertCoord_type
 
   ! Get MPI communicator.
 
@@ -237,11 +247,28 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
 
   CALL f_conf%get_or_die ("fields metadata", flds_meta)
   CALL self%fieldsinfo%create (flds_meta)
+  IF (allocated(flds_meta)) deallocate (flds_meta)
 
   ! Get nested grid number from configuration YAML file.
 
   CALL f_conf%get_or_die("ng", ng)
   self%ng = ng
+
+  ! Get vertical coordinate type for ATLAS FunctionSpace (default="depths")
+
+  IF (f_conf%has("vertical coordinate")) THEN
+    CALL f_conf%get_or_die ("vertical coordinate", vertCoord_type)
+    self%vertCoord_type = vertCoord_type
+    IF (allocated(vertCoord_type)) deallocate (vertCoord_type)
+  ELSE
+    self%vertCoord_type = "depth"
+  END IF
+
+  IF (f_comm%rank() .eq. 0) THEN
+    PRINT 10, 'ROMS_GEOM::geom_init: vertCoord_type = ',                       &
+              TRIM(self%vertCoord_type), '(ATLAS FunctionSpace)'
+ 10 FORMAT (/,a,"'",a,"'",2x,a/)
+  END IF
 
   ! Get iterator dimension from configuration YAML file.
 
@@ -252,7 +279,8 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
 
   CALL roms_get_env ()
 
-  ! ROMS initialization: read input script, allocate, initialize, and set grid.
+  ! ROMS-JEDI phase 1 initialization: read input script, allocate, initialize,
+  ! and set grid.
 
   lstr = LEN_TRIM(project_dir)
   IF (project_dir(lstr:lstr) .eq. CHAR(47) ) THEN
@@ -260,14 +288,16 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
   ELSE
     Iname = TRIM(project_dir) // CHAR(47) // TRIM(roms_stdinp)
   END IF
+  IF (allocated(project_dir)) deallocate (project_dir)
+  IF (allocated(roms_stdinp)) deallocate (roms_stdinp)
 
   IF (.not.allocated(BOUNDS)) THEN       ! it is only called once
     first = .TRUE.
-    CALL ROMS_initialize (first,                                               &
-                          mpiCOMM = MyComm,                                    &
-                          kernel  = iNLM)
+    CALL ROMS_initializeP1 (first,                                             &
+                            mpiCOMM = MyComm,                                  &
+                            kernel  = iNLM)
     IF (exit_flag .ne. NoError) THEN
-      CALL abor1_ftn ("geom_init: Error while calling ROMS_initialize")
+      CALL abor1_ftn ("geom_init: Error while calling ROMS_initializeP1")
     END IF
   END IF
 
@@ -399,6 +429,7 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
 
   self%pm   = GRID(ng)%pm
   self%pn   = GRID(ng)%pn
+  self%Hz   = GRID(ng)%Hz
 
   self%lonr = GRID(ng)%lonr
   self%latr = GRID(ng)%latr
@@ -496,7 +527,7 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
   ! Report.
 
   IF (LdebugGeometry) THEN
-    PRINT 10, 'ROMS_DEBUG roms_geom::init: tile = ', self%tile,                &
+    PRINT 20, 'ROMS_DEBUG roms_geom::init: tile = ', self%tile,                &
               ', ng = ', self%ng,                                              &
               ', RHO-points SHAPE = ', SHAPE(self%z_r),                        &
               '  LBi   = ', self%LBi,                                          &
@@ -515,7 +546,7 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
               ', IendC = ', self%bounds(2)%IendC,                              &
               ', JstrC = ', self%bounds(2)%JstrC,                              &
               ', JendC = ', self%bounds(2)%JendC
- 10 FORMAT (a,i3, a,i0, a,3(i0,1x),4(/,t29,4(a,i4)))
+ 20 FORMAT (a,i3, a,i0, a,3(i0,1x),4(/,t29,4(a,i4)))
     CALL self%f_comm%barrier()
   END IF
 
@@ -558,6 +589,8 @@ SUBROUTINE roms_geom_end (self)
   IF (allocated(self%rmask))      deallocate (self%rmask)
   IF (allocated(self%umask))      deallocate (self%umask)
   IF (allocated(self%vmask))      deallocate (self%vmask)
+
+  IF (allocated(self%Hz))         deallocate (self%Hz)
 
   IF (allocated(self%z_r))        deallocate (self%z_r)
   IF (allocated(self%z_u))        deallocate (self%z_u)
@@ -631,6 +664,10 @@ SUBROUTINE roms_geom_clone (self, other)
   self%roms_stdinp = other%roms_stdinp
   self%fieldsinfo  = other%fieldsinfo
 
+  ! Vertical coordinate type for ATLAS FunctionSpace.
+
+  self%vertCoord_type = other%vertCoord_type
+
   ! Iterator dimension.
 
   self%iterator_dimension = other%iterator_dimension
@@ -649,6 +686,7 @@ SUBROUTINE roms_geom_clone (self, other)
 
   self%pm  = other%pm
   self%pn  = other%pn
+  self%Hz  = other%Hz
 
   self%lonr = other%lonr
   self%latr = other%latr
@@ -757,6 +795,8 @@ SUBROUTINE roms_geom_allocate (self)
   allocate (self%umask(LBi:UBi, LBj:UBj));        self%umask = 0.0_kind_real
   allocate (self%vmask(LBi:UBi, LBj:UBj));        self%vmask = 0.0_kind_real
 
+  allocate (self%Hz(LBi:UBi, LBj:UBj, LBk:UBk));  self%Hz = 0.0_kind_real
+
   allocate (self%z_r(LBi:UBi, LBj:UBj, LBk:UBk)); self%z_r = 0.0_kind_real
   allocate (self%z_u(LBi:UBi, LBj:UBj, LBk:UBk)); self%z_u = 0.0_kind_real
   allocate (self%z_v(LBi:UBi, LBj:UBj, LBk:UBk)); self%z_v = 0.0_kind_real
@@ -777,21 +817,24 @@ SUBROUTINE roms_geom_init_fieldset (self)
 
   CLASS (roms_geom),     intent(inout) :: self            !< Geometry object
 
-  TYPE (atlas_field)                   :: Area, Gmask, Owned, VertCoord
+  TYPE (atlas_field)                   :: Area, Gmask, Owned, Rmask, VertCoord
+  integer                              :: IstrC, IendC, JstrC, JendC
   integer                              :: IstrD, IendD, JstrD, JendD
   integer                              :: N, cgrid, i, j, k, nc
   integer, pointer                     :: Gmask_ptr(:,:), Owned_ptr(:,:)
-  real (kind_real), pointer            :: Area_ptr(:,:), VertCoord_ptr(:,:)
+  real (kind_real), pointer            :: Area_ptr(:,:), Rmask_ptr(:,:)
+  real (kind_real), pointer            :: VertCoord_ptr(:,:)
 
   ! Initialize. ATLAS assumes that all the variables are located at the
   ! grid center (A-grid).
 
   cgrid = r2dvar                         ! RHO-points, grid cell center
 
-  IstrD = self%bounds(cgrid)%IstrD       ! starting data I-index
-  IendD = self%bounds(cgrid)%IendD       ! ending   data I-index
-  JstrD = self%bounds(cgrid)%JstrD       ! starting data J-index
-  JendD = self%bounds(cgrid)%JendD       ! ending   data J-index
+  IstrD = self%bounds(cgrid)%IstrD       ! starting Data I-index
+  IendD = self%bounds(cgrid)%IendD       ! ending   Data I-index
+  JstrD = self%bounds(cgrid)%JstrD       ! starting Data J-index
+  JendD = self%bounds(cgrid)%JendD       ! ending   Data J-index
+
   N     = self%N
 
   ! Add grid cell area (m2) at RHO-points.
@@ -801,6 +844,7 @@ SUBROUTINE roms_geom_init_fieldset (self)
                                          levels=1)
   CALL self%fieldset%add (Area)
   CALL area%data (Area_ptr)
+  CALL area%set_dirty (.TRUE.)           ! mark halos as being out-of-date    
 
   ! Add vertical level unit: time-independent depths (m) at RHO-points 
   !                          (negative, levelsAreTopDown = .FALSE.)
@@ -812,14 +856,23 @@ SUBROUTINE roms_geom_init_fieldset (self)
   CALL self%fieldset%add (VertCoord)
   CALL VertCoord%data (VertCoord_ptr)
 
-  ! Add geographical land/sea mask at RHO-points with values of land=0 and
-  ! sea=1.
+  ! Add geographical land/sea integer mask at RHO-points with values of
+  ! land=0 and sea=1.
 
   Gmask = self%functionspace%create_field(name='gmask',                        &
                                           kind=atlas_integer(KIND(0)),         &
                                           levels=N)
   CALL self%fieldset%add (Gmask)
   CALL Gmask%data (Gmask_ptr)
+
+  ! Add geographical land/sea floating-point mask at RHO-points with values of
+  ! land=0 and sea=1.
+
+  Rmask = self%functionspace%create_field(name='mask_rho',                     &
+                                          kind=atlas_real(kind_real),          &
+                                          levels=1)
+  CALL self%fieldset%add (Rmask)
+  CALL Rmask%data (Rmask_ptr)
 
   ! Add owned 2D mask: An integer array with one at owned points and zero at
   ! ghost grid points. Here, owned indicates possessed by a single process
@@ -839,27 +892,49 @@ SUBROUTINE roms_geom_init_fieldset (self)
     DO i = IstrD, IendD
       nc = self%atlas_ij2node(i,j)
       Area_ptr(1,nc) = self%cell_area(i,j)
+      Rmask_ptr(1,nc) = self%rmask(i,j)
       owned_ptr(1,nc) = 1                      ! point owned by parallel task
     END DO
   END DO
 
-  ! Fill the 3D data pointers at Data RHO-points (computational plus lateral
-  ! boundary conditions points).
+  ! Fill the 3D data pointer for geographical mask at Data RHO-points.
 
   DO k = 1, N
     DO j = JstrD, JendD
       DO i = IstrD, IendD
         nc = self%atlas_ij2node(i,j)
         Gmask_ptr(k,nc) = INT(self%rmask(i,j))
-        VertCoord_ptr(k,nc) = self%z0_r(i,j,k)
       END DO
     END DO
   END DO
+
+  ! Fill the 3D data pointer for vertical coordinate type at RHO-points.
+
+  IF (TRIM(self%vertCoord_type).eq."levels") THEN
+    DO k = 1, N
+      DO j = JstrD, JendD
+        DO i = IstrD, IendD
+          nc = self%atlas_ij2node(i,j)
+          VertCoord_ptr(k,nc) = REAL(k, kind_real)
+        END DO
+      END DO
+    END DO
+  ELSE                           ! "depths", time invariant (zeta=0)
+    DO k = 1, N
+      DO j = JstrD, JendD
+        DO i = IstrD, IendD
+          nc = self%atlas_ij2node(i,j)
+          VertCoord_ptr(k,nc) = self%z0_r(i,j,k)
+        END DO
+      END DO
+    END DO
+  END IF
 
   ! ATLAS Parallel halo exchange.
 
   CALL Area%halo_exchange ()
   CALL Gmask%halo_exchange ()
+  CALL Rmask%halo_exchange ()
   CALL VertCoord%halo_exchange ()
 
   ! Done, cleanup.
@@ -867,6 +942,7 @@ SUBROUTINE roms_geom_init_fieldset (self)
   CALL Area%final ()
   CALL Gmask%final ()
   CALL Owned%final ()
+  CALL Rmask%final ()
   CALL VertCoord%final ()  
 
 END SUBROUTINE roms_geom_init_fieldset
@@ -881,7 +957,7 @@ SUBROUTINE roms_geom_mesh_valid_nodes_cells (self, nodes, cells)
   logical, allocatable, intent(out) :: nodes(:,:)         !< 2D grid vertices
   logical, allocatable, intent(out) :: cells(:,:)         !< grid cells
 
-  integer                           :: IstrD, IendD, JstrD, JendD
+  integer                           :: IstrD, IendC, JstrD, JendC
   integer                           :: cgrid, ng, tile
 
   ! Grid parameters.
@@ -890,26 +966,29 @@ SUBROUTINE roms_geom_mesh_valid_nodes_cells (self, nodes, cells)
   cgrid = r2dvar                         ! staggered C-grid RHO-type (0:L,0:M)
   tile  = self%tile                      ! parallel partition tile
 
-  IstrD = self%bounds(cgrid)%IstrD       ! starting Data I-index
-  IendD = self%bounds(cgrid)%IendD       ! ending   Data I-index
-  JstrD = self%bounds(cgrid)%JstrD       ! starting Data J-index
-  JendD = self%bounds(cgrid)%JendD       ! ending   Data J-index
+  IstrD = self%bounds(cgrid)%IstrD       ! starting Data          I-index
+  IendC = self%bounds(cgrid)%IendC       ! ending   Computational I-index
 
-  ! Allocate grid nodes and cells at Data RHO-points (computational plus
-  ! lateral boundary conditions points).
+  JstrD = self%bounds(cgrid)%JstrD       ! starting Data          J-index
+  JendC = self%bounds(cgrid)%JendC       ! ending   Computational J-index
 
-  allocate ( cells(IstrD:IendD-1, JstrD:JendD-1) )   ! cells are 1 less in (I,J)
-  allocate ( nodes(IstrD:IendD,   JstrD:JendD) )
+  ! Allocate grid nodes and cells arrays at Data RHO-points (computational plus
+  ! lateral boundary conditions points). Notice that indices IstrD and JstrD
+  ! are used to ensure that western and southern lateral boundary conditions
+  ! points are included in the nodes enumeration,
+
+  allocate ( nodes(IstrD:IendC+1, JstrD:JendC+1) )   ! number of quads vertices
+  allocate ( cells(IstrD:IendC,   JstrD:JendC  ) )   ! number of quads
 
   ! Initialize to valid points.
 
-  nodes = .TRUE.
   cells = .TRUE.
+  nodes = .TRUE.
 
   IF (LdebugGeometry) THEN
     PRINT 10, 'ROMS_DEBUG: roms_geom::valid_nodes_cells: tile = ', self%tile,  &
               ', ng = ', self%ng,                                              &
-              ', 2D SHAPE = ',SHAPE(nodes),                                    &
+              ', 2D SHAPE = ',SHAPE(cells),                                    &
               '  nodes = ', COUNT(nodes),                                      &
               ', quads = ', COUNT(cells)
  10 FORMAT (a,i3, a,i0, a,2(i0,1x),/,t41,2(a,i0))

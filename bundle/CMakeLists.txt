@@ -57,13 +57,17 @@ message( STATUS "---------------------------------------------------------" )
 message( STATUS "BUNDLE ECBUILD_DEFAULT_BUILD_TYPE = ${ECBUILD_DEFAULT_BUILD_TYPE}" )
 message( STATUS "BUNDLE CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}" )
 
-# Set number of mpi-processes to use (default, MPIEXEC_NUMPROC=2)
+# Set number of mpi-processes to use if the MPIEXEC_NUMPROC value is specified in
+# the 'ecbuild' command line or default MPI_NCPUS=2 and MPI_NCPUS_MAX=12 for simple
+# and computationally demanding algorithms (like 4D-Var Unit Tests), respectively.
 
 if ( NOT MPIEXEC_NUMPROC )
   set( MPI_NCPUS 2 )
+  set( MPI_NCPUS_MAX 12 )
   math( EXPR MPI_3xNCPUS "${MPI_NCPUS} * 3")
 else()
   set( MPI_NCPUS ${MPIEXEC_NUMPROC} )
+  set( MPI_NCPUS_MAX ${MPIEXEC_NUMPROC} )
   math( EXPR MPI_3xNCPUS "${MPI_NCPUS} * 3")
 endif()
 
@@ -122,7 +126,7 @@ endif()
 
  ecbuild_bundle( PROJECT roms       GIT "https://github.com/myroms/roms.git"                 BRANCH develop UPDATE )
  ecbuild_bundle( PROJECT oops       GIT "https://github.com/jcsda-internal/oops.git"         BRANCH develop UPDATE )
-#ecbuild_bundle( PROJECT vader      GIT "https://github.com/jcsda-internal/vader.git"        BRANCH develop UPDATE )
+ ecbuild_bundle( PROJECT vader      GIT "https://github.com/jcsda-internal/vader.git"        BRANCH develop UPDATE )
  ecbuild_bundle( PROJECT saber      GIT "https://github.com/jcsda-internal/saber.git"        BRANCH develop UPDATE )
 
  ecbuild_bundle( PROJECT gsw        GIT "https://github.com/jcsda-internal/GSW-Fortran.git"  BRANCH develop UPDATE )

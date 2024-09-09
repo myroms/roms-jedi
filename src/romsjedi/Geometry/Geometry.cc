@@ -38,6 +38,8 @@ namespace romsjedi {
 
   Geometry::Geometry(const eckit::Configuration & config,
                      const eckit::mpi::Comm & comm) : comm_(comm) {
+    GeometryParameters params;
+    params.deserialize(config);
     Log::trace() << classname() << ":Geometry setup starting"
                  << std::endl;
     roms_geom_init_f90(keyGeom_,
@@ -90,7 +92,7 @@ namespace romsjedi {
                       num_elements_per_rank.begin(),
                       num_elements_per_rank.end());
 
-      int global_element_index = 0;
+      int global_element_index = 1;
       for (size_t i = 0; i < comm_.rank(); ++i) {
         global_element_index += num_elements_per_rank[i];
       }
@@ -128,8 +130,8 @@ namespace romsjedi {
 
       const atlas::idx_t remote_index_base = 1;  // 1-based indexing of Fortran
 
-      eckit::LocalConfiguration config{};
-      config.set("mpi_comm", comm_.name());
+      eckit::LocalConfiguration atlas_config{};
+      atlas_config.set("mpi_comm", comm_.name());
 
       const atlas::mesh::MeshBuilder mesh_builder{};
 
@@ -143,19 +145,19 @@ namespace romsjedi {
                                       tri_global_indices,
                                       quad_boundary_nodes,
                                       quad_global_indices,
-                                      config);
+                                      atlas_config);
 
-      atlas::mesh::actions::build_halo(mesh, 1);
-      functionSpace_ = atlas::functionspace::NodeColumns(mesh, config);
+      atlas::mesh::actions::build_halo(mesh, 2);
+      functionSpace_ = atlas::functionspace::NodeColumns(mesh, atlas_config);
 
       // Optionaly, Save output for viewing with Gmsh.
-      // Enable viewing halos per task.
 
-      if (config.getBool("gmsh save", false)) {
-        std::string filename = config.getString("gmsh filename", "out.msh");
-        atlas::output::Gmsh gmsh(filename,
-                                 atlas::util::Config("coordinates", "xyz")
-                                 | atlas::util::Config("ghost", true));
+      if (params.writeGmsh) {
+        const std::string filename = params.writeGmshFilename;
+        eckit::LocalConfiguration gmsh_config{};
+        gmsh_config.set("coordinates", "xyz");
+        gmsh_config.set("ghost", true);       // enables viewing halos per task
+        atlas::output::Gmsh gmsh(filename, gmsh_config);
         gmsh.write(mesh);
       }
     }

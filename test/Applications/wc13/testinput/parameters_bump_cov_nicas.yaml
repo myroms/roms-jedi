@@ -17,6 +17,10 @@ background:
   state variables: [ssh, tocn, socn]
   date: &date 2004-01-03T00:00:00Z                # initial fields date
 
+# In SABER, by default, all the length scales are defined as the Gaspari-Cohn (1999)
+# support radius, c. The relationship with the Daley (1991) correlation Gaussian
+# length, L, is:    L = c * SQRT(0.3)   or   c = L / SQRT(0.3)
+
 background error:
   covariance model: SABER
   saber central block:
@@ -30,28 +34,31 @@ background error:
         multivariate strategy: univariate             # NICAS multivariate strategy
         compute nicas: true                           # Run NICAS driver
         write local nicas: true
-#     model:
-#       do not cross mask boundaries: true
+        write global nicas: true
+      model:
+        do not cross mask boundaries: true
+        level for 2d variables: last
       nicas:
-        resolution: 6.0                               # NICAS subgrid resolution
+#       resolution: 6.0                               # NICAS subgrid resolution
+        resolution: 20.0                              # NICAS subgrid resolution (smoother)
         explicit length-scales: true
         horizontal length-scale:
         - groups:
           - ssh
-          value: 160.0e3
+          value: 91287.0                              # L = 50e3 m
         - groups:
           - tocn
-          value: 160.0e3
+          value: 91287.0                              # L = 50e3 m
         - groups:
           - socn
-          value: 160.0e3
+          value: 91287.0                              # L = 50e3 m
         vertical length-scale:
         - groups:
           - tocn
-          value: 150
+          value: 54.77                                # L = 30 m
         - groups:
           - socn
-          value: 150
+          value: 54.77                                # L = 30 m
       grids:
       - model:
           variables:
@@ -84,8 +91,3 @@ test:
   float relative tolerance: 1.0e-3
   log output filename: testoutput/parameters_bump_cov_nicas.log
   test output filename: testoutput/parameters_bump_cov_nicas.out
-
-# NOTES:
-#
-# * Currently, BUMP and ATLAS does not support staggered grids. Thus, the Error
-#   Covariance convolutions is limited to RHO-points.

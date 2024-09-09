@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2017-2021 UCAR
+ * (C) Copyright 2017-2024 UCAR
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -44,6 +44,7 @@ namespace romsjedi {
 
     void roms_linearModel_initialize_tl_f90(const F90lm &,
                                             const F90flds &,
+                                            const F90traj &,
                                             util::DateTime * const *);
     void roms_linearModel_step_tl_f90(const F90lm &,
                                       const F90flds &,
@@ -55,6 +56,7 @@ namespace romsjedi {
 
     void roms_linearModel_initialize_ad_f90(const F90lm &,
                                             const F90flds &,
+                                            const F90traj &,
                                             util::DateTime * const *);
     void roms_linearModel_step_ad_f90(const F90lm &,
                                       const F90flds &,

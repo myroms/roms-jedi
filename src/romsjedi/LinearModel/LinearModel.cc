@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2017-2021 UCAR
+ * (C) Copyright 2017-2024 UCAR
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -103,11 +103,29 @@ namespace romsjedi {
   void LinearModel::initializeTL(Increment & dx) const {
     oops::Log::trace() << "LinearModel::initializeTL starting" << std::endl;
 
+  // Get NL trajectory index from stored map.
+
+    typedef std::map< util::DateTime, int >::const_iterator trajICst;
+
+    trajICst itra = trajmap_.find(dx.validTime());
+
+    if (itra == trajmap_.end()) {
+      oops::Log::error() << "LinearModel::InitializeTL: "
+                         << "trajectory lacking at time "
+                         << dx.validTime() << std::endl;
+      ABORT("LinearModel:stepTL: trajectory not available");
+    }
+
+    oops::Log::debug() << "LinearModel::stepTL: Got NL Trajectory index "
+                       << itra->second << " for time "
+                       << itra->first << std::endl;
+
   // Implementation
 
     util::DateTime * dtp = &dx.validTime();
     roms_linearModel_initialize_tl_f90(keySelf_,
                                        dx.toFortran(),
+                                       itra->second,
                                        &dtp);
     oops::Log::trace() << "LinearModel::initializeTL done" << std::endl;
 }
@@ -135,13 +153,7 @@ namespace romsjedi {
                        << itra->second << " for time "
                        << itra->first << std::endl;
 
-  // Advance TLROMS. Recall that ROMS kernels have a predictor/corrector
-  // time-stepping scheme with multiple time indices.
-  //
-  // The initial increment is updated on the first timestep to apply the
-  // lateral boundary conditions and compute the vertically integrated
-  // (barotropic) momentum. However, we haven't figured out how to pass the
-  // updated initial increment back to OOPS in the current design.
+  // Timestep TLROMS Kernel.
 
     oops::Log::debug() << "LinearModel::stepTL INPUT incremnent:" << dx
                        << std::endl;
@@ -152,7 +164,7 @@ namespace romsjedi {
                                  itra->second,
                                  &dtp);
 
-  // Advance forward increment clock.
+  // Advance tangent linear increment clock.
 
     dx.validTime() += tstep_;
 
@@ -178,11 +190,25 @@ namespace romsjedi {
   void LinearModel::initializeAD(Increment & dx) const {
     oops::Log::trace() << "LinearModel::initializeAD starting" << std::endl;
 
+  // Get NL trajectory index from stored map.
+
+    trajICst itra = trajmap_.find(dx.validTime());
+
+  // Check if NL trajectory is available at valid date/time.
+
+    if (itra == trajmap_.end()) {
+      oops::Log::error() << "LinearModel::initializeAD: "
+                         << "trajectory lacking at time "
+                         << dx.validTime() << std::endl;
+      ABORT("LinearModel::stepAD: trajectory not available");
+    }
+
   // Implementation
 
     util::DateTime * dtp = &dx.validTime();
     roms_linearModel_initialize_ad_f90(keySelf_,
                                        dx.toFortran(),
+                                       itra->second,
                                        &dtp);
     oops::Log::trace() << "LinearModel::initializeAD done" << std::endl;
   }
@@ -192,7 +218,7 @@ namespace romsjedi {
   void LinearModel::stepAD(Increment & dx, ModelBiasIncrement &) const {
     oops::Log::trace() << "LinearModel::stepAD starting" << std::endl;
 
-  // Advance backward increment clock.
+  // Advance backward adjoint increment clock.
 
     util::DateTime * dtp = &dx.validTime();
     dx.validTime() -= tstep_;
@@ -213,12 +239,7 @@ namespace romsjedi {
                        << itra->second << " for time "
                        << itra->first << std::endl;
 
-  // Advance ADROMS. Recall that ROMS kernels have a predictor/corrector
-  // time-stepping scheme with multiple time indices.
-  //
-  // On the first step, AD_ADVANCE is false in "ad_main3d", and ADROMS is not
-  // time stepped. Then, it computes the adjoint of the delayed output step.
-  // Thus, the strategy here is to advance an additional timestep.
+  // Timestep ADROMS kernel backward.
 
     oops::Log::debug() << "LinearModel::stepAD INPUT incremnent:" << dx
                        << std::endl;

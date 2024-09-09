@@ -6,3 +6,5 @@ geometry:
   roms_stdinp: roms_wc13_20040103.in
   fields metadata: Data/fields_metadata.yaml
   ng: 1                                       # ROMS nested grid number
+  write to gmsh: false                        # To debug ATLAS mesh in the Gmsh App
+  gmsh filename: wc13.msh                     # Creates full mesh and mesh per task

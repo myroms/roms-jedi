@@ -7,7 +7,9 @@ geometry:
   project_dir: Data/wc13
   roms_stdinp: roms_wc13_20040103.in
   fields metadata: Data/fields_metadata.yaml
-  ng: 1                                        # ROMS nested grid number
+  ng: 1                                          # ROMS nested grid number
+  vertical coordinate: depths                    # ATLAS FunctionSpace default
+# vertical coordinate: levels                    # ATLAS FunctionSpace levels
 
 background:
   fields_dir: Data/wc13/input
@@ -26,22 +28,22 @@ background error:
       - variables: [tocn, socn]
         multivariate strategy: univariate
         horizontal:
+#         filepath: Data/diffusion/wc13_diffusion_hcor_50
+#         filepath: Data/diffusion/wc13_diffusion_hcor_70
           filepath: Data/diffusion/wc13_diffusion_hcor_80
+#         filepath: Data/diffusion/wc13_diffusion_hcor_100
+#         filepath: Data/diffusion/wc13_diffusion_hcor_120
         vertical:
           levels: 30
+#         filepath: Data/diffusion/wc13_diffusion_vcor_5
           filepath: Data/diffusion/wc13_diffusion_vcor_8
       - variables: [ssh]
         horizontal:
+#         filepath: Data/diffusion/wc13_diffusion_hcor_50
+#         filepath: Data/diffusion/wc13_diffusion_hcor_70
           filepath: Data/diffusion/wc13_diffusion_hcor_80
-  saber outer blocks:                          # standard deviation impulse scaling
-  - saber block name: StdDev
-    read:
-      model file:
-        fields_dir: Data/wc13/input
-        fields_filename: wc13_roms_std_i.nc    # same as ROMS native RBL4D-Var
-        fields_record: 1
-        state variables: *roms_analysis
-        date: *date
+#         filepath: Data/diffusion/wc13_diffusion_hcor_100
+#         filepath: Data/diffusion/wc13_diffusion_hcor_120
 
 dirac:
   ixdir: [25, 30, 20]                          # X-direction index impulse location
@@ -50,8 +52,7 @@ dirac:
   ifdir: ['ssh', 'tocn', 'socn']               # State field to perturb
 
 output dirac:
-  file_policy: PT98H                           # single output file with 49 records
-  data_frequency: PT2H                         # write output data every 2 hours
+  single_record: true
   data_dir: Data/dirac
   prefix: wc13_roms
   exp: dirac_diffusion
@@ -59,8 +60,7 @@ output dirac:
   date: *date                                  # alias to initial date
 
 output variance:
-  file_policy: PT98H                           # single output file with 49 records
-  data_frequency: PT2H                         # write output data every 2 hours
+  single_record: true
   data_dir: Data/dirac
   prefix: wc13_roms
   exp: dirac_diffusion

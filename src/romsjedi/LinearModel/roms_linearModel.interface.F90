@@ -1,4 +1,4 @@
-! (C) Copyright 2017-2021 UCAR
+! (C) Copyright 2017-2024 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -70,30 +70,34 @@ END SUBROUTINE roms_linearModel_delete_c
 ! ------------------------------------------------------------------------------
 !> Binding interface to initialize TLROMS object.
 
-SUBROUTINE roms_linearModel_initialize_tl_c (c_key_self, c_key_incr, c_dt)     &
+SUBROUTINE roms_linearModel_initialize_tl_c (c_key_self, c_key_incr,           &
+                                             c_key_traj, c_dt)                 &
                            BIND (c, name='roms_linearModel_initialize_tl_f90')
 
   integer (c_int),      intent(in) :: c_key_self  !< LinearModel object pointer
   integer (c_int),      intent(in) :: c_key_incr  !< Increment object pointer
+  integer (c_int),      intent(in) :: c_key_traj  !< Trajectory object pointer
   TYPE (c_ptr),         intent(in) :: c_dt        !< Increment dateTime pointer
 
   TYPE (roms_linearModel), pointer :: self
   TYPE (roms_increment),   pointer :: incr
+  TYPE (roms_trajectory),  pointer :: traj
   TYPE (datetime)                  :: fdate
 
   CALL roms_increment_registry%get (c_key_incr, incr)
   CALL roms_linearModel_registry%get (c_key_self, self)
+  CALL roms_trajectory_registry%get (c_key_traj, traj)
   CALL c_f_datetime (c_dt, fdate)
 
-  CALL self%initialize_tl (incr, fdate)
+  CALL self%initialize_tl (incr, traj, fdate)
 
 END SUBROUTINE roms_linearModel_initialize_tl_c
 
 ! ------------------------------------------------------------------------------
 !> Binding interface to advance TLROMS kernel for specified time interval.
 
-SUBROUTINE roms_linearModel_step_tl_c (c_key_self, c_key_incr, c_key_traj,     &
-                                       c_dt)                                   &
+SUBROUTINE roms_linearModel_step_tl_c (c_key_self, c_key_incr,                 &
+                                       c_key_traj, c_dt)                       &
                            BIND (c, name='roms_linearModel_step_tl_f90')
 
   integer (c_int),      intent(in) :: c_key_self  !< LinearModel object pointer
@@ -138,30 +142,34 @@ END SUBROUTINE roms_linearModel_finalize_tl_c
 ! ------------------------------------------------------------------------------
 !> Binding interface to initialize ADROMS object.
 
-SUBROUTINE roms_linearModel_initialize_ad_c (c_key_self, c_key_incr, c_dt)     &
+SUBROUTINE roms_linearModel_initialize_ad_c (c_key_self, c_key_incr,           &
+                                             c_key_traj, c_dt)                 &
                            BIND (c, name='roms_linearModel_initialize_ad_f90')
 
   integer (c_int),      intent(in) :: c_key_self  !< LinearModel object pointer
   integer (c_int),      intent(in) :: c_key_incr  !< Increment object pointer
+  integer (c_int),      intent(in) :: c_key_traj  !< Trajectory object pointer
   TYPE (c_ptr),         intent(in) :: c_dt        !< Increment dateTime pointer
 
   TYPE (roms_linearModel), pointer :: self
   TYPE (roms_increment),   pointer :: incr
+  TYPE (roms_trajectory),  pointer :: traj
   TYPE (datetime)                  :: fdate
 
   CALL roms_increment_registry%get (c_key_incr, incr)
   CALL roms_linearModel_registry%get (c_key_self, self)
+  CALL roms_trajectory_registry%get (c_key_traj, traj)
   CALL c_f_datetime (c_dt, fdate)
 
-  CALL self%initialize_ad (incr, fdate)
+  CALL self%initialize_ad (incr, traj, fdate)
 
 END SUBROUTINE roms_linearModel_initialize_ad_c
 
 ! ------------------------------------------------------------------------------
 !> Binding interface to timestep backwards ADROMS for specified time interval.
 
-SUBROUTINE roms_linearModel_step_ad_c (c_key_self, c_key_incr, c_key_traj,     &
-                                       c_dt)                                   &
+SUBROUTINE roms_linearModel_step_ad_c (c_key_self, c_key_incr,                 &
+                                       c_key_traj, c_dt)                       &
                            BIND (c, name='roms_linearModel_step_ad_f90')
 
   integer (c_int),   intent(in   ) :: c_key_self  !< LinearModel object pointer

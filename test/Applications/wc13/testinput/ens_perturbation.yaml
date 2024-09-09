@@ -7,7 +7,7 @@
 
 geometry:
   project_dir: Data/wc13
-  roms_stdinp: roms_wc13_20040103.in
+  roms_stdinp: roms_wc13_20040103_max.in       # 12 CPUs, 3x4 partition
   fields metadata: Data/fields_metadata.yaml
   ng: 1                                        # ROMS nested grid number
 

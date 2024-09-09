@@ -67,7 +67,7 @@ CONTAINS
 
 SUBROUTINE roms_fields_metadata_create (self, filename)
 
-  USE mod_ncparam, ONLY : r2dvar, r3dvar, u2dvar, u3dvar, v2dvar, v3dvar, w3dvar
+  USE mod_param, ONLY : r2dvar, r3dvar, u2dvar, u3dvar, v2dvar, v3dvar, w3dvar
 
   CLASS (roms_fields_metadata), intent(inout) :: self
   character (len=:), allocatable              :: filename

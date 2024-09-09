@@ -25,6 +25,7 @@ USE random_mod,                 ONLY : normal_distribution
 
 USE datetime_mod
 
+USE mod_param,                  ONLY : DOMAIN
 USE mod_ncparam,                ONLY : r2dvar
 USE roms_field_mod,             ONLY : roms_field
 USE roms_fields_mod,            ONLY : roms_fields
@@ -48,10 +49,11 @@ TYPE, PUBLIC, EXTENDS(roms_fields) :: roms_increment
 
   ! Operators
 
-  PROCEDURE :: dirac      => roms_increment_dirac
-  PROCEDURE :: random     => roms_increment_random
-  PROCEDURE :: schur      => roms_increment_schur
-! PROCEDURE :: convert    => roms_increment_change_resol     ! TODO
+  PROCEDURE :: dirac         => roms_increment_dirac
+  PROCEDURE :: random        => roms_increment_random
+  PROCEDURE :: schur         => roms_increment_schur
+! PROCEDURE :: convert       => roms_increment_change_resol     ! TODO
+  PROCEDURE :: zero_boundary => roms_increment_zero_boundary
 
 END TYPE roms_increment
 
@@ -79,11 +81,15 @@ SUBROUTINE roms_increment_random (self)
   integer, parameter                            :: rseed = 1
   integer                                       :: IstrD, IendD, JstrD, JendD
   integer                                       :: i, k
+  real(kind_real), parameter                    :: rmean = 0.0_kind_real
+  real(kind_real), parameter                    :: rstd  = 1.0_kind_real
 
-  ! Set random values (interior points).
+  ! Set random values for interior and boundary points.
 
   DO i = 1, SIZE(self%fields)
     field => self%fields(i)
+
+    field%val = 0.0_kind_real
 
     IstrD = field%bounds%IstrD
     IendD = field%bounds%IendD
@@ -91,10 +97,10 @@ SUBROUTINE roms_increment_random (self)
     JendD = field%bounds%JendD
 
     CALL normal_distribution (field%val(IstrD:IendD, JstrD:JendD, :),          &
-                              0.0_kind_real, 1.0_kind_real, rseed)
+                              rmean, rstd, rseed)
   END DO
 
-  ! Apply land/sea mask
+  ! Apply land/sea mask.
 
   DO i = 1, SIZE(self%fields)
     field => self%fields(i)
@@ -289,7 +295,7 @@ SUBROUTINE roms_increment_change_resol (self, rhs)
 
 ! CALL convert_state%setup (rhs%geom, self%geom, hocn1, hocn2)
 
-  DO n = 1, size(rhs%fields)
+  DO n = 1, SIZE(rhs%fields)
     field1 => rhs%fields(n)
     CALL self%get (TRIM(field1%name), field2)
 !   CALL convert_state%change_resol2d (field1, field2, rhs%geom, self%geom)
@@ -300,5 +306,67 @@ SUBROUTINE roms_increment_change_resol (self, rhs)
 END SUBROUTINE roms_increment_change_resol
 
 ! ------------------------------------------------------------------------------
+!>  Sets zero lateral boundary to increment fields vector. If the increment
+!   is initilized with random values, it is advantegeos the set lateral
+!   boundary conditions for proper procession in ROMS TLM and ADM kernels.
+
+SUBROUTINE roms_increment_zero_boundary (self)
+
+  CLASS (roms_increment), intent(inout) :: self     !< Increment fields
+
+  TYPE (roms_field),  target    :: field
+
+  integer                               :: i, ng, tile
+  integer                               :: IstrC, IendC, JstrC, JendC
+
+  ! Initialize.
+
+  ng   = self%geom%ng
+  tile = self%geom%tile
+
+  ! Apply zero lateral boundary conditions.
+
+  DO i = 1, SIZE(self%fields)
+
+    IstrC = self%fields(i)%bounds%IstrC
+    IendC = self%fields(i)%bounds%IendC
+    JstrC = self%fields(i)%bounds%JstrC
+    JendC = self%fields(i)%bounds%JendC
+
+    IF (DOMAIN(ng)%Western_Edge(tile)) THEN
+      self%fields(i)%val(IstrC-1, JstrC:JendC, :) = 0.0_kind_real
+    END IF
+
+    IF (DOMAIN(ng)%Eastern_Edge(tile)) THEN
+      self%fields(i)%val(IendC+1, JstrC:JendC, :) = 0.0_kind_real
+    END IF
+
+    IF (DOMAIN(ng)%Southern_Edge(tile)) THEN
+      self%fields(i)%val(IstrC:IendC, JstrC-1, :) = 0.0_kind_real
+    END IF
+
+    IF (DOMAIN(ng)%Northern_Edge(tile)) THEN
+      self%fields(i)%val(IstrC:IendC, JendC+1, :) = 0.0_kind_real
+    END IF
+
+    IF (DOMAIN(ng)%SouthWest_Corner(tile)) THEN
+      self%fields(i)%val(IstrC-1, JstrC-1, :) = 0.0_kind_real
+    END IF
+
+    IF (DOMAIN(ng)%SouthEast_Corner(tile)) THEN
+      self%fields(i)%val(IendC+1, JstrC-1, :) = 0.0_kind_real
+    END IF
+
+    IF (DOMAIN(ng)%NorthWest_Corner(tile)) THEN
+      self%fields(i)%val(IstrC-1, JendC+1, :) = 0.0_kind_real
+    END IF
+
+    IF (DOMAIN(ng)%NorthEast_Corner(tile)) THEN
+      self%fields(i)%val(IendC+1, JendC+1, :) = 0.0_kind_real
+    END IF
+
+  END DO
+
+END SUBROUTINE roms_increment_zero_boundary
 
 END MODULE roms_increment_mod

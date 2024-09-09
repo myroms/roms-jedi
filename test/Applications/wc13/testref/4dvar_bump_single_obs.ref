@@ -1,0 +1,19 @@
+Norm of input parameter StdDev: 7.7717431208293929e+03
+CostJb   : Nonlinear Jb = 0.0000000000000000e+00
+CostJo   : Nonlinear Jo(InsituTS) = 3.1118468990331114e+00, nobs = 2, Jo/n = 1.5559234495165557e+00, err = 4.3293454646615259e-01
+CostFunction: Nonlinear J = 3.1118468990331114e+00
+RPCGMinimizer: reduction in residual norm = 2.6907400018147828e-02
+CostFunction::addIncrement: Analysis: 
+  Valid time: 2004-01-03T00:00:00Z
+                               ssh   Min=    -0.279513695118280   Max=     0.221655330904623   Mean=    -0.012596751179503
+                              uocn   Min=    -0.446897534043939   Max=     0.456027995133686   Mean=     0.001900375358481
+                              vocn   Min=    -0.551383403631641   Max=     0.329409302842186   Mean=    -0.008603980298101
+                              tocn   Min=     1.113311665494532   Max=    18.374449937737207   Mean=     6.393745353459132
+                              socn   Min=    31.913544614932764   Max=    34.689664764578829   Mean=    33.941388708204919
+                            zocn_r   Min= -4947.840267560327447   Max=    -0.245773375763171   Mean= -1072.647945779627889
+
+
+
+CostJb   : Nonlinear Jb = 0.360217747187795
+CostJo   : Nonlinear Jo(InsituTS) = 1.947198433072776, nobs = 2, Jo/n = 0.973599216536388, err = 0.432934546466153
+CostFunction: Nonlinear J = 2.307416180260571

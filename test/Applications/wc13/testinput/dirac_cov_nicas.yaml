@@ -24,9 +24,11 @@ background error:
       drivers:
         multivariate strategy: univariate
         read local nicas: true
+#       read global nicas: true
       io:
         data directory: Data/bump
         files prefix: wc13_bump_cor
+        io tasks: 1
       grids:
       - model:
           variables:
@@ -35,15 +37,6 @@ background error:
           variables:
           - tocn
           - socn
-  saber outer blocks:                          # standard deviation impulse scaling
-  - saber block name: StdDev
-    read:
-      model file:
-        fields_dir: Data/wc13/input
-        fields_filename: wc13_roms_std_i.nc    # same as ROMS native RBL4D-Var
-        fields_record: 1
-        state variables: *roms_analysis
-        date: *date
 
 dirac:
   ixdir: [25, 30, 20]                          # X-direction index impulse location
@@ -52,8 +45,7 @@ dirac:
   ifdir: ['ssh', 'tocn', 'socn']               # State field to perturb
 
 output dirac:
-  file_policy: PT98H                           # single output file with 49 records
-  data_frequency: PT2H                         # write output data every 2 hours
+  single_record: true
   data_dir: Data/dirac
   prefix: wc13_roms
   exp: dirac
@@ -61,8 +53,7 @@ output dirac:
   date: *date                                  # alias to initial date
 
 output variance:
-  file_policy: PT98H                           # single output file with 49 records
-  data_frequency: PT2H                         # write output data every 2 hours
+  single_record: true
   data_dir: Data/dirac
   prefix: wc13_roms
   exp: dirac

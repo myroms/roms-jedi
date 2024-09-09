@@ -1,4 +1,4 @@
-# (C) Copyright 2017-2023 UCAR
+# (C) Copyright 2017-2024 UCAR
 #
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -31,6 +31,12 @@ file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/singleObs/3dfgat)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/singleObs/4dfgat)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/singleObs/regular)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/zeroObs)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/4dvar)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/4dvar/bump)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/4dvar/diffusion)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/4dvar/singleObs)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/4dvar/singleObs/bump)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/4dvar/singleObs/diffusion)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/bump)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/bump_loc)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/diff)
@@ -48,6 +54,7 @@ file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/letkf/split_observer)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/letkf/split_solver)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/makeobs)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/roms)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/trajectory)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testinput)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testoutput)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testref)
@@ -126,26 +133,12 @@ ecbuild_add_test(
   ARGS         testinput/state.yaml
   LIBS         romsjedi )
 
-#ecbuild_add_test(
-#  TARGET       test_romsjedi_getvalues
-#  MPI          ${MPI_NCPUS}
-#  SOURCES      executables/TestGetValues.cc
-#  ARGS         testinput/getvalues.yaml
-#  LIBS         romsjedi )
-
 ecbuild_add_test(
   TARGET       test_romsjedi_increment
   MPI          ${MPI_NCPUS}
   SOURCES      executables/TestIncrement.cc
   ARGS         testinput/increment.yaml
   LIBS         romsjedi )
-
-#ecbuild_add_test(
-#  TARGET       test_romsjedi_lineargetvalues
-#  MPI          ${MPI_NCPUS}
-#  SOURCES      executables/TestLinearGetValues.cc
-#  ARGS         testinput/lineargetvalues.yaml
-#  LIBS         romsjedi )
 
 ecbuild_add_test(
   TARGET       test_romsjedi_model
@@ -167,27 +160,6 @@ ecbuild_add_test(
   SOURCES      executables/TestErrorCovariance.cc
   ARGS         testinput/error_covariance.yaml
   LIBS         romsjedi )
-
-#ecbuild_add_test(
-#  TARGET       test_romsjedi_modelauxcontrol
-#  MPI          ${MPI_NCPUS}
-#  SOURCES      executables/TestModelAuxControl.cc
-#  ARGS         testinput/modelaux.yaml
-#  LIBS         romsjedi )
-
-#ecbuild_add_test(
-#  TARGET       test_romsjedi_modelauxcovariance
-#  MPI          ${MPI_NCPUS}
-#  SOURCES      executables/TestModelAuxCovariance.cc
-#  ARGS         testinput/modelaux.yaml
-#  LIBS         romsjedi )
-
-#ecbuild_add_test(
-#  TARGET       test_romsjedi_modelauxincrement
-#  MPI          ${MPI_NCPUS}
-#  SOURCES      executables/TestModelAuxIncrement.cc
-#  ARGS         testinput/modelaux.yaml
-#  LIBS         romsjedi )
 
 #================================================================================
 # Unit Tests using the main ROMS-JEDI applications
@@ -230,7 +202,7 @@ ecbuild_add_test(
 
 ecbuild_add_test(
   TARGET       test_romsjedi_forecast_roms
-  MPI          ${MPI_NCPUS}
+  MPI          ${MPI_NCPUS_MAX}
   COMMAND      romsjedi_forecast.x
   ARGS         testinput/forecast_roms.yaml
   LIBS         romsjedi )
@@ -240,6 +212,13 @@ ecbuild_add_test(
   MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_error_covariance_toolbox.x
   ARGS         testinput/parameters_bump_cor_nicas.yaml
+  LIBS         romsjedi )
+
+ecbuild_add_test(
+  TARGET       test_romsjedi_bump_parameters_cor_nicas_max
+  MPI          ${MPI_NCPUS_MAX}
+  COMMAND      romsjedi_error_covariance_toolbox.x
+  ARGS         testinput/parameters_bump_cor_nicas_max.yaml
   LIBS         romsjedi )
 
 ecbuild_add_test(
@@ -280,7 +259,7 @@ ecbuild_add_test(
 
 ecbuild_add_test(
   TARGET       test_romsjedi_ens_pert
-  MPI          ${MPI_NCPUS}
+  MPI          ${MPI_NCPUS_MAX}
   COMMAND      romsjedi_ens_pert.x
   ARGS         testinput/ens_perturbation.yaml
   LIBS         romsjedi )
@@ -401,6 +380,38 @@ ecbuild_add_test(
   ARGS         testinput/4dfgat_dual.yaml
   LIBS         romsjedi
   TEST_DEPENDS test_romsjedi_bump_parameters_cor_nicas )
+
+ecbuild_add_test(
+  TARGET       test_romsjedi_4dvar_bump_single_obs
+  MPI          ${MPI_NCPUS_MAX}
+  COMMAND      romsjedi_var.x
+  ARGS         testinput/4dvar_bump_single_obs.yaml
+  LIBS         romsjedi
+  TEST_DEPENDS test_romsjedi_bump_parameters_cor_nicas_max )
+
+ecbuild_add_test(
+  TARGET       test_romsjedi_4dvar_diffusion_single_obs
+  MPI          ${MPI_NCPUS_MAX}
+  COMMAND      romsjedi_var.x
+  ARGS         testinput/4dvar_diffusion_single_obs.yaml
+  LIBS         romsjedi
+  TEST_DEPENDS test_romsjedi_parameters_diffusion )
+
+ecbuild_add_test(
+  TARGET       test_romsjedi_4dvar_bump
+  MPI          ${MPI_NCPUS_MAX}
+  COMMAND      romsjedi_var.x
+  ARGS         testinput/4dvar_bump.yaml
+  LIBS         romsjedi
+  TEST_DEPENDS test_romsjedi_bump_parameters_cor_nicas_max )
+
+ecbuild_add_test(
+  TARGET       test_romsjedi_4dvar_diffusion
+  MPI          ${MPI_NCPUS_MAX}
+  COMMAND      romsjedi_var.x
+  ARGS         testinput/4dvar_diffusion.yaml
+  LIBS         romsjedi
+  TEST_DEPENDS test_romsjedi_parameters_diffusion )
 
 #================================================================================
 # ROMS-JEDI Ensemble/Hybrid Variational Data Assimilation applications

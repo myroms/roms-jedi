@@ -116,6 +116,14 @@
   io file: 'ocn'
   io name: 'z_w'
 
+- name: 'Hzocn'                               # time depedendent, level thickness
+  gtype: 'r'
+  masked: 'false'
+  levels: 'full_ocn'
+  getval name: 'model_level_thickness_at_cell_center'
+  io file: 'ocn'
+  io name: 'Hz'
+
 - name: 'hocn'
   gtype: 'r'
   masked: 'false'

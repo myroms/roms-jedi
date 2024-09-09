@@ -1,31 +1,31 @@
 CostJb   : Nonlinear Jb = 0.0000000000000000e+00
-CostJo   : Nonlinear Jo(SST) = 2.8940920388298200e+03, nobs = 4876, Jo/n = 5.9353815398478671e-01, err = 4.0783752598605327e-01
+CostJo   : Nonlinear Jo(SST) = 2.9147821251412374e+03, nobs = 4952, Jo/n = 5.8860705273449865e-01, err = 4.0783752598605327e-01
 CostJo   : Nonlinear Jo(ADT) = 1.6444594270776101e+03, nobs = 1570, Jo/n = 1.0474263866736371e+00, err = 2.0313911453614535e-02
-CostFunction: Nonlinear J = 4.5385514659074306e+03
-Eigenvalue 1 : 1.4685337282242833e+02
-Norm eigenvector = 3.5423628661254526e+01
-Eigenvalue 2 : 1.4309123076053629e+02
-Norm eigenvector = 4.0105716343611128e+01
-Eigenvalue 3 : 1.3175964161722624e+02
-Norm eigenvector = 3.1849866748794593e+01
-Eigenvalue 4 : 1.0204526814041554e+02
-Norm eigenvector = 2.6551071113773311e+01
-Eigenvalue 5 : 8.6111823739352829e+01
-Norm eigenvector = 2.4704193901000110e+01
-DRPLanczosMinimizer: reduction in residual norm = 8.0133400385806949e-02
+CostFunction: Nonlinear J = 4.5592415522188476e+03
+Eigenvalue 1 : 8.0772079348847299e+01
+Norm eigenvector = 1.6714944157396655e+01
+Eigenvalue 2 : 6.4255500026243951e+01
+Norm eigenvector = 5.3154652411574244e+00
+Eigenvalue 3 : 5.5512348750907350e+01
+Norm eigenvector = 2.0195421838954250e+01
+Eigenvalue 4 : 4.5213111322142872e+01
+Norm eigenvector = 1.0059730697406968e+01
+Eigenvalue 5 : 3.6342119388506291e+01
+Norm eigenvector = 5.6985443109109202e+00
+DRPLanczosMinimizer: reduction in residual norm = 4.9928816748194896e-02
 CostFunction::addIncrement: Analysis: 
   Valid time: 2004-01-05T00:00:00Z
-                               ssh   Min=    -0.271611447909088   Max=     0.234571552361811   Mean=    -0.013571982188065
-                              uocn   Min=    -0.434971667451395   Max=     0.447135574964657   Mean=     0.003446308132657
-                              vocn   Min=    -0.553064987459898   Max=     0.283580447706039   Mean=    -0.004171671286639
-                              tocn   Min=     1.113304510712624   Max=    18.344441860490811   Mean=     6.395755495761704
-                              socn   Min=    31.906101378977628   Max=    34.689664264324591   Mean=    33.945696412184560
+                               ssh   Min=    -0.269260579249971   Max=     0.234549444326822   Mean=    -0.013446333768429
+                              uocn   Min=    -0.332442660865764   Max=     0.443100919331759   Mean=     0.003534826619928
+                              vocn   Min=    -0.553064987459898   Max=     0.283580447706039   Mean=    -0.004291627018432
+                              tocn   Min=     1.113304510712624   Max=    18.344441860490811   Mean=     6.373261064988231
+                              socn   Min=    31.906101378977628   Max=    34.689664264324591   Mean=    33.945527034388789
                             zocn_r   Min= -4947.840267560327447   Max=    -0.245773375763171   Mean= -1072.647945779628117
 
 
 
 
-CostJb   : Nonlinear Jb = 145.832481613357118
-CostJo   : Nonlinear Jo(SST) = 342.101135808618778, nobs = 4876, Jo/n = 0.070160200124819, err = 0.407837525986053
-CostJo   : Nonlinear Jo(ADT) = 344.184912973156543, nobs = 1570, Jo/n = 0.219226059218571, err = 0.020313911453615
-CostFunction: Nonlinear J = 832.118530395132439
+CostJb   : Nonlinear Jb = 210.490723719139481
+CostJo   : Nonlinear Jo(SST) = 345.576070834742836, nobs = 4952, Jo/n = 0.069785151622525, err = 0.407837525986053
+CostJo   : Nonlinear Jo(ADT) = 673.885388123981784, nobs = 1570, Jo/n = 0.429226361862409, err = 0.020313911453615
+CostFunction: Nonlinear J = 1229.952182677864130

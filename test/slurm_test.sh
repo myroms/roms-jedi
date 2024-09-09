@@ -162,6 +162,10 @@ elif [ ${ALL_TEST} -eq 2 ]; then
   ctest -VV -R test_romsjedi_3fgat_dual
   ctest -VV -R test_romsjedi_4dfgat_primal
   ctest -VV -R test_romsjedi_4dfgat_dual
+  ctest -VV -R test_romsjedi_4dvar_bump_single_obs
+  ctest -VV -R test_romsjedi_4dvar_diffusion_single_obs
+  ctest -VV -R test_romsjedi_4dvar_bump
+  ctest -VV -R test_romsjedi_4dvar_diffusion
   ctest -VV -R test_romsjedi_3denvar_regular_primal
   ctest -VV -R test_romsjedi_3denvar_regular_dual
   ctest -VV -R test_romsjedi_3denvar_4dfgat_primal
@@ -448,6 +452,38 @@ else
     echo " Test #${ic}: test_romsjedi_4dfgat_dual .....................  *Failed"
   else
     echo " Test #${ic}: test_romsjedi_4dfgat_dual .....................  Passed"
+  fi
+
+  ic=$(( $ic + 1 ))
+  mpirun -n 12 ../../bin/romsjedi_var.x testinput/4dvar_bump_single_obs.yaml 1>> test_${ic}.log 2>> test.err
+  if [ $? -ne 0 ] ; then
+    echo " Test #${ic}: test_romsjedi_4dvar_bump_single_obs ...........  *Failed"
+  else
+    echo " Test #${ic}: test_romsjedi_4dvar_bump_single_obs ...........  Passed"
+  fi
+
+  ic=$(( $ic + 1 ))
+  mpirun -n 12 ../../bin/romsjedi_var.x testinput/4dvar_diffusion_single_obs.yaml 1>> test_${ic}.log 2>> test.err
+  if [ $? -ne 0 ] ; then
+    echo " Test #${ic}: test_romsjedi_4dvar_diffusion_single_obs ......  *Failed"
+  else
+    echo " Test #${ic}: test_romsjedi_4dvar_diffusion_single_obs ......  Passed"
+  fi
+
+  ic=$(( $ic + 1 ))
+  mpirun -n 12 ../../bin/romsjedi_var.x testinput/4dvar_bump.yaml 1>> test_${ic}.log 2>> test.err
+  if [ $? -ne 0 ] ; then
+    echo " Test #${ic}: test_romsjedi_4dvar_bump ......................  *Failed"
+  else
+    echo " Test #${ic}: test_romsjedi_4dvar_bump ......................  Passed"
+  fi
+
+  ic=$(( $ic + 1 ))
+  mpirun -n 12 ../../bin/romsjedi_var.x testinput/4dvar_diffusion.yaml 1>> test_${ic}.log 2>> test.err
+  if [ $? -ne 0 ] ; then
+    echo " Test #${ic}: test_romsjedi_4dvar_diffusion .................  *Failed"
+  else
+    echo " Test #${ic}: test_romsjedi_4dvar_diffusion .................  Passed"
   fi
 
   ic=$(( $ic + 1 ))

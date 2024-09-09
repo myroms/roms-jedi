@@ -1,4 +1,4 @@
-! (C) Copyright 2017-2023 UCAR
+! (C) Copyright 2017-2024 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -127,12 +127,12 @@ SUBROUTINE roms_trajectory_construct (self, state)
       CASE ('wfull_ocn')                            ! 3D field, full w-column
         LBk = 0
         UBk = state%geom%N
-      CASE ('1', 'surface')                         ! 2D field                         
+      CASE ('1', 'surface')                         ! 2D field
         LBk = 1
         UBk = 1
       CASE DEFAULT
-        CALL abor1_ftn ('roms_trajectory::construct: Illegal levels ' //     &
-                        self%fields(i)%metadata%levels //                    &
+        CALL abor1_ftn ('roms_trajectory::construct: Illegal levels ' //       &
+                        self%fields(i)%metadata%levels //                      &
                         ' given for ' // self%fields(i)%name)
     END SELECT
 
@@ -174,13 +174,13 @@ SUBROUTINE roms_trajectory_duplicate (self, rhs)
 
  IF (SIZE(self%fields) .eq. SIZE(rhs%fields)) THEN
    DO i = 1, SIZE(self%fields)
-     IF ((self%fields(i)%name .eq.                                           &
-          rhs %fields(i)%name) .and.                                         &
-         (self%fields(i)%N .eq.                                              &
-          rhs %fields(i)%N) .and.                                            &
-         (SIZE(SHAPE(self%fields(i)%val)) .eq.                               &
-          SIZE(SHAPE(rhs %fields(i)%val))) .and.                             &
-         (SIZE(self%fields(i)%val) .eq.                                      &
+     IF ((self%fields(i)%name .eq.                                             &
+          rhs %fields(i)%name) .and.                                           &
+         (self%fields(i)%N .eq.                                                &
+          rhs %fields(i)%N) .and.                                              &
+         (SIZE(SHAPE(self%fields(i)%val)) .eq.                                 &
+          SIZE(SHAPE(rhs %fields(i)%val))) .and.                               &
+         (SIZE(self%fields(i)%val) .eq.                                        &
           SIZE(rhs %fields(i)%val))) THEN
         self%fields(i)%val = rhs%fields(i)%val
      END IF
@@ -194,8 +194,8 @@ END SUBROUTINE roms_trajectory_duplicate
 
 SUBROUTINE roms_trajectory_set (self, state, vdate)
 
-  USE mod_scalars,   ONLY : jic, INItime, time4jedi
-  USE mod_stepping,  ONLY : nnew
+  USE mod_scalars,   ONLY : jic, INItime, ntstart, time4jedi
+  USE mod_stepping,  ONLY : knew, nnew
 
   CLASS (roms_trajectory), intent(inout) :: self    !< Trajectory object
   CLASS (roms_state),      intent(in   ) :: state   !< State object
@@ -204,6 +204,7 @@ SUBROUTINE roms_trajectory_set (self, state, vdate)
   TYPE (roms_field), pointer             :: field
   integer                                :: i, ng
   real (kind=kind_real)                  :: fstats(3)
+  character (len=80)                     :: ncname
 
   ! Initialize.
 
@@ -223,7 +224,7 @@ SUBROUTINE roms_trajectory_set (self, state, vdate)
 
   IF (LdebugTrajectory .and. (my_comm%rank() .eq. 0))                          &
     PRINT 10, 'ROMS_DEBUG roms_trajectory::set: Processing fields',            &
-              MAX(0,jic(ng)-1), nnew(ng), TRIM(self%DateTimeStr),              &
+              jic(ng)-1, knew(ng), nnew(ng), TRIM(self%DateTimeStr),           &
               self%romsTime/86400.0_kind_real
 
   DO i = 1, SIZE(self%fields)
@@ -242,8 +243,20 @@ SUBROUTINE roms_trajectory_set (self, state, vdate)
     END IF
   END DO
 
-  10 FORMAT (2x,a,', timestep = ',i5.5,',timelevel = ',i0,', date: ',a,        &
-             ', romsTime = ',f0.8)
+  !> Write out trajectory snapshots.
+
+  IF (LdebugTrajectory) THEN
+    ncname='Data/trajectory/roms_jedi_traj.nc'
+    IF (jic(ng).eq.ntstart(ng)) THEN
+      CALL self%write_debug (ncname, vdate)              ! create and write
+    ELSE
+      CALL self%write_debug (ncname, vdate,                                    &
+                             Append = .TRUE.)            ! append records
+    END IF            
+  END IF
+
+  10 FORMAT (2x,a,', timestep = ',i5.5,', timelevel = (',i0,',',i0,')',        &
+             ', date: ',a,', romsTime = ',f0.8)
   20 FORMAT (19x,'- ',a,': ',a,/,22x,'(Min = ',1p,e15.8,' Max = ',1p,e15.8,    &
              ')',t93,'Checksum = ',i0)
 

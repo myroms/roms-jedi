@@ -9,11 +9,11 @@
 
 geometry:
   project_dir: Data/wc13
-  roms_stdinp: roms_wc13_20040103.in
+  roms_stdinp: roms_wc13_20040103_max.in              # 12 CPUs, 3x4 partition
   fields metadata: Data/fields_metadata.yaml
   ng: 1                                               # ROMS nested grid number
-# vertical coordinate: depths                         # ATLAS FunctionSpace default
-  vertical coordinate: levels                         # ATLAS FunctionSpace levels
+  vertical coordinate: depths                         # ATLAS FunctionSpace default
+# vertical coordinate: levels                         # ATLAS FunctionSpace levels
 
 background:
   fields_dir: Data/wc13/input
@@ -22,10 +22,9 @@ background:
   state variables: [ssh, tocn, socn]
   date: &date 2004-01-03T00:00:00Z                    # initial fields date
 
-# In SABER, by default, all the length scales are defined as the half-witdh
-# Gaspari-Cohn (1999) support radius, c. The relationship with the Daley (1991)
-# correlation Gaussian length, L, is:  L = 2 * c * SQRT(0.3) and 
-#                                      c = 0.5 * L / SQRT(0.3)
+# In SABER, by default, all the length scales are defined as the Gaspari-Cohn (1999)
+# support radius, c. The relationship with the Daley (1991) correlation Gaussian
+# length, L, is:    L = c * SQRT(0.3)   or   c = L / SQRT(0.3)
 
 background error:
   covariance model: SABER
@@ -47,12 +46,10 @@ background error:
         do not cross mask boundaries: true
         level for 2d variables: last
       nicas:
-        interpolation in global file: true
-#       max horizontal grid size: 2500
 #       resolution: 6.0                               # NICAS subgrid resolution
         resolution: 10.0                              # NICAS subgrid resolution (smoother)
         explicit length-scales: true
-        horizontal length-scale:
+        horizontal length-scale:                      # Same as ROMS native DA
         - groups:
           - ssh
 #         value: 91.287e3                             # L = 50e3 m (too small for BUMP)
@@ -69,9 +66,6 @@ background error:
 #         value: 127.8e3                              # L = 70e3 m
           value: 146.06e3                             # L = 80e3 m
         vertical length-scale:
-        - groups:
-          - ssh
-          value: 0.0
         - groups:
           - tocn
           value: 54.77                                # L = 30 m
@@ -94,7 +88,7 @@ background error:
           data_dir: Data/bump
           prefix: wc13
           exp: bump
-          type: cor_rh
+          type: cor_rh_global
           date: *date
       - parameter: cor_rv                             # Write vertical correlations NetCDF file
         file:
@@ -102,11 +96,11 @@ background error:
           data_dir: Data/bump
           prefix: wc13
           exp: bump
-          type: cor_rv
+          type: cor_rv_global
           date: *date
 
 test:
-  reference filename: testref/parameters_bump_cor_nicas.ref
+  reference filename: testref/parameters_bump_cor_nicas_max.ref
   float relative tolerance: 1.0e-3
-  log output filename: testoutput/parameters_bump_cor_nicas.log
-  test output filename: testoutput/parameters_bump_cor_nicas.out
+  log output filename: testoutput/parameters_bump_cor_nicas_max.log
+  test output filename: testoutput/parameters_bump_cor_nicas_max.out

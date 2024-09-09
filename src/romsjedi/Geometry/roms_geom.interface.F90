@@ -267,12 +267,13 @@ SUBROUTINE roms_geom_gen_mesh_c (c_key_self, c_nodes, c_lon, c_lat, c_ghosts,  &
   real (c_double), intent(inout) :: c_lon(c_nodes)
   real (c_double), intent(inout) :: c_lat(c_nodes)
 
-  logical, parameter             :: Verbose = .FALSE.
+  logical, parameter             :: Verbose = .TRUE.
   logical, allocatable           :: valid_nodes(:,:), valid_cells(:,:)
 
   integer                        :: Isize, Ioff, Joff
   integer                        :: IstrC, IendC, JstrC, JendC
   integer                        :: IstrD, IendD, JstrD, JendD
+  integer                        :: IstrH, IendH, JstrH, JendH
   integer                        :: LBi, LBj, UBi, UBj
   integer                        :: cgrid, i, ic, ij, j, jc, nc, ng, nq, tile
 
@@ -298,10 +299,20 @@ SUBROUTINE roms_geom_gen_mesh_c (c_key_self, c_nodes, c_lon, c_lat, c_ghosts,  &
   LBj = self%LBj                         ! J-dimension Lower bound
   UBj = self%UBj                         ! J-dimension Upper bound
 
+  IstrC = self%bounds(cgrid)%IstrC       ! starting Computational I-index
+  IendC = self%bounds(cgrid)%IendC       ! ending   Computational I-index
+  JstrC = self%bounds(cgrid)%JstrC       ! starting Computational J-index
+  JendC = self%bounds(cgrid)%JendC       ! ending   Computational J-index
+
   IstrD = self%bounds(cgrid)%IstrD       ! starting Data I-index
   IendD = self%bounds(cgrid)%IendD       ! ending   Data I-index
   JstrD = self%bounds(cgrid)%JstrD       ! starting Data J-index
   JendD = self%bounds(cgrid)%JendD       ! ending   Data J-index
+
+  IstrH = self%bounds(cgrid)%IstrH       ! starting Halo I-index
+  IendH = self%bounds(cgrid)%IendH       ! ending   Halo I-index
+  JstrH = self%bounds(cgrid)%JstrH       ! starting Halo J-index
+  JendH = self%bounds(cgrid)%JendH       ! ending   Halo J-index
 
   Isize = self%Lm + 2                    ! I-size for linear 2D index (Lm+2)
   Ioff  = 1                              ! because indices are 1-based
@@ -327,13 +338,16 @@ SUBROUTINE roms_geom_gen_mesh_c (c_key_self, c_nodes, c_lon, c_lat, c_ghosts,  &
 
   ic = 0
 
-  DO j = JstrD, JendD
+  DO j = JstrH, JendH
     jc = (j-Joff)*Isize
-    DO i = IstrD, IendD
-      ic = ic + 1
-      global_index(i,j) = REAL(i+Ioff+jc, kind_real)
-      local_index (i,j) = REAL(ic, kind_real)
-      tile_index  (i,j) = REAL(tile, kind_real)
+    DO i = IstrH, IendH
+      IF (((JstrD.le.j).and.(j.le.JendC+1)).and.                               &
+          ((IstrD.le.i).and.(i.le.IendC+1))) THEN          
+        ic = ic + 1
+        global_index(i,j) = REAL(i+Ioff+jc, kind_real)
+        local_index (i,j) = REAL(ic, kind_real)
+        tile_index  (i,j) = REAL(tile, kind_real)
+      END IF
     END DO
   END DO
 
@@ -347,7 +361,7 @@ SUBROUTINE roms_geom_gen_mesh_c (c_key_self, c_nodes, c_lon, c_lat, c_ghosts,  &
                       local_index,                                             &
                       tile_index)
 
-  ! Find which RHO-points are skipped (lateral boundary conditions).
+  ! Find which nodes and cells are skipped.
 
   CALL self%mesh_valid_nodes_cells (valid_nodes, valid_cells)
 
@@ -361,31 +375,32 @@ SUBROUTINE roms_geom_gen_mesh_c (c_key_self, c_nodes, c_lon, c_lat, c_ghosts,  &
 
   nc = 0
 
-  DO j = JstrD, JendD
-    DO i = IstrD, IendD
+  DO j = JstrD, JendC+1
+    DO i = IstrD, IendC+1
 
-      nc = nc + 1                        ! 1-based node count: local per tile
+        nc = nc + 1                      ! 1-based node count: local per tile
 
-      c_ghosts(nc) = 0
+        IF ((i.le.IendD).and.(j.le.JendD)) THEN
+          c_ghosts(nc) = 0
+          self%atlas_ij2node(i,j) = nc   ! (i,j) to node mapping
+        END IF
 
-      self%atlas_ij2node(i,j) = nc
+        c_lon(nc) = self%lonr(i,j)
+        c_lat(nc) = self%latr(i,j)
 
-      c_lon(nc) = self%lonr(i,j)
-      c_lat(nc) = self%latr(i,j)
-
-      c_global_index(nc) = INT(global_index(i,j))
-      c_remote_index(nc) = INT(local_index(i,j))
-      c_tile_index  (nc) = INT(tile_index(i,j))
+        c_global_index(nc) = INT(global_index(i,j))
+        c_remote_index(nc) = INT(local_index(i,j))
+        c_tile_index  (nc) = INT(tile_index(i,j))
 
     END DO
   END DO
 
-  ! Fill in the quadrilateral cell node list (corners).
+  ! Fill in the quadrilateral cell node list (vertices).
 
   nq = 1
                  
-  DO j = JstrD, JendD-1
-    DO i = IstrD, IendD-1
+  DO j = JstrD, JendC
+    DO i = IstrD, IendC
       c_quad_node_list(nq  ) = INT(global_index(i  ,j  ))
       c_quad_node_list(nq+1) = INT(global_index(i  ,j+1))
       c_quad_node_list(nq+2) = INT(global_index(i+1,j+1))
@@ -404,10 +419,10 @@ SUBROUTINE roms_geom_gen_mesh_c (c_key_self, c_nodes, c_lon, c_lat, c_ghosts,  &
                                      ', UBi   = ', UBi,                        &
                                      ', LBj   = ', LBj,                        &
                                      ', UBj   = ', UBj,                        &
-                                     '  IstrD = ', self%bounds(cgrid)%IstrD,   &
-                                     ', IendD = ', self%bounds(cgrid)%IendD,   &
-                                     ', JstrD = ', self%bounds(cgrid)%JstrD,   &
-                                     ', JendD = ', self%bounds(cgrid)%JendD,   &
+                                     '  IstrD = ', IstrD,                      &
+                                     ', IendD = ', IendD,                      &
+                                     ', JstrD = ', JstrD,                      &
+                                     ', JendD = ', JendD,                      &
                                      '  nodes = ', c_nodes,                    &
                                      '  counted = ', nc,                       &
                                      '  quads = ', c_quad_nodes,               &
@@ -417,17 +432,16 @@ SUBROUTINE roms_geom_gen_mesh_c (c_key_self, c_nodes, c_lon, c_lat, c_ghosts,  &
 
     IF (Verbose) THEN                                  ! Fortran unit per task
       WRITE (100+tile,20) 'i', 'j', 'tile', 'ghost',                           &
-                          'node', 'ij2node', 'local',                          &
+                          'global', 'ij2node', 'local',                        &
                           'g(i,j)', 'g(i+1,j)', 'g(i,j+1)', 'g(i+1,j+1)'
- 20   FORMAT (2(4x,a),2(2x,a),6x,a,3x,a,5x,a,4x,a,3(2x,a),/)
+ 20   FORMAT (2(4x,a),2(2x,a),4x,a,3x,a,5x,a,4x,a,3(2x,a),/)
 
-      ic = 0
-      DO j = JstrD, JendD-1
-        DO i = IstrD, IendD-1
-          ic = ic + 1
+      DO j = JstrD, JendC
+        DO i = IstrD, IendC
           ij = self%atlas_ij2node(i,j)
           WRITE (100+tile,30) i, j, INT(tile_index(i,j)), c_ghosts(ij),        &
-                              ic, ij, INT(local_index(i,j)),                   &
+                              INT(global_index(i,j)), ij,                      &
+                              INT(local_index(i,j)),                           &
                               INT(global_index(i  ,j  )),                      &
                               INT(global_index(i+1,j  )),                      &
                               INT(global_index(i  ,j+1)),                      &
@@ -439,15 +453,16 @@ SUBROUTINE roms_geom_gen_mesh_c (c_key_self, c_nodes, c_lon, c_lat, c_ghosts,  &
   END IF
 
   IF (c_nodes .ne. nc) THEN
-    WRITE (Message,'(2(i0,a))') c_nodes,' and nc = ',nc,' are not equal.'
-    CALL abor1_ftn ("roms_geom::gen_mesh_c: Error c_nodes = " //               &
-                    TRIM(Message))
+    WRITE (Message,40) tile, ', c_nodes = ', c_nodes, ' and nc = ',            &
+                       nc, ' are not equal.'
+ 40 FORMAT (i4.4, a, 2(i0,a))
+    CALL abor1_ftn ("roms_geom::gen_mesh_c: Error tile = " // TRIM(Message))
   END IF
 
   IF (c_quad_nodes .ne. nq-1) THEN
-    WRITE (Message,'(2(i0,a))') c_quad_nodes,' and nc = ',nq,' are not equal.'
-    CALL abor1_ftn ("roms_geom::gen_mesh: Error c_quad_nodes = " //            &
-                    TRIM(Message))
+    WRITE (Message,40) tile, ', c cquad_nodes = ', c_quad_nodes, ' and nq = ', &
+                       nq, ' are not equal.'
+    CALL abor1_ftn ("roms_geom::gen_mesh: Error tile = " // TRIM(Message))
   END IF
 
 END SUBROUTINE roms_geom_gen_mesh_c

@@ -616,9 +616,9 @@ FUNCTION roms_metadata_index (name) RESULT (var_index)
   SELECT CASE (TRIM(name))
     CASE ('ssh')
       var_index = idFsur
-    CASE ('u2docn')
+    CASE ('u2docn', 'ubar')
       var_index = idUbar
-    CASE ('v2docn')
+    CASE ('v2docn', 'vbar')
       var_index = idVbar
     CASE ('DU_avg1')
       var_index = idUfx1
@@ -636,11 +636,13 @@ FUNCTION roms_metadata_index (name) RESULT (var_index)
       var_index = idTvar(itemp)
     CASE ('socn')
       var_index = idTvar(isalt)
-    CASE ('Ktocn')
+    CASE ('Hzocn')
+      var_index = idHzdz
+    CASE ('Ktocn', 'AKt')
       var_index = idTdif
-    CASE ('Ksocn')
+    CASE ('Ksocn', 'AKs')
       var_index = idSdif
-    CASE ('Kvocn')
+    CASE ('Kvocn', 'AKv')
       var_index = idVvis
     CASE ('hocn')
       var_index = idtopo
@@ -806,6 +808,7 @@ SUBROUTINE roms_create_ncfile_nf90 (ng, model, LocalPET, S, metadata)
   TYPE (roms_field_metadata), intent(in   ) :: metadata(:) !< field Metadata
 
   integer                      :: i, itrc
+  integer                      :: OldFillMode
   integer                      :: DimIDs(nDimID)
   integer                      :: r2dgrd(3), u2dgrd(3), v2dgrd(3)
   integer                      :: r3dgrd(4), u3dgrd(4), v3dgrd(4), w3dgrd(4)
@@ -958,6 +961,62 @@ SUBROUTINE roms_create_ncfile_nf90 (ng, model, LocalPET, S, metadata)
                              NF_FOUT, 3, v2dgrd, Aval, Vinfo, ncname),         &
                      nf90_noerr, io_nf90, __LINE__, MyFile)
 
+      CASE ('DU_avg1')                         !< averaged 2D U-momentum flux
+
+        Vinfo( 1)=Vname(1,idUfx1)
+        Vinfo( 2)=Vname(2,idUfx1)
+        Vinfo(21)=metadata(i)%getval_name
+        Vinfo( 3)=Vname(3,idUfx1)
+        Vinfo(16)=Vname(1,idtime)
+        Vinfo(22)='coordinates'
+        Aval(5)=REAL(Iinfo(1,idUfx1,ng),r8)
+
+        CALL nc_err (def_var(ng, model, S(ng)%ncid, S(ng)%Vid(idUfx1),         &
+                             NF_FOUT, 3, u2dgrd, Aval, Vinfo, ncname),         &
+                     nf90_noerr, io_nf90, __LINE__, MyFile)
+
+      CASE ('DU_avg2')                         !< coupling 2D U-momentum flux
+
+        Vinfo( 1)=Vname(1,idUfx2)
+        Vinfo( 2)=Vname(2,idUfx2)
+        Vinfo(21)=metadata(i)%getval_name
+        Vinfo( 3)=Vname(3,idUfx2)
+        Vinfo(16)=Vname(1,idtime)
+        Vinfo(22)='coordinates'
+        Aval(5)=REAL(Iinfo(1,idUfx2,ng),r8)
+
+        CALL nc_err (def_var(ng, model, S(ng)%ncid, S(ng)%Vid(idUfx2),         &
+                             NF_FOUT, 3, u2dgrd, Aval, Vinfo, ncname),         &
+                     nf90_noerr, io_nf90, __LINE__, MyFile)
+
+      CASE ('DV_avg1')                         !< averaged 2D V-momentum flux
+
+        Vinfo( 1)=Vname(1,idVfx1)
+        Vinfo( 2)=Vname(2,idVfx1)
+        Vinfo(21)=metadata(i)%getval_name
+        Vinfo( 3)=Vname(3,idVfx1)
+        Vinfo(16)=Vname(1,idtime)
+        Vinfo(22)='coordinates'
+        Aval(5)=REAL(Iinfo(1,idVfx1,ng),r8)
+
+        CALL nc_err (def_var(ng, model, S(ng)%ncid, S(ng)%Vid(idVfx1),         &
+                             NF_FOUT, 3, v2dgrd, Aval, Vinfo, ncname),         &
+                     nf90_noerr, io_nf90, __LINE__, MyFile)
+
+      CASE ('DV_avg2')                         !< coupling 2D V-momentum flux
+
+        Vinfo( 1)=Vname(1,idVfx2)
+        Vinfo( 2)=Vname(2,idVfx2)
+        Vinfo(21)=metadata(i)%getval_name
+        Vinfo( 3)=Vname(3,idVfx2)
+        Vinfo(16)=Vname(1,idtime)
+        Vinfo(22)='coordinates'
+        Aval(5)=REAL(Iinfo(1,idVfx2,ng),r8)
+
+        CALL nc_err (def_var(ng, model, S(ng)%ncid, S(ng)%Vid(idVfx2),         &
+                             NF_FOUT, 3, v2dgrd, Aval, Vinfo, ncname),         &
+                     nf90_noerr, io_nf90, __LINE__, MyFile)
+
       CASE ('uocn')                            !< 3D U-momentum component
 
         Vinfo( 1)=Vname(1,idUvel)
@@ -1001,6 +1060,20 @@ SUBROUTINE roms_create_ncfile_nf90 (ng, model, LocalPET, S, metadata)
                              NF_FOUT, 4, r3dgrd, Aval, Vinfo, ncname),         &
                      nf90_noerr, io_nf90, __LINE__, MyFile)
 
+      CASE ('Hzocn')                           !< level thickness
+
+        Vinfo( 1)=Vname(1,idHzdz)
+        Vinfo( 2)=Vname(2,idHzdz)
+        Vinfo(21)=metadata(i)%getval_name
+        Vinfo( 3)=Vname(3,idHzdz)
+        Vinfo(16)=Vname(1,idtime)
+        Vinfo(22)='coordinates'
+        Aval(5)=REAL(Iinfo(1,idHzdz,ng),r8)
+
+        CALL nc_err (def_var(ng, model, S(ng)%ncid, S(ng)%Vid(idHzdz),         &
+                             NF_FOUT, 4, r3dgrd, Aval, Vinfo, ncname),         &
+                     nf90_noerr, io_nf90, __LINE__, MyFile)
+
       CASE ('Ktocn')                           !< vertical T-diffusion
 
         Vinfo( 1)=Vname(1,idTdif)
@@ -1029,7 +1102,6 @@ SUBROUTINE roms_create_ncfile_nf90 (ng, model, LocalPET, S, metadata)
                              NF_FOUT, 4, w3dgrd, Aval, Vinfo, ncname),         &
                      nf90_noerr, io_nf90, __LINE__, MyFile)
 
-
       CASE ('Kvocn')                           !< vertical viscosity
 
         Vinfo( 1)=Vname(1,idVvis)
@@ -1041,6 +1113,35 @@ SUBROUTINE roms_create_ncfile_nf90 (ng, model, LocalPET, S, metadata)
         Aval(5)=REAL(w3dvar,r8)
 
         CALL nc_err (def_var(ng, model, S(ng)%ncid, S(ng)%Vid(idVvis),         &
+                             NF_FOUT, 4, w3dgrd, Aval, Vinfo, ncname),         &
+                     nf90_noerr, io_nf90, __LINE__, MyFile)
+
+      CASE ('zocn_r')                          !< depth of RHO-points
+
+        Vinfo( 1)=Vname(1,idpthR)
+        Vinfo( 2)=Vname(2,idpthR)
+        Vinfo(21)=metadata(i)%getval_name
+        Vinfo( 3)=Vname(3,idpthR)
+        Vinfo(16)=Vname(1,idtime)
+        Vinfo(22)='coordinates'
+        Aval(5)=REAL(w3dvar,r8)
+
+        CALL nc_err (def_var(ng, model, S(ng)%ncid, S(ng)%Vid(idpthR),         &
+                             NF_FOUT, 4, r3dgrd, Aval, Vinfo, ncname),         &
+                     nf90_noerr, io_nf90, __LINE__, MyFile)
+
+
+      CASE ('zocn_w')                          !< depth of W-points
+
+        Vinfo( 1)=Vname(1,idpthW)
+        Vinfo( 2)=Vname(2,idpthW)
+        Vinfo(21)=metadata(i)%getval_name
+        Vinfo( 3)=Vname(3,idpthW)
+        Vinfo(16)=Vname(1,idtime)
+        Vinfo(22)='coordinates'
+        Aval(5)=REAL(w3dvar,r8)
+
+        CALL nc_err (def_var(ng, model, S(ng)%ncid, S(ng)%Vid(idpthW),         &
                              NF_FOUT, 4, w3dgrd, Aval, Vinfo, ncname),         &
                      nf90_noerr, io_nf90, __LINE__, MyFile)
 
@@ -1832,6 +1933,74 @@ SUBROUTINE roms_create_ncfile_pio (ng, model, LocalPET, S, metadata)
                              PIO_FOUT, 3, v2dgrd, Aval, Vinfo, ncname),        &
                      PIO_noerr, io_pio, __LINE__, MyFile)
 
+      CASE ('DU_avg1')                         !< averaged 2D U-momentum flux
+
+        Vinfo( 1)=Vname(1,idUfx1)
+        Vinfo( 2)=Vname(2,idUfx1)
+        Vinfo(21)=metadata(i)%getval_name
+        Vinfo( 3)=Vname(3,idUfx1)
+        Vinfo(16)=Vname(1,idtime)
+        Vinfo(22)='coordinates'
+        Aval(5)=REAL(Iinfo(1,idUfx1,ng),r8)
+        S(ng)%pioVar(idUfx1)%dkind=PIO_FOUT
+        S(ng)%pioVar(idUfx1)%gtype=u2dvar
+
+        CALL nc_err (def_var(ng, model, S(ng)%pioFile,                         &
+                             S(ng)%pioVar(idUfx1)%vd,                          &
+                             PIO_FOUT, 3, u2dgrd, Aval, Vinfo, ncname),        &
+                     PIO_noerr, io_pio, __LINE__, MyFile)
+
+      CASE ('DU_avg2')                         !< coupling 2D U-momentum flux
+
+        Vinfo( 1)=Vname(1,idUfx2)
+        Vinfo( 2)=Vname(2,idUfx2)
+        Vinfo(21)=metadata(i)%getval_name
+        Vinfo( 3)=Vname(3,idUfx2)
+        Vinfo(16)=Vname(1,idtime)
+        Vinfo(22)='coordinates'
+        Aval(5)=REAL(Iinfo(1,idUfx2,ng),r8)
+        S(ng)%pioVar(idUfx2)%dkind=PIO_FOUT
+        S(ng)%pioVar(idUfx2)%gtype=u2dvar
+
+        CALL nc_err (def_var(ng, model, S(ng)%pioFile,                         &
+                             S(ng)%pioVar(idUfx2)%vd,                          &
+                             PIO_FOUT, 3, u2dgrd, Aval, Vinfo, ncname),        &
+                     PIO_noerr, io_pio, __LINE__, MyFile)
+
+      CASE ('DV_avg1')                         !< averaged 2D V-momentum flux
+
+        Vinfo( 1)=Vname(1,idVfx1)
+        Vinfo( 2)=Vname(2,idVfx1)
+        Vinfo(21)=metadata(i)%getval_name
+        Vinfo( 3)=Vname(3,idVfx1)
+        Vinfo(16)=Vname(1,idtime)
+        Vinfo(22)='coordinates'
+        Aval(5)=REAL(Iinfo(1,idVfx1,ng),r8)
+        S(ng)%pioVar(idVfx1)%dkind=PIO_FOUT
+        S(ng)%pioVar(idVfx1)%gtype=v2dvar
+
+        CALL nc_err (def_var(ng, model, S(ng)%pioFile,                         &
+                             S(ng)%pioVar(idVfx1)%vd,                          &
+                             PIO_FOUT, 3, v2dgrd, Aval, Vinfo, ncname),        &
+                     PIO_noerr, io_pio, __LINE__, MyFile)
+
+      CASE ('DV_avg2')                         !< coupling 2D V-momentum flux
+
+        Vinfo( 1)=Vname(1,idVfx2)
+        Vinfo( 2)=Vname(2,idVfx2)
+        Vinfo(21)=metadata(i)%getval_name
+        Vinfo( 3)=Vname(3,idVfx2)
+        Vinfo(16)=Vname(1,idtime)
+        Vinfo(22)='coordinates'
+        Aval(5)=REAL(Iinfo(1,idVfx2,ng),r8)
+        S(ng)%pioVar(idVfx2)%dkind=PIO_FOUT
+        S(ng)%pioVar(idVfx2)%gtype=v2dvar
+
+        CALL nc_err (def_var(ng, model, S(ng)%pioFile,                         &
+                             S(ng)%pioVar(idVfx2)%vd,                          &
+                             PIO_FOUT, 3, v2dgrd, Aval, Vinfo, ncname),        &
+                     PIO_noerr, io_pio, __LINE__, MyFile)
+
       CASE ('uocn')                            !< 3D U-momentum component
 
         Vinfo( 1)=Vname(1,idUvel)
@@ -1882,6 +2051,108 @@ SUBROUTINE roms_create_ncfile_pio (ng, model, LocalPET, S, metadata)
         CALL nc_err (def_var(ng, model, S(ng)%pioFile,                         &
                              S(ng)%pioTrc(itrc)%vd,                            &
                              PIO_FOUT, 4, r3dgrd, Aval, Vinfo, ncname),        &
+                     PIO_noerr, io_pio, __LINE__, MyFile)
+
+      CASE ('Hzocn')                           !< level thickness
+
+        Vinfo( 1)=Vname(1,idHzdz)
+        Vinfo( 2)=Vname(2,idHzdz)
+        Vinfo(21)=metadata(i)%getval_name
+        Vinfo( 3)=Vname(3,idHzdz)
+        Vinfo(16)=Vname(1,idtime)
+        Vinfo(22)='coordinates'
+        Aval(5)=REAL(Iinfo(1,idHzdz,ng),r8)
+        S(ng)%pioVar(idHzdz)%dkind=PIO_FOUT
+        S(ng)%pioVar(idHzdz)%gtype=r3dvar
+
+        CALL nc_err (def_var(ng, model, S(ng)%pioFile,                         &
+                             S(ng)%pioVar(isHzdz)%vd,                          &
+                             PIO_FOUT, 4, r3dgrd, Aval, Vinfo, ncname),        &
+                     PIO_noerr, io_pio, __LINE__, MyFile)
+
+      CASE ('Ktocn')                           !< vertical T-diffusion
+
+        Vinfo( 1)=Vname(1,idTdif)
+        Vinfo( 2)=Vname(2,idTdif)
+        Vinfo(21)=metadata(i)%getval_name
+        Vinfo( 3)=Vname(3,idTdif)
+        Vinfo(16)=Vname(1,idtime)
+        Vinfo(22)='coordinates'
+        Aval(5)=REAL(w3dvar,r8)
+        S(ng)%pioVar(idTdif)%dkind=PIO_FOUT
+        S(ng)%pioVar(idTdif)%gtype=w3dvar
+
+        CALL nc_err (def_var(ng, model, S(ng)%pioFile,                         &
+                             S(ng)%pioVar(idTdif)%vd,                          &
+                             PIO_FOUT, 4, w3dgrd, Aval, Vinfo, ncname),        &
+                     PIO_noerr, io_pio, __LINE__, MyFile)
+
+      CASE ('Ksocn')                           !< vertical S-diffusion
+
+        Vinfo( 1)=Vname(1,idSdif)
+        Vinfo( 2)=Vname(2,idSdif)
+        Vinfo(21)=metadata(i)%getval_name
+        Vinfo( 3)=Vname(3,idSdif)
+        Vinfo(16)=Vname(1,idtime)
+        Vinfo(22)='coordinates'
+        Aval(5)=REAL(w3dvar,r8)
+        S(ng)%pioVar(idSdif)%dkind=PIO_FOUT
+        S(ng)%pioVar(idSdif)%gtype=w3dvar
+
+        CALL nc_err (def_var(ng, model, S(ng)%pioFile,                         &
+                             S(ng)%pioVar(idSdif)%vd,                          &
+                             PIO_FOUT, 4, w3dgrd, Aval, Vinfo, ncname),        &
+                     PIO_noerr, io_pio, __LINE__, MyFile)
+
+      CASE ('Kvocn')                           !< vertical viscosity
+
+        Vinfo( 1)=Vname(1,idVvis)
+        Vinfo( 2)=Vname(2,idVvis)
+        Vinfo(21)=metadata(i)%getval_name
+        Vinfo( 3)=Vname(3,idVvis)
+        Vinfo(16)=Vname(1,idtime)
+        Vinfo(22)='coordinates'
+        Aval(5)=REAL(w3dvar,r8)
+        S(ng)%pioVar(idVvis)%dkind=PIO_FOUT
+        S(ng)%pioVar(idVvis)%gtype=w3dvar
+
+        CALL nc_err (def_var(ng, model, S(ng)%pioFile,                         &
+                             S(ng)%pioVar(idVvis)%vd,                          &
+                             PIO_FOUT, 4, w3dgrd, Aval, Vinfo, ncname),        &
+                     PIO_noerr, io_pio, __LINE__, MyFile)
+
+      CASE ('zocn_r')                          !< depth of RHO-points
+
+        Vinfo( 1)=Vname(1,idpthR)
+        Vinfo( 2)=Vname(2,idpthR)
+        Vinfo(21)=metadata(i)%getval_name
+        Vinfo( 3)=Vname(3,idpthR)
+        Vinfo(16)=Vname(1,idtime)
+        Vinfo(22)='coordinates'
+        Aval(5)=REAL(w3dvar,r8)
+        S(ng)%pioVar(idpthR)%dkind=PIO_FOUT
+        S(ng)%pioVar(idpthR)%gtype=r3dvar
+
+        CALL nc_err (def_var(ng, model, S(ng)%pioFile,                         &
+                             S(ng)%pioVar(idpthR)%vd,                          &
+                             PIO_FOUT, 4, r3dgrd, Aval, Vinfo, ncname),        &
+                     PIO_noerr, io_pio, __LINE__, MyFile)
+
+      CASE ('zocn_w')                          !< depth of W-points
+
+        Vinfo( 1)=Vname(1,idpthW)
+        Vinfo( 2)=Vname(2,idpthW)
+        Vinfo(21)=metadata(i)%getval_name
+        Vinfo( 3)=Vname(3,idpthW)
+        Vinfo(16)=Vname(1,idtime)
+        Vinfo(22)='coordinates'
+        Aval(5)=REAL(w3dvar,r8)
+        S(ng)%pioVar(idpthW)%dkind=PIO_FOUT
+        S(ng)%pioVar(idpthW)%gtype=w3dvar
+
+        CALL nc_err (def_var(ng, model, S(ng)%pioFile,                         &
+                             S(ng)%pioVar(idpthW)%vd,                          &
+                             PIO_FOUT, 4, w3dgrd, Aval, Vinfo, ncname),        &
                      PIO_noerr, io_pio, __LINE__, MyFile)
 
       CASE DEFAULT
