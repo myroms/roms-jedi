@@ -1,5 +1,4 @@
-# ROMS is configured with the JEDI driver and includes the NLM, TLM, and ADM kernels
-# for the US West Coast WC13 test application.
+# ROMS-JEDI 4D HofX Unit Test: WC13 Application
 #
 # 4D Hofx  unit test for the period of Jan 3-7, 2004
 #   We either use an initial state for Jan 3, 2004

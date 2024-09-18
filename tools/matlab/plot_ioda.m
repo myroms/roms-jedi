@@ -188,7 +188,7 @@ for n = 1:S.nvars
       grid on;
       if (~isempty(PNGprefix))
         png_file = strcat(PNGprefix, shortname{n}, '_obsZ.png');
-        print(png_file, '-dpng', '-r300')
+        exportgraphics(gcf, png_file, 'resolution', 300);
       end
     else
       figure;
@@ -200,7 +200,7 @@ for n = 1:S.nvars
       title(['Group:  ObsValue,   File:  ', untexlabel(MyFile)]);
       if (~isempty(PNGprefix))
         png_file = strcat(PNGprefix, shortname{n}, '_obsXY.png');
-        print(png_file, '-dpng', '-r300')
+        exportgraphics(gcf, png_file, 'resolution', 300);
       end
     end  
   
@@ -223,7 +223,7 @@ for n = 1:S.nvars
     title(['Group:  hofx,   File:  ', untexlabel(MyFile)]);
     if (~isempty(PNGprefix))
       png_file = strcat(PNGprefix, shortname{n}, '_enum.png');
-      print(png_file, '-dpng', '-r300')
+      exportgraphics(gcf, png_file, 'resolution', 300);
     end
        
     figure;
@@ -237,7 +237,7 @@ for n = 1:S.nvars
     title(['Group:  hofx,   File:  ', untexlabel(MyFile)]);
     if (~isempty(PNGprefix))
       png_file = strcat(PNGprefix, shortname{n}, '_date.png');
-      print(png_file, '-dpng', '-r300')
+      exportgraphics(gcf, png_file, 'resolution', 300);
     end
        
     figure;
@@ -251,7 +251,7 @@ for n = 1:S.nvars
     title(['d = OBS - HofX for File:  ', untexlabel(MyFile)]);
     if (~isempty(PNGprefix))
       png_file = strcat(PNGprefix, shortname{n}, '_innov.png');
-      print(png_file, '-dpng', '-r300')
+      exportgraphics(gcf, png_file, 'resolution', 300);    
     end
        
     if (any(strcmp({M.Variables.Name}, 'depth')))
@@ -265,7 +265,7 @@ for n = 1:S.nvars
       title(['HofX File:  ', untexlabel(MyFile)]);
       if (~isempty(PNGprefix))
         png_file = strcat(PNGprefix, shortname{n}, '_depth.png');
-        print(png_file, '-dpng', '-r300')
+        exportgraphics(gcf, png_file, 'resolution', 300);
       end
     else
       figure;
@@ -279,7 +279,7 @@ for n = 1:S.nvars
       title(['Group:  hofx,   File:  ', untexlabel(MyFile)]);
       if (~isempty(PNGprefix))
         png_file = strcat(PNGprefix, shortname{n}, '_lonlat.png');
-        print(png_file, '-dpng', '-r300')
+        exportgraphics(gcf, png_file, 'resolution', 300);
       end
     end
   
@@ -302,7 +302,7 @@ for n = 1:S.nvars
     title(['Group:  hofx0,   File:  ', untexlabel(MyFile)]);
     if (~isempty(PNGprefix))
       png_file = strcat(PNGprefix, shortname{n}, '_hofx0.png');
-      print(png_file, '-dpng', '-r300')
+      exportgraphics(gcf, png_file, 'resolution', 300);
     end
   
     if (any(strcmp({M.Variables.Name}, 'depth')))
@@ -316,7 +316,7 @@ for n = 1:S.nvars
       title(['Group:  hofx0,   File:  ', untexlabel(MyFile)]);
       if (~isempty(PNGprefix))
         png_file = strcat(PNGprefix, shortname{n}, '_hofx0_depth.png');
-        print(png_file, '-dpng', '-r300')
+        exportgraphics(gcf, png_file, 'resolution', 300);
       end
     else
       figure;
@@ -330,7 +330,7 @@ for n = 1:S.nvars
       title(['Group:  hofx0,   File:  ', untexlabel(MyFile)]);
       if (~isempty(PNGprefix))
         png_file = strcat(PNGprefix, shortname{n}, '_hofx0_lonlat.png');
-        print(png_file, '-dpng', '-r300')
+        exportgraphics(gcf, png_file, 'resolution', 300);
       end
     end
   
@@ -351,7 +351,7 @@ for n = 1:S.nvars
     title(['Group:  hofx0 member 1,   File:  ', untexlabel(MyFile)]);
     if (~isempty(PNGprefix))
       png_file = strcat(PNGprefix, shortname{n}, '_hofx0_1.png');
-      print(png_file, '-dpng', '-r300')
+      exportgraphics(gcf, png_file, 'resolution', 300);
     end
   
     if (any(strcmp({M.Variables.Name}, 'depth')))
@@ -365,7 +365,7 @@ for n = 1:S.nvars
       title(['Group:  hofx0 member 1,   File:  ', untexlabel(MyFile)]);
       if (~isempty(PNGprefix))
         png_file = strcat(PNGprefix, shortname{n}, '_hofx0_1_depth.png');
-        print(png_file, '-dpng', '-r300')
+        exportgraphics(gcf, png_file, 'resolution', 300);
       end
     else
       figure;
@@ -379,7 +379,7 @@ for n = 1:S.nvars
       title(['Group:  hofx0 member 1,   File:  ', untexlabel(MyFile)]);
       if (~isempty(PNGprefix))
         png_file = strcat(PNGprefix, shortname{n}, '_hofx0_1_lonlat.png');
-        print(png_file, '-dpng', '-r300')
+        exportgraphics(gcf, png_file, 'resolution', 300);
       end
     end
   
@@ -402,7 +402,7 @@ for n = 1:S.nvars
     title(['Group:  hofx1,   File:  ', untexlabel(MyFile)]);
     if (~isempty(PNGprefix))
       png_file = strcat(PNGprefix, shortname{n}, '_hofx1.png');
-      print(png_file, '-dpng', '-r300')
+      exportgraphics(gcf, png_file, 'resolution', 300);
     end
  
     if (any(strcmp({M.Variables.Name}, 'depth')))
@@ -416,7 +416,7 @@ for n = 1:S.nvars
       title(['Group:  hofx1,   File:  ', untexlabel(MyFile)]);
       if (~isempty(PNGprefix))
         png_file = strcat(PNGprefix, shortname{n}, '_hofx1_depth.png');
-        print(png_file, '-dpng', '-r300')
+        exportgraphics(gcf, png_file, 'resolution', 300);
       end
     else
       figure;
@@ -430,7 +430,7 @@ for n = 1:S.nvars
       title(['Group:  hofx1,   File:  ', untexlabel(MyFile)]);
       if (~isempty(PNGprefix))
         png_file = strcat(PNGprefix, shortname{n}, '_hofx1_lonlat.png');
-        print(png_file, '-dpng', '-r300')
+        exportgraphics(gcf, png_file, 'resolution', 300);
       end
     end
   
@@ -451,7 +451,7 @@ for n = 1:S.nvars
     title(['Group:  hofx1 member 1,   File:  ', untexlabel(MyFile)]);
     if (~isempty(PNGprefix))
       png_file = strcat(PNGprefix, shortname{n}, '_hofx1_1.png');
-      print(png_file, '-dpng', '-r300')
+      exportgraphics(gcf, png_file, 'resolution', 300);
     end
  
     if (any(strcmp({M.Variables.Name}, 'depth')))
@@ -465,7 +465,7 @@ for n = 1:S.nvars
       title(['Group:  hofx1 member 1,   File:  ', untexlabel(MyFile)]);
       if (~isempty(PNGprefix))
         png_file = strcat(PNGprefix, shortname{n}, '_hofx1_1_depth.png');
-        print(png_file, '-dpng', '-r300')
+        exportgraphics(gcf, png_file, 'resolution', 300);
       end
     else
       figure;
@@ -479,7 +479,7 @@ for n = 1:S.nvars
       title(['Group:  hofx1 member 1,   File:  ', untexlabel(MyFile)]);
       if (~isempty(PNGprefix))
         png_file = strcat(PNGprefix, shortname{n}, '_hofx1_1_lonlat.png');
-        print(png_file, '-dpng', '-r300')
+        exportgraphics(gcf, png_file, 'resolution', 300);
       end
     end
   
@@ -500,7 +500,7 @@ for n = 1:S.nvars
     title(['oman = OBS - Analysis,   File:  ', untexlabel(MyFile)]);    
     if (~isempty(PNGprefix))
       png_file = strcat(PNGprefix, shortname{n}, '_oman.png');
-      print(png_file, '-dpng', '-r300')
+      exportgraphics(gcf, png_file, 'resolution', 300);
     end
   
   end
@@ -520,7 +520,7 @@ for n = 1:S.nvars
     title(['ombg = OBS - Background,   File:  ', untexlabel(MyFile)]);    
     if (~isempty(PNGprefix))
       png_file = strcat(PNGprefix, shortname{n}, '_ombg.png');
-      print(png_file, '-dpng', '-r300')
+      exportgraphics(gcf, png_file, 'resolution', 300);
     end
   
   end

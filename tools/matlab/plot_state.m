@@ -2,7 +2,8 @@ function S = plot_state(Gname, Sname, rec, varargin)
 
 % PLOT_STATE:  Plots data assimilation state vector fields
 %
-% F = plot_state(Gname, Sname, rec, level, ptype, Mmap, orient, index, wrtPNG)
+% F = plot_state(Gname, Sname, rec, level, ptype, Mmap, orient, index,
+%                wrtPNG, PNGsuffix, R)
 %
 % This function plots hoeizontal or cross-section fields of the data
 % assimilation state vector like increment, analysis, and trajectory.
@@ -55,6 +56,18 @@ function S = plot_state(Gname, Sname, rec, varargin)
 %
 %                    if wrtPNG < 1, ommit figure tile, doTitle = false
 %
+%    PNGsuffix     PNG filename suffix qualifier (string; OPTIONAL)
+%
+%    R             State fields color range values (struct)
+%
+%                    R.zeta  [min max]
+%                    R.u     [min max]
+%                    R.v     [min max]
+%                    R.temp  [min max]
+%                    R.salt  [min max]
+%
+%                    use [-Inf Inf] for full range
+%
 % On Output:
 %
 %    S             Processed state variable structure (array)
@@ -100,6 +113,8 @@ if (any(tile))
   F.tiling = str2num(tiling);
 end
 draw_tiling = rec < 0;
+doPNG = false;
+doRange = false;
 doTitle = true;
 doZoom = false;
 
@@ -110,9 +125,11 @@ switch numel(varargin)
     level     = N;
     ptype     = 1;
     Mmap      = 0;
-    orient    = []';
+    orient    = [];
     index     = [];
     wrtPNG    = false;
+    PNGsuffix = [];
+    R         = [];
  case 1
     level     = varargin{1};
     ptype     = 1;
@@ -120,13 +137,17 @@ switch numel(varargin)
     orient    = [];
     index     = [];
     wrtPNG    = false;
+    PNGsuffix = [];
+    R         = [];
  case 2
     level     = varargin{1};
     ptype     = varargin{2};
     Mmap      = 0;
     orient    = [];
-    index     = []
+    index     = [];
     wrtPNG    = false;
+    PNGsuffix = [];
+    R         = [];
  case 3
     level     = varargin{1};
     ptype     = varargin{2};
@@ -134,6 +155,8 @@ switch numel(varargin)
     orient    = [];
     index     = [];
     wrtPNG    = false;
+    PNGsuffix = [];
+    R         = [];
  case 4
     level     = varargin{1};
     ptype     = varargin{2};
@@ -141,6 +164,8 @@ switch numel(varargin)
     orient    = varargin{4};
     index     = N;
     wrtPNG    = false;
+    PNGsuffix = [];
+    R         = [];
  case 5
     level     = varargin{1};
     ptype     = varargin{2};
@@ -148,6 +173,8 @@ switch numel(varargin)
     orient    = varargin{4};
     index     = varargin{5};
     wrtPNG    = false;
+    PNGsuffix = [];
+    R         = [];
  case 6
     level     = varargin{1};
     ptype     = varargin{2};
@@ -155,17 +182,45 @@ switch numel(varargin)
     orient    = varargin{4};
     index     = varargin{5};
     wrtPNG    = varargin{6};
+    PNGsuffix = [];
+    R         = [];
+    doPNG     = true;
+ case 7
+    level     = varargin{1};
+    ptype     = varargin{2};
+    Mmap      = varargin{3};
+    orient    = varargin{4};
+    index     = varargin{5};
+    wrtPNG    = varargin{6};
+    PNGsuffix = varargin{7};
+    R         = [];
+    doPNG     = true;
+ case 8
+    level     = varargin{1};
+    ptype     = varargin{2};
+    Mmap      = varargin{3};
+    orient    = varargin{4};
+    index     = varargin{5};
+    wrtPNG    = varargin{6};
+    PNGsuffix = varargin{7};
+    R         = varargin{8};
+    doPNG     = true;
+    doRange   = true;
+end
 
-    if (~islogical(wrtPNG))    
-      if (wrtPNG < 0)
-	doTitle = false;
-      end
-      if (abs(wrtPNG) > 1)
-	Zmin   = -abs(wrtPNG);
-        doZoom = true;
-	wrtPNG = true;
-      end
+% Set parameters affecting the writing of PNG files.
+
+if (doPNG)
+  if (~islogical(wrtPNG))    
+    if (wrtPNG < 0)
+      doTitle = false;
     end
+    if (abs(wrtPNG) > 1)
+      Zmin   = -abs(wrtPNG);
+      doZoom = true;
+      wrtPNG = true;
+    end
+  end
 end
 
 F.Caxis  = [-Inf Inf];
@@ -542,11 +597,20 @@ for var = Svarlist
      xlabel({xlabel1, F.Tstring});
    end
 
+   if (doRange)
+     caxis(R.(field));
+   end
+   
    if (wrtPNG)
-     if (doSection)
-       png_file=strcat(F.Vname,'_sec_',num2str(F.Tindex, '%3.3i'),'.png');
+     if (isempty(PNGsuffix))
+       suffix=num2str(F.Tindex, '%3.3i');
      else
-       png_file=strcat(F.Vname,'_',num2str(F.Tindex, '%3.3i'),'.png');
+       suffix=PNGsuffix;
+     end
+     if (doSection)
+       png_file=strcat(F.Vname,'_sec_',suffix,'.png');
+     else
+       png_file=strcat(F.Vname,'_',suffix,'.png');
      end
      exportgraphics(gcf, png_file, 'resolution', 300);
    end

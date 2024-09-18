@@ -1,4 +1,4 @@
-# ROMS-JEDI Hybrid 3DEnVar FGAT (Primal Formulation) Test: WC13 Application
+# ROMS-JEDI Hybrid 3DEnVar 4D-FGAT (Primal Formulation) Test: WC13 Application
 #
 # It uses ROMS 4D state vector and the 4D-Var cost function for a
 # 4D-FGAT (First Guess at Appropriate Time) by approximating the
@@ -108,43 +108,43 @@ cost function:
     obs perturbations: false                       # default
     observers:
 
-#   - obs space:
-#       name: InsituTemperature
-#       obsdatain:
-#         engine:
-#           type: H5File
-#           obsfile: Data/wc13/obs/wc13_temp_20040103.nc4
-#       obsdataout:
-#         engine:
-#           type: H5File
-#           obsfile: Data/3dhyb/4dfgat/primal/wc13_temp_3dhyb_4dfgat.nc4
-#       simulated variables: [waterTemperature]
-#     obs operator:
-#       name: VertInterp
-#       vertical coordinate: model_level_depth_at_cell_center
-#       observation vertical coordinate: depth
-#       observation alias file: testinput/obsop_name_map.yaml
-#     obs error:
-#       covariance model: diagonal
+    - obs space:
+        name: InsituTemperature
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile: Data/wc13/obs/wc13_temp_20040103.nc4
+        obsdataout:
+          engine:
+            type: H5File
+            obsfile: Data/3dhyb/4dfgat/primal/wc13_temp_3dhyb_4dfgat.nc4
+        simulated variables: [waterTemperature]
+      obs operator:
+        name: VertInterp
+        vertical coordinate: model_level_depth_at_cell_center
+        observation vertical coordinate: depth
+        observation alias file: testinput/obsop_name_map.yaml
+      obs error:
+        covariance model: diagonal
  
-#   - obs space:
-#       name: InsituSalinity
-#       obsdatain:
-#         engine:
-#           type: H5File
-#           obsfile: Data/wc13/obs/wc13_salt_20040103.nc4
-#       obsdataout:
-#        engine:
-#           type: H5File
-#           obsfile: Data/3dhyb/4dfgat/primal/wc13_salt_3dhyb_4dfgat.nc4
-#       simulated variables: [salinity]
-#     obs operator:
-#       name: VertInterp
-#       vertical coordinate: model_level_depth_at_cell_center
-#       observation vertical coordinate: depth
-#       observation alias file: testinput/obsop_name_map.yaml
-#     obs error:
-#       covariance model: diagonal
+    - obs space:
+        name: InsituSalinity
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile: Data/wc13/obs/wc13_salt_20040103.nc4
+        obsdataout:
+         engine:
+            type: H5File
+            obsfile: Data/3dhyb/4dfgat/primal/wc13_salt_3dhyb_4dfgat.nc4
+        simulated variables: [salinity]
+      obs operator:
+        name: VertInterp
+        vertical coordinate: model_level_depth_at_cell_center
+        observation vertical coordinate: depth
+        observation alias file: testinput/obsop_name_map.yaml
+      obs error:
+        covariance model: diagonal
  
     - obs space:
         name: SST

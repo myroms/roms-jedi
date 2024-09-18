@@ -15,10 +15,10 @@ model:
   simulation length: *ForecastLength
 
 initial condition:
+  date: __INITIAL_DATE__
   fields_dir: __FIELDS_DIR__
   fields_filename: __ROMS_INI_PRIOR__
   fields_record: __INI_PRIOR_RECORD__
-  date: __INITIAL_DATE__
   state variables: [ssh, uocn, vocn, tocn, socn, zocn_r]
 
 time window:

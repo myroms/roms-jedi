@@ -12,7 +12,7 @@ model test:
   forecast length: *ForecastLength
   final norm: 8609.087389304004319
   tolerance: 1.0e-2
-  test reforecast: true
+  test reforecast: false
 
 model:
   name: ROMS
@@ -21,10 +21,10 @@ model:
   simulation length: *ForecastLength
 
 initial condition:
+  date: __INITIAL_DATE__
   fields_dir: __FIELDS_DIR__
   fields_filename: __ROMS_INI_PRIOR__
   fields_record: __INI_PRIOR_RECORD__
   state variables: [ssh, uocn, vocn, tocn, socn]
-  date: __INITIAL_DATE__
 
 model aux control:

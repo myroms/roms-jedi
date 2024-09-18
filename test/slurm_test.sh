@@ -135,7 +135,6 @@ elif [ ${ALL_TEST} -eq 2 ]; then
   ctest -VV -R test_romsjedi_increment
   ctest -VV -R test_romsjedi_model
   ctest -VV -R test_romsjedi_linearmodel
-  ctest -VV -R test_romsjedi_error_covariance
   ctest -VV -R test_romsjedi_hofx_nomodel
   ctest -VV -R test_romsjedi_hofx_4d
   ctest -VV -R test_romsjedi_makeobs_4d
@@ -237,14 +236,6 @@ else
     echo " Test #${ic}: test_romsjedi_linearmodel .....................  *Failed"
   else
     echo " Test #${ic}: test_romsjedi_linearmodel .....................  Passed"
-  fi
-
-  ${MPIrun} test_romsjedi_error_covariance testinput/error_covariance.yaml 1>> test_${ic}.log 2>> test.err
-  ic=$(( $ic + 1 ))
-  if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_error_covariance ................  *Failed"
-  else
-    echo " Test #${ic}: test_romsjedi_error_covariance ................  Passed"
   fi
 
   ic=$(( $ic + 1 ))

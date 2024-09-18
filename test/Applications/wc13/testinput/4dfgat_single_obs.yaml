@@ -14,7 +14,6 @@ forecast length: &ForecastLength PT96H           # 96 hours (4 days) window endi
 model timestep:  &TimeStep PT1800S               # WC13 has a 30 minutes timestep
 
 initial date: &date 2004-01-03T00:00:00Z         # initial DA window
-middle date:  &mid_date 2004-01-05T00:00:00Z     # middle  DA window
 
 roms analysis:  &roms_analysis [ssh, uocn, vocn, tocn, socn]
 roms state:     &roms_state    [ssh, uocn, vocn, tocn, socn, zocn_r]

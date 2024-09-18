@@ -1,48 +1,49 @@
-# ROMS-JEDI 3D-FGAT Cost Function (Dual Formulation) Test: WC13 Application
+# ROMS-JEDI 4D-VAR Cost Function Test (BUMP-NICAS): __ROMS_APPLICATION__
 #
-# It uses ROMS 4D state vector and the 3D-FGAT cost function (check
-# OOPS #2195 Pull Request for details). It should produce identical
-# results as the 4D-Var cost function with Identity tangent linear
-# and adjoint operators. The B-matrix for the 3D-FGAT is valid for
-# the middle of the DA window. Thus, the analysis (first guess plus
-# increment) is written for the middle of the DA window.
+# It uses ROMS 4D state vector and the 4D-Var cost function for
+# Strong-constraint 4D-Var, dual (default) or primal formulation
+# It computes the analysis increment for the initial state vector
+# (beginning of the DA window).
 #
-# Using RPCG (Augmented Restricted Preconditioned Conjugate Gradient)
-# Minimizer, Gratton and Tshimanga, QJRMS, 135: 1573-1585 (2009).
 
-forecast length: &ForecastLength PT96H           # 96 hours (4 days) window ending on 2004-01-07T00:00:00Z
-                                                 # or other smaller interval
-model timestep:  &TimeStep PT1800S               # WC13 has a 30 minutes timestep
+forecast length: &ForecastLength __FORECAST_LENGTH__
 
-initial date: &date 2004-01-03T00:00:00Z         # initial DA window
-middle date:  &mid_date 2004-01-05T00:00:00Z     # middle  DA window
+model timestep:  &TimeStep __ROMS_TIMESTEP__
 
-roms analysis:  &roms_analysis [ssh, uocn, vocn, tocn, socn]
-roms state:     &roms_state    [ssh, uocn, vocn, tocn, socn, zocn_r]
+initial date: &date __INITIAL_DATE__
+
+roms analysis:   &roms_analysis   [ssh, uocn, vocn, tocn, socn]
+roms state:      &roms_state      [ssh, uocn, vocn, tocn, socn, zocn_r]
+roms trajectory: &roms_trajectory [ssh, u2docn, v2docn,
+                                   uocn, vocn, tocn, socn,
+                                   DU_avg1, DV_avg1, DU_avg2, DV_avg2,
+                                   Ktocn, Ksocn, Kvocn]
 
 cost function:
-  cost type: 3D-FGAT
+  cost type: 4D-Var
   time window:
     begin: *date
     length: *ForecastLength
   analysis variables: *roms_analysis 
 
   geometry: &geom
-    project_dir: Data/wc13
-    roms_stdinp: roms_wc13_20040103.in
+    project_dir: __PROJECT_DIR__
+    roms_stdinp: __ROMS_STDINP_MAX__
     fields metadata: Data/fields_metadata.yaml
     ng: 1                                        # ROMS nested grid number
+    vertical coordinate: depths                  # ATLAS FunctionSpace default
+#   vertical coordinate: levels                  # ATLAS FunctionSpace levels
 
   model:
     name: ROMS
-    model variables: *roms_state
+    model variables: *roms_trajectory
     simulation length: *ForecastLength
     tstep: *TimeStep
 
   background:
-    fields_dir: Data/wc13/input
-    fields_filename: wc13_roms_ini_20040103.nc   # initial fields for 2004-01-03T00:00:00Z
-    fields_record: 1
+    fields_dir: __FIELDS_DIR__
+    fields_filename: __ROMS_INI_PRIOR__
+    fields_record: __INI_PRIOR_RECORD__
     state variables: *roms_state
     date: *date 
 
@@ -56,7 +57,7 @@ cost function:
           read local nicas: true
         io:
           data directory: Data/bump
-          files prefix: wc13_bump_cor
+          files prefix: __ROMS_APP___bump_cor
         grids:
         - model:
             variables:
@@ -69,11 +70,11 @@ cost function:
     - saber block name: StdDev
       read:
         model file:
-          fields_dir: Data/wc13/input
-          fields_filename: wc13_roms_std_i.nc    # same as ROMS native RBL4D-Var
+          fields_dir: __FIELDS_DIR__
+          fields_filename: __ROMS_PRIOR_STD__
           fields_record: 1
           state variables: *roms_analysis
-          date: *mid_date                        # date at middle of DA window
+          date: *date
 
   observations:
     obs perturbations: false                     # default
@@ -84,11 +85,11 @@ cost function:
         obsdatain:
           engine:
             type: H5File
-            obsfile: Data/wc13/obs/wc13_temp_20040103.nc4
+            obsfile: __TEMPERATURE_OBS__
         obsdataout:
           engine:
             type: H5File
-            obsfile: Data/3dvar/3dfgat/dual/wc13_temp_3dfgat.nc4
+            obsfile: Data/4dvar/bump/__ROMS_APP___temp_4dvar.nc4
         simulated variables: [waterTemperature]
       obs operator:
         name: VertInterp
@@ -103,11 +104,11 @@ cost function:
         obsdatain:
           engine:
             type: H5File
-            obsfile: Data/wc13/obs/wc13_salt_20040103.nc4
+            obsfile: __SALINITY_OBS__
         obsdataout:
           engine:
             type: H5File
-            obsfile: Data/3dvar/3dfgat/dual/wc13_salt_3dfgat.nc4
+            obsfile: Data/4dvar/bump/__ROMS_APP___salt_4dvar.nc4
         simulated variables: [salinity]
       obs operator:
         name: VertInterp
@@ -122,11 +123,11 @@ cost function:
         obsdatain:
           engine:
             type: H5File
-            obsfile: Data/wc13/obs/wc13_sst_20040103.nc4
+            obsfile: __SST_OBS__
         obsdataout:
           engine:
             type: H5File
-            obsfile: Data/3dvar/3dfgat/dual/wc13_sst_3dfgat.nc4
+            obsfile: Data/4dvar/bump/__ROMS_APP___sst_4dvar.nc4
         simulated variables: [seaSurfaceTemperature]
       obs operator:
         name: Identity
@@ -139,11 +140,11 @@ cost function:
         obsdatain:
           engine:
             type: H5File
-            obsfile: Data/wc13/obs/wc13_adt_20040103.nc4
+            obsfile: __ADT_OBS__
         obsdataout:
           engine:
             type: H5File
-            obsfile: Data/3dvar/3dfgat/dual/wc13_adt_3dfgat.nc4
+            obsfile: Data/4dvar/bump/__ROMS_APP___adt_4dvar.nc4
         simulated variables: [absoluteDynamicTopography]
       obs operator:
         name: ADT
@@ -152,12 +153,29 @@ cost function:
 
 variational:
   minimizer:
-    algorithm: RPCG                              # Dual Formulation
-  iterations:                                    # each item defines an outer loop
-  - geometry: *geom
-    ninner: 10
+    algorithm: RPCG                              # Dual   formulation
+  iterations:
+  - ninner: __NINNER__
     gradient norm reduction: 1E-10
     test: on
+    online diagnostics:
+      adj obs test: false
+      adj tlm test: false
+      online adj test: false
+      tlm approx test: false
+      tlm propag test: false
+      tlm taylor test: false
+    geometry: *geom
+    linear model:
+      name: LMROMS
+      date: *date
+      simulation length: *ForecastLength
+      lm variables: *roms_analysis
+      tstep: *TimeStep
+      trajectory:
+        model variables: *roms_trajectory
+        tstep: *TimeStep
+      variable change: Identity
     diagnostics:                                 # Written into output IODA files
       departures: ombg                           # OBS - H(Xb)
     online diagnostics:
@@ -165,26 +183,29 @@ variational:
       increment:                                 # DA increment output file
         state component:
           single_record: true
-          data_dir: Data/3dvar/3dfgat/dual
-          prefix: wc13_roms
-          exp: 3dfgat
+          data_dir: Data/4dvar/bump
+          prefix: __ROMS_APP___roms
+          exp: 4dvar
           type: inc
-          date: *mid_date
+          date: *date
 
 final:                                           # Written into output IODA files
   diagnostics:
     departures: oman                             # saving OBS - H(Xa) in output file
 
-output:                                          # Analysis (first guess plus increment)
-  single_record: true
-  data_dir: Data/3dvar/3dfgat/dual
-  prefix: wc13_roms
-  exp: 3dfgat
+output:                                          # Forecast from Analysis
+  firt: PT0S
+  frequency: &frequency __OUTPUT_FREQUENCY__
+  file_policy: __OUTPUT_FILE_POLICY__
+  data_frequency: *frequency
+  data_dir: Data/4dvar/bump
+  prefix: __ROMS_APP___roms
+  exp: 4dvar
   type: ana
-  date: *mid_date
+  date: *date
 
 test:
-  reference filename: testref/3dfgat_dual.ref
+  reference filename: testref/4dvar_bump.ref
   float relative tolerance: 1.0e-3
-  log output filename: testoutput/3dfgat_dual.log
-  test output filename: testoutput/3dfgat_dual.out
+  log output filename: testoutput/4dvar_bump.log
+  test output filename: testoutput/4dvar_bump.out

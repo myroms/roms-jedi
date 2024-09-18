@@ -1,0 +1,78 @@
+# ROMS-JEDI SABER Pseudo-Diffusion Training Parameters (diffusion) Test: __ROMS_APPLICATION__
+#
+# It sets correlation parameters to model the background error covariance
+# using SABER diffusion operator.
+
+geometry:
+  project_dir: __PROJECT_DIR__
+  roms_stdinp: __ROMS_STDINP__
+  fields metadata: Data/fields_metadata.yaml
+  ng: 1                                               # ROMS nested grid number
+  vertical coordinate: depths                         # ATLAS FunctionSpace default
+# vertical coordinate: levels                         # ATLAS FunctionSpace levels
+
+background:
+  fields_dir: __FIELDS_DIR_
+  fields_filename: __ROMS_INI_PRIOR_   
+  fields_record: __INI_PRIOR_RECORD__
+  state variables: [ssh, tocn, socn]
+  date: &date __INITIAL_DATE__
+
+# In SABER, by default, all the length scales are defined as the half-witdh
+# Gaspari-Cohn (1999) support radius, c. The relationship with the Daley (1991)
+# correlation Gaussian length, L, is:  L = 2 * c * SQRT(0.3) and 
+#                                      c = 0.5 * L / SQRT(0.3)
+# The diffusion operator is defined in terms of L.
+
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: diffusion
+    calibration:
+      normalization:
+        iterations: 30000                             # Randomization approach
+      groups:
+      - horizontal:
+          as gaussian: true
+          fixed value: __HCOR1__
+          mask: "mask_rho"
+        write:
+          filepath: __PATH_HCOR1__
+      - horizontal:
+          as gaussian: true
+          fixed value: __HCOR2__
+          mask: "mask_rho"
+        write:
+          filepath: __PATH_HCOR2__
+      - horizontal:
+          as gaussian: true
+          fixed value: __HCOR3__
+          mask: "mask_rho"
+        write:
+          filepath: __PATH_HCOR3__
+      - horizontal:
+          as gaussian: true
+          fixed value: __HCOR4__
+          mask: "mask_rho"
+        write:
+          filepath: __PATH_HCOR4__
+      - horizontal:
+          as gaussian: true
+          fixed value: __HCOR5__
+          mask: "mask_rho"
+        write:
+          filepath: __PATH_HCOR5__
+      - vertical:
+          as gaussian: true
+          fixed value: __VCOR1__
+          levels: __NLEVELS__
+          mask: "mask_rho"
+        write:
+          filepath: __PATH_VCOR1__
+      - vertical:
+          as gaussian: true
+          fixed value: __VCOR2__
+          levels: __NLEVELS__
+          mask: "mask_rho"
+        write:
+          filepath: __PATH_VCOR2__

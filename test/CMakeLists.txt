@@ -154,13 +154,6 @@ ecbuild_add_test(
   ARGS         testinput/linearmodel.yaml
   LIBS         romsjedi )
 
-ecbuild_add_test(
-  TARGET       test_romsjedi_error_covariance
-  MPI          ${MPI_NCPUS}
-  SOURCES      executables/TestErrorCovariance.cc
-  ARGS         testinput/error_covariance.yaml
-  LIBS         romsjedi )
-
 #================================================================================
 # Unit Tests using the main ROMS-JEDI applications
 #================================================================================

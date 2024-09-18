@@ -14,8 +14,8 @@ center:                                        # Central state
   fields_dir: __FIELDS_DIR__
   fields_filename: __ROMS_INI_PRIOR__
   fields_record: __INI_PRIOR_RECORD__
-  date: &date __INITIAL_DATE__
   state variables: *roms_state
+  date: &date __INITIAL_DATE__
 
 zero center: false
 
@@ -28,7 +28,7 @@ ensemble:                                      # Ensembles to be recentered
       fields_record: __INI_PRIOR_RECORD__
       state variables: *roms_state
     pattern: %mem%
-    nmembers: NMEMBERS
+    nmembers: __NMEMBERS__
     zero padding: 3
 
 ensemble meanoutput:

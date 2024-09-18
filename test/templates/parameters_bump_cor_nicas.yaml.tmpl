@@ -12,6 +12,8 @@ geometry:
   roms_stdinp: __ROMS_STDINP__
   fields metadata: Data/fields_metadata.yaml
   ng: 1                                               # ROMS nested grid number
+  vertical coordinate: depths                         # ATLAS FunctionSpace default
+# vertical coordinate: levels                         # ATLAS FunctionSpace levels
 
 background:
   fields_dir: __FIELDS_DIR__
@@ -19,6 +21,11 @@ background:
   fields_record: __INI_PRIOR_RECORD__
   state variables: [ssh, tocn, socn]
   date: &date __INITIAL_DATE__
+
+# In SABER, by default, all the length scales are defined as the half-witdh
+# Gaspari-Cohn (1999) support radius, c. The relationship with the Daley (1991)
+# correlation Gaussian length, L, is:  L = 2 * c * SQRT(0.3) and 
+#                                      c = 0.5 * L / SQRT(0.3)
 
 background error:
   covariance model: SABER
@@ -32,7 +39,7 @@ background error:
         write local nicas: true
         write diagnostics: true
         write global nicas: true
-        write nicas grids: true
+#       write nicas grids: true
       io:
         data directory: Data/bump                     # BUMP data directory
         files prefix: __ROMS_APP___bump_cor
@@ -40,8 +47,10 @@ background error:
         do not cross mask boundaries: true
         level for 2d variables: last
       nicas:
-        resolution: 6.0                               # NICAS subgrid resolution
-#       resolution: 1.0                               # NICAS subgrid resolution
+        interpolation in global file: true
+#       max horizontal grid size: 2500
+#       resolution: 6.0                               # NICAS subgrid resolution
+        resolution: 10.0                              # NICAS subgrid resolution (smoother)
         explicit length-scales: true
         horizontal length-scale:
         - groups:

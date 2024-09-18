@@ -1,4 +1,4 @@
-# ROMS-JEDI Dirac Endemble Covariance Test: Delta Function perturbation Impulses
+# ROMS-JEDI Dirac Ensemble Covariance Test: Delta Function perturbation Impulses
 #
 # It perturb the requested state field(s) with Dirac impulses at the
 # specified (i,j,k) grid cell.

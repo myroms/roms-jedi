@@ -9,10 +9,10 @@ geometry:
 ensemble:
   members from template:
     template:
+      date: &date __INITIAL_DATE__ 
       fields_dir: Data/ensembles
       fields_filename: __ROMS_APP___roms_ensemble_mem%mem%___INI_DATETIME__.nc
       fields_record: __INI_PRIOR_RECORD__
-      date: &date __INITIAL_DATE__ 
       state variables: &roms_state [ssh, uocn, vocn, tocn, socn]
     pattern: %mem%
     nmembers: __NMEMBERS__

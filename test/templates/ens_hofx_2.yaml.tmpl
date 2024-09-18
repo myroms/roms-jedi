@@ -19,10 +19,10 @@ model:
   simulation length: *ForecastLength
 
 initial condition:
+  date: __INITIAL_DATE__
   fields_dir: Data/ensembles
   fields_filename: __ROMS_APP___roms_ensemble_mem002___INI_DATETIME__.nc
   fields_record: __INI_PRIOR_RECORD__
-  date: __INITIAL_DATE__
   state variables: [ssh, uocn, vocn, tocn, socn, zocn_r]
 
 observations:

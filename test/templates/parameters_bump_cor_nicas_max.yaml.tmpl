@@ -1,4 +1,4 @@
-# ROMS-JEDI BUMP Covariance Training Parameters (BUMP_NICAS) Test: WC13 Application
+# ROMS-JEDI BUMP Covariance Training Parameters (BUMP_NICAS) Test: __ROMS_APPLICATION__
 #
 # It sets correlation parameters to model the background error covariance
 # using BUMP/NICAS.
@@ -8,24 +8,23 @@
 # staggered U- and V-points state variables later.
 
 geometry:
-  project_dir: Data/wc13
-  roms_stdinp: roms_wc13_20040103.in
+  project_dir: __PROJECT_DIR__
+  roms_stdinp: __ROMS_STDINP_MAX__
   fields metadata: Data/fields_metadata.yaml
   ng: 1                                               # ROMS nested grid number
   vertical coordinate: depths                         # ATLAS FunctionSpace default
 # vertical coordinate: levels                         # ATLAS FunctionSpace levels
 
 background:
-  fields_dir: Data/wc13/input
-  fields_filename: wc13_roms_ini_20040103.nc   
-  fields_record: 1                                    # initial fields
+  fields_dir: __FIELDS_DIR__
+  fields_filename: __ROMS_INI_PRIOR__   
+  fields_record: __INI_PRIOR_RECORD__                 # initial fields
   state variables: [ssh, tocn, socn]
-  date: &date 2004-01-03T00:00:00Z                    # initial fields date
+  date: &date __INITIAL_DATE__
 
-# In SABER, by default, all the length scales are defined as the half-witdh
-# Gaspari-Cohn (1999) support radius, c. The relationship with the Daley (1991)
-# correlation Gaussian length, L, is:  L = 2 * c * SQRT(0.3) and 
-#                                      c = 0.5 * L / SQRT(0.3)
+# In SABER, by default, all the length scales are defined as the Gaspari-Cohn (1999)
+# support radius, c. The relationship with the Daley (1991) correlation Gaussian
+# length, L, is:    L = c * SQRT(0.3)   or   c = L / SQRT(0.3)
 
 background error:
   covariance model: SABER
@@ -42,42 +41,31 @@ background error:
 #       write nicas grids: true
       io:
         data directory: Data/bump                     # BUMP data directory
-        files prefix: wc13_bump_cor
+        files prefix: __ROMS_APP___bump_cor
       model:
         do not cross mask boundaries: true
         level for 2d variables: last
       nicas:
-        interpolation in global file: true
-#       max horizontal grid size: 2500
 #       resolution: 6.0                               # NICAS subgrid resolution
         resolution: 10.0                              # NICAS subgrid resolution (smoother)
         explicit length-scales: true
-        horizontal length-scale:
+        horizontal length-scale:                      # Same as ROMS native DA
         - groups:
           - ssh
-#         value: 91.287e3                             # L = 50e3 m (too small for BUMP)
-#         value: 127.8e3                              # L = 70e3 m
-          value: 146.06e3                             # L = 80e3 m
+          value: __STATIC_B_HCORRELATION_SSH__
         - groups:
           - tocn
-#         value: 91.287e3                             # L = 50e3 m (too small for BUMP)
-#         value: 127.8e3                              # L = 70e3 m
-          value: 146.06e3                             # L = 80e3 m
+          value: __STATIC_B_HCORRELATION_TOCN__
         - groups:
           - socn
-#         value: 91.287e3                             # L = 50e3 m (too small for BUMP)
-#         value: 127.8e3                              # L = 70e3 m
-          value: 146.06e3                             # L = 80e3 m
+          value: __STATIC_B_HCORRELATION_SOCN__
         vertical length-scale:
         - groups:
-          - ssh
-          value: 0.0
-        - groups:
           - tocn
-          value: 54.77                                # L = 30 m
+          value: __STATIC_B_VCORRELATION_TOCN__
         - groups:
           - socn
-          value: 54.77                                # L = 30 m
+          value: __STATIC_B_VCORRELATION_SOCN__
       grids:
       - model:
           variables:
@@ -92,21 +80,21 @@ background error:
         file:
           single_record: true
           data_dir: Data/bump
-          prefix: wc13
+          prefix: __ROMS_APP__
           exp: bump
-          type: cor_rh
+          type: cor_rh_global
           date: *date
       - parameter: cor_rv                             # Write vertical correlations NetCDF file
         file:
           single_record: true
           data_dir: Data/bump
-          prefix: wc13
+          prefix: __ROMS_APP__
           exp: bump
-          type: cor_rv
+          type: cor_rv_global
           date: *date
 
 test:
-  reference filename: testref/parameters_bump_cor_nicas.ref
+  reference filename: testref/parameters_bump_cor_nicas_max.ref
   float relative tolerance: 1.0e-3
-  log output filename: testoutput/parameters_bump_cor_nicas.log
-  test output filename: testoutput/parameters_bump_cor_nicas.out
+  log output filename: testoutput/parameters_bump_cor_nicas_max.log
+  test output filename: testoutput/parameters_bump_cor_nicas_max.out

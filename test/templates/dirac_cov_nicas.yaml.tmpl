@@ -13,8 +13,8 @@ background:
   fields_dir: __FIELDS_DIR__
   fields_filename: __ROMS_INI_PRIOR__
   fields_record:  __INI_PRIOR_RECORD__
-  date: &date __INITIAL_DATE__
   state variables: &roms_analysis [ssh, uocn, vocn, tocn, socn]
+  date: &date __INITIAL_DATE__
 
 background error:
   covariance model: SABER
@@ -24,9 +24,11 @@ background error:
       drivers:
         multivariate strategy: univariate
         read local nicas: true
+#       read global nicas: true
       io:
         data directory: Data/bump
         files prefix: __ROMS_APP___bump_cor
+        io tasks: 1
       grids:
       - model:
           variables:
@@ -35,15 +37,6 @@ background error:
           variables:
           - tocn
           - socn
-  saber outer blocks:                          # standard deviation impulse scaling
-  - saber block name: StdDev
-    read:
-      model file:
-        fields_dir: __FIELDS_DIR__
-        fields_filename: __ROMS_PRIOR_STD__
-        fields_record: 1
-        state variables: *roms_analysis
-        date: *date
 
 dirac:
   ixdir: [25, 30, 20]                          # X-direction index impulse location
@@ -52,8 +45,7 @@ dirac:
   ifdir: ['ssh', 'tocn', 'socn']               # State field to perturb
 
 output dirac:
-  file_policy: __OUTPUT_FILE_POLICY__
-  data_frequency: __OUTPUT_FREQUENCY__
+  single_record: true
   data_dir: Data/dirac
   prefix: __ROMS_APP___roms
   exp: dirac
@@ -61,8 +53,7 @@ output dirac:
   date: *date
 
 output variance:
-  file_policy: __OUTPUT_FILE_POLICY__
-  data_frequency: __OUTPUT_FREQUENCY__
+  single_record: true
   data_dir: Data/dirac
   prefix: __ROMS_APP___roms
   exp: dirac

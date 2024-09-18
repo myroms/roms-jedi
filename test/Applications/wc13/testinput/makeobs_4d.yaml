@@ -1,5 +1,4 @@
-# ROMS is configured with the JEDI driver and includes the NLM, TLM, and ADM kernels
-# for the US West Coast WC13 test application.
+# ROMS-JEDI MakeObs Pertutbed Unit Test: WC13 Application
 
 geometry:
   project_dir: Data/wc13
@@ -9,7 +8,6 @@ geometry:
 
 forecast length: &ForecastLength PT96H         # 96 hours (4 days) window ending on 2004-01-07T00:00:00Z
                                                # or other smaller interval
-
 model:
   name: ROMS
   model variables: [ssh, uocn, vocn, tocn, socn]

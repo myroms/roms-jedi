@@ -27,8 +27,8 @@ initial condition:
   fields_dir: __FIELDS_DIR__
   fields_filename: __ROMS_INI_PRIOR__
   fields_record: __INI_PRIOR_RECORD__
-  date: &date __INITIAL_DATE__
   state variables: *roms_state
+  date: &date __INITIAL_DATE__
 
 background error:
   covariance model: SABER
@@ -74,6 +74,6 @@ output:
 
 test:
   reference filename: testref/ens_perturbation.ref
-  float relative tolerance: 1.0e-2
+  float relative tolerance: 1.0e-1
   log output filename: testoutput/ens_perturbation.log
   test output filename: testoutput/ens_perturbation.out

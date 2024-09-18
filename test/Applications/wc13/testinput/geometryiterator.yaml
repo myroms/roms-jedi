@@ -1,5 +1,4 @@
-# ROMS is configured with the JEDI driver and includes the NLM, TLM, and ADM kernels
-# for the US West Coast WC13 test application.
+# ROMS-JEDI Geometry Iterator Unit Test: WC13 Application
 
 geometry:
   project_dir: Data/wc13

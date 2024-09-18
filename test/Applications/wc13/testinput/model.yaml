@@ -21,10 +21,10 @@ model:
   simulation length: *ForecastLength
 
 initial condition:
+  date: 2004-01-03T00:00:00Z
   fields_dir: Data/wc13/input
   fields_filename: wc13_roms_ini_20040103.nc
   fields_record: 1
   state variables: [ssh, uocn, vocn, tocn, socn]
-  date: 2004-01-03T00:00:00Z
 
 model aux control:

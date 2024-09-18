@@ -43,8 +43,8 @@ cost function:
     fields_dir: __FIELDS_DIR__
     fields_filename: __ROMS_INI_PRIOR__
     fields_record: __INI_PRIOR_RECORD__
-    date: *date 
     state variables: *roms_state
+    date: *date 
 
   background error:
     covariance model: SABER
@@ -163,8 +163,8 @@ output:                                          # Analysis (first guess plus in
   type: ana
   date: *mid_date
 
-#test:
-#  reference filename: testref/3dfgat_single_obs.ref
-#  float relative tolerance: 1.0e-3
-#  log output filename: testoutput/3dfgat_single_obs.log
-#  test output filename: testoutput/3dfgat_single_obs.out
+test:
+  reference filename: testref/3dfgat_single_obs.ref
+  float relative tolerance: 1.0
+  log output filename: testoutput/3dfgat_single_obs.log
+  test output filename: testoutput/3dfgat_single_obs.out

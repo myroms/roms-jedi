@@ -16,15 +16,15 @@ state1:
   fields_dir: __FIELDS_DIR__
   fields_filename: __ROMS_INI_PRIOR__
   fields_record: __INI_PRIOR_RECORD__
-  date: &initial_date __INITIAL_DATE__
   state variables: [ssh, uocn, vocn, tocn, socn]
+  date: &initial_date __INITIAL_DATE__
 
 state2:
   fields_dir: __FIELDS_DIR__
   fields_filename: __ROMS_MID_PRIOR__
   fields_record: __INI_PRIOR_RECORD__
-  date: *initial_date
   state variables: [ssh, uocn, vocn, tocn, socn]
+  date: *initial_date
 
 output:                                        # state1 - state2
   single_record: true

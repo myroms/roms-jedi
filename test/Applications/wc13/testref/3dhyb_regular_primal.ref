@@ -1,32 +1,38 @@
 Norm of input parameter StdDev: 7.7717431208294583e+03
 CostJb   : Nonlinear Jb = 0.0000000000000000e+00
+CostJo   : Nonlinear Jo(InsituTemperature) = 3.1006807749784002e+03, nobs = 168, Jo/n = 1.8456433184395241e+01, err = 2.5234512478170978e-01
+CostJo   : Nonlinear Jo(InsituSalinity) = 3.8044579514857305e+03, nobs = 125, Jo/n = 3.0435663611885843e+01, err = 5.1789821985162861e-02
 CostJo   : Nonlinear Jo(SST) = 2.9147821251412374e+03, nobs = 4952, Jo/n = 5.8860705273449865e-01, err = 4.0783752598605327e-01
 CostJo   : Nonlinear Jo(ADT) = 1.6444594270776101e+03, nobs = 1570, Jo/n = 1.0474263866736371e+00, err = 2.0313911453614535e-02
-CostFunction: Nonlinear J = 4.5592415522188476e+03
-Eigenvalue 1 : 8.7196291125967591e+01
-Norm eigenvector = 2.4608838592647498e+01
-Eigenvalue 2 : 7.5363059549939678e+01
-Norm eigenvector = 1.2007786443552046e+01
-Eigenvalue 3 : 6.6408772094111740e+01
-Norm eigenvector = 2.0928915769801613e+01
-Eigenvalue 4 : 5.6150538284795395e+01
-Norm eigenvector = 1.3258230817757111e+01
-Eigenvalue 5 : 4.5780582814593636e+01
-Norm eigenvector = 1.1112516510477210e+01
-DRPLanczosMinimizer: reduction in residual norm = 3.6242432257020105e-02
+CostFunction: Nonlinear J = 1.1464380278682978e+04
+Eigenvalue 1 : 5.5544772118955279e+02
+Norm eigenvector = 5.7374227537156663e-01
+Eigenvalue 2 : 3.9747235326132488e+02
+Norm eigenvector = 3.9534523229834817e-01
+Eigenvalue 3 : 3.1051761893831571e+02
+Norm eigenvector = 5.1594704953334580e-01
+Eigenvalue 4 : 2.3990838921529104e+02
+Norm eigenvector = 3.2785493851247249e-01
+Eigenvalue 5 : 1.8307053643719743e+02
+Norm eigenvector = 5.0225661358327072e+00
+DRPLanczosMinimizer: reduction in residual norm = 2.1674057664417196e-01
 CostFunction::addIncrement: Analysis: 
   Valid time: 2004-01-05T00:00:00Z
-                               ssh   Min=    -0.279717748446118   Max=     0.234921718120077   Mean=    -0.010369065368868
-                              uocn   Min=    -0.337459175681330   Max=     0.438124777732808   Mean=     0.003493179579239
-                              vocn   Min=    -0.553064987459898   Max=     0.283580447706039   Mean=    -0.004318742665303
-                              tocn   Min=     1.113304510712624   Max=    18.344441860490811   Mean=     6.398072031164685
-                              socn   Min=    31.906101378977628   Max=    34.689664264324591   Mean=    33.945817901273344
+                               ssh   Min=    -0.269144479446393   Max=     0.234549444326822   Mean=    -0.011966514435118
+                              uocn   Min=    -0.335204996751385   Max=     0.438172352534451   Mean=     0.003512840736421
+                              vocn   Min=    -0.553064987459898   Max=     0.283580447706039   Mean=    -0.004285666192233
+                              tocn   Min=     1.113304510712624   Max=    18.344441860490811   Mean=     6.378276422476845
+                              socn   Min=    31.906101378977628   Max=    34.689664264324591   Mean=    33.946464169405488
                             zocn_r   Min= -4947.840267560327447   Max=    -0.245773375763171   Mean= -1072.647945779628117
 
 
 
 
-CostJb   : Nonlinear Jb = 114.209767142391343
-CostJo   : Nonlinear Jo(SST) = 324.983306646908886, nobs = 4952, Jo/n = 0.065626677432736, err = 0.407837525986053
-CostJo   : Nonlinear Jo(ADT) = 240.053403357281837, nobs = 1570, Jo/n = 0.152900256915466, err = 0.020313911453615
-CostFunction: Nonlinear J = 679.246477146582038
+
+
+CostJb   : Nonlinear Jb = 516.201788145528326
+CostJo   : Nonlinear Jo(InsituTemperature) = 908.188015107347269, nobs = 168, Jo/n = 5.405881042305639, err = 0.252345124781710
+CostJo   : Nonlinear Jo(InsituSalinity) = 606.951974546798851, nobs = 125, Jo/n = 4.855615796374391, err = 0.051789821985163
+CostJo   : Nonlinear Jo(SST) = 775.262716333393428, nobs = 4952, Jo/n = 0.156555475834692, err = 0.407837525986053
+CostJo   : Nonlinear Jo(ADT) = 631.021963618972563, nobs = 1570, Jo/n = 0.401924817591702, err = 0.020313911453615
+CostFunction: Nonlinear J = 3437.626457752040551

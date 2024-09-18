@@ -1,13 +1,10 @@
-# ROMS-JEDI 4D-FGAT (Dual Formulation) Test: __ROMS_APPLICATION__
+# ROMS-JEDI 4D-Var Single Observation Test (BUMP-NICAS): __ROMS_APPLICATION__
 #
-# It uses ROMS 4D state vector and the 4D-Var cost function for a
-# 4D-FGAT (First Guess at Appropriate Time) by approximating the
-# Tangent Linear and Adjoint models with the Identity operator.
+# It uses ROMS 4D state vector and the 4D-Var cost function for
+# Strong-constraint 4D-Var, dual (default) or primal formulation.
 # It computes the analysis increment for the initial state vector
 # (beginning of the DA window).
 #
-# Using RPCG (Augmented Restricted Preconditioned Conjugate Gradient)
-# Minimizer, Gratton and Tshimanga, QJRMS, 135: 1573-1585 (2009).
 
 forecast length: &ForecastLength __FORECAST_LENGTH__
 
@@ -15,8 +12,12 @@ model timestep:  &TimeStep __ROMS_TIMESTEP__
 
 initial date: &date __INITIAL_DATE__
 
-roms analysis:  &roms_analysis [ssh, uocn, vocn, tocn, socn]
-roms state:     &roms_state    [ssh, uocn, vocn, tocn, socn, zocn_r]
+roms analysis:   &roms_analysis   [ssh, uocn, vocn, tocn, socn]
+roms state:      &roms_state      [ssh, uocn, vocn, tocn, socn, zocn_r]
+roms trajectory: &roms_trajectory [ssh, u2docn, v2docn,
+                                   uocn, vocn, tocn, socn,
+                                   DU_avg1, DV_avg1, DU_avg2, DV_avg2,
+                                   Ktocn, Ksocn, Kvocn]
 
 cost function:
   cost type: 4D-Var
@@ -27,9 +28,11 @@ cost function:
 
   geometry: &geom
     project_dir: __PROJECT_DIR__
-    roms_stdinp: __ROMS_STDINP__
+    roms_stdinp: __ROMS_STDINP_MAX__
     fields metadata: Data/fields_metadata.yaml
     ng: 1                                        # ROMS nested grid number
+    vertical coordinate: depths                  # ATLAS FunctionSpace default
+#   vertical coordinate: levels                  # ATLAS FunctionSpace levels
 
   model:
     name: ROMS
@@ -78,89 +81,82 @@ cost function:
     observers:
 
     - obs space:
-        name: InsituTemperature
+        name: InsituTS
         obsdatain:
           engine:
             type: H5File
-            obsfile: __TEMPERATURE_OBS__
+            obsfile: __TS_OBS__
         obsdataout:
           engine:
             type: H5File
-            obsfile: Data/3dvar/4dfgat/dual/__ROMS_APP___temp_4dfgat.nc4
-        simulated variables: [waterTemperature]
+            obsfile: Data/4dvar/singleObs/bump/__ROMS_APP___TS_4dvar_single_obs.nc4
+        simulated variables: [salinity, waterTemperature]
       obs operator:
         name: VertInterp
         vertical coordinate: model_level_depth_at_cell_center
         observation vertical coordinate: depth
-        observation alias file: testinput/obsop_name_map.yaml
-      obs error:
-        covariance model: diagonal
- 
-    - obs space:
-        name: InsituSalinity
-        obsdatain:
-          engine:
-            type: H5File
-            obsfile: __SALINITY_OBS__
-        obsdataout:
-          engine:
-            type: H5File
-            obsfile: Data/3dvar/4dfgat/dual/__ROMS_APP___salt_4dfgat.nc4
-        simulated variables: [salinity]
-      obs operator:
-        name: VertInterp
-        vertical coordinate: model_level_depth_at_cell_center
-        observation vertical coordinate: depth
-        observation alias file: testinput/obsop_name_map.yaml
-      obs error:
-        covariance model: diagonal
- 
-    - obs space:
-        name: SST
-        obsdatain:
-          engine:
-            type: H5File
-            obsfile: __SST_OBS__
-        obsdataout:
-          engine:
-            type: H5File
-            obsfile: Data/3dvar/4dfgat/dual/__ROMS_APP___sst_4dfgat.nc4
-        simulated variables: [seaSurfaceTemperature]
-      obs operator:
-        name: Identity
         observation alias file: testinput/obsop_name_map.yaml
       obs error:
         covariance model: diagonal
 
-    - obs space:
-        name: ADT
-        obsdatain:
-          engine:
-            type: H5File
-            obsfile: __ADT_OBS__
-        obsdataout:
-          engine:
-            type: H5File
-            obsfile: Data/3dvar/4dfgat/dual/__ROMS_APP___adt_4dfgat.nc4
-        simulated variables: [absoluteDynamicTopography]
-      obs operator:
-        name: ADT
-      obs error:
-        covariance model: diagonal
+#    - obs space:
+#        name: SST
+#        obsdatain:
+#          engine:
+#            type: H5File
+#            obsfile: __SST_OBS__
+#        obsdataout:
+#          engine:
+#            type: H5File
+#            obsfile: Data/4dvar/singleObs/bump/__ROMS_APP___sst_4dvar_single_obs.nc4
+#        simulated variables: [seaSurfaceTemperature]
+#      obs operator:
+#        name: Identity
+#        observation alias file: testinput/obsop_name_map.yaml
+#      obs error:
+#        covariance model: diagonal
+
+#    - obs space:
+#        name: ADT
+#        obsdatain:
+#          engine:
+#            type: H5File
+#            obsfile: __ADT_OBS__
+#        obsdataout:
+#          engine:
+#            type: H5File
+#            obsfile: Data/4dvar/singleObs/bump/__ROMS_APP___adt_4dvar_single_obs.nc4
+#        simulated variables: [absoluteDynamicTopography]
+#      obs operator:
+#        name: ADT
+#      obs error:
+#        covariance model: diagonal
 
 variational:
   minimizer:
-    algorithm: RPCG                              # Dual Formulation
-  iterations:                                    # each item defines an outer loop
-  - geometry: *geom
-    linear model:
-      name: Identity                             # Identity TLM/ADM
-      increment variables: *roms_analysis
-      tstep: *TimeStep
-      variable change: Identity
-    ninner: __NINNER__
+    algorithm: RPCG                              # Dual   formulation
+  iterations:
+  - ninner: 1                                    # each item defined an outer loop
     gradient norm reduction: 1E-10
     test: on
+    online diagnostics:
+      adj obs test: false
+      adj tlm test: false
+      online adj test: false
+      tlm approx test: false
+      tlm propag test: false
+      tlm taylor test: false
+    geometry: *geom
+    linear model:
+      name: LMROMS
+      date: *date
+      simulation length: *ForecastLength
+      lm variables: *roms_analysis
+      tstep: *TimeStep
+      trajectory:
+        model variables: *roms_trajectory
+        tstep: *TimeStep 
+      variable change: Identity
     diagnostics:                                 # Written into output IODA files
       departures: ombg                           # OBS - H(Xb)
     online diagnostics:
@@ -168,9 +164,9 @@ variational:
       increment:                                 # DA increment output file
         state component:
           single_record: true
-          data_dir: Data/3dvar/4dfgat/dual
+          data_dir: Data/4dvar/singleObs/bump
           prefix: __ROMS_APP___roms
-          exp: 3dvar
+          exp: 4dvar
           type: inc
           date: *date
 
@@ -179,17 +175,18 @@ final:                                           # Written into output IODA file
     departures: oman                             # saving OBS - H(Xa) in output file
 
 output:                                          # Forecast from Analysis
-  file_policy: __OUTPUT_FILE_POLICY__
+  firt: PT0S
   frequency: &frequency __OUTPUT_FREQUENCY__
+  file_policy: __OUTPUT_FILE_POLICY__
   data_frequency: *frequency
-  data_dir: Data/3dvar/4dfgat/dual
+  data_dir: Data/4dvar/singleObs/bump
   prefix: __ROMS_APP___roms
-  exp: 4dfgat
-  type: nlm
+  exp: 4dvar
+  type: ana
   date: *date
 
 test:
-  reference filename: testref/4dfgat_dual.ref
-  float relative tolerance: 1.0e-3
-  log output filename: testoutput/4dfgat_dual.log
-  test output filename: testoutput/4dfgat_dual.out
+  reference filename: testref/4dvar_bump_single_obs.ref
+  float relative tolerance: 1.0
+  log output filename: testoutput/4dvar_bump_single_obs.log
+  test output filename: testoutput/4dvar_bump_single_obs.out

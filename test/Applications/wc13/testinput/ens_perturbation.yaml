@@ -1,8 +1,8 @@
 # ROMS-JEDI Ensemble Perturbation Test: WC13 Application
 #
 # It generates Ensemble Perturbations initial conditions and
-# run WC13 nonlinear solutions for 4 days.  The ensemble member
-# have th suffix pattern %mem% ("_men001", ..., "_memXXX") in
+# run WC13 nonlinear solutions for 4 days.  The ensemble members
+# have the suffix pattern %mem% ("_men001", ..., "_memXXX") in
 # their output history files.
 
 geometry:
