@@ -47,10 +47,19 @@ cost function:
     covariance model: SABER
     saber central block:
       saber block name: BUMP_NICAS
+      active variables: &rho_vars [ssh, tocn, socn]
+      fields metadata:
+        ssh:
+          vert_coord: vert_coord_2d
       read:
         drivers:
           multivariate strategy: univariate
-          read local nicas: true
+          read global nicas: true
+        model:
+          level for 2d variables: last            
+          do not cross mask boundaries: true
+        nicas:
+          interpolation in global file: true
         io:
           data directory: Data/bump
           files prefix: wc13_bump_cor

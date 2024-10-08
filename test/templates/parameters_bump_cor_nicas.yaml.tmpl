@@ -12,8 +12,6 @@ geometry:
   roms_stdinp: __ROMS_STDINP__
   fields metadata: Data/fields_metadata.yaml
   ng: 1                                               # ROMS nested grid number
-  vertical coordinate: depths                         # ATLAS FunctionSpace default
-# vertical coordinate: levels                         # ATLAS FunctionSpace levels
 
 background:
   fields_dir: __FIELDS_DIR__
@@ -32,14 +30,15 @@ background error:
   saber central block:
     saber block name: BUMP_NICAS
     active variables: &rho_vars [ssh, tocn, socn]
+    fields metadata:
+      ssh:
+        vert_coord: vert_coord_2d
     calibration:
       drivers:
         compute nicas: true                           # Run NICAS driver
         multivariate strategy: univariate             # NICAS multivariate strategy
-        write local nicas: true
         write diagnostics: true
         write global nicas: true
-#       write nicas grids: true
       io:
         data directory: Data/bump                     # BUMP data directory
         files prefix: __ROMS_APP___bump_cor

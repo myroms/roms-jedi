@@ -5,14 +5,14 @@ CostJo   : Nonlinear Jo(InsituSalinity) = 3.8044579514857305e+03, nobs = 125, Jo
 CostJo   : Nonlinear Jo(SST) = 2.9147821251412374e+03, nobs = 4952, Jo/n = 5.8860705273449865e-01, err = 4.0783752598605327e-01
 CostJo   : Nonlinear Jo(ADT) = 1.6444594270776101e+03, nobs = 1570, Jo/n = 1.0474263866736371e+00, err = 2.0313911453614535e-02
 CostFunction: Nonlinear J = 1.1464380278682978e+04
-RPCGMinimizer: reduction in residual norm = 6.3278758618230291e-02
+RPCGMinimizer: reduction in residual norm = 9.4311935379794182e-02
 CostFunction::addIncrement: Analysis: 
   Valid time: 2004-01-05T00:00:00Z
-                               ssh   Min=    -0.269093967105876   Max=     0.234549444326822   Mean=    -0.011868035487479
+                               ssh   Min=    -0.270887320303936   Max=     0.235322035397162   Mean=    -0.009510276685543
                               uocn   Min=    -0.347459054892129   Max=     0.461199203214349   Mean=     0.003451940229320
                               vocn   Min=    -0.553064987459898   Max=     0.283580447706039   Mean=    -0.004348993096695
-                              tocn   Min=     1.113304510712624   Max=    18.344441860490811   Mean=     6.373652072851145
-                              socn   Min=    31.906101378977628   Max=    34.689664264324591   Mean=    33.946561842077415
+                              tocn   Min=     1.113304510712624   Max=    18.376949364924496   Mean=     6.377360457166166
+                              socn   Min=    31.906101378977628   Max=    34.689664264324591   Mean=    33.949538485820582
                             zocn_r   Min= -4947.840267560327447   Max=    -0.245773375763171   Mean= -1072.647945779628117
 
 
@@ -20,9 +20,9 @@ CostFunction::addIncrement: Analysis:
 
 
 
-CostJb   : Nonlinear Jb = 106.484383411224897
-CostJo   : Nonlinear Jo(InsituTemperature) = 861.766149757188373, nobs = 168, Jo/n = 5.129560415221359, err = 0.252345124781710
-CostJo   : Nonlinear Jo(InsituSalinity) = 553.217328735374167, nobs = 125, Jo/n = 4.425738629882994, err = 0.051789821985163
-CostJo   : Nonlinear Jo(SST) = 628.134060133580306, nobs = 4952, Jo/n = 0.126844519413082, err = 0.407837525986053
-CostJo   : Nonlinear Jo(ADT) = 1083.063002093761042, nobs = 1570, Jo/n = 0.689849045919593, err = 0.020313911453615
-CostFunction: Nonlinear J = 3232.664924131128373
+CostJb   : Nonlinear Jb = 29.731350200670093
+CostJo   : Nonlinear Jo(InsituTemperature) = 1419.621952778329160, nobs = 168, Jo/n = 8.450130671299579, err = 0.252345124781710
+CostJo   : Nonlinear Jo(InsituSalinity) = 1094.701231326840571, nobs = 125, Jo/n = 8.757609850614724, err = 0.051789821985163
+CostJo   : Nonlinear Jo(SST) = 1069.361654303168507, nobs = 4952, Jo/n = 0.215945406765583, err = 0.407837525986053
+CostJo   : Nonlinear Jo(ADT) = 933.040924062053591, nobs = 1570, Jo/n = 0.594293582205130, err = 0.020313911453615
+CostFunction: Nonlinear J = 4546.457112671061623

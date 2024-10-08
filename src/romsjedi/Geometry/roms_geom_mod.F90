@@ -149,11 +149,6 @@ TYPE, PUBLIC :: roms_geom
   real (kind_real), allocatable  :: z0_r(:,:,:)    ! unvarying RHO-depths
   real (kind_real), allocatable  :: z0_w(:,:,:)    ! unvarying W-depths
 
-
-  ! Vertical coordinate type in ATLAS FunctionSpace: "depths" or "levels"
-
-  character (len=10) :: vertCoord_type
-
   ! ATLAS Mesh: A Field is represented in the grid domain (RHO-cell) that
   ! includes computational points plus tile halo.
 
@@ -211,7 +206,7 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
   integer                                 :: MyComm
 
   character (len=:), allocatable          :: flds_meta, project_dir
-  character (len=:), allocatable          :: roms_stdinp, vertCoord_type
+  character (len=:), allocatable          :: roms_stdinp
 
   ! Get MPI communicator.
 
@@ -253,22 +248,6 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
 
   CALL f_conf%get_or_die("ng", ng)
   self%ng = ng
-
-  ! Get vertical coordinate type for ATLAS FunctionSpace (default="depths")
-
-  IF (f_conf%has("vertical coordinate")) THEN
-    CALL f_conf%get_or_die ("vertical coordinate", vertCoord_type)
-    self%vertCoord_type = vertCoord_type
-    IF (allocated(vertCoord_type)) deallocate (vertCoord_type)
-  ELSE
-    self%vertCoord_type = "depth"
-  END IF
-
-  IF (f_comm%rank() .eq. 0) THEN
-    PRINT 10, 'ROMS_GEOM::geom_init: vertCoord_type = ',                       &
-              TRIM(self%vertCoord_type), '(ATLAS FunctionSpace)'
- 10 FORMAT (/,a,"'",a,"'",2x,a/)
-  END IF
 
   ! Get iterator dimension from configuration YAML file.
 
@@ -664,10 +643,6 @@ SUBROUTINE roms_geom_clone (self, other)
   self%roms_stdinp = other%roms_stdinp
   self%fieldsinfo  = other%fieldsinfo
 
-  ! Vertical coordinate type for ATLAS FunctionSpace.
-
-  self%vertCoord_type = other%vertCoord_type
-
   ! Iterator dimension.
 
   self%iterator_dimension = other%iterator_dimension
@@ -817,13 +792,15 @@ SUBROUTINE roms_geom_init_fieldset (self)
 
   CLASS (roms_geom),     intent(inout) :: self            !< Geometry object
 
-  TYPE (atlas_field)                   :: Area, Gmask, Owned, Rmask, VertCoord
+  TYPE (atlas_field)                   :: Area, Gmask, Owned, Rmask
+  TYPE (atlas_field)                   :: VertCoord2d, VertCoord3d
   integer                              :: IstrC, IendC, JstrC, JendC
   integer                              :: IstrD, IendD, JstrD, JendD
   integer                              :: N, cgrid, i, j, k, nc
   integer, pointer                     :: Gmask_ptr(:,:), Owned_ptr(:,:)
   real (kind_real), pointer            :: Area_ptr(:,:), Rmask_ptr(:,:)
-  real (kind_real), pointer            :: VertCoord_ptr(:,:)
+  real (kind_real), pointer            :: VertCoord2d_ptr(:,:)
+  real (kind_real), pointer            :: VertCoord3d_ptr(:,:)
 
   ! Initialize. ATLAS assumes that all the variables are located at the
   ! grid center (A-grid).
@@ -846,15 +823,23 @@ SUBROUTINE roms_geom_init_fieldset (self)
   CALL area%data (Area_ptr)
   CALL area%set_dirty (.TRUE.)           ! mark halos as being out-of-date    
 
-  ! Add vertical level unit: time-independent depths (m) at RHO-points 
-  !                          (negative, levelsAreTopDown = .FALSE.)
-  ! BUMP vertical distances will the same units.
+  ! Add 2D vertical coordinate for depth-independent state variable. 
+  ! (Use top level enumeration N as a value for BUMP)
 
-  VertCoord = self%functionspace%create_field(name='vert_coord',               &
-                                              kind=atlas_real(kind_real),      &
-                                              levels=N)
-  CALL self%fieldset%add (VertCoord)
-  CALL VertCoord%data (VertCoord_ptr)
+  VertCoord2d = self%functionspace%create_field(name='vert_coord_2d',          &
+                                                kind=atlas_real(kind_real),    &
+                                                levels=N)
+  CALL self%fieldset%add (VertCoord2d)
+  CALL VertCoord2d%data (VertCoord2d_ptr)
+
+  ! Add 3D vertical coordinate: time-independent depths (m) at RHO-points 
+  !                             (negative, levelsAreTopDown = .FALSE.)
+
+  VertCoord3d = self%functionspace%create_field(name='vert_coord',             &
+                                                kind=atlas_real(kind_real),    &
+                                                levels=N)
+  CALL self%fieldset%add (VertCoord3d)
+  CALL VertCoord3d%data (VertCoord3d_ptr)
 
   ! Add geographical land/sea integer mask at RHO-points with values of
   ! land=0 and sea=1.
@@ -908,34 +893,25 @@ SUBROUTINE roms_geom_init_fieldset (self)
     END DO
   END DO
 
-  ! Fill the 3D data pointer for vertical coordinate type at RHO-points.
+  ! Fill pointers for 2D and 3D vertical coordinate at RHO-points.
 
-  IF (TRIM(self%vertCoord_type).eq."levels") THEN
-    DO k = 1, N
-      DO j = JstrD, JendD
-        DO i = IstrD, IendD
-          nc = self%atlas_ij2node(i,j)
-          VertCoord_ptr(k,nc) = REAL(k, kind_real)
-        END DO
+  DO k = 1, N
+    DO j = JstrD, JendD
+      DO i = IstrD, IendD
+        nc = self%atlas_ij2node(i,j)
+        VertCoord2d_ptr(k,nc) = REAL(k, kind_real) ! level enumeration
+        VertCoord3d_ptr(k,nc) = self%z0_r(i,j,k)   ! time invariant depths
       END DO
     END DO
-  ELSE                           ! "depths", time invariant (zeta=0)
-    DO k = 1, N
-      DO j = JstrD, JendD
-        DO i = IstrD, IendD
-          nc = self%atlas_ij2node(i,j)
-          VertCoord_ptr(k,nc) = self%z0_r(i,j,k)
-        END DO
-      END DO
-    END DO
-  END IF
+  END DO
 
   ! ATLAS Parallel halo exchange.
 
   CALL Area%halo_exchange ()
   CALL Gmask%halo_exchange ()
   CALL Rmask%halo_exchange ()
-  CALL VertCoord%halo_exchange ()
+  CALL VertCoord2d%halo_exchange ()
+  CALL VertCoord3d%halo_exchange ()
 
   ! Done, cleanup.
 
@@ -943,7 +919,8 @@ SUBROUTINE roms_geom_init_fieldset (self)
   CALL Gmask%final ()
   CALL Owned%final ()
   CALL Rmask%final ()
-  CALL VertCoord%final ()  
+  CALL VertCoord2d%final ()  
+  CALL VertCoord3d%final ()  
 
 END SUBROUTINE roms_geom_init_fieldset
 

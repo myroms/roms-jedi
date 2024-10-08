@@ -40,8 +40,6 @@ namespace romsjedi {
       "fields metadata", "ROMS-JEDI fields metadata file", this};
     oops::RequiredParameter<int> ng{
       "ng", "ROMS nested grid number", this};
-    oops::OptionalParameter<std::string> verticalCoordinate{
-      "vertical coordinate", "type of vertical coordinate in ATLAS", this};
     oops::OptionalParameter<int> iteratorDimension{
       "iterator dimension", "Dimension of geometry iteractor", this};
     oops::Parameter<bool> writeGmsh{

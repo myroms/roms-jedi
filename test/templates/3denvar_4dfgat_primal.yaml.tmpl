@@ -53,7 +53,12 @@ cost function:
         read:
           drivers:
             multivariate strategy: duplicated
-            read local nicas: true
+            read global nicas: true
+          model:
+            level for 2d variables: last
+            do not cross mask boundaries: true
+          nicas:
+            interpolation in global file: true
           io:
             data directory: Data/bump_loc
             files prefix: __ROMS_APP___bump_loc

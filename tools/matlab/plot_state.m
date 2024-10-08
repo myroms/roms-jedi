@@ -525,8 +525,12 @@ for var = Svarlist
         Cmap = flipud(mpl_Paired(256));
 %       Cmap = cmap_odv('Odv_465');   
       case 'salt'
-        Cmap = flipud(mpl_Set1(256));
-%       Cmap = flipud(mpl_gist_ncar(256));
+        if (doSection)
+	  Cmap = flipud(mpl_Set1(256));
+	else
+	  Cmap = mpl_Set3(256);
+%         Cmap = flipud(mpl_gist_ncar(256));
+        end
       otherwise
         Cmap = mpl_Accent(256);
     end

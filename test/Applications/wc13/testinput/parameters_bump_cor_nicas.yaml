@@ -12,8 +12,6 @@ geometry:
   roms_stdinp: roms_wc13_20040103.in
   fields metadata: Data/fields_metadata.yaml
   ng: 1                                               # ROMS nested grid number
-  vertical coordinate: depths                         # ATLAS FunctionSpace default
-# vertical coordinate: levels                         # ATLAS FunctionSpace levels
 
 background:
   fields_dir: Data/wc13/input
@@ -32,20 +30,21 @@ background error:
   saber central block:
     saber block name: BUMP_NICAS
     active variables: &rho_vars [ssh, tocn, socn]
+    fields metadata:
+      ssh:
+        vert_coord: vert_coord_2d
     calibration:
       drivers:
         compute nicas: true                           # Run NICAS driver
         multivariate strategy: univariate             # NICAS multivariate strategy
-        write local nicas: true
         write diagnostics: true
         write global nicas: true
-#       write nicas grids: true
       io:
         data directory: Data/bump                     # BUMP data directory
         files prefix: wc13_bump_cor
       model:
-        do not cross mask boundaries: true
         level for 2d variables: last
+        do not cross mask boundaries: true
       nicas:
         interpolation in global file: true
 #       max horizontal grid size: 2500
@@ -57,27 +56,32 @@ background error:
           - ssh
 #         value: 91.287e3                             # L = 50e3 m (too small for BUMP)
 #         value: 127.8e3                              # L = 70e3 m
-          value: 146.06e3                             # L = 80e3 m
+#         value: 146.06e3                             # L = 80e3 m
+          value: 292.12e3                             # L = 80e3 m
         - groups:
           - tocn
 #         value: 91.287e3                             # L = 50e3 m (too small for BUMP)
 #         value: 127.8e3                              # L = 70e3 m
-          value: 146.06e3                             # L = 80e3 m
+#         value: 146.06e3                             # L = 80e3 m
+          value: 292.12e3                             # L = 80e3 m
         - groups:
           - socn
 #         value: 91.287e3                             # L = 50e3 m (too small for BUMP)
 #         value: 127.8e3                              # L = 70e3 m
-          value: 146.06e3                             # L = 80e3 m
+#         value: 146.06e3                             # L = 80e3 m
+          value: 292.12e3                             # L = 80e3 m
         vertical length-scale:
         - groups:
           - ssh
-          value: 0.0
+          value: 5000
         - groups:
           - tocn
-          value: 54.77                                # L = 30 m
+#         value: 54.77                                # L = 30 m
+          value: 109.54                               # L = 30 m
         - groups:
           - socn
-          value: 54.77                                # L = 30 m
+#         value: 54.77                                # L = 30 m
+          value: 109.54                               # L = 30 m
       grids:
       - model:
           variables:

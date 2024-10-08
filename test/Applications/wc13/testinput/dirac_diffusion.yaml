@@ -8,8 +8,6 @@ geometry:
   roms_stdinp: roms_wc13_20040103.in
   fields metadata: Data/fields_metadata.yaml
   ng: 1                                          # ROMS nested grid number
-  vertical coordinate: depths                    # ATLAS FunctionSpace default
-# vertical coordinate: levels                    # ATLAS FunctionSpace levels
 
 background:
   fields_dir: Data/wc13/input
@@ -23,7 +21,16 @@ background error:
   adjoint test: true
   saber central block:
     saber block name: diffusion
+    active variables: &rho_vars [ssh, tocn, socn]
+    fields metadata:
+      ssh:
+        vert_coord: vert_coord_2d
     read:
+      model:
+        level for 2d variables: last            
+        do not cross mask boundaries: true
+      nicas:
+        interpolation in global file: true
       groups:
       - variables: [tocn, socn]
         multivariate strategy: univariate

@@ -31,8 +31,6 @@ cost function:
     roms_stdinp: roms_wc13_20040103_max.in       # 12 CPUs, 3x4 partition
     fields metadata: Data/fields_metadata.yaml
     ng: 1                                        # ROMS nested grid number
-#   vertical coordinate: depths                  # ATLAS FunctionSpace default
-    vertical coordinate: levels                  # ATLAS FunctionSpace levels
 
   model:
     name: ROMS
@@ -51,10 +49,19 @@ cost function:
     covariance model: SABER
     saber central block:
       saber block name: BUMP_NICAS
+      active variables: &rho_vars [ssh, tocn, socn]
+      fields metadata:
+        ssh:
+          vert_coord: vert_coord_2d
       read:
         drivers:
           multivariate strategy: univariate
-          read local nicas: true
+          read global nicas: true
+        model:
+          level for 2d variables: last            
+          do not cross mask boundaries: true
+        nicas:
+          interpolation in global file: true
         io:
           data directory: Data/bump
           files prefix: wc13_bump_cor

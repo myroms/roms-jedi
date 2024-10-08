@@ -182,6 +182,7 @@ elif [ ${ALL_TEST} -eq 2 ]; then
 # Run specific Units Test on scpecified number of CPUs (use during debugging).
 #-------------------------------------------------------------------------------
 
+
 else
 
   echo ""
@@ -278,7 +279,7 @@ else
   fi
 
   ic=$(( $ic + 1 ))
-  ${MPIrun} ../../bin/romsjedi_forecast.x testinput/forecast_roms.yaml 1>> test_${ic}.log 2>> test.err
+  mpirun -n 12 ../../bin/romsjedi_forecast.x testinput/forecast_roms.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
     echo " Test #${ic}: test_romsjedi_forecast_roms ...................  *Failed"
   else
@@ -326,7 +327,7 @@ else
   fi
 
   ic=$(( $ic + 1 ))
-  ${MPIrun} ../../bin/romsjedi_ens_pert.x testinput/ens_perturbation.yaml 1>> test_${ic}.log 2>> test.err
+  mpirun -n 12 ../../bin/romsjedi_ens_pert.x testinput/ens_perturbation.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
     echo " Test #${ic}: test_romsjedi_ens_pert ........................  *Failed"
   else
@@ -506,15 +507,7 @@ else
   if [ $? -ne 0 ] ; then
     echo " Test #${ic}: test_romsjedi_3denvar_4dfgat_dual .............  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_3denvar_4dfgat_dual ...........  Passed"
-  fi
-
-  ic=$(( $ic + 1 ))
-  ${MPIrun} ../../bin/romsjedi_var.x testinput/3denvar_regular_dual.yaml 1>> test_${ic}.log 2>> test.err
-  if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_3denvar_regular_dual ............  *Failed"
-  else
-    echo " Test #${ic}: test_romsjedi_3denvar_regular_dual ............  Passed"
+    echo " Test #${ic}: test_romsjedi_3denvar_4dfgat_dual .............  Passed"
   fi
 
   ic=$(( $ic + 1 ))

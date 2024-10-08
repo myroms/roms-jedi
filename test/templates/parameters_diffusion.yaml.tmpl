@@ -8,8 +8,6 @@ geometry:
   roms_stdinp: __ROMS_STDINP__
   fields metadata: Data/fields_metadata.yaml
   ng: 1                                               # ROMS nested grid number
-  vertical coordinate: depths                         # ATLAS FunctionSpace default
-# vertical coordinate: levels                         # ATLAS FunctionSpace levels
 
 background:
   fields_dir: __FIELDS_DIR_
@@ -28,6 +26,10 @@ background error:
   covariance model: SABER
   saber central block:
     saber block name: diffusion
+    active variables: &rho_vars [ssh, tocn, socn]
+    fields metadata:
+      ssh:
+        vert_coord: vert_coord_2d
     calibration:
       normalization:
         iterations: 30000                             # Randomization approach
