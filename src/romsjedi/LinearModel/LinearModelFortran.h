@@ -45,10 +45,16 @@ namespace romsjedi {
     void roms_linearModel_initialize_tl_f90(const F90lm &,
                                             const F90flds &,
                                             const F90traj &,
+                                            const F90traj &,
+                                            const double &,
+                                            const double &,
                                             util::DateTime * const *);
     void roms_linearModel_step_tl_f90(const F90lm &,
                                       const F90flds &,
                                       const F90traj &,
+                                      const F90traj &,
+                                      const double &,
+                                      const double &,
                                       util::DateTime * const *);
     void roms_linearModel_finalize_tl_f90(const F90lm &,
                                           const F90flds &);
@@ -57,10 +63,16 @@ namespace romsjedi {
     void roms_linearModel_initialize_ad_f90(const F90lm &,
                                             const F90flds &,
                                             const F90traj &,
+                                            const F90traj &,
+                                            const double &,
+                                            const double &,
                                             util::DateTime * const *);
     void roms_linearModel_step_ad_f90(const F90lm &,
                                       const F90flds &,
                                       const F90traj &,
+                                      const F90traj &,
+                                      const double &,
+                                      const double &,
                                       util::DateTime * const *);
     void roms_linearModel_finalize_ad_f90(const F90lm &,
                                           const F90flds &);

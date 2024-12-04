@@ -12,12 +12,11 @@ model timestep:  &TimeStep __ROMS_TIMESTEP__
 
 initial date: &date __INITIAL_DATE__
 
-roms analysis:   &roms_analysis   [ssh, uocn, vocn, tocn, socn]
-roms state:      &roms_state      [ssh, uocn, vocn, tocn, socn, zocn_r]
-roms trajectory: &roms_trajectory [ssh, u2docn, v2docn,
-                                   uocn, vocn, tocn, socn,
-                                   DU_avg1, DV_avg1, DU_avg2, DV_avg2,
-                                   Ktocn, Ksocn, Kvocn]
+roms analysis: &roms_analysis [ssh, uocn, vocn, tocn, socn]
+roms state:    &roms_state    [ssh, uocn, vocn, tocn, socn, zocn_r,
+                               u2docn, v2docn,
+                               DU_avg1, DV_avg1, DU_avg2, DV_avg2,
+                               Ktocn, Ksocn, Kvocn]
 
 cost function:
   cost type: 4D-Var
@@ -34,7 +33,7 @@ cost function:
 
   model:
     name: ROMS
-    model variables: *roms_trajectory
+    model variables: *roms_state
     simulation length: *ForecastLength
     tstep: *TimeStep
 
@@ -161,8 +160,8 @@ variational:
       lm variables: *roms_analysis
       tstep: *TimeStep
       trajectory:
-        model variables: *roms_trajectory
-        tstep: *TimeStep
+        model variables: *roms_state
+        tstep: __TRAJECTORY_TIMESTEP__
       variable change: Identity
     diagnostics:                                 # Written into output IODA files
       departures: ombg                           # OBS - H(Xb)

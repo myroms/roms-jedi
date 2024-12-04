@@ -12,12 +12,11 @@ model timestep:  &TimeStep PT1800S               # WC13 has a 30 minutes timeste
 
 initial date: &date 2004-01-03T00:00:00Z         # initial DA window
 
-roms analysis:   &roms_analysis   [ssh, uocn, vocn, tocn, socn]
-roms state:      &roms_state      [ssh, uocn, vocn, tocn, socn, zocn_r]
-roms trajectory: &roms_trajectory [ssh, u2docn, v2docn,
-                                   uocn, vocn, tocn, socn,
-                                   DU_avg1, DV_avg1, DU_avg2, DV_avg2,
-                                   Ktocn, Ksocn, Kvocn]
+roms analysis: &roms_analysis [ssh, uocn, vocn, tocn, socn]
+roms state:    &roms_state    [ssh, uocn, vocn, tocn, socn, zocn_r,
+                               u2docn, v2docn,
+                               DU_avg1, DV_avg1, DU_avg2, DV_avg2,
+                               Ktocn, Ksocn, Kvocn]
 
 cost function:
   cost type: 4D-Var
@@ -29,7 +28,6 @@ cost function:
   geometry: &geom
     project_dir: Data/wc13
     roms_stdinp: roms_wc13_20040103_max.in       # 12 CPUs, 3x4 partition
-#   roms_stdinp: roms_wc13_20040103.in
     fields metadata: Data/fields_metadata.yaml
     ng: 1                                        # ROMS nested grid number
 
@@ -124,7 +122,7 @@ cost function:
 #      obs error:
 #        covariance model: diagonal
 
-#    - obs space:
+#     - obs space:
 #        name: ADT
 #        obsdatain:
 #          engine:
@@ -163,10 +161,10 @@ variational:
       date: *date
       simulation length: *ForecastLength
       lm variables: *roms_analysis
-      tstep: PT1800S                             # WC13 has a 30 minutes TLM/ADM timestep
+      tstep: *TimeStep                           # WC13 has a 30 minutes TLM/ADM timestep
       trajectory:
-        model variables: *roms_trajectory
-        tstep: PT1800S
+        model variables: *roms_state
+        tstep: PT2H                              # Every two hours trajectory snapshots
       variable change: Identity
     diagnostics:                                 # Written into output IODA files
       departures: ombg                           # OBS - H(Xb)

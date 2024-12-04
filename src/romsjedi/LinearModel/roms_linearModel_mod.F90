@@ -201,14 +201,18 @@ END SUBROUTINE roms_linearModel_delete
 ! ------------------------------------------------------------------------------
 !> It initializes adjoint model (ADROMS) kernel.
 
-SUBROUTINE roms_linearModel_initialize_ad (self, incr, Traj, vdate)
+SUBROUTINE roms_linearModel_initialize_ad (self, incr, Traj1, Traj2,           &
+                                           fac1, fac2, vdate)
 
   USE mod_scalars,  ONLY : INItime, dt, ntimes
   USE mod_stepping, ONLY : kstp, nstp
 
   CLASS (roms_linearModel), intent(inout) :: self    !< LinearModel object
   CLASS (roms_increment),   intent(inout) :: incr    !< Increment object
-  CLASS (roms_trajectory),  intent(in   ) :: Traj    !< Trajectory object
+  CLASS (roms_trajectory),  intent(in   ) :: Traj1   !< Trajectory time-1
+  CLASS (roms_trajectory),  intent(in   ) :: Traj2   !< Trajectory time-2
+  real (kind=kind_real),    intent(in   ) :: fac1    !< time-1 interp weight
+  real (kind=kind_real),    intent(in   ) :: fac2    !< time-2 interp weight
   TYPE (datetime),          intent(in   ) :: vdate   !< Increment valid DateTime
 
   integer                                 :: LocalPET, MyComm, my_ntimes, ng
@@ -235,9 +239,6 @@ SUBROUTINE roms_linearModel_initialize_ad (self, incr, Traj, vdate)
 
   ! Load nonlinear background trajectory into ROMS, which is used to linearize
   ! the ADROMS discrete equations.
-
-  CALL jedi2roms_traj (ng, Traj)
-
   !> ROMS-JEDI phase 1 initialization. If appropriate, read in standard input
   !> parameters. Then, allocate/initialize parameters and variables when switch
   !> LsetROMS is on. It sets TLM time-stepping parameters. The timesteping
@@ -342,14 +343,18 @@ END SUBROUTINE roms_linearModel_initialize_ad
 ! ------------------------------------------------------------------------------
 !> It initializes tangent linear model (TLROMS) kernel.
 
-SUBROUTINE roms_linearModel_initialize_tl (self, incr, Traj, vdate)
+SUBROUTINE roms_linearModel_initialize_tl (self, incr, Traj1, Traj2,           & 
+                                           fac1, fac2, vdate)
 
   USE mod_scalars,  ONLY : INItime, dt, ntimes
   USE mod_stepping, ONLY : kstp, nstp
 
   CLASS (roms_linearModel), intent(inout) :: self    !< LinearModel object
   CLASS (roms_increment),   intent(inout) :: incr    !< Increment object
-  CLASS (roms_trajectory),  intent(in   ) :: Traj    !< Trajectory object
+  CLASS (roms_trajectory),  intent(in   ) :: Traj1   !< Trajectory time-1
+  CLASS (roms_trajectory),  intent(in   ) :: Traj2   !< Trajectory time-2
+  real (kind=kind_real),    intent(in   ) :: fac1    !< time-1 interp weight
+  real (kind=kind_real),    intent(in   ) :: fac2    !< time-2 interp weight
   TYPE (datetime),          intent(in   ) :: vdate   !< Increment valid DateTime
 
   integer                                 :: LocalPET, MyComm, my_ntimes, ng
@@ -375,9 +380,9 @@ SUBROUTINE roms_linearModel_initialize_tl (self, incr, Traj, vdate)
   CALL initialize_ocean    (self%ng, self%tile, 0)
 
   ! Load nonlinear background trajectory into ROMS, which is used to linearize
-  ! the tangent linear discrete equations.
+  ! the tangent linear discrete equations. Interpolate from time snapshots.
 
-  CALL jedi2roms_traj (ng, Traj)
+  CALL jedi2roms_traj (ng, Traj1, Traj2, fac1, fac2)
 
   !> ROMS-JEDI phase 1 initialization. If appropriate, read in standard input
   !> parameters. Then, allocate/initialize parameters and variables when switch
@@ -471,7 +476,8 @@ END SUBROUTINE roms_linearModel_initialize_tl
 !> It timesteps backward adjoint model (ADROMS) kernel for the specified time
 !! interval in seconds.
 
-SUBROUTINE roms_linearModel_step_ad (self, Incr, Traj, vdate)
+SUBROUTINE roms_linearModel_step_ad (self, Incr, Traj1, Traj2, fac1, fac2,     &
+                                     vdate)
 
   USE dateclock_mod, ONLY : time_string
   USE mod_scalars,   ONLY : jic, ntend, time4jedi
@@ -479,7 +485,10 @@ SUBROUTINE roms_linearModel_step_ad (self, Incr, Traj, vdate)
 
   CLASS (roms_linearModel), intent(inout) :: self    !< LinearModel object
   CLASS (roms_increment),   intent(inout) :: Incr    !< Increment object
-  CLASS (roms_trajectory),  intent(in   ) :: Traj    !< Trajectory object
+  CLASS (roms_trajectory),  intent(in   ) :: Traj1   !< Trajectory time-1
+  CLASS (roms_trajectory),  intent(in   ) :: Traj2   !< Trajectory time-2
+  real (kind=kind_real),    intent(in   ) :: fac1    !< time-1 interp weight
+  real (kind=kind_real),    intent(in   ) :: fac2    !< time-2 interp weight
   TYPE (datetime),          intent(inout) :: vdate   !< Increment valid DateTime
 
   integer                                 :: LocalPET, ng
@@ -495,9 +504,9 @@ SUBROUTINE roms_linearModel_step_ad (self, Incr, Traj, vdate)
   CALL date2string (vdate, DateString, ISO=.FALSE.)
 
   ! Load nonlinear background trajectory into ROMS, which is used to linearize
-  ! the adjoint model discrete equations.
+  ! the adjoint model discrete equations.  Interpolate from time snapshots.
 
-  CALL jedi2roms_traj (ng, Traj)
+  CALL jedi2roms_traj (ng, Traj1, Traj2, fac1, fac2)
 
   ! In data assimilation, the increment vector may be modified by OOPS to
   ! include the observation forcing misfit, if appropriate. The adjoint
@@ -556,7 +565,8 @@ END SUBROUTINE roms_linearModel_step_ad
 !> It timesteps forward tangent linear model (TLROMS) kernel for the specified
 !! time interval in seconds.
 
-SUBROUTINE roms_linearModel_step_tl (self, Incr, Traj, vdate)
+SUBROUTINE roms_linearModel_step_tl (self, Incr,  Traj1, Traj2, fac1, fac2,    &
+                                     vdate)
 
   USE dateclock_mod, ONLY : time_string
   USE mod_scalars,   ONLY : jic, ntend, time
@@ -564,7 +574,10 @@ SUBROUTINE roms_linearModel_step_tl (self, Incr, Traj, vdate)
 
   CLASS (roms_linearModel), intent(inout) :: self    !< LinearModel object
   CLASS (roms_increment),   intent(inout) :: Incr    !< Increment object
-  CLASS (roms_trajectory),  intent(in   ) :: Traj    !< Trajectory object
+  CLASS (roms_trajectory),  intent(in   ) :: Traj1   !< Trajectory time-1
+  CLASS (roms_trajectory),  intent(in   ) :: Traj2   !< Trajectory time-2
+  real (kind=kind_real),    intent(in   ) :: fac1    !< time-1 interp weight
+  real (kind=kind_real),    intent(in   ) :: fac2    !< time-2 interp weight
   TYPE (datetime),          intent(inout) :: vdate   !< Increment valid DateTime
 
   integer                                 :: Tindex2d, Tindex3d, ng
@@ -582,9 +595,9 @@ SUBROUTINE roms_linearModel_step_tl (self, Incr, Traj, vdate)
   ! Load nonlinear background trajectory into ROMS, which is used to linearize
   ! the TLROMS discrete equations. The NL trajectory is unnecessary for the
   ! last full timestep since TL ROMS advances from "nstp" to "nnew". Neither
-  ! is it necessary for the ending half step.
+  ! is it necessary for the ending half step. Interpolate from time snapshots.
 
-  CALL jedi2roms_traj (ng, Traj)
+  CALL jedi2roms_traj (ng, Traj1, Traj2, fac1, fac2)
 
   ! In data assimilation, the increment vector may be modified by OOPS to
   ! include the observation forcing misfit, if appropriate.
@@ -705,196 +718,172 @@ SUBROUTINE roms_linearModel_finalize_tl (self, Incr)
 END SUBROUTINE roms_linearModel_finalize_tl
 
 ! ------------------------------------------------------------------------------
-!> It loads JEDI nonlinear state trajectory fields into ROMS field structure.
+!> It time interpolates JEDI nonlinear trajectory from snapshots and loads it
+!> into ROMS field structure.
 
-SUBROUTINE jedi2roms_traj (ng, Traj)
+SUBROUTINE jedi2roms_traj (ng, Traj1, Traj2, fac1, fac2)
 
   USE mod_scalars,  ONLY : jic
 
   integer,                        intent(in) :: ng        !< nested grid number
-  TYPE (roms_trajectory), target, intent(in) :: Traj      !< Trajectory fields
+  TYPE (roms_trajectory), target, intent(in) :: Traj1     !< Trajectory time-1
+  TYPE (roms_trajectory), target, intent(in) :: Traj2     !< Trajectory time-2
+  real (kind=kind_real),          intent(in) :: fac1      !< time-1 weight
+  real (kind=kind_real),          intent(in) :: fac2      !< time-2 weight
 
-  TYPE (roms_field), pointer                 :: field
-  integer                                    :: Tindex, i, itrc, k
+  TYPE (roms_field), pointer                 :: field1, field2
+  integer                                    :: i, itrc, k
 
-  ! Load ROMS NLM trajectory managed by the JEDI driver.
+  ! The nonlinear trajectory fields are time interpolated from JEDI snapshots
+  ! and repeated for each ROMS time level.
 
-  IF (Traj%doSnapshots) THEN
+  IF (LdebugLinearModel.and.(my_comm%rank().eq.0))                             &
+    PRINT 10, 'ROMS_DEBUG jedi2roms_traj: Interpolating trajectory for ROMS',  &
+              SIZE(Traj1%fields), jic(ng), TRIM(Traj1%DateTimeStr), fac1,      &
+              TRIM(Traj2%DateTimeStr), fac2
 
-    ! The nonlinear trajectory fields are saved at time snapshots greater than
-    ! ROMS timestep.  The ROMS TLM and ADM kernels will time-interpolate the
-    ! data from available snapshots.
-
-    Tindex = Traj%snapshotIndex
-
-    DO i=1, SIZE(Traj%fields)
-      field => Traj%fields(i)
-
-      SELECT CASE (field%name)
-
-        CASE ('ssh')                                    !> free-surface
-          OCEAN(ng)%zeta(:,:,Tindex) = field%val(:,:,1)
-
-        CASE ('uocn')                                   !> 3D U-momentum
-          OCEAN(ng)%u(:,:,:,Tindex) = field%val
-
-        CASE ('vocn')                                   !> 3D V-momentum
-          OCEAN(ng)%v(:,:,:,Tindex) = field%val
-
-        CASE ('tocn', 'socn')                           !> tracers
-          itrc = roms_tracer_index(field%name)
-          OCEAN(ng)%t(:,:,:,Tindex,itrc) = field%val
-
-        CASE ('Hzocn')                                  !> level trajectory
-
-
-        CASE DEFAULT
-          CALL abor1_ftn ("jedi2roms_traj: Cannot find option for field: "//   &
-                          TRIM(field%name))
-      END SELECT
-    END DO
+  DO i=1, SIZE(Traj1%fields)
+    field1 => Traj1%fields(i)
+    field2 => Traj2%fields(i)
 
     IF (LdebugLinearModel.and.(my_comm%rank().eq.0)) THEN
-      PRINT '(2a,i2,a,i0,2a)', 'ROMS_DEBUG jedi2roms_traj: ',                  &
-                               'Loading trajectory into NL ROMS, nfields = ',  &
-                               SIZE(Traj%fields),                              &
-                               ', snapshot index = ', Tindex,                  &
-                               ', date: ', Traj%DateTimeStr
+      PRINT 20, field1%metadata%getval_name, field1%metadata%io_name,'(date1)',&
+                field1%MinValue, field1%MaxValue, INT(field1%CheckSum,KIND=8)
+      PRINT 20, field2%metadata%getval_name, field2%metadata%io_name,'(date2)',&
+                field2%MinValue, field2%MaxValue, INT(field2%CheckSum,KIND=8)
     END IF
 
-  ELSE
+    SELECT CASE (field1%name)
 
-    ! The nonlinear trajectory fields are saved at every ROMS timestep and
-    ! repeated for each ROMS time level.
-
-    IF (LdebugLinearModel.and.(my_comm%rank().eq.0))                           &
-      PRINT 10, 'ROMS_DEBUG jedi2roms_traj: Loading trajectory into NL ROMS',  &
-                SIZE(Traj%fields), jic(ng), TRIM(Traj%DateTimeStr)
-
-    DO i=1, SIZE(Traj%fields)
-      field => Traj%fields(i)
-
-      IF (LdebugLinearModel.and.(my_comm%rank().eq.0))                         &
-        PRINT 20, field%metadata%getval_name, field%metadata%io_name,          &
-                  field%MinValue, field%MaxValue, INT(field%CheckSum,KIND=8)
-
-      SELECT CASE (field%name)
-
-        CASE ('ssh')                                    !> free-surface
-          DO k = 1, 3
+      CASE ('ssh')                                      !> free-surface
+        DO k = 1, 3
 #ifdef ZERO_TRAJECTORY
-            OCEAN(ng)%zeta(:,:,k) = 0.0_kind_real
+          OCEAN(ng)%zeta(:,:,k) = 0.0_kind_real
 #else
-            OCEAN(ng)%zeta(:,:,k) = field%val(:,:,1)
+          OCEAN(ng)%zeta(:,:,k) = fac1*field1%val(:,:,1)+                      &
+                                  fac2*field2%val(:,:,1)
+#endif
+        END DO
+
+#ifdef ZERO_TRAJECTORY
+        COUPLING(ng)%Zt_avg1 = 0.0_kind_real
+#else
+        COUPLING(ng)%Zt_avg1 = fac1*field1%val(:,:,1)+                         &
+                               fac2*field2%val(:,:,1)
+#endif
+
+      CASE ('u2docn')                                   !> 2D U-momentum
+        DO k = 1, 3
+#ifdef ZERO_TRAJECTORY
+          OCEAN(ng)%ubar(:,:,k) = 0.0_kind_real
+#else
+          OCEAN(ng)%ubar(:,:,k) = fac1*field1%val(:,:,1)+                      &
+                                  fac2*field2%val(:,:,1)
+#endif
+        END DO
+
+      CASE ('v2docn')                                   !> 2D V-momentum
+        DO k = 1, 3
+#ifdef ZERO_TRAJECTORY
+          OCEAN(ng)%vbar(:,:,k) = 0.0_kind_real
+#else
+          OCEAN(ng)%vbar(:,:,k) = fac1*field1%val(:,:,1)+                      &
+                                  fac2*field2%val(:,:,1)
+#endif
+        END DO
+
+      CASE ('DU_avg1')                                  !> averaged 2D U-Flux
+#ifdef ZERO_TRAJECTORY
+        COUPLING(ng)%DU_avg1 = 0.0_kind_real
+#else
+        COUPLING(ng)%DU_avg1 = fac1*field1%val(:,:,1)+                         &
+                               fac2*field2%val(:,:,1)
+#endif
+
+      CASE ('DV_avg1')                                  !> averaged 2D V-Flux
+#ifdef ZERO_TRAJECTORY
+        COUPLING(ng)%DV_avg1 = 0.0_kind_real
+#else
+        COUPLING(ng)%DV_avg1 = fac1*field1%val(:,:,1)+                         &
+                               fac2*field2%val(:,:,1)
+#endif
+
+      CASE ('DU_avg2')                                  !> U-Flux 3D coupling
+#ifdef ZERO_TRAJECTORY
+        COUPLING(ng)%DU_avg2 = 0.0_kind_real
+#else
+        COUPLING(ng)%DU_avg2 = fac1*field1%val(:,:,1)+                         &
+                               fac2*field2%val(:,:,1)
+#endif
+
+      CASE ('DV_avg2')                                  !> V-Flux 3D coupling
+#ifdef ZERO_TRAJECTORY
+        COUPLING(ng)%DV_avg2 = 0.0_kind_real
+#else
+        COUPLING(ng)%DV_avg2 = fac1*field1%val(:,:,1)+                         &
+                               fac2*field2%val(:,:,1)
+#endif
+
+      CASE ('uocn')                                     !> 3D U-momentum
+        DO k = 1, 2
+#ifdef ZERO_TRAJECTORY
+          OCEAN(ng)%u(:,:,:,k) = 0.0_kind_real
+#else
+          OCEAN(ng)%u(:,:,:,k) = fac1*field1%val+                              &
+                                 fac2*field2%val
+#endif
+        END DO
+
+      CASE ('vocn')                                     !> 3D V-momentum
+        DO k = 1, 2
+#ifdef ZERO_TRAJECTORY
+          OCEAN(ng)%v(:,:,:,k) = 0.0_kind_real
+#else
+          OCEAN(ng)%v(:,:,:,k) = fac1*field1%val+                              &
+                                 fac2*field2%val
 #endif
           END DO
 
+      CASE ('tocn', 'socn')                             !> tracers
+        itrc = roms_tracer_index(field1%name)
+        DO k = 1, 3
 #ifdef ZERO_TRAJECTORY
-          COUPLING(ng)%Zt_avg1 = 0.0_kind_real
+          OCEAN(ng)%t(:,:,:,k,itrc) = 0.0_kind_real
 #else
-          COUPLING(ng)%Zt_avg1 = field%val(:,:,1)
-#endif
-
-        CASE ('u2docn')                                 !> 2D U-momentum
-          DO k = 1, 3
-#ifdef ZERO_TRAJECTORY
-            OCEAN(ng)%ubar(:,:,k) = 0.0_kind_real
-#else
-            OCEAN(ng)%ubar(:,:,k) = field%val(:,:,1)
+          OCEAN(ng)%t(:,:,:,k,itrc) = fac1*field1%val+                         &
+                                      fac2*field2%val
 #endif
           END DO
 
-        CASE ('v2docn')                                 !> 2D V-momentum
-          DO k = 1, 3
-#ifdef ZERO_TRAJECTORY
-            OCEAN(ng)%vbar(:,:,k) = 0.0_kind_real
-#else
-            OCEAN(ng)%vbar(:,:,k) = field%val(:,:,1)
-#endif
-          END DO
+      CASE ('Ktocn', 'Ksocn')                           !> vertical diffusion
+        itrc = roms_tracer_index(field1%name)
+        MIXING(ng)%Akt(:,:,:,itrc) = fac1*field1%val+                          &
+                                     fac2*field2%val
 
-        CASE ('DU_avg1')                                !> averaged 2D U-Flux
-#ifdef ZERO_TRAJECTORY
-          COUPLING(ng)%DU_avg1 = 0.0_kind_real
-#else
-          COUPLING(ng)%DU_avg1 = field%val(:,:,1)
-#endif
+      CASE ('Kvocn')                                    !> vertical viscosity
+        MIXING(ng)%Akv = fac1*field1%val+                                      &
+                         fac2*field2%val
 
-        CASE ('DV_avg1')                                !> averaged 2D V-Flux
-#ifdef ZERO_TRAJECTORY
-          COUPLING(ng)%DV_avg1 = 0.0_kind_real
-#else
-          COUPLING(ng)%DV_avg1 = field%val(:,:,1)
-#endif
+      CASE ('Hzocn')                                    !> depth of W-points
 
-        CASE ('DU_avg2')                                !> U-Flux 3D coupling
-#ifdef ZERO_TRAJECTORY
-          COUPLING(ng)%DU_avg2 = 0.0_kind_real
-#else
-          COUPLING(ng)%DU_avg2 = field%val(:,:,1)
-#endif
+      CASE ('zocn_r')                                   !> depth of RHO-points
+!!      GRID(ng)%z_r = fac1*field1%val+                                        &
+!!                     fac2*field2%val
 
-        CASE ('DV_avg2')                                !> V-Flux 3D coupling
-#ifdef ZERO_TRAJECTORY
-          COUPLING(ng)%DV_avg2 = 0.0_kind_real
-#else
-          COUPLING(ng)%DV_avg2 = field%val(:,:,1)
-#endif
+      CASE ('zocn_w')                                   !> depth of W-points
+!!      GRID(ng)%z_w = fac1*field1%val+                                        &
+!!                     fac2*field2%val
 
-        CASE ('uocn')                                   !> 3D U-momentum
-          DO k = 1, 2
-#ifdef ZERO_TRAJECTORY
-            OCEAN(ng)%u(:,:,:,k) = 0.0_kind_real
-#else
-            OCEAN(ng)%u(:,:,:,k) = field%val
-#endif
-          END DO
+      CASE DEFAULT
+        CALL abor1_ftn ("jedi2roms_traj: Cannot find option for field: "//     &
+                        TRIM(field1%name))
+    END SELECT
+  END DO
 
-        CASE ('vocn')                                   !> 3D V-momentum
-          DO k = 1, 2
-#ifdef ZERO_TRAJECTORY
-            OCEAN(ng)%v(:,:,:,k) = 0.0_kind_real
-#else
-            OCEAN(ng)%v(:,:,:,k) = field%val
-#endif
-          END DO
-
-        CASE ('tocn', 'socn')                           !> tracers
-          itrc = roms_tracer_index(field%name)
-          DO k = 1, 3
-#ifdef ZERO_TRAJECTORY
-            OCEAN(ng)%t(:,:,:,k,itrc) = 0.0_kind_real
-#else
-            OCEAN(ng)%t(:,:,:,k,itrc) = field%val
-#endif
-          END DO
-
-        CASE ('Ktocn', 'Ksocn')                         !> vertical diffusion
-          itrc = roms_tracer_index(field%name)
-          MIXING(ng)%Akt(:,:,:,itrc) = field%val
-
-        CASE ('Kvocn')                                  !> vertical viscosity
-          MIXING(ng)%Akv = field%val
-
-        CASE ('Hzocn')                                  !> depth of W-points
-
-        CASE ('zocn_r')                                 !> depth of RHO-points
-!         GRID(ng)%z_r = field%val
-
-        CASE ('zocn_w')                                 !> depth of W-points
-!         GRID(ng)%z_w = field%val
-
-        CASE DEFAULT
-          CALL abor1_ftn ("jedi2roms_traj: Cannot find option for field: "//   &
-                          TRIM(field%name))
-      END SELECT
-    END DO
-
-  END IF
-
-  10 FORMAT (1x,a,', Nfields = ',i2,', timestep = ',i5.5,', date: ',a)
-  20 FORMAT (19x,'- ',a,': ',a,/,22x,'(Min = ',1p,e15.8,' Max = ',1p,e15.8,    &
-             ')',t93,'Checksum = ',i0)
+  10 FORMAT (1x,a,', Nfields = ',i2,', timestep = ',i5.5,', date1: ',a,        &
+             ', fac1 = ',1p,e11.4,', date2: ',a,', fac2 = ',1p,e11.4)
+  20 FORMAT (19x,'- ',a,': ',a,t113,a,/,22x,'(Min = ',1p,e15.8,                 &
+             ' Max = ',1p,e15.8,')',t93,'Checksum = ',i0)
 
 END SUBROUTINE jedi2roms_traj
 

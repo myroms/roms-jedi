@@ -20,7 +20,7 @@ ForecastLength: &ForecastLength PT6H           # 96 hours (4 days) window ending
 model:
   name: ROMS
   model variables: *Tvars
-  tstep: PT1800S                               # WC13 has a 30 minutes NLM timestep
+  tstep: &TimeStep PT1800S                     # WC13 has a 30 minutes NLM timestep
   simulation length: *ForecastLength
  
 model aux control: null
@@ -57,11 +57,12 @@ linear model test:
 linear model:
   name: LMROMS
   date: *date
-  tstep: PT1800S                               # WC13 has a 30 minutes TLM/ADM timestep
+  tstep: *TimeStep                             # WC13 has a 30 minutes TLM/ADM timestep
   simulation length: *ForecastLength
   lm variables: *Avars
   trajectory:
     model variables: *Tvars
+    tstep: *TimeStep
 
 model aux control: null
 

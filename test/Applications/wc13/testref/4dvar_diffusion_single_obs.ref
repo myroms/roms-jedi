@@ -2,20 +2,29 @@ Norm of input parameter StdDev: 7.7717431208293929e+03
 Adjoint test for block StdDev passed
 Adjoint test for block diffusion passed
 CostJb   : Nonlinear Jb = 0.0000000000000000e+00
-CostJo   : Nonlinear Jo(InsituTS) = 3.1118468990331114e+00, nobs = 2, Jo/n = 1.5559234495165557e+00, err = 4.3293454646615259e-01
-CostFunction: Nonlinear J = 3.1118468990331114e+00
-RPCGMinimizer: reduction in residual norm = 3.4884078706072998e-02
+CostJo   : Nonlinear Jo(InsituTS) = 3.1332584433319535e+00, nobs = 2, Jo/n = 1.5666292216659767e+00, err = 4.3293454646615259e-01
+CostFunction: Nonlinear J = 3.1332584433319535e+00
+RPCGMinimizer: reduction in residual norm = 3.8040259827936629e-02
 CostFunction::addIncrement: Analysis: 
   Valid time: 2004-01-03T00:00:00Z
-                               ssh   Min=    -0.279513843977849   Max=     0.221655289690518   Mean=    -0.012596746777582
-                              uocn   Min=    -0.446904586948745   Max=     0.456027998208498   Mean=     0.001900384062241
-                              vocn   Min=    -0.551383396687084   Max=     0.329409302824073   Mean=    -0.008603981225874
-                              tocn   Min=     1.113311639101229   Max=    18.374421555198655   Mean=     6.390686231846334
-                              socn   Min=    31.913544323891404   Max=    34.689664765762409   Mean=    33.941509366650607
+                               ssh   Min=    -0.279513876549715   Max=     0.221655298068798   Mean=    -0.012596754890511
+                              uocn   Min=    -0.446911707634918   Max=     0.456027999152363   Mean=     0.001900329015848
+                              vocn   Min=    -0.551383384448212   Max=     0.329409302557302   Mean=    -0.008603968365827
+                              tocn   Min=     1.113311637608168   Max=    18.374415301460175   Mean=     6.390585397265120
+                              socn   Min=    31.913544277732143   Max=    34.689664765791832   Mean=    33.941501937375492
                             zocn_r   Min= -4947.840267560327447   Max=    -0.245773375763171   Mean= -1072.647945779627889
+                            u2docn   Min=    -0.131252241341794   Max=     0.200719797187564   Mean=    -0.000444420800809
+                            v2docn   Min=    -0.222975398383573   Max=     0.177798918688555   Mean=    -0.000934699921709
+                           DU_avg1   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
+                           DV_avg1   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
+                           DU_avg2   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
+                           DV_avg2   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
+                             Ktocn   Min=     0.000010000000000   Max=     0.651978113997239   Mean=     0.003204976323812
+                             Ksocn   Min=     0.000010000000000   Max=     0.651978113997239   Mean=     0.003204976323812
+                             Kvocn   Min=     0.000010000000000   Max=     0.099938258749165   Mean=     0.001999479476404
 
 
 
-CostJb   : Nonlinear Jb = 0.540941048467796
-CostJo   : Nonlinear Jo(InsituTS) = 1.597794717017647, nobs = 2, Jo/n = 0.798897358508824, err = 0.432934546466153
-CostFunction: Nonlinear J = 2.138735765485443
+CostJb   : Nonlinear Jb = 0.571046201223222
+CostJo   : Nonlinear Jo(InsituTS) = 1.603123896404417, nobs = 2, Jo/n = 0.801561948202209, err = 0.432934546466153
+CostFunction: Nonlinear J = 2.174170097627639

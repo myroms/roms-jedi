@@ -5,6 +5,8 @@
 
 MODULE roms_linearModel_mod_c
 
+USE kinds,                      ONLY : kind_real
+
 USE iso_c_binding
 
 USE datetime_mod
@@ -71,25 +73,33 @@ END SUBROUTINE roms_linearModel_delete_c
 !> Binding interface to initialize TLROMS object.
 
 SUBROUTINE roms_linearModel_initialize_tl_c (c_key_self, c_key_incr,           &
-                                             c_key_traj, c_dt)                 &
+                                             c_key_traj1, c_key_traj2,         &
+                                             c_fac1, c_fac2, c_dt)             &
                            BIND (c, name='roms_linearModel_initialize_tl_f90')
 
   integer (c_int),      intent(in) :: c_key_self  !< LinearModel object pointer
   integer (c_int),      intent(in) :: c_key_incr  !< Increment object pointer
-  integer (c_int),      intent(in) :: c_key_traj  !< Trajectory object pointer
+  integer (c_int),      intent(in) :: c_key_traj1 !< Trajectory time-1 pointer
+  integer (c_int),      intent(in) :: c_key_traj2 !< Trajectory time-2 pointer
+  real (c_double),      intent(in) :: c_fac1      !< traj1 interpolation weight
+  real (c_double),      intent(in) :: c_fac2      !< traj2 interpolation weight
   TYPE (c_ptr),         intent(in) :: c_dt        !< Increment dateTime pointer
 
   TYPE (roms_linearModel), pointer :: self
   TYPE (roms_increment),   pointer :: incr
-  TYPE (roms_trajectory),  pointer :: traj
+  TYPE (roms_trajectory),  pointer :: traj1, traj2
+  real (kind=kind_real)            :: fac1, fac2
   TYPE (datetime)                  :: fdate
 
   CALL roms_increment_registry%get (c_key_incr, incr)
   CALL roms_linearModel_registry%get (c_key_self, self)
-  CALL roms_trajectory_registry%get (c_key_traj, traj)
+  CALL roms_trajectory_registry%get (c_key_traj1, traj1)
+  CALL roms_trajectory_registry%get (c_key_traj2, traj2)
   CALL c_f_datetime (c_dt, fdate)
+  fac1 = c_fac1
+  fac2 = c_fac2
 
-  CALL self%initialize_tl (incr, traj, fdate)
+  CALL self%initialize_tl (incr, traj1, traj2, fac1, fac2, fdate)
 
 END SUBROUTINE roms_linearModel_initialize_tl_c
 
@@ -97,25 +107,33 @@ END SUBROUTINE roms_linearModel_initialize_tl_c
 !> Binding interface to advance TLROMS kernel for specified time interval.
 
 SUBROUTINE roms_linearModel_step_tl_c (c_key_self, c_key_incr,                 &
-                                       c_key_traj, c_dt)                       &
+                                       c_key_traj1, c_key_traj2,               &
+                                       c_fac1, c_fac2, c_dt)                   &
                            BIND (c, name='roms_linearModel_step_tl_f90')
 
   integer (c_int),      intent(in) :: c_key_self  !< LinearModel object pointer
   integer (c_int),      intent(in) :: c_key_incr  !< Increment object pointer
-  integer (c_int),      intent(in) :: c_key_traj  !< Trajectory object pointer
+  integer (c_int),      intent(in) :: c_key_traj1 !< Trajectory time-1 pointer
+  integer (c_int),      intent(in) :: c_key_traj2 !< Trajectory time-2 pointer
+  real (c_double),      intent(in) :: c_fac1      !< traj1 interpolation weight
+  real (c_double),      intent(in) :: c_fac2      !< traj2 interpolation weight
   TYPE (c_ptr),      intent(inout) :: c_dt        !< DateTime object pointer
 
   TYPE (roms_linearModel), pointer :: self
   TYPE (roms_increment),   pointer :: incr
-  TYPE (roms_trajectory),  pointer :: traj
+  TYPE (roms_trajectory),  pointer :: traj1, traj2
   TYPE (datetime)                  :: fdate
+  real (kind=kind_real)            :: fac1, fac2
 
   CALL roms_linearModel_registry%get (c_key_self, self)
   CALL roms_increment_registry%get (c_key_incr, incr)
-  CALL roms_trajectory_registry%get (c_key_traj, traj)
+  CALL roms_trajectory_registry%get (c_key_traj1, traj1)
+  CALL roms_trajectory_registry%get (c_key_traj2, traj2)
   CALL c_f_datetime (c_dt, fdate)
+  fac1 = c_fac1
+  fac2 = c_fac2
 
-  CALL self%step_tl (incr, traj, fdate)
+  CALL self%step_tl (incr, traj1, traj2, fac1, fac2, fdate)
 
 END SUBROUTINE roms_linearModel_step_tl_c
 
@@ -143,25 +161,33 @@ END SUBROUTINE roms_linearModel_finalize_tl_c
 !> Binding interface to initialize ADROMS object.
 
 SUBROUTINE roms_linearModel_initialize_ad_c (c_key_self, c_key_incr,           &
-                                             c_key_traj, c_dt)                 &
+                                             c_key_traj1, c_key_traj2,         &
+                                             c_fac1, c_fac2, c_dt)             &
                            BIND (c, name='roms_linearModel_initialize_ad_f90')
 
   integer (c_int),      intent(in) :: c_key_self  !< LinearModel object pointer
   integer (c_int),      intent(in) :: c_key_incr  !< Increment object pointer
-  integer (c_int),      intent(in) :: c_key_traj  !< Trajectory object pointer
+  integer (c_int),      intent(in) :: c_key_traj1 !< Trajectory time-1 pointer
+  integer (c_int),      intent(in) :: c_key_traj2 !< Trajectory time-2 pointer
+  real (c_double),      intent(in) :: c_fac1      !< traj1 interpolation weight
+  real (c_double),      intent(in) :: c_fac2      !< traj2 interpolation weight
   TYPE (c_ptr),         intent(in) :: c_dt        !< Increment dateTime pointer
 
   TYPE (roms_linearModel), pointer :: self
   TYPE (roms_increment),   pointer :: incr
-  TYPE (roms_trajectory),  pointer :: traj
+  TYPE (roms_trajectory),  pointer :: traj1, traj2
   TYPE (datetime)                  :: fdate
+  real (kind=kind_real)            :: fac1, fac2
 
   CALL roms_increment_registry%get (c_key_incr, incr)
   CALL roms_linearModel_registry%get (c_key_self, self)
-  CALL roms_trajectory_registry%get (c_key_traj, traj)
+  CALL roms_trajectory_registry%get (c_key_traj1, traj1)
+  CALL roms_trajectory_registry%get (c_key_traj2, traj2)
   CALL c_f_datetime (c_dt, fdate)
+  fac1 = c_fac1
+  fac2 = c_fac2
 
-  CALL self%initialize_ad (incr, traj, fdate)
+  CALL self%initialize_ad (incr, traj1, traj2, fac1, fac2, fdate)
 
 END SUBROUTINE roms_linearModel_initialize_ad_c
 
@@ -169,25 +195,33 @@ END SUBROUTINE roms_linearModel_initialize_ad_c
 !> Binding interface to timestep backwards ADROMS for specified time interval.
 
 SUBROUTINE roms_linearModel_step_ad_c (c_key_self, c_key_incr,                 &
-                                       c_key_traj, c_dt)                       &
+                                       c_key_traj1, c_key_traj2,               &
+                                       c_fac1, c_fac2, c_dt)                   &
                            BIND (c, name='roms_linearModel_step_ad_f90')
 
   integer (c_int),   intent(in   ) :: c_key_self  !< LinearModel object pointer
   integer (c_int),   intent(in   ) :: c_key_incr  !< Increment object pointer
-  integer (c_int),   intent(in   ) :: c_key_traj  !< Trajectory object pointer
+  integer (c_int),      intent(in) :: c_key_traj1 !< Trajectory time-1 pointer
+  integer (c_int),      intent(in) :: c_key_traj2 !< Trajectory time-2 pointer
+  real (c_double),      intent(in) :: c_fac1      !< traj1 interpolation weight
+  real (c_double),      intent(in) :: c_fac2      !< traj2 interpolation weight
   TYPE (c_ptr),      intent(inout) :: c_dt        !< Increment dateTime pointer
 
   TYPE (roms_linearModel), pointer :: self
   TYPE (roms_increment),   pointer :: incr
-  TYPE (roms_trajectory),  pointer :: traj
+  TYPE (roms_trajectory),  pointer :: traj1, traj2
   TYPE (datetime)                  :: fdate
+  real (kind=kind_real)            :: fac1, fac2
 
   CALL roms_linearModel_registry%get (c_key_self, self)
   CALL roms_increment_registry%get (c_key_incr, incr)
-  CALL roms_trajectory_registry%get (c_key_traj, traj)
+  CALL roms_trajectory_registry%get (c_key_traj1, traj1)
+  CALL roms_trajectory_registry%get (c_key_traj2, traj2)
   CALL c_f_datetime (c_dt, fdate)
+  fac1 = c_fac1
+  fac2 = c_fac2
 
-  CALL self%step_ad (incr, traj, fdate)
+  CALL self%step_ad (incr, traj1, traj2, fac1, fac2, fdate)
 
 END SUBROUTINE roms_linearModel_step_ad_c
 

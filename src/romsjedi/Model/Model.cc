@@ -45,55 +45,76 @@ namespace romsjedi {
     : keyConfig_(0),
       tstep_(0),
       geom_(new Geometry(resol)),
-      vars_()
+      vars_(config, "model variables")
   {
-    Log::trace() << "Model::Model" << std::endl;
-    Log::trace() << "Model vars: " << vars_ << std::endl;
+    Log::trace() << classname() << ":Model starting" << std::endl;
+
     ModelParameters params;
     params.deserialize(config);
     tstep_ = util::Duration(config.getString("tstep"));
+
+    Log::debug() << classname() << ":Model variables: " << vars_ << std::endl;
+    Log::debug() << classname() << ":Model NL Time Step = "
+                                << tstep_.toSeconds() << std::endl;
+
     roms_model_create_f90(config,
                           geom_->toFortran(),
                           keyConfig_);
-    oops::Log::trace() << "Model created" << std::endl;
+
+    oops::Log::trace() << classname() << ":Model done" << std::endl;
   }
 
 // ----------------------------------------------------------------------------
 
   Model::~Model() {
+  Log::trace() << classname() << ":~Model starting" << std::endl;
+
   roms_model_delete_f90(keyConfig_);
-  oops::Log::trace() << "Model destructed" << std::endl;
+
+  Log::trace() << classname() << ":~Model done" << std::endl;
   }
 
 // ----------------------------------------------------------------------------
 
   void Model::initialize(State & xx) const {
   util::DateTime * dtp = &xx.validTime();
+
+  Log::trace() << classname() << ":initialize starting" << std::endl;
+
   roms_model_initialize_f90(keyConfig_,
                             xx.toFortran(),
                             &dtp);
-  oops::Log::debug() << "Model::initialize" << std::endl;
+
+  Log::trace() << classname() << ":initialize done" << std::endl;
   }
 
 // ----------------------------------------------------------------------------
 
   void Model::step(State & xx,
                    const ModelBias &) const {
+    Log::trace() << classname() << ":step starting" << std::endl;
+
     xx.validTime() += tstep_;
-    Log::trace() << "Model::Time: " << xx.validTime() << std::endl;
     util::DateTime * dtp = &xx.validTime();
+    Log::debug() << classname() << ":step validTime = " << xx.validTime()
+                                << std::endl;
+
     roms_model_step_f90(keyConfig_,
                         xx.toFortran(),
                         geom_->toFortran(),
                         &dtp);
-    oops::Log::debug() << "Model::step" << std::endl;
+
+    Log::trace() << classname() << ":step done" << std::endl;
   }
 
 // ----------------------------------------------------------------------------
 
   void Model::finalize(State & xx) const {
+    Log::trace() << classname() << ":finalize starting" << std::endl;
+
     roms_model_finalize_f90(keyConfig_, xx.toFortran());
-    oops::Log::debug() << "Model::finalize" << std::endl;
+
+    Log::trace() << classname() << ":finalize done" << std::endl;
   }
 
 // ----------------------------------------------------------------------------

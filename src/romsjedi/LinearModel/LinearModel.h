@@ -5,7 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  *
  *!
- * \brief   **LinearModel** C++ Class to initialize, run, and finalize TLROMS
+* \brief   **LinearModel** C++ Class to initialize, run, and finalize TLROMS
  *          and ADROMS
  *
  * \details These C++ functions creates/destroy, initialize, step, and finalize
@@ -69,6 +69,7 @@ namespace romsjedi {
   // Accessor functions
 
     const util::Duration & timeResolution() const override {return tstep_;}
+    const util::Duration & stepTrajectory() const override {return steptraj_;}
 
    private:
     void print(std::ostream &) const override;
@@ -80,6 +81,7 @@ namespace romsjedi {
     F90flds keyFlds_;
     F90model keySelf_;
     util::Duration tstep_;
+    util::Duration steptraj_;
     std::map< util::DateTime, F90traj> trajmap_;
   };
 

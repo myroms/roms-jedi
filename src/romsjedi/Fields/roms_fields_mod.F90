@@ -1,4 +1,3 @@
-
 ! (C) Copyright 2017-2024 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
@@ -349,7 +348,7 @@ SUBROUTINE roms_fields_to_fieldset (self, geom, vars, afieldset)
   LBj = geom%LBj
   UBj = geom%UBj
 
-  cgrid = r2dvar                                 ! RHO-points (cell-center)
+  cgrid = r2dvar                               ! RHO-points (cell-center)
 
   IstrD = geom%bounds(cgrid)%IstrD
   IendD = geom%bounds(cgrid)%IendD
@@ -366,59 +365,63 @@ SUBROUTINE roms_fields_to_fieldset (self, geom, vars, afieldset)
 
     CALL self%get (vars%variable(ivar), field)
 
-    IF (LdebugFields) THEN
-      CALL field%stats (stats)
-      IF (geom%f_comm%rank() .eq. 0) THEN
-        PRINT 10, field%name, stats(1), stats(2), INT(stats(3))
- 10     FORMAT (2x,'- ',a35,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,  &
-                ',  CheckSum = ', i0)
+    RHO_VARS : IF (field%metadata%gtype .ne. 'w') THEN
+
+      IF (LdebugFields) THEN
+        CALL field%stats (stats)
+        IF (geom%f_comm%rank() .eq. 0) THEN
+          PRINT 10, field%name, stats(1), stats(2), INT(stats(3))
+ 10       FORMAT (2x,'- ',a35,':',t43,'Min = ',1p,e22.15,                      &
+                  ',  Max = ',1p,e22.15,',  CheckSum = ', i0)
+        END IF
       END IF
-    END IF
 
-    ! Copy computational points and perform a halo exchange.
+      ! Copy computational points and perform a halo exchange.
 
-    N = field%N
+      N = field%N
 
-    Fdat = 0.0_kind_real
-    Fdat(IstrD:IendD,JstrD:JendD,1:N) = field%val(IstrD:IendD,JstrD:JendD,:)
+      Fdat = 0.0_kind_real
+      Fdat(IstrD:IendD,JstrD:JendD,1:N) = field%val(IstrD:IendD,JstrD:JendD,:)
 
-    CALL mp_exchange3d (geom%ng, geom%tile, iNLM, 1,                           &
-                        LBi, UBi, LBj, UBj, 1, N,                              &
-                        geom%NghostPoints,                                     &
-                        geom%EWperiodic, geom%NSperiodic,                      &
-                        Fdat)
+      CALL mp_exchange3d (geom%ng, geom%tile, iNLM, 1,                         &
+                          LBi, UBi, LBj, UBj, 1, N,                            &
+                          geom%NghostPoints,                                   &
+                          geom%EWperiodic, geom%NSperiodic,                    &
+                          Fdat)
 
-    ! Get or create ATLAS field.
+      ! Get or create ATLAS field.
     
-    IF (afieldset%has_field(vars%variable(ivar))) THEN
-      afield = afieldset%field(vars%variable(ivar))         ! get field
-    ELSE
-      afield = geom%functionspace%create_field(name=vars%variable(ivar),       &
-                                               kind=atlas_real(kind_real),     &
-                                               levels=N)
-      CALL afieldset%add (afield)                           ! add field
-    END IF
+      IF (afieldset%has_field(vars%variable(ivar))) THEN
+        afield = afieldset%field(vars%variable(ivar))       ! get field
+      ELSE
+        afield = geom%functionspace%create_field(name=vars%variable(ivar),     &
+                                                 kind=atlas_real(kind_real),   &
+                                                 levels=N)
+        CALL afieldset%add (afield)                         ! add field
+      END IF
 
-    ! Get field pointer to ATLAS and copy data. The pointer is inialized to and
-    ! owned values are overwritten.
+      ! Get field pointer to ATLAS and copy data. The pointer is inialized to
+      ! and owned values are overwritten.
 
-    CALL afield%data (fldptr)
+      CALL afield%data (fldptr)
 
-    fldptr = 0.0_kind_real
-    DO k = 1, N
-      DO j = JstrD, JendD
-        DO i = IstrD, IendD
-          nc = self%geom%atlas_ij2node(i,j)
-          fldptr(k,nc) = Fdat(i,j,k)
+      fldptr = 0.0_kind_real
+      DO k = 1, N
+        DO j = JstrD, JendD
+          DO i = IstrD, IendD
+            nc = self%geom%atlas_ij2node(i,j)
+            fldptr(k,nc) = Fdat(i,j,k)
+          END DO
         END DO
       END DO
-    END DO
 
-    meta = afield%metadata()
-    CALL meta%set ('interp_type', TRIM(field%interp_type))
+      meta = afield%metadata()
+      CALL meta%set ('interp_type', TRIM(field%interp_type))
 
-    CALL afield%set_dirty (.TRUE.)           ! mark halos as being out-of-date
-    CALL afield%final ()                     ! release pointer
+      CALL afield%set_dirty (.TRUE.)         ! mark halos as being out-of-date
+      CALL afield%final ()                   ! release pointer
+
+    END IF RHO_VARS
 
   END DO
 
@@ -461,33 +464,37 @@ SUBROUTINE roms_fields_from_fieldset (self, geom, vars, afieldset)
 
     CALL self%get (vars%variable(ivar), field)
 
-    ! Get field from ATLAS.
+    RHO_VARS : IF (field%metadata%gtype .ne. 'w') THEN
 
-    afield = afieldset%field(vars%variable(ivar))            ! get field
+      ! Get field from ATLAS.
 
-    ! Copy field data.
+      afield = afieldset%field(vars%variable(ivar))          ! get field
 
-    CALL afield%data (fldptr)
+      ! Copy field data.
 
-    DO k = 1, field%N
-      DO j = JstrD, JendD
-        DO i = IstrD, IendD
-          nc = self%geom%atlas_ij2node(i,j)
-          field%val(i,j,k) = fldptr(k,nc)
+      CALL afield%data (fldptr)
+
+      DO k = 1, field%N
+        DO j = JstrD, JendD
+          DO i = IstrD, IendD
+            nc = self%geom%atlas_ij2node(i,j)
+            field%val(i,j,k) = fldptr(k,nc)
+          END DO
         END DO
       END DO
-    END DO
 
-    IF (LdebugFields) THEN
-      CALL field%stats (stats)
-      IF (geom%f_comm%rank() .eq. 0) THEN
-        PRINT 10, field%name, stats(1), stats(2), INT(stats(3))
- 10     FORMAT (2x,'- ',a35,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,  &
-                ',  CheckSum = ', i0)
+      IF (LdebugFields) THEN
+        CALL field%stats (stats)
+        IF (geom%f_comm%rank() .eq. 0) THEN
+          PRINT 10, field%name, stats(1), stats(2), INT(stats(3))
+ 10       FORMAT (2x,'- ',a35,':',t43,'Min = ',1p,e22.15,                      &
+                  ',  Max = ',1p,e22.15,',  CheckSum = ', i0)
+        END IF
       END IF
-    END IF
 
-    CALL afield%final ()                                     ! release pointer
+      CALL afield%final ()                                   ! release pointer
+
+    END IF RHO_VARS
 
   END DO
 
@@ -1044,17 +1051,19 @@ SUBROUTINE roms_fields_IO_metadata (fld, metadata)
 
   integer                                                :: i
 
+  ! Deallocate metadata to allow different set of variables.
+
+  IF (allocated(metadata)) THEN
+    deallocate (metadata)
+  END IF    
+
   ! Extract fields I/O metadata.
 
-  IF (.not.allocated(metadata)) THEN
+   allocate ( metadata(SIZE(fld%fields)) )
 
-    allocate ( metadata(SIZE(fld%fields)) )
-
-    DO i = 1, SIZE(fld%fields)
-      metadata(i) = fld%geom%fieldsinfo%get(fld%fields(i)%name)
-    END DO
-
-  END IF
+   DO i = 1, SIZE(fld%fields)
+     metadata(i) = fld%geom%fieldsinfo%get(fld%fields(i)%name)
+   END DO
 
 END SUBROUTINE roms_fields_IO_metadata
 
