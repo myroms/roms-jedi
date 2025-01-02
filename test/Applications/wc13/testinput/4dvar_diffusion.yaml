@@ -55,12 +55,13 @@ cost function:
           vert_coord: vert_coord_2d
       read:
         drivers:
-          read global nicas: true
+          read global nicas: false
+          read local nicas: true
         model:
           level for 2d variables: last            
           do not cross mask boundaries: true
         nicas:
-          interpolation in global file: true
+          interpolation in global file: false
         groups:
         - variables: [tocn, socn]
           multivariate strategy: univariate

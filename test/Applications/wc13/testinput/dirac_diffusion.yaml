@@ -26,11 +26,11 @@ background error:
       ssh:
         vert_coord: vert_coord_2d
     read:
-      model:
-        level for 2d variables: last            
-        do not cross mask boundaries: true
-      nicas:
-        interpolation in global file: true
+#     model:
+#       level for 2d variables: last            
+#       do not cross mask boundaries: true
+#     nicas:
+#       interpolation in global file: false
       groups:
       - variables: [tocn, socn]
         multivariate strategy: univariate

@@ -7,27 +7,27 @@ Input Dirac increment:
                               socn   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.000016396130513
 Covariance(hybrid) * Increment:
   Valid time: 2004-01-03T00:00:00Z
-                               ssh   Min=    -0.003605827486590   Max=     0.003916645811224   Mean=    -0.000009489621377
+                               ssh   Min=    -0.004019349552751   Max=     0.001840614123377   Mean=    -0.000038915824423
                               uocn   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
                               vocn   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
-                              tocn   Min=    -0.089126060728159   Max=     0.240085103042022   Mean=     0.000195272780401
-                              socn   Min=    -0.025150568550429   Max=     0.035598510983715   Mean=     0.000046333227460
+                              tocn   Min=    -0.014750128105399   Max=     0.620603154237939   Mean=     0.000853535654277
+                              socn   Min=    -0.033372175114886   Max=     0.013084504553957   Mean=    -0.000013416545937
 Covariance(hybrid1_ensemble) * Increment:
   Valid time: 2004-01-03T00:00:00Z
-                               ssh   Min=    -0.003605827486590   Max=     0.003916645811224   Mean=    -0.000009489621377
+                               ssh   Min=    -0.004019349552751   Max=     0.001840614123377   Mean=    -0.000038915824423
                               uocn   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
                               vocn   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
-                              tocn   Min=    -0.089126060728159   Max=     0.240085103042022   Mean=     0.000195272780401
-                              socn   Min=    -0.025150568550429   Max=     0.035598510983715   Mean=     0.000046333227460
+                              tocn   Min=    -0.014750128105399   Max=     0.620603154237939   Mean=     0.000853535654277
+                              socn   Min=    -0.033372175114886   Max=     0.013084504553957   Mean=    -0.000013416545937
 Localization(hybrid1_ensemble_localization) diagnostics:
 - Localization at zero separation:
-  + Value for variable ssh, subwindow 0, at (longitude, latitude, vertical index) point (-125.66667, 36.66667, 1): 3.1183933580481318e+00
-  + Value for variable tocn, subwindow 0, at (longitude, latitude, vertical index) point (-124.00000, 33.33333, 30): 1.4488483497275755e+00
-  + Value for variable socn, subwindow 0, at (longitude, latitude, vertical index) point (-127.33333, 43.33333, 30): 2.5970249880281915e+00
+  + Value for variable ssh, subwindow 0, at (longitude, latitude, vertical index) point (-125.66667, 36.66667, 1): 3.1183933580481309e+00
+  + Value for variable tocn, subwindow 0, at (longitude, latitude, vertical index) point (-124.00000, 33.33333, 30): 1.4488483497275748e+00
+  + Value for variable socn, subwindow 0, at (longitude, latitude, vertical index) point (-127.33333, 43.33333, 30): 2.5970249880281919e+00
 Localization(hybrid1_ensemble) * Increment:
   Valid time: 2004-01-03T00:00:00Z
-                               ssh   Min=     0.000000000000000   Max=     3.118393358048132   Mean=     0.160628748758547
+                               ssh   Min=     0.000000000000000   Max=     3.118393358048131   Mean=     0.160628748758547
                               uocn   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
                               vocn   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
-                              tocn   Min=     0.000000000000000   Max=     3.118393358048132   Mean=     0.021872224460206
-                              socn   Min=     0.000000000000000   Max=     3.118393358048132   Mean=     0.021872224460206
+                              tocn   Min=     0.000000000000000   Max=     3.118393358048131   Mean=     0.021872224460206
+                              socn   Min=     0.000000000000000   Max=     3.118393358048131   Mean=     0.021872224460206

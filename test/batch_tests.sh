@@ -105,8 +105,10 @@ elif [ ${ALL_TEST} -eq 2 ]; then
   ctest -VV -R test_romsjedi_diffstates
   ctest -VV -R test_romsjedi_forecast_roms
   ctest -VV -R test_romsjedi_bump_parameters_cor_nicas
+  ctest -VV -R test_romsjedi_bump_parameters_cor_nicas_max
   ctest -VV -R test_romsjedi_parameters_diffusion
   ctest -VV -R test_romsjedi_bump_loc_parameters_cor_nicas
+  ctest -VV -R test_romsjedi_bump_loc_parameters_cor_nicas_max
   ctest -VV -R test_romsjedi_dirac_cov_nicas
   ctest -VV -R test_romsjedi_dirac_diffusion
   ctest -VV -R test_romsjedi_ens_pert
@@ -156,384 +158,400 @@ else
   ic=$(( $ic + 1 ))
   ${MPIrun} test_romsjedi_geometry testinput/geometry.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_geometry ........................  *Failed"
+    echo " Test #${ic}: test_romsjedi_geometry .............................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_geometry ........................  Passed"
+    echo " Test #${ic}: test_romsjedi_geometry .............................  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   ${MPIrun} test_romsjedi_geometryiterator testinput/geometryiterator.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_geometryiterator ................  *Failed"
+    echo " Test #${ic}: test_romsjedi_geometryiterator .....................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_geometryiterator ................  Passed"
+    echo " Test #${ic}: test_romsjedi_geometryiterator .....................  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   ${MPIrun} test_romsjedi_state testinput/state.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_state ...........................  *Failed"
+    echo " Test #${ic}: test_romsjedi_state ................................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_state ...........................  Passed"
+    echo " Test #${ic}: test_romsjedi_state ................................  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   ${MPIrun} test_romsjedi_increment testinput/increment.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_increment .......................  *Failed"
+    echo " Test #${ic}: test_romsjedi_increment ............................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_increment .......................  Passed"
+    echo " Test #${ic}: test_romsjedi_increment ............................  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   ${MPIrun} test_romsjedi_model testinput/model.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_model ...........................  *Failed"
+    echo " Test #${ic}: test_romsjedi_model ................................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_model ...........................  Passed"
+    echo " Test #${ic}: test_romsjedi_model ................................  Passed"
   fi
 
   ${MPIrun} test_romsjedi_linearmodel testinput/linearmodel.yaml 1 >> test_${ic}.log 2>> test.err
   ic=$(( $ic + 1 ))
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_linearmodel .....................  *Failed"
+    echo " Test #${ic}: test_romsjedi_linearmodel ..........................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_linearmodel .....................  Passed"
+    echo " Test #${ic}: test_romsjedi_linearmodel ..........................  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   ${MPIrun} ../../bin/romsjedi_hofx_nomodel.x testinput/hofx_nomodel.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_hofx_nomodel ....................  *Failed"
+    echo " Test #${ic}: test_romsjedi_hofx_nomodel .........................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_hofx_nomodel ....................  Passed"
+    echo " Test #${ic}: test_romsjedi_hofx_nomodel .........................  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   ${MPIrun} ../../bin/romsjedi_hofx.x testinput/hofx_4d.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_hofx_4d .........................  *Failed"
+    echo " Test #${ic}: test_romsjedi_hofx_4d ..............................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_hofx_4d .........................  Passed"
+    echo " Test #${ic}: test_romsjedi_hofx_4d ..............................  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   ${MPIrun} ../../bin/romsjedi_hofx.x testinput/makeobs_4d.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_makeobs_4d ......................  *Failed"
+    echo " Test #${ic}: test_romsjedi_makeobs_4d ...........................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_makeobs_4d ......................  Passed"
+    echo " Test #${ic}: test_romsjedi_makeobs_4d ...........................  Passed"
   fi
 
   ${MPIrun} ../../bin/romsjedi_hofx.x testinput/makeobs_4d_perturbed.yaml 1>> test.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_makeobs_4d_petrubed .............  *Failed"
+    echo " Test #${ic}: test_romsjedi_makeobs_4d_petrubed ..................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_makeobs_4d_peturbed .............  Passed"
+    echo " Test #${ic}: test_romsjedi_makeobs_4d_peturbed ..................  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   ${MPIrun} ../../bin/romsjedi_diffstates.x testinput/diffstates.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_diffstates ......................  *Failed"
+    echo " Test #${ic}: test_romsjedi_diffstates ...........................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_diffstates ......................  Passed"
+    echo " Test #${ic}: test_romsjedi_diffstates ...........................  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   mpirun -n 12 ../../bin/romsjedi_forecast.x testinput/forecast_roms.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_forecast_roms ...................  *Failed"
+    echo " Test #${ic}: test_romsjedi_forecast_roms ........................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_forecast_roms ...................  Passed"
+    echo " Test #${ic}: test_romsjedi_forecast_roms ........................  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   ${MPIrun} ../../bin/romsjedi_error_covariance_toolbox.x testinput/parameters_bump_cor_nicas.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_bump_parameters_cor_nicas .......  *Failed"
+    echo " Test #${ic}: test_romsjedi_bump_parameters_cor_nicas ............  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_bump_parameters_cor_nicas .......  Passed"
+    echo " Test #${ic}: test_romsjedi_bump_parameters_cor_nicas ............  Passed"
+  fi
+
+  ic=$(( $ic + 1 ))
+  mpirun -n 12 ../../bin/romsjedi_error_covariance_toolbox.x testinput/parameters_bump_cor_nicas_max.yaml 1>> test_${ic}.log 2>> test.err
+  if [ $? -ne 0 ] ; then
+    echo " Test #${ic}: test_romsjedi_bump_parameters_cor_nicas_max ........  *Failed"
+  else
+    echo " Test #${ic}: test_romsjedi_bump_parameters_cor_nicas_max ........  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   ${MPIrun} ../../bin/romsjedi_error_covariance_toolbox.x testinput/parameters_diffusion.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_parameters_diffusion ............  *Failed"
+    echo " Test #${ic}: test_romsjedi_parameters_diffusion .................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_parameters_diffusion ............  Passed"
+    echo " Test #${ic}: test_romsjedi_parameters_diffusion .................  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   ${MPIrun} ../../bin/romsjedi_error_covariance_toolbox.x testinput/parameters_bump_loc_cor_nicas.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_bump_loc_parameters_cor_nicas ... *Failed"
+    echo " Test #${ic}: test_romsjedi_bump_loc_parameters_cor_nicas ........  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_bump_loc_parameters_cor_nicas ...  Passed"
+    echo " Test #${ic}: test_romsjedi_bump_loc_parameters_cor_nicas ........  Passed"
+  fi
+
+  ic=$(( $ic + 1 ))
+  mpirun -n 12 ../../bin/romsjedi_error_covariance_toolbox.x testinput/parameters_bump_loc_cor_nicas_max.yaml 1>> test_${ic}.log 2>> test.err
+  if [ $? -ne 0 ] ; then
+    echo " Test #${ic}: test_romsjedi_bump_loc_parameters_cor_nicas_max ....  *Failed"
+  else
+    echo " Test #${ic}: test_romsjedi_bump_loc_parameters_cor_nicas_max ....  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   ${MPIrun} ../../bin/romsjedi_error_covariance_toolbox.x testinput/dirac_cov_nicas.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_dirac_cov_nicas .................  *Failed"
+    echo " Test #${ic}: test_romsjedi_dirac_cov_nicas ......................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_dirac_cov_nicas .................  Passed"
+    echo " Test #${ic}: test_romsjedi_dirac_cov_nicas ......................  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   ${MPIrun} ../../bin/romsjedi_error_covariance_toolbox.x testinput/dirac_diffusion.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_dirac_cov_nicas .................  *Failed"
+    echo " Test #${ic}: test_romsjedi_dirac_diffusion ......................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_dirac_cov_nicas .................  Passed"
+    echo " Test #${ic}: test_romsjedi_dirac_diffusion ......................  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   mpirun -n 12 ../../bin/romsjedi_ens_pert.x testinput/ens_perturbation.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_ens_pert ........................  *Failed"
+    echo " Test #${ic}: test_romsjedi_ens_pert .............................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_ens_pert ........................  Passed"
+    echo " Test #${ic}: test_romsjedi_ens_pert .............................  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   ${MPIrun} ../../bin/romsjedi_ens_meanandvariance.x testinput/ens_meanandvariance.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_ens_meanandvariance .............  *Failed"
+    echo " Test #${ic}: test_romsjedi_ens_meanandvariance ..................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_ens_meanandvariance .............  Passed"
+    echo " Test #${ic}: test_romsjedi_ens_meanandvariance ..................  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   ${MPIrun} ../../bin/romsjedi_ens_recenter.x testinput/ens_recenter.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_ens_recenter ....................  *Failed"
+    echo " Test #${ic}: test_romsjedi_ens_recenter .........................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_ens_recenter ....................  Passed"
+    echo " Test #${ic}: test_romsjedi_ens_recenter .........................  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   mpirun -n 6 ../../bin/romsjedi_ens_hofx.x testinput/ens_hofx.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_ens_hofx ........................  *Failed"
+    echo " Test #${ic}: test_romsjedi_ens_hofx .............................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_ens_hofx ........................  Passed"
+    echo " Test #${ic}: test_romsjedi_ens_hofx .............................  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   ${MPIrun} ../../bin/romsjedi_error_covariance_toolbox.x testinput/dirac_ens_cov_nicas.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_dirac_ens_cov_nicas .............  *Failed"
+    echo " Test #${ic}: test_romsjedi_dirac_ens_cov_nicas ..................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_dirac_ens_cov_nicas .............  Passed"
+    echo " Test #${ic}: test_romsjedi_dirac_ens_cov_nicas ..................  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   ${MPIrun} ../../bin/romsjedi_var.x testinput/3dvar_zero_obs.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_3dvar_zero_obs ..................  *Failed"
+    echo " Test #${ic}: test_romsjedi_3dvar_zero_obs .......................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_3dvar_zero_obs ..................  Passed"
+    echo " Test #${ic}: test_romsjedi_3dvar_zero_obs .......................  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   ${MPIrun} ../../bin/romsjedi_var.x testinput/3dvar_regular_single_obs.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_3dvar_regular_single_obs ........ *Failed"
+    echo " Test #${ic}: test_romsjedi_3dvar_regular_single_obs .............  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_3dvar_regular_single_obs ........  Passed"
+    echo " Test #${ic}: test_romsjedi_3dvar_regular_single_obs .............  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   ${MPIrun} ../../bin/romsjedi_var.x testinput/3dfgat_single_obs.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_3dfgat_single_obs .............. *Failed"
+    echo " Test #${ic}: test_romsjedi_3dfgat_single_obs ....................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_3dfgat_single_obs ..............  Passed"
+    echo " Test #${ic}: test_romsjedi_3dfgat_single_obs ....................  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   ${MPIrun} ../../bin/romsjedi_var.x testinput/4dfgat_single_obs.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_4dfgat_single_obs .............. *Failed"
+    echo " Test #${ic}: test_romsjedi_4dfgat_single_obs ....................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_4dfgat_single_obs ..............  Passed"
+    echo " Test #${ic}: test_romsjedi_4dfgat_single_obs ....................  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   ${MPIrun} ../../bin/romsjedi_var.x testinput/3dvar_regular_primal.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_3dvar_regular_primal ............  *Failed"
+    echo " Test #${ic}: test_romsjedi_3dvar_regular_primal .................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_3dvar_regular_primal ............  Passed"
+    echo " Test #${ic}: test_romsjedi_3dvar_regular_primal .................  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   ${MPIrun} ../../bin/romsjedi_var.x testinput/3dvar_regular_dual.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_3dvar_regular_dual ..............  *Failed"
+    echo " Test #${ic}: test_romsjedi_3dvar_regular_dual ...................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_3dvar_regular_dual ..............  Passed"
+    echo " Test #${ic}: test_romsjedi_3dvar_regular_dual ...................  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   ${MPIrun} ../../bin/romsjedi_var.x testinput/3dfgat_primal.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_3dfgat_primal ................... *Failed"
+    echo " Test #${ic}: test_romsjedi_3dfgat_primal ........................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_3dfgat_primal ...................  Passed"
+    echo " Test #${ic}: test_romsjedi_3dfgat_primal ........................  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   ${MPIrun} ../../bin/romsjedi_var.x testinput/3dfgat_dual.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_3dfgat_dual .....................  *Failed"
+    echo " Test #${ic}: test_romsjedi_3dfgat_dual ..........................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_3dfgat_dual .....................  Passed"
+    echo " Test #${ic}: test_romsjedi_3dfgat_dual ..........................  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   ${MPIrun} ../../bin/romsjedi_var.x testinput/4dfgat_primal.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_4dfgat_primal ................... *Failed"
+    echo " Test #${ic}: test_romsjedi_4dfgat_primal ........................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_4dfgat_primal ...................  Passed"
+    echo " Test #${ic}: test_romsjedi_4dfgat_primal ........................  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   ${MPIrun} ../../bin/romsjedi_var.x testinput/4dfgat_dual.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_4dfgat_dual .....................  *Failed"
+    echo " Test #${ic}: test_romsjedi_4dfgat_dual ..........................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_4dfgat_dual .....................  Passed"
+    echo " Test #${ic}: test_romsjedi_4dfgat_dual ..........................  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   mpirun -n 12 ../../bin/romsjedi_var.x testinput/4dvar_bump_single_obs.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_4dvar_bump_single_obs ...........  *Failed"
+    echo " Test #${ic}: test_romsjedi_4dvar_bump_single_obs ................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_4dvar_bump_single_obs ...........  Passed"
+    echo " Test #${ic}: test_romsjedi_4dvar_bump_single_obs ................  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   mpirun -n 12 ../../bin/romsjedi_var.x testinput/4dvar_diffusion_single_obs.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_4dvar_diffusion_single_obs ......  *Failed"
+    echo " Test #${ic}: test_romsjedi_4dvar_diffusion_single_obs ...........  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_4dvar_diffusion_single_obs ......  Passed"
+    echo " Test #${ic}: test_romsjedi_4dvar_diffusion_single_obs ...........  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   mpirun -n 12 ../../bin/romsjedi_var.x testinput/4dvar_bump.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_4dvar_bump ......................  *Failed"
+    echo " Test #${ic}: test_romsjedi_4dvar_bump ...........................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_4dvar_bump ......................  Passed"
+    echo " Test #${ic}: test_romsjedi_4dvar_bump ...........................  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   mpirun -n 12 ../../bin/romsjedi_var.x testinput/4dvar_diffusion.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_4dvar_diffusion .................  *Failed"
+    echo " Test #${ic}: test_romsjedi_4dvar_diffusion ......................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_4dvar_diffusion .................  Passed"
+    echo " Test #${ic}: test_romsjedi_4dvar_diffusion ......................  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   ${MPIrun} ../../bin/romsjedi_var.x testinput/3denvar_regular_primal.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_3denvar_regular_primal ..........  *Failed"
+    echo " Test #${ic}: test_romsjedi_3denvar_regular_primal ...............  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_3denvar_regular_primal ..........  Passed"
+    echo " Test #${ic}: test_romsjedi_3denvar_regular_primal ...............  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   ${MPIrun} ../../bin/romsjedi_var.x testinput/3denvar_regular_dual.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_3denvar_regular_dual ............  *Failed"
+    echo " Test #${ic}: test_romsjedi_3denvar_regular_dual .................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_3denvar_regular_dual ............  Passed"
+    echo " Test #${ic}: test_romsjedi_3denvar_regular_dual .................  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   ${MPIrun} ../../bin/romsjedi_var.x testinput/3denvar_4dfgat_primal.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_3denvar_4dfgat_primal ...........  *Failed"
+    echo " Test #${ic}: test_romsjedi_3denvar_4dfgat_primal ................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_3denvar_4dfgat_primal ...........  Passed"
+    echo " Test #${ic}: test_romsjedi_3denvar_4dfgat_primal ................  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   ${MPIrun} ../../bin/romsjedi_var.x testinput/3denvar_4dfgat_dual.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_3denvar_4dfgat_dual .............  *Failed"
+    echo " Test #${ic}: test_romsjedi_3denvar_4dfgat_dual ..................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_3denvar_4dfgat_dual .............  Passed"
+    echo " Test #${ic}: test_romsjedi_3denvar_4dfgat_dual ..................  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   ${MPIrun} ../../bin/romsjedi_var.x testinput/3dhyb_regular_primal.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_3dhyb_regular_primal ............  *Failed"
+    echo " Test #${ic}: test_romsjedi_3dhyb_regular_primal .................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_3dhyb_regular_primal ............  Passed"
+    echo " Test #${ic}: test_romsjedi_3dhyb_regular_primal .................  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   ${MPIrun} ../../bin/romsjedi_var.x testinput/3dhyb_regular_dual.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_3dhyb_regular_dual ..............  *Failed"
+    echo " Test #${ic}: test_romsjedi_3dhyb_regular_dual ...................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_3dhyb_regular_dual ..............  Passed"
+    echo " Test #${ic}: test_romsjedi_3dhyb_regular_dual ...................  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   ${MPIrun} ../../bin/romsjedi_var.x testinput/3dhyb_4dfgat_primal.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_3dhyb_4dfgat_primal .............  *Failed"
+    echo " Test #${ic}: test_romsjedi_3dhyb_4dfgat_primal ..................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_3dhyb_4dfgat_primal .............  Passed"
+    echo " Test #${ic}: test_romsjedi_3dhyb_4dfgat_primal ..................  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   ${MPIrun} ../../bin/romsjedi_var.x testinput/3dhyb_4dfgat_dual.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_3dhyb_4dfgat_dual ...............  *Failed"
+    echo " Test #${ic}: test_romsjedi_3dhyb_4dfgat_dual ....................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_3dhyb_4dfgat_dual ...............  Passed"
+    echo " Test #${ic}: test_romsjedi_3dhyb_4dfgat_dual ....................  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   ${MPIrun} ../../bin/romsjedi_letkf.x testinput/letkf.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_letkf ...........................  *Failed"
+    echo " Test #${ic}: test_romsjedi_letkf ................................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_letkf ...........................  Passed"
+    echo " Test #${ic}: test_romsjedi_letkf ................................  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   ${MPIrun} ../../bin/romsjedi_letkf.x testinput/letkf_split_observer.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_letkf_split_observer ............  *Failed"
+    echo " Test #${ic}: test_romsjedi_letkf_split_observer .................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_letkf_split_observer ............  Passed"
+    echo " Test #${ic}: test_romsjedi_letkf_split_observer .................  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   ${MPIrun} ../../bin/romsjedi_letkf.x testinput/letkf_split_solver.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_letkf_split_solver ..............  *Failed"
+    echo " Test #${ic}: test_romsjedi_letkf_split_solver ...................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_letkf_split_solver ..............  Passed"
+    echo " Test #${ic}: test_romsjedi_letkf_split_solver ...................  Passed"
   fi
 
   ic=$(( $ic + 1 ))
   ${MPIrun} ../../bin/romsjedi_var.x testinput/letkf_3dhyb.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_letkf_3dhyb .....................  *Failed"
+    echo " Test #${ic}: test_romsjedi_letkf_3dhyb ..........................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_letkf_3dhyb .....................  Passed"
+    echo " Test #${ic}: test_romsjedi_letkf_3dhyb ..........................  Passed"
   fi
 
 fi

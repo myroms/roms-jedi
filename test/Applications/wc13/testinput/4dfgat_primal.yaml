@@ -54,12 +54,13 @@ cost function:
       read:
         drivers:
           multivariate strategy: univariate
-          read global nicas: true
+          read global nicas: false
+          read local nicas: true
         model:
           level for 2d variables: last            
           do not cross mask boundaries: true
         nicas:
-          interpolation in global file: true
+          interpolation in global file: false
         io:
           data directory: Data/bump
           files prefix: wc13_bump_cor

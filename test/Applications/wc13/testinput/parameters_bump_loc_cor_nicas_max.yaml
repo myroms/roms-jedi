@@ -9,7 +9,7 @@
 
 geometry:
   project_dir: Data/wc13
-  roms_stdinp: roms_wc13_20040103.in
+  roms_stdinp: roms_wc13_20040103_max.in
   fields metadata: Data/fields_metadata.yaml
   ng: 1                                           # ROMS nested grid number
 
@@ -36,7 +36,7 @@ background error:
     calibration:
       io:
         data directory: Data/bump_loc                 # BUMP localization data directory
-        files prefix: wc13_bump_loc
+        files prefix: wc13_bump_loc_max
       drivers:
         multivariate strategy: duplicated             # NICAS multivariate strategy
         compute nicas: true                           # Run NICAS driver
@@ -71,7 +71,7 @@ background error:
           - socn
 
 test:
-  reference filename: testref/parameters_bump_loc_cor_nicas.ref
+  reference filename: testref/parameters_bump_loc_cor_nicas_max.ref
   float relative tolerance: 1.0e-3
-  log output filename: testoutput/parameters_bump_loc_cor_nicas.log
-  test output filename: testoutput/parameters_bump_loc_cor_nicas.out
+  log output filename: testoutput/parameters_bump_loc_cor_nicas_max.log
+  test output filename: testoutput/parameters_bump_loc_cor_nicas_max.out

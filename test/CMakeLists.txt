@@ -208,6 +208,13 @@ ecbuild_add_test(
   LIBS         romsjedi )
 
 ecbuild_add_test(
+  TARGET       test_romsjedi_bump_parameters_cor_nicas_max
+  MPI          ${MPI_NCPUS_MAX}
+  COMMAND      romsjedi_error_covariance_toolbox.x
+  ARGS         testinput/parameters_bump_cor_nicas_max.yaml
+  LIBS         romsjedi )
+
+ecbuild_add_test(
   TARGET       test_romsjedi_parameters_diffusion
   MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_error_covariance_toolbox.x
@@ -219,6 +226,13 @@ ecbuild_add_test(
   MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_error_covariance_toolbox.x
   ARGS         testinput/parameters_bump_loc_cor_nicas.yaml
+  LIBS         romsjedi )
+
+ecbuild_add_test(
+  TARGET       test_romsjedi_bump_loc_parameters_cor_nicas_max
+  MPI          ${MPI_NCPUS_MAX}
+  COMMAND      romsjedi_error_covariance_toolbox.x
+  ARGS         testinput/parameters_bump_loc_cor_nicas_max.yaml
   LIBS         romsjedi )
 
 ecbuild_add_test(
