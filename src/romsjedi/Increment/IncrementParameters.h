@@ -18,7 +18,6 @@
 #include <string>
 #include <vector>
 
-#include "oops/base/WriteParametersBase.h"
 #include "oops/util/parameters/OptionalParameter.h"
 #include "oops/util/parameters/Parameter.h"
 #include "oops/util/parameters/Parameters.h"
@@ -88,8 +87,8 @@ namespace romsjedi {
   /// of the schema, but 'frequency' is not. For now, an alias
   /// 'data_frequency' is created to avoid conflicting schemas.
 
-  class IncrementWriteParameters : public oops::WriteParametersBase {
-    OOPS_CONCRETE_PARAMETERS(IncrementWriteParameters, WriteParametersBase)
+  class IncrementWriteParameters : public oops::Parameters {
+    OOPS_CONCRETE_PARAMETERS(IncrementWriteParameters, Parameters)
 
    public:
     oops::OptionalParameter<std::string> Bparameter{

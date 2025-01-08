@@ -19,7 +19,6 @@
 
 #include "oops/base/ParameterTraitsVariables.h"
 #include "oops/base/Variables.h"
-#include "oops/base/WriteParametersBase.h"
 #include "oops/util/DateTime.h"
 #include "oops/util/Duration.h"
 #include "oops/util/parameters/OptionalParameter.h"
@@ -74,8 +73,8 @@ namespace romsjedi {
   /// of the schema, but 'frequency' is not. For now, an alias
   /// 'data_frequency' is created to avoid conflicting schemas.
 
-  class StateWriteParameters : public oops::WriteParametersBase {
-    OOPS_CONCRETE_PARAMETERS(StateWriteParameters, WriteParametersBase)
+  class StateWriteParameters : public oops::Parameters {
+    OOPS_CONCRETE_PARAMETERS(StateWriteParameters, Parameters)
 
    public:
     oops::OptionalParameter<bool> singleTimeRecord{
