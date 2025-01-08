@@ -7,7 +7,10 @@ geometry:
   ng: 1                                        # ROMS nested grid number
   iterator dimension: 2
 
-inc variables: [ssh, tocn, socn]
+inc variables:
+- sea_surface_height_above_geoid
+- sea_water_temperature
+- sea_water_salinity
 
 increment test:
   date: 2004-01-03T00:00:00Z

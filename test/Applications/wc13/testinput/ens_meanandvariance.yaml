@@ -14,7 +14,12 @@ ensemble:
       fields_filename: wc13_roms_ensemble_mem%mem%_2004-01-03-00.00.00.nc
       fields_record: 1                         # 2004-01-03T00:00:00Z
 #     fields_record: 49                        # 2004-01-07T00:00:00Z
-      state variables: &roms_state [ssh, uocn, vocn, tocn, socn]
+      state variables: &roms_state
+      - sea_surface_height_above_geoid
+      - sea_water_x_velocity                   # C-grid
+      - sea_water_y_velocity                   # C-grid
+      - sea_water_temperature
+      - sea_water_salinity
     pattern: %mem%
     nmembers: 10
     zero padding: 3

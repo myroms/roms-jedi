@@ -1,19 +1,25 @@
 Initial state: 
   Valid time: 2004-01-03T00:00:00Z
-                               ssh   Min=    -0.308315583562010   Max=     0.286840385413477   Mean=    -0.012262843112917
-                              uocn   Min=    -0.446971292212522   Max=     0.456028027289591   Mean=     0.002573124697403
-                              vocn   Min=    -0.551383331006554   Max=     0.329409302652754   Mean=    -0.006725988600569
-                              tocn   Min=     1.113311588764191   Max=    19.084773177741511   Mean=     6.431578263591262
-                              socn   Min=    31.424749178294221   Max=    34.860175852775910   Mean=    33.937827475946520
-                            zocn_r   Min= -4947.840267560327447   Max=    -0.245773375763171   Mean= -1072.647945779628117
+                              sea_surface_height_above_geoid   Min=    -0.308315583562010   Max=     0.286840385413477   Mean=    -0.012262843112917
+                                        sea_water_x_velocity   Min=    -0.446971292212522   Max=     0.456028027289591   Mean=     0.002573124697403
+                                        sea_water_y_velocity   Min=    -0.551383331006554   Max=     0.329409302652754   Mean=    -0.006725988600569
+                                       sea_water_temperature   Min=     1.113311588764191   Max=    19.084773177741511   Mean=     6.431578263591262
+                                          sea_water_salinity   Min=    31.424749178294221   Max=    34.860175852775910   Mean=    33.937827475946520
+                            model_level_depth_at_cell_center   Min= -4947.840267560327447   Max=    -0.245773375763171   Mean= -1072.647945779628117
+  vertical_diffusion_coefficient_of_temperature_in_sea_water   Min=     0.000010000000000   Max=     0.000010000000000   Mean=     0.000010000000000
+     vertical_diffusion_coefficient_of_salinity_in_sea_water   Min=     0.000010000000000   Max=     0.000010000000000   Mean=     0.000010000000000
+                 vertical_viscosity_coefficient_of_sea_water   Min=     0.000010000000000   Max=     0.000010000000000   Mean=     0.000010000000000
 Final state: 
   Valid time: 2004-01-07T00:00:00Z
-                               ssh   Min=    -0.239462697013542   Max=     0.268565625821816   Mean=     0.006951198478117
-                              uocn   Min=    -0.452967782548771   Max=     0.538425972133424   Mean=     0.008630533540248
-                              vocn   Min=    -0.423227649348278   Max=     1.017519078876978   Mean=     0.003377509757574
-                              tocn   Min=     1.113297358155251   Max=    18.907842465364386   Mean=     6.387885495852155
-                              socn   Min=    31.690835954873645   Max=    34.689663764036425   Mean=    33.935213237446568
-                            zocn_r   Min= -4947.838910489944283   Max=    -0.209924557249294   Mean= -1072.643167025089951
+                              sea_surface_height_above_geoid   Min=    -0.239462697013542   Max=     0.268565625821816   Mean=     0.006951198478117
+                                        sea_water_x_velocity   Min=    -0.452967782548771   Max=     0.538425972133424   Mean=     0.008630533540248
+                                        sea_water_y_velocity   Min=    -0.423227649348278   Max=     1.017519078876978   Mean=     0.003377509757574
+                                       sea_water_temperature   Min=     1.113297358155251   Max=    18.907842465364386   Mean=     6.387885495852155
+                                          sea_water_salinity   Min=    31.690835954873645   Max=    34.689663764036425   Mean=    33.935213237446568
+                            model_level_depth_at_cell_center   Min= -4947.838910489944283   Max=    -0.209924557249294   Mean= -1072.643167025089951
+  vertical_diffusion_coefficient_of_temperature_in_sea_water   Min=     0.000010000000000   Max=     0.010000000000000   Mean=     0.000943571212879
+     vertical_diffusion_coefficient_of_salinity_in_sea_water   Min=     0.000010000000000   Max=     0.010000000000000   Mean=     0.000943571212879
+                 vertical_viscosity_coefficient_of_sea_water   Min=     0.000022381218542   Max=     0.010000000000000   Mean=     0.000917077546426
 H(x): 
 InsituTS nobs= 160 Min=2.101192196238214, Max=34.584138316007426, RMS=24.622669339646421
 

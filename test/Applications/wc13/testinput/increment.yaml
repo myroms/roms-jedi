@@ -9,17 +9,28 @@ geometry:
   fields metadata: Data/fields_metadata.yaml
   ng: 1                                        # ROMS nested grid number
 
-inc variables: [ssh, uocn, vocn, tocn, socn]
+inc variables:
+- sea_surface_height_above_geoid
+- sea_water_x_velocity                         # C-grid
+- sea_water_y_velocity                         # C-grid
+- sea_water_temperature
+- sea_water_salinity
 
 increment test:
   date: 2004-01-03T00:00:00Z
-  skip atlas: true
-  skip rms by level test: true
+  skip atlas: 1
+  skip boundaries: false                       # random field initialization
   dirac:
-    ixdir: [25]
-    iydir: [20]
-    izdir: [1]
-    ifdir: [ssh]
+    ifdir:                                     # State field to perturb
+    - sea_surface_height_above_geoid
+    ixdir:                                     # field X-index impulse location
+    - 25
+    iydir:                                     # field Y-index impulse location
+    - 20
+    izdir:                                     # field Z-index impulse location
+    - 1
+
+test atlas interface: false                    # because all variables must be on A-grid
 
 test:
   reference filename: testref/increment.ref

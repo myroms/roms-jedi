@@ -1,4 +1,4 @@
-! (C) Copyright 2017-2024 UCAR
+! (C) Copyright 2017-2025 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -237,7 +237,7 @@ SUBROUTINE roms_trajectory_set (self, state, vdate)
       self%fields(i)%MaxValue = fstats(2)
       self%fields(i)%Checksum = fstats(3)
       IF (LdebugTrajectory .and. (my_comm%rank() .eq. 0))                      &
-        PRINT 20, self%fields(i)%metadata%getval_name,                         &
+        PRINT 20, self%fields(i)%metadata%short_name,                          &
                   self%fields(i)%metadata%io_name,                             &
                   fstats(1), fstats(2), INT(fstats(3),KIND=8)
     END IF

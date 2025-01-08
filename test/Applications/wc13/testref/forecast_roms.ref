@@ -1,24 +1,32 @@
 Initial state: 
   Valid time: 2004-01-03T00:00:00Z
-                               ssh   Min=    -0.279513704894890   Max=     0.221655332464472   Mean=    -0.012596751185210
-                            u2docn   Min=    -0.131252241341794   Max=     0.200719797187564   Mean=    -0.000444420800809
-                            v2docn   Min=    -0.222975398383573   Max=     0.177798918688555   Mean=    -0.000934699921709
-                              uocn   Min=    -0.446971292212522   Max=     0.456028027289591   Mean=     0.001900466381031
-                              vocn   Min=    -0.551383331006554   Max=     0.329409302652754   Mean=    -0.008603990000599
-                              tocn   Min=     1.113311665316177   Max=    18.374451897040654   Mean=     6.394165342246291
-                              socn   Min=    31.913544665185302   Max=    34.689664764584805   Mean=    33.941371661127505
-                             Ktocn   Min=     0.000010000000000   Max=     0.651978113997239   Mean=     0.003204976323812
-                             Ksocn   Min=     0.000010000000000   Max=     0.651978113997239   Mean=     0.003204976323812
-                             Kvocn   Min=     0.000010000000000   Max=     0.099938258749165   Mean=     0.001999479476404
+                              sea_surface_height_above_geoid   Min=    -0.279513704894890   Max=     0.221655332464472   Mean=    -0.012596751185210
+                                        sea_water_x_velocity   Min=    -0.446971292212522   Max=     0.456028027289591   Mean=     0.001900466381031
+                                        sea_water_y_velocity   Min=    -0.551383331006554   Max=     0.329409302652754   Mean=    -0.008603990000599
+                                       sea_water_temperature   Min=     1.113311665316177   Max=    18.374451897040654   Mean=     6.394165342246291
+                                          sea_water_salinity   Min=    31.913544665185302   Max=    34.689664764584805   Mean=    33.941371661127505
+                             barotropic_sea_water_x_velocity   Min=    -0.131252241341794   Max=     0.200719797187564   Mean=    -0.000444420800809
+                             barotropic_sea_water_y_velocity   Min=    -0.222975398383573   Max=     0.177798918688555   Mean=    -0.000934699921709
+        sea_water_time_average_of_barotropic_x_velocity_flux   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
+        sea_water_time_average_of_barotropic_y_velocity_flux   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
+   sea_water_correct_barotropic_x_velocity_flux_for_coupling   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
+   sea_water_correct_barotropic_y_velocity_flux_for_coupling   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
+                 vertical_viscosity_coefficient_of_sea_water   Min=     0.000010000000000   Max=     0.099938258749165   Mean=     0.001999479476404
+  vertical_diffusion_coefficient_of_temperature_in_sea_water   Min=     0.000010000000000   Max=     0.651978113997239   Mean=     0.003204976323812
+     vertical_diffusion_coefficient_of_salinity_in_sea_water   Min=     0.000010000000000   Max=     0.651978113997239   Mean=     0.003204976323812
 Final state: 
   Valid time: 2004-01-07T00:00:00Z
-                               ssh   Min=    -0.256684197981012   Max=     0.241544844066324   Mean=    -0.003043878701598
-                            u2docn   Min=    -0.232717796739600   Max=     0.190166094825123   Mean=    -0.001446431946874
-                            v2docn   Min=    -0.214193522808893   Max=     0.323640967564621   Mean=     0.004309698557844
-                              uocn   Min=    -0.431038351229719   Max=     0.543605247403408   Mean=     0.008454893147490
-                              vocn   Min=    -0.424531928664566   Max=     0.988330516985094   Mean=     0.003434999042333
-                              tocn   Min=     1.113297358155251   Max=    18.314431824710201   Mean=     6.352358974852228
-                              socn   Min=    31.898658091644123   Max=    34.689663764036425   Mean=    33.940120312803423
-                             Ktocn   Min=     0.000010000000000   Max=     0.010000000000000   Mean=     0.000995276523134
-                             Ksocn   Min=     0.000010000000000   Max=     0.010000000000000   Mean=     0.000995276523134
-                             Kvocn   Min=     0.000022381218542   Max=     0.010000000000000   Mean=     0.000967303373002
+                              sea_surface_height_above_geoid   Min=    -0.256684197981012   Max=     0.241544844066324   Mean=    -0.003043878701598
+                                        sea_water_x_velocity   Min=    -0.431038351229719   Max=     0.543605247403408   Mean=     0.008454893147490
+                                        sea_water_y_velocity   Min=    -0.424531928664566   Max=     0.988330516985094   Mean=     0.003434999042333
+                                       sea_water_temperature   Min=     1.113297358155251   Max=    18.314431824710201   Mean=     6.352358974852228
+                                          sea_water_salinity   Min=    31.898658091644123   Max=    34.689663764036425   Mean=    33.940120312803423
+                             barotropic_sea_water_x_velocity   Min=    -0.232717796739600   Max=     0.190166094825123   Mean=    -0.001446431946874
+                             barotropic_sea_water_y_velocity   Min=    -0.214193522808893   Max=     0.323640967564621   Mean=     0.004309698557844
+        sea_water_time_average_of_barotropic_x_velocity_flux   Min= -20318262.302752692252398   Max= 32704009.181352056562901   Mean= 55398.414415065810317
+        sea_water_time_average_of_barotropic_y_velocity_flux   Min= -33531815.168718121945858   Max= 18849949.235372100025415   Mean= -451725.658662466157693
+   sea_water_correct_barotropic_x_velocity_flux_for_coupling   Min= -20321546.651075486093760   Max= 32705612.099870778620243   Mean= 55487.945759252237622
+   sea_water_correct_barotropic_y_velocity_flux_for_coupling   Min= -33534671.312100339680910   Max= 18846942.092275373637676   Mean= -451818.644546345516574
+                 vertical_viscosity_coefficient_of_sea_water   Min=     0.000022381218542   Max=     0.010000000000000   Mean=     0.000967303373002
+  vertical_diffusion_coefficient_of_temperature_in_sea_water   Min=     0.000010000000000   Max=     0.010000000000000   Mean=     0.000995276523134
+     vertical_diffusion_coefficient_of_salinity_in_sea_water   Min=     0.000010000000000   Max=     0.010000000000000   Mean=     0.000995276523134

@@ -1,4 +1,4 @@
-! (C) Copyright 2017-2024 UCAR
+! (C) Copyright 2017-2025 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -34,7 +34,11 @@ USE fckit_log_module
 
 USE type_fieldset,              ONLY : fieldset_type
 
-USE mod_ncparam,                ONLY : p2dvar, r2dvar, u2dvar, v2dvar
+!> ROMS module association.
+
+USE mod_param,                  ONLY : p2dvar, r2dvar, u2dvar, v2dvar
+
+!> ROMS-JEDI interface module association.
 
 USE roms_fields_metadata_mod,   ONLY : roms_fields_metadata
 USE roms_fieldsutils_mod,       ONLY : LdebugGeometry, roms_get_env
@@ -163,7 +167,7 @@ TYPE, PUBLIC :: roms_geom
 
   ! ROMS-JEDI state variables metadata.
 
-  TYPE (roms_fields_metadata)           :: fieldsinfo
+  TYPE (roms_fields_metadata)           :: FieldsInfo
 
   CONTAINS
 
@@ -241,7 +245,7 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
   ! Get YAML metadata filename and create ROMS fields metadata object.
 
   CALL f_conf%get_or_die ("fields metadata", flds_meta)
-  CALL self%fieldsinfo%create (flds_meta)
+  CALL self%FieldsInfo%create (flds_meta)
   IF (allocated(flds_meta)) deallocate (flds_meta)
 
   ! Get nested grid number from configuration YAML file.
@@ -641,7 +645,7 @@ SUBROUTINE roms_geom_clone (self, other)
 
   self%project_dir = other%project_dir
   self%roms_stdinp = other%roms_stdinp
-  self%fieldsinfo  = other%fieldsinfo
+  self%FieldsInfo  = other%FieldsInfo
 
   ! Iterator dimension.
 
@@ -693,7 +697,7 @@ SUBROUTINE roms_geom_clone (self, other)
 
   ! Clone fields metadata.
 
-  CALL other%fieldsinfo%clone (self%fieldsinfo)
+  CALL other%FieldsInfo%clone (self%FieldsInfo)
 
   ! Clone ATLAS indices mapping.
 

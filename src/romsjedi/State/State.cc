@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2017-2024 UCAR
+ * (C) Copyright 2017-2025 UCAR
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -262,7 +262,7 @@ namespace romsjedi {
     roms_state_gstats_f90(toFortran(),
                           nf, zstat[0]);
     for (int jj = 0; jj < nf; ++jj) {
-      os << std::endl << std::right << std::setw(34) << vars_[jj]
+      os << std::endl << std::right << std::setw(60) << vars_[jj]
                       << std::setprecision(15)
                       << "   Min= "      << std::fixed << std::setw(21) <<
                                             std::right << zstat[4*jj]

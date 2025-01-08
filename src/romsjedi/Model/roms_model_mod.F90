@@ -1,4 +1,4 @@
-! (C) Copyright 2017-2024 UCAR
+! (C) Copyright 2017-2025 UCAR
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0. 
@@ -472,39 +472,60 @@ SUBROUTINE jedi2roms_state (ng, kernel, Tindex2d, Tindex3d, state, DateString)
       IF (LdebugModel) THEN
         CALL field%stats (fstats)
         IF (my_comm%rank() .eq. 0)                                             &
-          PRINT 20, field%metadata%getval_name, field%metadata%io_name,        &
+          PRINT 20, field%metadata%short_name, field%metadata%io_name,         &
                     fstats(1), fstats(2), INT(fstats(3),KIND=8)
       END IF
 
       SELECT CASE (field%name)
 
-         CASE ('ssh')                                   !> free-surface
-           OCEAN(ng)%zeta(:,:,Tindex2d) = field%val(:,:,1)
+        CASE ('ssh',                                                           &
+              'sea_surface_height_above_geoid')
+          OCEAN(ng)%zeta(:,:,Tindex2d) = field%val(:,:,1)
 
-         CASE ('u2docn')                                !> 2D U-momentum
-           OCEAN(ng)%ubar(:,:,Tindex2d) = field%val(:,:,1)
+        CASE ('u2docn',                                                        &
+              'barotropic_sea_water_x_velocity')
+          OCEAN(ng)%ubar(:,:,Tindex2d) = field%val(:,:,1)
 
-         CASE ('v2docn')                                 !> 2D V-momentum
-           OCEAN(ng)%vbar(:,:,Tindex2d) = field%val(:,:,1)
+        CASE ('v2docn',                                                        &
+              'barotropic_sea_water_y_velocity')
+          OCEAN(ng)%vbar(:,:,Tindex2d) = field%val(:,:,1)
 
-         CASE ('uocn')                                  !> 3D U-momentum
-           OCEAN(ng)%u(:,:,:,Tindex3d) = field%val
+        CASE ('uaocn',                                                         &
+              'eastward_sea_water_velocity')
+          OCEAN(ng)%ua = field%val                     !> A-grid
 
-         CASE ('vocn')                                  !> 3D V-momentum
-           OCEAN(ng)%v(:,:,:,Tindex3d) = field%val
+        CASE ('uocn',                                                          &
+              'sea_water_x_velocity')
+          OCEAN(ng)%u(:,:,:,Tindex3d) = field%val      !> C-grid
 
-         CASE ('tocn', 'socn')                          !> tracers (T,S)
-           itrc = roms_tracer_index(field%name)
-           OCEAN(ng)%t(:,:,:,Tindex3d,itrc) = field%val
+        CASE ('vaocn',                                                         &
+              'northward_sea_water_velocity')
+          OCEAN(ng)%va = field%val                     !> A-grid
 
-         CASE ('Ktocn', 'Ksocn')                        !> vertical diffusion
-           itrc = roms_tracer_index(field%name)
-           MIXING(ng)%Akt(:,:,:,itrc) = field%val
+        CASE ('vocn',                                                          &
+              'sea_water_y_velocity')
+          OCEAN(ng)%v(:,:,:,Tindex3d) = field%val
 
-         CASE ('Kvocn')                                 !> vertical viscosity
-           MIXING(ng)%Akv(:,:,:) = field%val
+        CASE ('tocn',                                                          &
+              'sea_water_temperature',                                         &
+              'sea_water_potential_temperature',                               &
+              'socn',                                                          &
+              'sea_water_salinity')
+          itrc = roms_tracer_index(field%name)
+          OCEAN(ng)%t(:,:,:,Tindex3d,itrc) = field%val
 
-         CASE DEFAULT
+        CASE ('Ktocn',                                                         &
+              'vertical_diffusion_coefficient_of_temperature_in_sea_water',    &
+              'Ksocn',                                                         &
+              'vertical_diffusion_coefficient_of_salinity_in_sea_water')
+          itrc = roms_tracer_index(field%name)
+          MIXING(ng)%Akt(:,:,:,itrc) = field%val
+
+        CASE ('Kvocn',                                                         &
+              'vertical_viscosity_coefficient_of_sea_water')
+          MIXING(ng)%Akv(:,:,:) = field%val
+
+        CASE DEFAULT
            ! Only fields relevant to state vector are loaded.
       END SELECT
     END DO
@@ -563,57 +584,87 @@ SUBROUTINE roms2jedi_state (ng, kernel, Tindex2d, Tindex3d, state, geom,       &
 
       SELECT CASE (field%name)
 
-        CASE ('ssh')                                      !> free-surface:
+        CASE ('ssh',                                                           &
+              'sea_surface_height_above_geoid')
           field%val(:,:,1) = COUPLING(ng)%Zt_avg1         !> time-averaged
 
-        CASE ('u2docn')                                   !> 2D U-momentum:
-          field%val(:,:,1) = OCEAN(ng)%ubar(:,:,Tindex2d) !> from step3d_uv
+        CASE ('u2docn',                                                        &
+              'barotropic_sea_water_x_velocity')
+          field%val(:,:,1) = OCEAN(ng)%ubar(:,:,Tindex2d) !> step3d_uv
 
-        CASE ('v2docn')                                   !> 2D V-momentum:
-          field%val(:,:,1) = OCEAN(ng)%vbar(:,:,Tindex2d) !> from step3d_uv
+        CASE ('v2docn',                                                        &
+              'barotropic_sea_water_y_velocity')
+          field%val(:,:,1) = OCEAN(ng)%vbar(:,:,Tindex2d) !> step3d_uv
 
-        CASE ('DU_avg1')                                  !> averaged 2D U-flux
+        CASE ('DU_avg1',                                                       &
+              'sea_water_time_average_of_barotropic_x_velocity_flux')
           field%val(:,:,1) = COUPLING(ng)%DU_avg1
 
-        CASE ('DV_avg1')                                  !> averaged 2D V-flux
+        CASE ('DV_avg1',                                                       &
+              'sea_water_time_average_of_barotropic_y_velocity_flux')
           field%val(:,:,1) = COUPLING(ng)%DV_avg1
 
-        CASE ('DU_avg2')                                  !> U-flux 3D coupling
+        CASE ('DU_avg2',                                                       &
+              'sea_water_correct_barotropic_x_velocity_flux_for_coupling')
           field%val(:,:,1) = COUPLING(ng)%DU_avg2
 
-        CASE ('DV_avg2')                                  !> V-flux 3D coupling
+        CASE ('DV_avg2',                                                       &
+              'sea_water_correct_barotropic_y_velocity_flux_for_coupling')
           field%val(:,:,1) = COUPLING(ng)%DV_avg2
 
-        CASE ('uocn')                                     !> 3D U-momentum
-          field%val        = OCEAN(ng)%u(:,:,:,Tindex3d)
+        CASE ('uaocn',                                                         &
+              'eastward_sea_water_velocity')
+          field%val        = OCEAN(ng)%ua                 !> A-grid
 
-        CASE ('vocn')                                     !> 3D V-momentum
-          field%val        = OCEAN(ng)%v(:,:,:,Tindex3d)
+        CASE ('uocn',                                                          &
+              'sea_water_x_velocity')
+          field%val        = OCEAN(ng)%u(:,:,:,Tindex3d)  !> C-grid
 
-        CASE ('tocn', 'socn')                             !> tracers (T,S)
+        CASE ('vaocn',                                                         &
+              'northward_sea_water_velocity')
+          field%val        = OCEAN(ng)%va                 !> A-grid
+
+        CASE ('vocn',                                                          &
+              'sea_water_y_velocity')
+          field%val        = OCEAN(ng)%v(:,:,:,Tindex3d)  !> C-grid
+
+        CASE ('tocn',                                                          &
+              'sea_water_temperature',                                         &
+              'sea_water_potential_temperature',                               &
+              'socn',                                                          &
+              'sea_water_salinity')
           itrc = roms_tracer_index(field%name)
           field%val        = OCEAN(ng)%t(:,:,:,Tindex3d,itrc)
 
-        CASE ('Hzocn')                                    !> level thickness
+        CASE ('Hzocn',                                                         &
+              'model_level_thickness_at_cell_center')
           field%val        = GRID(ng)%Hz
 
-        CASE ('z0ocn_r')                                  !> unvarying rho-depths
+        CASE ('z0ocn_r',                                                       &
+              'unvarying_model_level_depth_at_cell_center')
           field%val        = GRID(ng)%z0_r
 
-        CASE ('z0ocn_w')                                  !> unvarying w-depths
+        CASE ('z0ocn_w',                                                       &
+              'unvarying_model_level_depth_at_cell_top_face')
           field%val        = GRID(ng)%z0_w
 
-        CASE ('zocn_r')                                   !> varying rho-depths
+        CASE ('zocn_r',                                                        &
+              'model_level_depth_at_cell_center')
           field%val        = GRID(ng)%z_r
 
-        CASE ('zocn_w')                                   !> varying w-depths
+        CASE ('zocn_w',                                                        &
+              'model_level_depth_at_cell_top_face')
           field%val        = GRID(ng)%z_w
 
-        CASE ('Ktocn', 'Ksocn')                           !> vertical diffusion
+        CASE ('Ktocn',                                                         &
+              'vertical_diffusion_coefficient_of_temperature_in_sea_water',    &
+              'Ksocn',                                                         &
+              'vertical_diffusion_coefficient_of_salinity_in_sea_water')
           itrc = roms_tracer_index(field%name)
           field%val        = MIXING(ng)%Akt(:,:,:,itrc)
 
-        CASE ('Kvocn')                                    !> vertical viscosity
+        CASE ('Kvocn',                                                         &
+              'vertical_viscosity_coefficient_of_sea_water')
           field%val        = MIXING(ng)%Akv
 
         CASE DEFAULT
@@ -625,7 +676,7 @@ SUBROUTINE roms2jedi_state (ng, kernel, Tindex2d, Tindex3d, state, geom,       &
       IF (LdebugModel) THEN
         CALL field%stats (fstats)
         IF (my_comm%rank() .eq. 0)                                             &
-          PRINT 20, field%metadata%getval_name, field%metadata%io_name,        &
+          PRINT 20, field%metadata%short_name, field%metadata%io_name,         &
                     fstats(1), fstats(2), INT(fstats(3), KIND=8)
       END IF
 

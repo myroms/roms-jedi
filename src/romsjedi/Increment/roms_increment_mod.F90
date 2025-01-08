@@ -1,4 +1,4 @@
-! (C) Copyright 2020-2023 UCAR
+! (C) Copyright 2020-2025 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -23,10 +23,14 @@ USE fckit_mpi_module,           ONLY : fckit_mpi_comm
 USE oops_variables_mod,         ONLY : oops_variables
 USE random_mod,                 ONLY : normal_distribution
 
+!> ROMS-JEDI interface module association.
+
 USE datetime_mod
 
-USE mod_param,                  ONLY : DOMAIN
-USE mod_ncparam,                ONLY : r2dvar
+USE mod_param,                  ONLY : r2dvar, DOMAIN
+
+!> ROMS-JEDI interface module association.
+
 USE roms_field_mod,             ONLY : roms_field
 USE roms_fields_mod,            ONLY : roms_fields
 USE roms_fieldsutils_mod,       ONLY : LdebugFields
@@ -78,25 +82,37 @@ SUBROUTINE roms_increment_random (self)
 
   TYPE (roms_field), pointer                    :: field
 
+  logical                                       :: Lcomputational
   integer, parameter                            :: rseed = 1
-  integer                                       :: IstrD, IendD, JstrD, JendD
+  integer                                       :: Istr, Iend, Jstr, Jend
   integer                                       :: i, k
   real(kind_real), parameter                    :: rmean = 0.0_kind_real
   real(kind_real), parameter                    :: rstd  = 1.0_kind_real
 
-  ! Set random values for interior and boundary points.
+  ! Set switch to initialize computational of data points.
+
+  Lcomputational = .FALSE.
+
+  ! Set random values for Computational or Data points.
 
   DO i = 1, SIZE(self%fields)
     field => self%fields(i)
 
     field%val = 0.0_kind_real
 
-    IstrD = field%bounds%IstrD
-    IendD = field%bounds%IendD
-    JstrD = field%bounds%JstrD
-    JendD = field%bounds%JendD
-
-    CALL normal_distribution (field%val(IstrD:IendD, JstrD:JendD, :),          &
+    IF (Lcomputational) THEN
+      Istr = field%bounds%IstrC              ! Computational indices:
+      Iend = field%bounds%IendC              !   interior points
+      Jstr = field%bounds%JstrC              !   (Adjoint need zero boundaries)
+      Jend = field%bounds%JendC
+    ELSE
+      Istr = field%bounds%IstrD              ! Data indices:
+      Iend = field%bounds%IendD              !   interior plus boundary points
+      Jstr = field%bounds%JstrD
+      Jend = field%bounds%JendD
+    END IF
+      
+    CALL normal_distribution (field%val(Istr:Iend, Jstr:Jend, :),              &
                               rmean, rstd, rseed)
   END DO
 
@@ -152,7 +168,21 @@ SUBROUTINE roms_increment_getpoint (self, geoiter, values)
   DO nf = 1, SIZE(self%fields)
     field => self%fields(nf)
     SELECT CASE (field%name)
-      CASE ('ssh', 'uocn', 'vocn', 'tocn', 'socn')
+      CASE ('ssh',                                                             &
+            'sea_surface_height_above_geoid',                                  &
+            'uocn',                                                            &
+            'sea_water_x_velocity',                                            &
+            'vocn',                                                            &  
+            'sea_water_y_velocity',                                            &
+            'uaocn',                                                           &
+            'eastward_sea_water_velocity',                                     &
+            'vaocn',                                                           &
+            'northward_sea_water_velocity',                                    &
+            'tocn',                                                            &
+            'sea_water_temperature',                                           &
+            'sea_water_potential_temperature',                                 &
+            'socn',                                                            &
+            'sea_water_salinity')
         nk = field%N
         values(ic+1:ic+nk) = field%val(geoiter%Iindex, geoiter%Jindex,:)
         ic = ic + nk
@@ -179,7 +209,21 @@ SUBROUTINE roms_increment_setpoint (self, geoiter, values)
   DO nf = 1, SIZE(self%fields)
     field => self%fields(nf)
     SELECT CASE (field%name)
-      CASE ('ssh', 'uocn', 'vocn', 'tocn', 'socn')
+      CASE ('ssh',                                                             &
+            'sea_surface_height_above_geoid',                                  &
+            'uocn',                                                            &
+            'sea_water_x_velocity',                                            &
+            'vocn',                                                            &  
+            'sea_water_y_velocity',                                            &
+            'uaocn',                                                           &
+            'eastward_sea_water_velocity',                                     &
+            'vaocn',                                                           &
+            'northward_sea_water_velocity',                                    &
+            'tocn',                                                            &
+            'sea_water_temperature',                                           &
+            'sea_water_potential_temperature',                                 &
+            'socn',                                                            &
+            'sea_water_salinity')
         nk = field%N
         field%val(geoiter%Iindex, geoiter%Jindex,:) = values(ic+1:ic+nk)
         ic = ic + nk
@@ -202,7 +246,7 @@ SUBROUTINE roms_increment_dirac (self, f_conf)
   integer,                             allocatable :: izdir(:)
   integer                                          :: IstrD, IendD, JstrD, JendD
   integer                                          :: n, ndir
-  character (len=32),                  allocatable :: ifdir(:)
+  character (len=80),                  allocatable :: ifdir(:)
   character (len=:),                   allocatable :: fieldname(:)
 
 
@@ -242,16 +286,16 @@ SUBROUTINE roms_increment_dirac (self, f_conf)
   JendD = self%geom%bounds(r2dvar)%JendD
 
   IF (LdebugFields .and. (my_comm%rank() .eq. 0)) THEN
-    PRINT 10, 'ROMS_DEBUG: roms_increment::dirac: tile = ', self%geom%tile,    &
-              '  IstrD = ', IstrD,                                             &
-              ', IendD = ', IendD,                                             &
-              ', JstrD = ', JstrD,                                             &
-              ', JendD = ', JendD,                                             &
-              ', ixdir = ', ixdir,                                             &
-              ', iydir = ', iydir,                                             &
-              ', izdir = ', iydir,                                             &
-              ', ifdir = ', ifdir
-    10 FORMAT (a, i3, 7(a, i0, 1x), a, a)
+    PRINT '(a,i0,4(a,i0,1x))', 'ROMS_DEBUG: roms_increment::dirac: tile = ',   &
+                               self%geom%tile,                                 &
+                               ', IstrD = ', IstrD,                            &
+                               ', IendD = ', IendD,                            &
+                               ', JstrD = ', JstrD,                            &
+                               ', JendD = ', JendD
+    PRINT '(2x,a,*(1x,i0,","))', 'ixdir = ', (ixdir(n), n=1,ndir)
+    PRINT '(2x,a,*(1x,i0,","))', 'iydir = ', (iydir(n), n=1,ndir)
+    PRINT '(2x,a,*(1x,i0,","))', 'izdir = ', (izdir(n), n=1,ndir)
+    PRINT '(2x,a,*(1x,a ,","))', 'ifdir = ', (TRIM(ifdir(n)), n=1,ndir)
   END IF
 
   ! Setup Diracs.

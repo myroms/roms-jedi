@@ -12,17 +12,38 @@ forecast length: &ForecastLength PT96H         # 96 hours (4 days) window ending
 
 model:
   name: ROMS
-  model variables: [ssh, uocn, vocn, tocn, socn]
   tstep: PT1800S                               # WC13 has a 30 minutes timestep
 # tstep: PT6H                                  # WC13 has a 30 minutes timestep
   simulation length: *ForecastLength
 
+  model variables:
+  - sea_surface_height_above_geoid
+  - sea_water_x_velocity                       # C-grid
+  - sea_water_y_velocity                       # C-grid
+  - sea_water_temperature
+  - sea_water_salinity
+
 initial condition:
+  date: &initial_date 2004-01-03T00:00:00Z
   fields_dir: Data/wc13/input
   fields_filename: wc13_roms_ini_20040103.nc   # initial fields for 2004-01-03T00:00:00Z
   fields_record: 1
-  state variables: [ssh, u2docn, v2docn, uocn, vocn, tocn, socn, Ktocn, Ksocn, Kvocn]
-  date: &initial_date 2004-01-03T00:00:00Z
+
+  state variables:
+  - sea_surface_height_above_geoid
+  - sea_water_x_velocity                       # C-grid
+  - sea_water_y_velocity                       # C-grid
+  - sea_water_temperature
+  - sea_water_salinity
+  - barotropic_sea_water_x_velocity
+  - barotropic_sea_water_y_velocity
+  - sea_water_time_average_of_barotropic_x_velocity_flux
+  - sea_water_time_average_of_barotropic_y_velocity_flux
+  - sea_water_correct_barotropic_x_velocity_flux_for_coupling
+  - sea_water_correct_barotropic_y_velocity_flux_for_coupling
+  - vertical_viscosity_coefficient_of_sea_water
+  - vertical_diffusion_coefficient_of_temperature_in_sea_water
+  - vertical_diffusion_coefficient_of_salinity_in_sea_water
 
 output:
   file_policy: PT98H                           # single output file with 49 records (see NOTES)

@@ -10,16 +10,29 @@ forecast length: &ForecastLength PT96H         # 96 hours (4 days) window ending
                                                # or other smaller interval
 model:
   name: ROMS
-  model variables: [ssh, uocn, vocn, tocn, socn]
   tstep: PT1800S                               # WC13 has a 30 minutes timestep
   simulation length: *ForecastLength
+
+  model variables:
+  - sea_surface_height_above_geoid
+  - sea_water_x_velocity                                         # C-grid
+  - sea_water_y_velocity                                         # C-grid
+  - sea_water_temperature
+  - sea_water_salinity
 
 initial condition:
   date: 2004-01-03T00:00:00Z
   fields_dir: Data/wc13/input
   fields_filename: wc13_roms_ini_20040103.nc   # initial fields for 2004-01-03T00:00:00Z
   fields_record: 1
-  state variables: [ssh, uocn, vocn, tocn, socn, zocn_r]
+
+  state variables:
+  - sea_surface_height_above_geoid
+  - sea_water_x_velocity                                         # C-grid
+  - sea_water_y_velocity                                         # C-grid
+  - sea_water_temperature
+  - sea_water_salinity
+  - model_level_depth_at_cell_center
 
 time window:
   begin: 2004-01-03T00:00:00Z
@@ -141,61 +154,61 @@ observations:
     obs error:
       covariance model: diagonal
 
-  - obs space:
-      name: SurfaceUV
-      obsdatain:
-        engine:
-          type: H5File
-          obsfile: Data/wc13/obs/wc13_uv_sur_20040103.nc4
-      obsdataout:
-        engine:
-          type: H5File
-          obsfile: Data/makeobs/wc13_truth_uv_sur.nc4
-      simulated variables: [waterSurfaceZonalVelocity,
-                            waterSurfaceMeridionalVelocity]
-      observed variables:  [waterSurfaceZonalVelocity,
-                            waterSurfaceMeridionalVelocity]
-    obs operator:
-      name: Identity
-      observation alias file: testinput/obsop_name_map.yaml
-    obs error:
-      covariance model: diagonal
+# - obs space:
+#     name: SurfaceUV
+#     obsdatain:
+#       engine:
+#         type: H5File
+#         obsfile: Data/wc13/obs/wc13_uv_sur_20040103.nc4
+#     obsdataout:
+#       engine:
+#         type: H5File
+#         obsfile: Data/makeobs/wc13_truth_uv_sur.nc4
+#     simulated variables: [waterSurfaceZonalVelocity,
+#                           waterSurfaceMeridionalVelocity]
+#     observed variables:  [waterSurfaceZonalVelocity,
+#                           waterSurfaceMeridionalVelocity]
+#   obs operator:
+#     name: Identity
+#     observation alias file: testinput/obsop_name_map.yaml
+#   obs error:
+#     covariance model: diagonal
 
-  - obs space:
-      name: SurfaceU
-      obsdatain:
-        engine:
-          type: H5File
-          obsfile: Data/wc13/obs/wc13_usur_20040103.nc4
-      obsdataout:
-        engine:
-          type: H5File
-          obsfile: Data/makeobs/wc13_truth_usur.nc4
-      simulated variables: [waterSurfaceZonalVelocity]
-      observed variables:  [waterSurfaceZonalVelocity]
-    obs operator:
-      name: Identity
-      observation alias file: testinput/obsop_name_map.yaml
-    obs error:
-      covariance model: diagonal
+# - obs space:
+#     name: SurfaceU
+#     obsdatain:
+#       engine:
+#         type: H5File
+#         obsfile: Data/wc13/obs/wc13_usur_20040103.nc4
+#     obsdataout:
+#       engine:
+#         type: H5File
+#         obsfile: Data/makeobs/wc13_truth_usur.nc4
+#     simulated variables: [waterSurfaceZonalVelocity]
+#     observed variables:  [waterSurfaceZonalVelocity]
+#   obs operator:
+#     name: Identity
+#     observation alias file: testinput/obsop_name_map.yaml
+#   obs error:
+#     covariance model: diagonal
 
-  - obs space:
-      name: SurfaceV
-      obsdatain:
-        engine:
-          type: H5File
-          obsfile: Data/wc13/obs/wc13_vsur_20040103.nc4
-      obsdataout:
-        engine:
-          type: H5File
-          obsfile: Data/makeobs/wc13_truth_vsur.nc4
-      simulated variables: [waterSurfaceMeridionalVelocity]
-      observed variables:  [waterSurfaceMeridionalVelocity]
-    obs operator:
-      name: Identity
-      observation alias file: testinput/obsop_name_map.yaml
-    obs error:
-      covariance model: diagonal
+# - obs space:
+#     name: SurfaceV
+#     obsdatain:
+#       engine:
+#         type: H5File
+#         obsfile: Data/wc13/obs/wc13_vsur_20040103.nc4
+#     obsdataout:
+#       engine:
+#         type: H5File
+#         obsfile: Data/makeobs/wc13_truth_vsur.nc4
+#     simulated variables: [waterSurfaceMeridionalVelocity]
+#     observed variables:  [waterSurfaceMeridionalVelocity]
+#   obs operator:
+#     name: Identity
+#     observation alias file: testinput/obsop_name_map.yaml
+#   obs error:
+#     covariance model: diagonal
 
 #  - obs operator:
 #      name: Simulate

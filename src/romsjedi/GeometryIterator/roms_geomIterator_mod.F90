@@ -1,5 +1,5 @@
 !
-! (C) Copyright 2019-2021 UCAR
+! (C) Copyright 2019-2025 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -21,7 +21,11 @@ USE iso_c_binding
 
 USE kinds
 
-USE mod_ncparam,   ONLY : r2dvar
+!> ROMS module association.
+
+USE mod_param,     ONLY : r2dvar
+
+!> ROMS-JEDI interface module association.
 
 USE roms_geom_mod, ONLY : roms_geom
 

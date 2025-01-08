@@ -13,8 +13,14 @@ background:
   fields_dir: Data/wc13/input
   fields_filename: wc13_roms_ini_20040103.nc   
   fields_record: 1                                    # initial fields
-  state variables: [ssh, tocn, socn]
   date: &date 2004-01-03T00:00:00Z                    # initial fields date
+
+  state variables: &roms_state
+  - sea_surface_height_above_geoid
+  - sea_water_x_velocity                              # C-grid
+  - sea_water_y_velocity                              # C-grid
+  - sea_water_temperature
+  - sea_water_salinity
 
 # In SABER, by default, all the length scales are defined as the half-witdh
 # Gaspari-Cohn (1999) support radius, c. The relationship with the Daley (1991)
@@ -26,10 +32,16 @@ background error:
   covariance model: SABER
   saber central block:
     saber block name: diffusion
-    active variables: &rho_vars [ssh, tocn, socn]
+
+    active variables: &roms_analysis
+    - sea_surface_height_above_geoid
+    - sea_water_temperature
+    - sea_water_salinity
+
     fields metadata:
-      ssh:
+      sea_surface_height_above_geoid:
         vert_coord: vert_coord_2d
+
     calibration:
       normalization:
         iterations: 30000                             # Randomization approach

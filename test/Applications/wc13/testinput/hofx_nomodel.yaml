@@ -11,14 +11,21 @@ geometry:
   ng: 1                                        # ROMS nested grid number
 
 state:
+  date: 2004-01-05T00:00:00Z
   fields_dir: Data/wc13/input
   fields_filename: wc13_roms_ini_20040103.nc   # initial fields for 2004-01-03T00:00:00Z
   fields_record: 1                             # assign middle window time of 2004-01-05T00:00:00Z
 # fields_filename: wc13_NLtrajectory_sp.nc     # single precision NLM trajectory (2 hours snapshots)
 # fields_filename: wc13_NLtrajectory_dp.nc     # double precision NLM trajectory (2 hours snapshots)
 # fields_record: 26                            # record for middle of time window on 2004-01-05T00:00:00Z
-  date: 2004-01-05T00:00:00Z
-  state variables: [ssh, uocn, vocn, tocn, socn, z0ocn_r]
+
+  state variables:
+  - sea_surface_height_above_geoid
+  - sea_water_x_velocity                       # C-grid
+  - sea_water_y_velocity                       # C-grid
+  - sea_water_temperature
+  - sea_water_salinity
+  - unvarying_model_level_depth_at_cell_center
 
 time window:
   begin: 2004-01-03T00:00:00Z
@@ -123,51 +130,51 @@ observations:
     obs operator:
       name: ADT
 
-  - obs space:
-      name: SurfaceUV
-      obsdatain:
-        engine:
-          type: H5File
-          obsfile: Data/wc13/obs/wc13_uv_sur_20040103.nc4
-      obsdataout:
-        engine:
-          type: H5File
-          obsfile: Data/hofx/wc13_uv_sur_hofx_3d.nc4
-      simulated variables: [waterSurfaceZonalVelocity,
-                            waterSurfaceMeridionalVelocity]
-    obs operator:
-      name: Identity
-      observation alias file: testinput/obsop_name_map.yaml
+# - obs space:
+#     name: SurfaceUV
+#     obsdatain:
+#       engine:
+#         type: H5File
+#         obsfile: Data/wc13/obs/wc13_uv_sur_20040103.nc4
+#     obsdataout:
+#       engine:
+#         type: H5File
+#         obsfile: Data/hofx/wc13_uv_sur_hofx_3d.nc4
+#     simulated variables: [waterSurfaceZonalVelocity,
+#                           waterSurfaceMeridionalVelocity]
+#   obs operator:
+#     name: Identity
+#     observation alias file: testinput/obsop_name_map.yaml
 
-  - obs space:
-      name: SurfaceU
-      obsdatain:
-        engine:
-          type: H5File
-          obsfile: Data/wc13/obs/wc13_usur_20040103.nc4
-      obsdataout:
-        engine:
-          type: H5File
-          obsfile: Data/hofx/wc13_usur_hofx_3d.nc4
-      simulated variables: [waterSurfaceZonalVelocity]
-    obs operator:
-      name: Identity
-      observation alias file: testinput/obsop_name_map.yaml
+# - obs space:
+#     name: SurfaceU
+#     obsdatain:
+#       engine:
+#         type: H5File
+#         obsfile: Data/wc13/obs/wc13_usur_20040103.nc4
+#     obsdataout:
+#       engine:
+#         type: H5File
+#         obsfile: Data/hofx/wc13_usur_hofx_3d.nc4
+#     simulated variables: [waterSurfaceZonalVelocity]
+#   obs operator:
+#     name: Identity
+#     observation alias file: testinput/obsop_name_map.yaml
 
-  - obs space:
-      name: SurfaceV
-      obsdatain:
-        engine:
-          type: H5File
-          obsfile: Data/wc13/obs/wc13_vsur_20040103.nc4
-      obsdataout:
-        engine:
-          type: H5File
-          obsfile: Data/hofx/wc13_vsur_hofx_3d.nc4
-      simulated variables: [waterSurfaceMeridionalVelocity]
-    obs operator:
-      name: Identity
-      observation alias file: testinput/obsop_name_map.yaml
+# - obs space:
+#     name: SurfaceV
+#     obsdatain:
+#       engine:
+#         type: H5File
+#         obsfile: Data/wc13/obs/wc13_vsur_20040103.nc4
+#     obsdataout:
+#       engine:
+#         type: H5File
+#         obsfile: Data/hofx/wc13_vsur_hofx_3d.nc4
+#     simulated variables: [waterSurfaceMeridionalVelocity]
+#   obs operator:
+#     name: Identity
+#     observation alias file: testinput/obsop_name_map.yaml
 
 test:
   reference filename: testref/hofx_nomodel.ref

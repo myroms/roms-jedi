@@ -1,4 +1,4 @@
-! (C) Copyright 2021-2022 UCAR
+! (C) Copyright 2021-2025 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -19,6 +19,12 @@ USE fckit_configuration_module, ONLY : fckit_configuration,                  &
                                        fckit_yamlconfiguration
 USE fckit_pathname_module,      ONLY : fckit_pathname
 
+! ROMS modules association.
+
+USE mod_param,                  ONLY : r2dvar, r3dvar,                       &
+                                       u2dvar, u3dvar,                       &
+                                       v2dvar, v3dvar, w3dvar
+
 implicit none
 
 ! ------------------------------------------------------------------------------
@@ -27,18 +33,18 @@ implicit none
 
 TYPE, PUBLIC :: roms_field_metadata
 
-  logical                        :: masked              !< if interpolating, apply land mask?
+  logical                        :: masked       !< Land/Sea mask switch for
+                                                 !<   interpolation
+  integer                        :: Cgrid        !< ROMS C-grid classification
 
-  integer                        :: Cgrid               !< ROMS C-grid classification
-
-  character (len=1)              :: gtype               !< C-grid type: 'r', 'u', 'v' or 'w'
-  character (len=:), allocatable :: levels              !< "surface", or "full_ocn"
-  character (len=:), allocatable :: name                !< ROMS internal field name
-  character (len=:), allocatable :: getval_name         !< UFO variable name
-  character (len=:), allocatable :: getval_name_surface !< If 3D, UFO surface name
-  character (len=:), allocatable :: io_file             !< component file domain: 'ocn'
-  character (len=:), allocatable :: io_name             !< I/O NetCDF file variable name
-  character (len=:), allocatable :: property            !< physical property: "none" or "positive_definite"
+  character (len=:), allocatable :: name         !< field standard name
+  character (len=:), allocatable :: surface_name !< field surface name
+  character (len=:), allocatable :: short_name   !< field short name
+  character (len=:), allocatable :: io_name      !< NetCDF variable name
+  character (len=:), allocatable :: io_file      !< component kernel: 'ocn'
+  character (len=:), allocatable :: property     !< 'none' | 'positive_definite'
+  character (len=:), allocatable :: levels       !< 'surface' | 'full_ocn'
+  character (len=1)              :: gtype        !< C-grid: 'r', 'u', 'v' or 'w'
 
 END TYPE roms_field_metadata
 
@@ -67,8 +73,6 @@ CONTAINS
 
 SUBROUTINE roms_fields_metadata_create (self, filename)
 
-  USE mod_param, ONLY : r2dvar, r3dvar, u2dvar, u3dvar, v2dvar, v3dvar, w3dvar
-
   CLASS (roms_fields_metadata), intent(inout) :: self
   character (len=:), allocatable              :: filename
 
@@ -92,6 +96,44 @@ SUBROUTINE roms_fields_metadata_create (self, filename)
 
     CALL conf_list(i)%get_or_die ("name", self%metadata(i)%name)
 
+    IF (.not.conf_list(i)%get("surface name", str)) THEN
+      self%metadata(i)%surface_name = "N/A"
+    ELSE
+      lstr = LEN_TRIM(str)
+      allocate ( character(LEN=lstr) :: self%metadata(i)%surface_name )
+      self%metadata(i)%surface_name = str
+      deallocate (str)
+    END IF
+
+    IF (.not.conf_list(i)%get("short name", str)) THEN
+      lstr = LEN_TRIM(self%metadata(i)%name)
+      allocate ( character(LEN=lstr) :: self%metadata(i)%short_name )
+      self%metadata(i)%short_name = str
+    ELSE 
+      lstr = LEN_TRIM(str)
+      allocate ( character(LEN=lstr) :: self%metadata(i)%short_name )
+      self%metadata(i)%short_name = str
+      deallocate (str)
+    END IF
+
+    IF (.not.conf_list(i)%get("io name", str)) THEN
+      self%metadata(i)%io_name = "N/A"
+    ELSE
+      lstr = LEN_TRIM(str)
+      allocate ( character(LEN=lstr) :: self%metadata(i)%io_name )
+      self%metadata(i)%io_name = str
+      deallocate (str)
+    END IF
+
+    IF (.not.conf_list(i)%get("io file", str)) THEN
+      self%metadata(i)%io_file = "ocn"
+    ELSE
+      lstr = LEN_TRIM(str)
+      allocate ( character(LEN=lstr) :: self%metadata(i)%io_file )
+      self%metadata(i)%io_file = str
+      deallocate (str)
+    END IF
+
     IF (.not.conf_list(i)%get("gtype", str)) THEN
       self%metadata(i)%gtype = 'r'
     ELSE
@@ -112,44 +154,6 @@ SUBROUTINE roms_fields_metadata_create (self, filename)
       lstr = LEN_TRIM(str)
       allocate ( character(LEN=lstr) :: self%metadata(i)%levels )
       self%metadata(i)%levels = str
-      deallocate (str)
-    END IF
-
-    IF (.not.conf_list(i)%get("getval name", str)) THEN
-      lstr = LEN_TRIM(self%metadata(i)%name)
-      allocate ( character(LEN=lstr) :: self%metadata(i)%getval_name )
-      self%metadata(i)%getval_name = self%metadata(i)%name
-    ELSE 
-      lstr = LEN_TRIM(str)
-      allocate ( character(LEN=lstr) :: self%metadata(i)%getval_name )
-      self%metadata(i)%getval_name = str
-      deallocate (str)
-    END IF
-
-    IF (.not.conf_list(i)%get("getval name surface", str)) THEN
-      self%metadata(i)%getval_name_surface = ""
-    ELSE
-      lstr = LEN_TRIM(str)
-      allocate ( character(LEN=lstr) :: self%metadata(i)%getval_name_surface )
-      self%metadata(i)%getval_name_surface = str
-      deallocate (str)
-    END IF
-
-    IF (.not.conf_list(i)%get("io name", str)) THEN
-      self%metadata(i)%io_name = ""
-    ELSE
-      lstr = LEN_TRIM(str)
-      allocate ( character(LEN=lstr) :: self%metadata(i)%io_name )
-      self%metadata(i)%io_name = str
-      deallocate (str)
-    END IF
-
-    IF (.not.conf_list(i)%get("io file", str)) THEN
-      self%metadata(i)%io_file = ""
-    ELSE
-      lstr = LEN_TRIM(str)
-      allocate ( character(LEN=lstr) :: self%metadata(i)%io_file )
-      self%metadata(i)%io_file = str
       deallocate (str)
     END IF
 
@@ -201,26 +205,26 @@ SUBROUTINE roms_fields_metadata_create (self, filename)
 
   DO i = 1, Nfields
     DO j = i+1, Nfields
-      IF ((self%metadata(i)%name .eq.                                        &
-           self%metadata(j)%name) .or.                                       &
-          (self%metadata(i)%name .eq.                                        &
-           self%metadata(j)%getval_name) .or.                                &
-          (self%metadata(i)%name .eq.                                        &
-           self%metadata(j)%getval_name_surface) .or.                        &
-          (self%metadata(i)%getval_name .eq.                                 &
-           self%metadata(j)%name) .or.                                       &
-          (self%metadata(i)%getval_name .eq.                                 &
-           self%metadata(j)%getval_name) .or.                                &
-          (self%metadata(i)%getval_name .eq.                                 &
-           self%metadata(j)%getval_name_surface) .or.                        &
-          ((self%metadata(i)%getval_name_surface .ne. "") .and.              &
-           (self%metadata(i)%getval_name_surface .eq.                        &
-            self%metadata(j)%name) .or.                                      &
-           (self%metadata(i)%getval_name_surface .eq.                        &
-            self%metadata(j)%getval_name))) THEN
+      IF ((self%metadata(i)%name .eq.                                          &
+           self%metadata(j)%name) .or.                                         &
+          (self%metadata(i)%name .eq.                                          &
+           self%metadata(j)%short_name) .or.                                   &
+          (self%metadata(i)%name .eq.                                          &
+           self%metadata(j)%surface_name) .or.                                 &
+          (self%metadata(i)%short_name .eq.                                    &
+           self%metadata(j)%name) .or.                                         &
+          (self%metadata(i)%short_name .eq.                                    &
+           self%metadata(j)%short_name) .or.                                   &
+          (self%metadata(i)%short_name .eq.                                    &
+           self%metadata(j)%surface_name) .or.                                 &
+          ((self%metadata(i)%surface_name .ne. "") .and.                       &
+           (self%metadata(i)%surface_name .eq.                                 &
+            self%metadata(j)%name) .or.                                        &
+           (self%metadata(i)%surface_name .eq.                                 &
+            self%metadata(j)%short_name))) THEN
         str = REPEAT(" ",1024)
-        WRITE (str,*) "Duplicate field metadata: ",                          &
-                      i, self%metadata(i)%name,                              &
+        WRITE (str,*) "Duplicate field metadata: ",                            &
+                      i, self%metadata(i)%name,                                &
                       j, self%metadata(j)%name
         CALL abor1_ftn (TRIM(str))
       END IF
@@ -255,15 +259,16 @@ FUNCTION roms_fields_metadata_get(self, name) RESULT (metadata)
   ! Find the field by any of its internal or GetVaLs names.
 
   DO i = 1, SIZE(self%metadata)
-    IF ((TRIM(self%metadata(i)%name) .eq. TRIM(name)) .or.                   &
-        (TRIM(self%metadata(i)%getval_name) .eq. TRIM(name)) .or.            &
-        (TRIM(self%metadata(i)%getval_name_surface) .eq. TRIM(name))) THEN
+    IF ((TRIM(self%metadata(i)%name) .eq. TRIM(name)) .or.                     &
+        (TRIM(self%metadata(i)%short_name) .eq. TRIM(name)) .or.               &
+        (TRIM(self%metadata(i)%surface_name) .eq. TRIM(name))) THEN
       metadata = self%metadata(i)
       RETURN
     END IF
   END DO
 
-  CALL abor1_ftn ("Unable to find field metadata for: " // TRIM(name))
+  CALL abor1_ftn ('roms_fields_metadata::get: ' //                             &
+                  ' Unable to find field metadata for: ' // TRIM(name))
 
 END FUNCTION roms_fields_metadata_get
 

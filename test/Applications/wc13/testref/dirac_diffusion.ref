@@ -1,11 +1,15 @@
 Input Dirac increment:
   Valid time: 2004-01-03T00:00:00Z
-                               ssh   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.000491883915396
-                              tocn   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.000016396130513
-                              socn   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.000016396130513
+                              sea_surface_height_above_geoid   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.000491883915396
+                                        sea_water_x_velocity   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
+                                        sea_water_y_velocity   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
+                                       sea_water_temperature   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.000016396130513
+                                          sea_water_salinity   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.000016396130513
 Adjoint test for block diffusion passed
 Covariance(SABER) * Increment:
   Valid time: 2004-01-03T00:00:00Z
-                               ssh   Min=     0.000000000000000   Max=     1.005038688994913   Mean=     0.018006349727634
-                              tocn   Min=     0.000000000000000   Max=     1.005808017175332   Mean=     0.006985140126086
-                              socn   Min=     0.000000000000000   Max=     0.988927903537013   Mean=     0.007915097753606
+                              sea_surface_height_above_geoid   Min=     0.000000000000000   Max=     1.005038688994913   Mean=     0.018006349727634
+                                        sea_water_x_velocity   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
+                                        sea_water_y_velocity   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
+                                       sea_water_temperature   Min=     0.000000000000000   Max=     1.005808017175332   Mean=     0.006985140126086
+                                          sea_water_salinity   Min=     0.000000000000000   Max=     0.988927903537013   Mean=     0.007915097753606

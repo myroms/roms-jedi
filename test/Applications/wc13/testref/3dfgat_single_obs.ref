@@ -1,25 +1,28 @@
 Norm of input parameter StdDev: 7.7717431208294583e+03
 CostJb   : Nonlinear Jb = 0.0000000000000000e+00
-CostJo   : Nonlinear Jo(InsituTS) = 3.1118468990331114e+00, nobs = 2, Jo/n = 1.5559234495165557e+00, err = 4.3293454646615259e-01
-CostJo   : Nonlinear Jo(SST) = 9.1177983424607617e-02, nobs = 1, Jo/n = 9.1177983424607617e-02, err = 4.0000000596046448e-01
-CostJo   : Nonlinear Jo(ADT) = 9.3861023952169953e-01, nobs = 2, Jo/n = 4.6930511976084976e-01, err = 1.9999999552965164e-02
-CostFunction: Nonlinear J = 4.1416351219794185e+00
-RPCGMinimizer: reduction in residual norm = 7.3799021542102401e-15
+CostJo   : Nonlinear Jo(InsituTS) = 3.1332633922325441e+00, nobs = 2, Jo/n = 1.5666316961162721e+00, err = 4.3293454646615259e-01
+CostJo   : Nonlinear Jo(SST) = 8.8005047082389418e-02, nobs = 1, Jo/n = 8.8005047082389418e-02, err = 4.0000000596046448e-01
+CostJo   : Nonlinear Jo(ADT) = 9.3493448715323813e-01, nobs = 2, Jo/n = 4.6746724357661906e-01, err = 1.9999999552965164e-02
+CostFunction: Nonlinear J = 4.1562029264681719e+00
+RPCGMinimizer: reduction in residual norm = 5.4023443433250231e-12
 CostFunction::addIncrement: Analysis: 
   Valid time: 2004-01-05T00:00:00Z
-                               ssh   Min=    -0.269362233387335   Max=     0.234503053286125   Mean=    -0.012709181998199
-                              uocn   Min=    -0.384166488786037   Max=     0.454337087206005   Mean=     0.003334020680236
-                              vocn   Min=    -0.586175370671474   Max=     0.305241815968412   Mean=    -0.004178623791076
-                              tocn   Min=     1.113304510712624   Max=    18.344441860490811   Mean=     6.359039280512668
-                              socn   Min=    31.906101378977628   Max=    34.689664264324591   Mean=    33.942775604264249
-                            zocn_r   Min= -4947.835853558174676   Max=    -0.346119775751609   Mean= -1072.656537833171569
+                              sea_surface_height_above_geoid   Min=    -0.269351080423663   Max=     0.234442229199364   Mean=    -0.012703650658976
+                                        sea_water_x_velocity   Min=    -0.384562666458938   Max=     0.455044127427797   Mean=     0.003328937801206
+                                        sea_water_y_velocity   Min=    -0.584113410142879   Max=     0.304504859179330   Mean=    -0.004178457317425
+                                       sea_water_temperature   Min=     1.113304510712624   Max=    18.344441860490811   Mean=     6.359235541229313
+                                          sea_water_salinity   Min=    31.906101378977628   Max=    34.689664264324591   Mean=    33.942804841794050
+                            model_level_depth_at_cell_center   Min= -4947.835853261582997   Max=    -0.346095843673706   Mean= -1072.656534016193291
+                 vertical_viscosity_coefficient_of_sea_water   Min=     0.000022381218542   Max=     0.010000000000000   Mean=     0.000690715534561
+  vertical_diffusion_coefficient_of_temperature_in_sea_water   Min=     0.000010000000000   Max=     0.010000000000000   Mean=     0.000758560197166
+     vertical_diffusion_coefficient_of_salinity_in_sea_water   Min=     0.000010000000000   Max=     0.010000000000000   Mean=     0.000758560197166
 
 
 
 
 
-CostJb   : Nonlinear Jb = 0.636278217689095
-CostJo   : Nonlinear Jo(InsituTS) = 1.512988274620526, nobs = 2, Jo/n = 0.756494137310263, err = 0.432934546466153
-CostJo   : Nonlinear Jo(SST) = 0.002797177913953, nobs = 1, Jo/n = 0.002797177913953, err = 0.400000005960464
-CostJo   : Nonlinear Jo(ADT) = 0.439447425222883, nobs = 2, Jo/n = 0.219723712611442, err = 0.019999999552965
-CostFunction: Nonlinear J = 2.591511095446457
+CostJb   : Nonlinear Jb = 0.629507603105090
+CostJo   : Nonlinear Jo(InsituTS) = 1.523462579972710, nobs = 2, Jo/n = 0.761731289986355, err = 0.432934546466153
+CostJo   : Nonlinear Jo(SST) = 0.087990832592098, nobs = 1, Jo/n = 0.087990832592098, err = 0.400000005960464
+CostJo   : Nonlinear Jo(ADT) = 0.437726165125711, nobs = 2, Jo/n = 0.218863082562855, err = 0.019999999552965
+CostFunction: Nonlinear J = 2.678687180795610

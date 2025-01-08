@@ -16,15 +16,27 @@ model test:
 
 model:
   name: ROMS
-  model variables: [ssh, uocn, vocn, tocn, socn]
   tstep: PT1800S
   simulation length: *ForecastLength
+
+  model variables:
+  - sea_surface_height_above_geoid
+  - sea_water_x_velocity                                         # C-grid
+  - sea_water_y_velocity                                         # C-grid
+  - sea_water_temperature
+  - sea_water_salinity
 
 initial condition:
   date: 2004-01-03T00:00:00Z
   fields_dir: Data/wc13/input
   fields_filename: wc13_roms_ini_20040103.nc
   fields_record: 1
-  state variables: [ssh, uocn, vocn, tocn, socn]
+
+  state variables:
+  - sea_surface_height_above_geoid
+  - sea_water_x_velocity                                         # C-grid
+  - sea_water_y_velocity                                         # C-grid
+  - sea_water_temperature
+  - sea_water_salinity
 
 model aux control:

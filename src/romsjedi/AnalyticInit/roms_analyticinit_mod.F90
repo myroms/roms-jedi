@@ -1,5 +1,5 @@
 !
-! (C) Copyright 2017-2023 UCAR
+! (C) Copyright 2017-2025 UCAR
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0. 
@@ -12,8 +12,7 @@
 !!          intepolation of the state at the observation locations.  The
 !!          analytical formulas need the bathymetry and the level depths
 !!          at the observation locations. Their values are already available
-!!          in the GeoVaLs object. They were interpolated in **GetValues**
-!!          routine **roms_getvalues_fillgeovals**.
+!!          in the GeoVaLs object.
 !!
 !! \author  Hernan G. Arango (Rutgers University)
 !! \date    July 2021
@@ -124,14 +123,14 @@ SUBROUTINE roms_analytic_geovals (self, locs, method, T0, S0, U0, V0)
               'sss', 'SSS',                                                    &
               'sea_surface_salinity')
           value = S0
-        CASE ('uocn',                                                          &
+        CASE ('uocn', 'uaocn',                                                 &
               'eastward_sea_water_velocity',                                   &
               'sea_water_x_velocity',                                          &
               'usur', 'Usur',                                                  &
               'surface_eastward_sea_water_velocity',                           &
               'sea_water_surface_x_velocity')
           value = U0
-        CASE ('vocn',                                                          &
+        CASE ('vocn', 'vaocn',                                                 &
               'northward_sea_water_velocity',                                  &
               'sea_water_y_velocity',                                          &
               'vsur', 'Vsur',                                                  &

@@ -15,13 +15,22 @@ forecast length: &ForecastLength PT96H         # 96 hours (4 days) window ending
                                                # or other smaller interval
 members: 10
 
-perturbed variables: [ssh, tocn, socn]
+perturbed variables:
+- sea_surface_height_above_geoid
+- sea_water_temperature
+- sea_water_salinity
 
 model:
   name: ROMS
-  model variables: &roms_state [ssh, uocn, vocn, tocn, socn]
   tstep: PT1800S
   simulation length: *ForecastLength
+
+  model variables: &roms_state
+  - sea_surface_height_above_geoid
+  - sea_water_x_velocity                       # C-grid
+  - sea_water_y_velocity                       # C-grid
+  - sea_water_temperature
+  - sea_water_salinity
 
 initial condition:
   fields_dir: Data/wc13/input
@@ -34,10 +43,16 @@ background error:
   covariance model: SABER
   saber central block:
     saber block name: BUMP_NICAS
-    active variables: &rho_vars [ssh, tocn, socn]
+
+    active variables:
+    - sea_surface_height_above_geoid
+    - sea_water_temperature
+    - sea_water_salinity
+
     fields metadata:
-      ssh:
+      sea_surface_height_above_geoid:
         vert_coord: vert_coord_2d
+
     read:
       drivers:
         multivariate strategy: univariate
@@ -54,11 +69,12 @@ background error:
       grids:
       - model:
           variables:
-          - ssh
+          - sea_surface_height_above_geoid
       - model:
           variables:
-          - tocn
-          - socn
+          - sea_water_temperature
+          - sea_water_salinity
+
   saber outer blocks:
   - saber block name: StdDev
     read:

@@ -1,4 +1,4 @@
-! (C) Copyright 2017-2024 UCAR
+! (C) Copyright 2017-2025 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://Qwww.apache.org/licenses/LICENSE-2.0.
@@ -139,6 +139,8 @@ END TYPE roms_fields
 
 ! ------------------------------------------------------------------------------
 
+integer, parameter, PUBLIC :: fields_clen = 512
+
 PRIVATE
 
 ! Number of I/O multi-files.
@@ -209,17 +211,27 @@ SUBROUTINE roms_fields_create (self, geom, vars)
 
   DO i = 1, SIZE(self%fields)
     SELECT CASE (self%fields(i)%name)
-      CASE ('AKt', 'AKs', 'AKv')
+      CASE ('AKt', 'Ktocn',                                                    &
+            'vertical_diffusion_coefficient_of_temperature_in_sea_water',      &
+            'AKs', 'Ksocn',                                                    &
+            'vertical_diffusion_coefficient_of_salinity_in_sea_water',         &
+            'AKv', 'Kvocn',                                                    &
+            'vertical_viscosity_coefficient_of_sea_water')
         self%fields(i)%val = 1.0E-5_kind_real
-      CASE ('Hzocn')
+      CASE ('Hz', 'Hzocn',                                                     &
+            'model_level_thickness_at_cell_center')
         self%fields(i)%val = GRID(ng)%Hz
-      CASE ('z0ocn_r')
+      CASE ('z0ocn_r',                                                         &
+            'unvarying_model_level_depth_at_cell_center')
         self%fields(i)%val = GRID(ng)%z0_r
-      CASE ('z0ocn_w')
+      CASE ('z0ocn_w',                                                         &
+            'unvarying_model_level_depth_at_cell_top_face')
         self%fields(i)%val = GRID(ng)%z0_w
-      CASE ('zocn_r')
+      CASE ('z_rho', 'zocn_r',                                                 &
+            'model_level_depth_at_cell_center')
         self%fields(i)%val = GRID(ng)%z_r
-      CASE ('zocn_w')
+      CASE ('z_w', 'zocn_w',                                                   &
+            'model_level_depth_at_cell_top_face')
         self%fields(i)%val = GRID(ng)%z_w
     END SELECT
   END DO
@@ -239,22 +251,27 @@ SUBROUTINE roms_fields_copy (self, rhs)
   CLASS (roms_fields), intent(inout) :: self     !< LHS Fields object
   CLASS (roms_fields), intent(in   ) :: rhs      !< RHS Fields object
 
-  integer                            :: i
+  integer                            :: i, nflds
   real (kind=kind_real)              :: stats(3)
   character(len=:), allocatable      :: vars_str(:)
   TYPE (roms_field), pointer         :: rhs_fld
 
-  ! Initialize the variables based on the names in RHS.
+  ! Report fields to process.
 
   IF (LdebugFields .and. (my_comm%rank() .eq. 0)) THEN
-    PRINT '(a, 6(a,i0))', 'ROMS_DEBUG roms_fields::copy:',                     &
-                          ' tile = ', rhs%geom%f_comm%rank(),                  &
+    nflds = SIZE(self%fields)
+    PRINT '(a)', 'ROMS_DEBUG roms_fields::copy: Copying from RHS to SELF:'
+    PRINT 10,    '  RHS Vars: ', (rhs%fields(i)%metadata%short_name, i=1,nflds)
+    PRINT '(6(a,i0))', '  tile = ', rhs%geom%f_comm%rank(),                    &
                           ', LBi = ', rhs%geom%LBi,                            &
                           ', UBi = ', rhs%geom%UBi,                            &
                           ', LBj = ', rhs%geom%LBj,                            &
                           ', UBj = ', rhs%geom%UBj,                            &
-                          ', N = ', rhs%geom%N
+                          ', 3D N = ', rhs%geom%N
+ 10 FORMAT (a, *(1x,a,','))
   END IF
+
+  ! Initialize the variables based on the names in RHS.
 
   IF (.not. allocated(self%fields)) THEN
     self%geom => rhs%geom
@@ -278,8 +295,9 @@ SUBROUTINE roms_fields_copy (self, rhs)
     IF (LdebugFields) THEN
       CALL rhs_fld%stats (stats)
       IF (my_comm%rank() .eq. 0) THEN
-        PRINT 10, rhs_fld%name, stats(1), stats(2), INT(stats(3))
- 10     FORMAT (2x,'- ',a35,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,  &
+        PRINT 20, rhs_fld%metadata%short_name, stats(1), stats(2),             &
+                  INT(stats(3))
+ 20     FORMAT (2x,'- ',a,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,    &
                 ',  CheckSum = ', i0)
       END IF
     END IF
@@ -365,13 +383,14 @@ SUBROUTINE roms_fields_to_fieldset (self, geom, vars, afieldset)
 
     CALL self%get (vars%variable(ivar), field)
 
-    RHO_VARS : IF (field%metadata%gtype .ne. 'w') THEN
+    RHO_VARS : IF (field%metadata%gtype .eq. 'r') THEN
 
       IF (LdebugFields) THEN
         CALL field%stats (stats)
         IF (geom%f_comm%rank() .eq. 0) THEN
-          PRINT 10, field%name, stats(1), stats(2), INT(stats(3))
- 10       FORMAT (2x,'- ',a35,':',t43,'Min = ',1p,e22.15,                      &
+          PRINT 10, field%metadata%short_name, stats(1), stats(2),             &
+                    INT(stats(3))
+ 10       FORMAT (2x,'- ',a,':',t43,'Min = ',1p,e22.15,                        &
                   ',  Max = ',1p,e22.15,',  CheckSum = ', i0)
         END IF
       END IF
@@ -464,7 +483,7 @@ SUBROUTINE roms_fields_from_fieldset (self, geom, vars, afieldset)
 
     CALL self%get (vars%variable(ivar), field)
 
-    RHO_VARS : IF (field%metadata%gtype .ne. 'w') THEN
+    RHO_VARS : IF (field%metadata%gtype .eq. 'r') THEN
 
       ! Get field from ATLAS.
 
@@ -486,8 +505,9 @@ SUBROUTINE roms_fields_from_fieldset (self, geom, vars, afieldset)
       IF (LdebugFields) THEN
         CALL field%stats (stats)
         IF (geom%f_comm%rank() .eq. 0) THEN
-          PRINT 10, field%name, stats(1), stats(2), INT(stats(3))
- 10       FORMAT (2x,'- ',a35,':',t43,'Min = ',1p,e22.15,                      &
+          PRINT 10, field%metadata%short_name, stats(1), stats(2),             &
+                    INT(stats(3))
+ 10       FORMAT (2x,'- ',a,':',t43,'Min = ',1p,e22.15,                        &
                   ',  Max = ',1p,e22.15,',  CheckSum = ', i0)
         END IF
       END IF
@@ -517,11 +537,9 @@ SUBROUTINE roms_fields_get (self, name, field)
 
   DO i = 1, SIZE(self%fields)
     IF ((TRIM(name) .eq. self%fields(i)%name) .or.                             &
-        (TRIM(name) .eq. self%fields(i)%metadata%getval_name)) THEN
-
+        (TRIM(name) .eq. self%fields(i)%metadata%short_name)) THEN
       field => self%fields(i)
       RETURN
-
     END IF
   END DO
 
@@ -534,20 +552,33 @@ END SUBROUTINE roms_fields_get
 ! ------------------------------------------------------------------------------
 !> Check if field with the given name exists.
 
-FUNCTION roms_fields_has (self, name) RESULT (foundit)
+FUNCTION roms_fields_has (self, name, findex) RESULT (foundit)
 
-  CLASS (roms_fields), intent(in) :: self        !< Fields object
-  character (len=*),   intent(in) :: name        !< Fields name
+  CLASS (roms_fields), intent(in)  :: self        !< Fields object
+  character (len=*),   intent(in)  :: name        !< Fields name
+  integer, optional,   intent(out) :: findex      !< field index in set
 
-  logical                         :: foundit
+  logical                         :: foundit      !< returned value
   integer                         :: i
 
-  foundit = .false.
+  IF (LdebugFields .and. (my_comm%rank() .eq. 0)) THEN
+    PRINT '(2a)', 'ROMS_DEBUG roms_fields::has:  Finding Var = ', TRIM(name)
+    DO i = 1, SIZE(self%fields)
+      PRINT 10, i, TRIM(self%fields(i)%name),                                  &
+                   TRIM(self%fields(i)%metadata%short_name),                   &
+                   TRIM(self%fields(i)%metadata%io_name)
+ 10   FORMAT (2x,'Field ',i2.2,':',2x,'name = ',a,',  short_name = ',a,        &
+              ',  io_name = ',a)
+    END DO
+  END IF
+
+  foundit = .FALSE.
   DO i = 1, SIZE(self%fields)
-    IF ((TRIM(name) .eq. self%fields(i)%name) .or.                              &
-        (TRIM(name) .eq. self%fields(i)%metadata%io_name) .or.                  &
-        (TRIM(name) .eq. self%fields(i)%metadata%getval_name)) THEN
-      foundit = .true.
+    IF ((TRIM(name) .eq. TRIM(self%fields(i)%name)) .or.                       &
+        (TRIM(name) .eq. TRIM(self%fields(i)%metadata%short_name)) .or.        &
+        (TRIM(name) .eq. TRIM(self%fields(i)%metadata%io_name))) THEN
+      foundit = .TRUE.
+      IF (PRESENT(findex)) findex = i
       RETURN
     END IF
   END DO
@@ -649,13 +680,14 @@ SUBROUTINE roms_fields_init_vars (self, vars)
 
   DO i = 1, SIZE(vars)
 
-    ! Get field information from the metadata 'geom%fieldsinfo' object, which
+    ! Get field information from the metadata 'geom%FieldsInfo' object, which
     ! is read from the YAML configuration file elsewhere. Notice that the user
-    ! may specify the variable names as the ROMS-JEDI internal value or the UFO
-    ! value. For example, 'ssh' or 'sea_surface_height_above_geoid'.
+    ! may specify the variable names as the ROMS-JEDI standard name (default)
+    ! or internal short name.
+    ! For example, 'sea_surface_height_above_geoid' or 'ssh'.
 
     self%fields(i)%name = TRIM(vars(i))
-    self%fields(i)%metadata = self%geom%fieldsinfo%get(self%fields(i)%name)
+    self%fields(i)%metadata = self%geom%FieldsInfo%get(self%fields(i)%name)
 
     ! Initialize switches used for parallel tile halo exchange. If adjoint
     ! field, we need to turn on switch elsewhere for proper management of
@@ -698,7 +730,7 @@ SUBROUTINE roms_fields_init_vars (self, vars)
 
     ! Set number of vertical levels.
 
-    IF (self%fields(i)%name == self%fields(i)%metadata%getval_name_surface) THEN
+    IF (self%fields(i)%name == self%fields(i)%metadata%surface_name) THEN
       LBk = 1
       UBk = 1                                          ! surface field
     ELSE
@@ -728,10 +760,10 @@ SUBROUTINE roms_fields_init_vars (self, vars)
     ! Report.
 
     IF (LdebugFields .and. (self%geom%f_comm%rank() .eq. 0)) THEN
-      PRINT '(2a,a40,a,3(i0,1x))', 'ROMS_DEBUG roms_fields::init_vars: ',      &
-                                   'created and allocated ',                   &
-                                   self%fields(i)%name,                        &
-                                   ', SHAPE = ', SHAPE(self%fields(i)%val)
+      PRINT '(2a,a,t70,a,3(i0,1x))', 'ROMS_DEBUG roms_fields::init_vars: ',    &
+                                     'created and allocated - ',               &
+                                     TRIM(self%fields(i)%metadata%short_name), &
+                                     ', SHAPE = ', SHAPE(self%fields(i)%val)
     END IF
 
   END DO
@@ -745,37 +777,26 @@ END SUBROUTINE roms_fields_init_vars
 
 SUBROUTINE roms_fields_update_fields (self, vars)
 
-  USE strings_mod, ONLY : join_string              !< ROMS strings module
-
   CLASS (roms_fields),   intent(inout) :: self     !< Fields object
   TYPE (oops_variables), intent(in   ) :: vars     !< variable names
 
   TYPE (roms_fields)                   :: tmp
   TYPE (roms_field), pointer           :: field
 
-  integer                              :: i, lstr1, lstr2
-  character (len=:), allocatable       :: self_vars(:), tmp_vars(:)
-  character (len=524)                  :: self_string, tmp_string
+  integer                              :: i, nflds, nvars
+
+  ! Report fields to process.
+
+  IF (LdebugFields .and. (my_comm%rank() .eq. 0)) THEN 
+    nflds = SIZE(self%fields)
+    nvars = vars%nvars()
+    PRINT '(a)', 'ROMS_DEBUG roms_fields::update_fields: Creating TMP Fields:'
+    PRINT 10,    '  SELF Vars: ', (self%fields(i)%name, i=1,nflds)
+    PRINT 10,    '  OOPS Vars: ', (TRIM(vars%variable(i)), i=1,nvars)
+ 10 FORMAT (a, *(1x,a,','))
+  END IF
 
   ! Create new fields.
- 
-  IF (LdebugFields .and. (my_comm%rank() .eq. 0)) THEN 
-    ALLOCATE (character(len=1024) :: self_vars(SIZE(self%fields)))
-    DO i = 1, SIZE(self%fields)
-      self_vars(i) = self%fields(i)%name
-    END DO 
-    CALL join_string (self_vars, SIZE(self%fields), self_string, lstr1)
-
-    ALLOCATE (character(len=1024) :: tmp_vars(vars%nvars()))
-    DO i = 1, vars%nvars()
-      tmp_vars(i) = TRIM(vars%variable(i))
-    END DO
-    CALL join_string (tmp_vars, vars%nvars(), tmp_string, lstr2)
-
-    PRINT '(5a)', 'ROMS_DEBUG roms_fields::update_fields:',                    &
-                  ' SELF vars: ', self_string(1:lstr1),                        &
-                  ' | creating TMP vars: ', tmp_string(1:lstr2)
-  END IF
 
   CALL tmp%create (self%geom, vars)
 
@@ -794,6 +815,7 @@ SUBROUTINE roms_fields_update_fields (self, vars)
   ! same values as "tmp%fields" have before MOVE_ALLOC was invoked. Then,
   ! "tmp%fields" becomes unallocated or undefined.
 
+  IF ( allocated (self%fields) )  deallocate (self%fields)
   CALL MOVE_ALLOC (tmp%fields, self%fields)
 
 END SUBROUTINE roms_fields_update_fields
@@ -934,18 +956,18 @@ SUBROUTINE roms_fields_analytic (self, f_conf, vdate)
               'sss', 'SSS',                                                    &
               'sea_surface_salinity')
           field%val = S0
-        CASE ('uocn',                                                          &
+        CASE ('uaocn',                                                         &
               'eastward_sea_water_velocity',                                   &
-              'sea_water_x_velocity',                                          &
-              'usur', 'Usur',                                                  &
               'surface_eastward_sea_water_velocity',                           &
+              'uocn',                                                          &
+              'sea_water_x_velocity',                                          &
               'sea_water_surface_x_velocity')
           field%val = U0
-        CASE ('vocn',                                                          &
+        CASE ('vaocn',                                                         &
               'northward_sea_water_velocity',                                  &
-              'sea_water_y_velocity',                                          &
-              'vsur', 'Vsur',                                                  &
               'surface_northward_sea_water_velocity',                          &
+              'vocn',                                                          &
+              'sea_water_y_velocity',                                          &
               'sea_water_surface_y_velocity')
           field%val = V0
         CASE ('ssh', 'SSH',                                                    &
@@ -1062,7 +1084,7 @@ SUBROUTINE roms_fields_IO_metadata (fld, metadata)
    allocate ( metadata(SIZE(fld%fields)) )
 
    DO i = 1, SIZE(fld%fields)
-     metadata(i) = fld%geom%fieldsinfo%get(fld%fields(i)%name)
+     metadata(i) = fld%geom%FieldsInfo%get(fld%fields(i)%name)
    END DO
 
 END SUBROUTINE roms_fields_IO_metadata
@@ -1124,8 +1146,9 @@ SUBROUTINE roms_fields_add (self, rhs)
     IF (LdebugFields) THEN
       CALL self%fields(i)%stats (stats)
       IF (my_comm%rank() .eq. 0) THEN
-        PRINT 10, self%fields(i)%name, stats(1), stats(2), INT(stats(3))
- 10     FORMAT (2x,'- ',a35,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,  &
+        PRINT 10, self%fields(i)%metadata%short_name, stats(1), stats(2),      &
+                  INT(stats(3))
+ 10     FORMAT (2x,'- ',a,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,    &
                 ',  CheckSum = ', i0)
       END IF
     END IF
@@ -1160,8 +1183,9 @@ SUBROUTINE roms_fields_sub (self, rhs)
     IF (LdebugFields) THEN
       CALL self%fields(i)%stats (stats)
       IF (my_comm%rank() .eq. 0) THEN
-        PRINT 10, self%fields(i)%name, stats(1), stats(2), INT(stats(3))
- 10     FORMAT (2x,'- ',a35,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,  &
+        PRINT 10, self%fields(i)%metadata%short_name, stats(1), stats(2),      &
+                  INT(stats(3))
+ 10     FORMAT (2x,'- ',a,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,    &
                 ',  CheckSum = ', i0)
       END IF
     END IF
@@ -1190,8 +1214,9 @@ SUBROUTINE roms_fields_mul (self, c)
     IF (LdebugFields) THEN
       CALL self%fields(i)%stats (stats)
       IF (my_comm%rank() .eq. 0) THEN
-        PRINT 10, self%fields(i)%name, stats(1), stats(2), INT(stats(3))
- 10     FORMAT (2x,'- ',a35,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,  &
+        PRINT 10, self%fields(i)%metadata%short_name, stats(1), stats(2),      &
+                  INT(stats(3))
+ 10     FORMAT (2x,'- ',a,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,    &
                 ',  CheckSum = ', i0)
       END IF
     END IF
@@ -1319,10 +1344,7 @@ SUBROUTINE roms_fields_enorm (self, Enorm)
         END DO
 
       CASE ('uocn',                                                            &
-            'eastward_sea_water_velocity',                                     &
             'sea_water_x_velocity',                                            &
-            'usur',                                                            &
-            'surface_eastward_sea_water_velocity',                             &
             'sea_water_surface_x_velocity')                              ! m/s
 
         cff = 0.25_kind_real*rho0
@@ -1341,10 +1363,7 @@ SUBROUTINE roms_fields_enorm (self, Enorm)
         END DO
 
       CASE ('vocn',                                                            &
-            'northward_sea_water_velocity',                                    &
             'sea_water_y_velocity',                                            &
-            'vsur',                                                            &
-            'surface_northward_sea_water_velocity',                            &
             'sea_water_surface_y_velocity')                              ! m/s
 
         cff = 0.25_kind_real*rho0
@@ -1357,6 +1376,26 @@ SUBROUTINE roms_fields_enorm (self, Enorm)
               Hv = (self%geom%z_w(i,j-1,k  )+self%geom%z_w(i,j,k  ))-          &
                    (self%geom%z_w(i,j-1,k-1)+self%geom%z_w(i,j,k-1))     ! m
               scale = cff*Hv
+              my_norm = my_norm + scale*field%val(i,j,k)*field%val(i,j,k)
+            END DO
+          END DO
+        END DO
+
+      CASE ('uaocn',                                                           &
+            'eastward_sea_water_velocity',                                     &
+            'surface_eastward_sea_water_velocity',                             &
+            'vaocn',                                                           &
+            'northward_sea_water_velocity',                                    &
+            'surface_northward_sea_water_velocity')                      ! m/s
+
+        DO j = field%bounds%JstrD, field%bounds%JendD
+          DO i = field%bounds%IstrD, field%bounds%IendD
+            IF (associated(field%mask)) THEN                    ! masking
+              IF (field%mask(i,j) < 1.0_kind_real) CYCLE
+            END IF
+            DO k = 1, field%N
+              Hr = self%geom%z_w(i,j,k)-self%geom%z_w(i,j,k-1)
+              scale = rho0*Hr
               my_norm = my_norm + scale*field%val(i,j,k)*field%val(i,j,k)
             END DO
           END DO
@@ -1572,8 +1611,8 @@ SUBROUTINE roms_fields_axpy (self, c, rhs)
     IF (LdebugFields) THEN
       CALL f_lhs%stats (stats)
       IF (my_comm%rank() .eq. 0) THEN
-        PRINT 10, f_lhs%name, stats(1), stats(2), INT(stats(3))
- 10     FORMAT (2x,'- ',a35,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,  &
+        PRINT 10, f_lhs%metadata%short_name, stats(1), stats(2), INT(stats(3))
+ 10     FORMAT (2x,'- ',a,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,    &
                 ',  CheckSum = ', i0)
       END IF
     END IF
@@ -2387,9 +2426,21 @@ SUBROUTINE roms_fields_read_nf90 (self, InpRec, ncname, DateString, DateNumber)
       varid = var_id(vindex)                             ! NetCDF variable ID
 
       SELECT CASE (field%name)
-
-        CASE ('ssh', 'u2docn', 'v2docn',                                       &
-              'DU_avg1', 'DV_avg1', 'DU_avg2', 'DV_avg2')      ! 2D variables
+                                                         ! 2D variables
+        CASE ('ssh',                                                           &
+              'sea_surface_height_above_geoid',                                &
+              'u2docn',                                                        &
+              'barotropic_sea_water_x_velocity',                               &
+              'v2docn',                                                        &
+              'barotropic_sea_water_y_velocity',                               &
+              'DU_avg1',                                                       &
+              'sea_water_time_average_of_barotropic_x_velocity_flux',          &
+              'DV_avg1',                                                       &
+              'sea_water_time_average_of_barotropic_y_velocity_flux',          &
+              'DU_avg2',                                                       &
+              'sea_water_correct_barotropic_x_velocity_flux_for_coupling',     &
+              'DV_avg2',                                                       &
+              'sea_water_correct_barotropic_y_velocity_flux_for_coupling')
 
           CALL nc_err (nf_fread2d(ng, model, ncname, ncid,                     &
                                   field%metadata%io_name,                      &
@@ -2402,12 +2453,30 @@ SUBROUTINE roms_fields_read_nf90 (self, InpRec, ncname, DateString, DateNumber)
                        nf90_noerr, io_nf90, __LINE__, MyFile)
 
           IF (LocalPET .eq. 0) THEN
-            WRITE (stdout,20) field%metadata%getval_name,                      &
+            WRITE (stdout,20) field%metadata%io_name,                          &
                               field%MinValue, field%MaxValue, Fhash
           END IF
 
-        CASE ('uocn', 'vocn', 'tocn', 'socn',                                  &
-              'Kvocn', 'Ktocn', 'Ksocn')                       ! 3D variables
+                                                         ! 3D variables
+        CASE ('uocn',                                                          &
+              'sea_water_x_velocity',                                          &
+              'vocn',                                                          &
+              'sea_water_y_velocity',                                          &
+              'uaocn',                                                         &
+              'eastward_sea_water_velocity',                                   &
+              'vaocn',                                                         &
+              'northward_sea_water_velocity',                                  &
+              'tocn',                                                          &
+              'sea_water_temperature',                                         &
+              'sea_water_potential_temperature',                               &
+              'socn',                                                          &
+              'sea_water_salinity',                                            &
+              'Kvocn',                                                         &
+              'vertical_viscosity_coefficient_of_sea_water',                   &
+              'Ktocn',                                                         &
+              'vertical_diffusion_coefficient_of_temperature_in_sea_water',    &
+              'Ksocn',                                                         &
+              'vertical_diffusion_coefficient_of_salinity_in_sea_water')
 
           CALL nc_err (nf_fread3d(ng, model, ncname, ncid,                     &
                                   self%fields(i)%metadata%io_name,             &
@@ -2420,7 +2489,7 @@ SUBROUTINE roms_fields_read_nf90 (self, InpRec, ncname, DateString, DateNumber)
                        nf90_noerr, io_nf90, __LINE__, MyFile)
 
           IF (LocalPET .eq. 0) THEN
-            WRITE (stdout,20) field%metadata%getval_name,                      &
+            WRITE (stdout,20) field%metadata%io_name,                          &
                               field%MinValue, field%MaxValue, Fhash
           END IF
 
@@ -2432,8 +2501,8 @@ SUBROUTINE roms_fields_read_nf90 (self, InpRec, ncname, DateString, DateNumber)
         PRINT '(2(a,i0),a,a)', 'ncid   = ', ncid, ', varid  = ', varid,        &
                                ', ncname = ', TRIM(ncname)
         PRINT '(6a)',          'field  = ', field%metadata%io_name,            &
-                               ' :: ', field%metadata%name,                    &
-                               ' :: ', field%metadata%getval_name
+                               ' :: ', field%metadata%short_name,              &
+                               ' :: ', field%metadata%name
         PRINT '(a,3(i0,1x))',  'shape  = ', SHAPE(field%val)
         PRINT '(a,6(i0,1x))',  'bounds = ', LBi, UBi, LBj, UBj, LBk, UBk
       END IF
@@ -2450,35 +2519,59 @@ SUBROUTINE roms_fields_read_nf90 (self, InpRec, ncname, DateString, DateNumber)
 
       SELECT CASE (field%name)
 
-        CASE ('ssh', 'uocn', 'vocn', 'tocn', 'socn')
+        CASE ('ssh',                                                           &
+              'sea_surface_height_above_geoid',                                &
+              'uocn',                                                          &
+              'sea_water_x_velocity',                                          &
+              'vocn',                                                          &  
+              'sea_water_y_velocity',                                          &
+              'uaocn',                                                         &
+              'eastward_sea_water_velocity',                                   &
+              'vaocn',                                                         &
+              'northward_sea_water_velocity',                                  &
+              'tocn',                                                          &
+              'sea_water_temperature',                                         &
+              'sea_water_potential_temperature',                               &
+              'socn',                                                          &
+              'sea_water_salinity')
 
           WRITE (Message,'(6a)')                                               &
                 'roms_fields::read_nf90: Unable to find state variable: ',     &
-                field%name, " - ", field%metadata%getval_name,                 &
+                field%name, " - ", field%metadata%io_name,                     &
                 ', file: ', TRIM(ncname)
           CALL abor1_ftn (TRIM(Message))
 
-        CASE ('Kvocn', 'Ktocn', 'Ksocn')
+        CASE ('Kvocn',                                                         &
+              'vertical_viscosity_coefficient_of_sea_water',                   &
+              'Ktocn',                                                         &
+              'vertical_diffusion_coefficient_of_temperature_in_sea_water',    &
+              'Ksocn',                                                         &
+              'vertical_diffusion_coefficient_of_salinity_in_sea_water')
 
-          field%val = 1.0E-5_kind_real         ! vertical mixing coefficients
+          field%val = 1.0E-5_kind_real
    
-        CASE ('Hzocn')
+        CASE ('Hzocn',                                                         &
+              'model_level_thickness_at_cell_center')
 
           field%val = self%geom%Hz
 
-        CASE ('z0ocn_r')
+        CASE ('z0ocn_r',                                                       &
+              'unvarying_model_level_depth_at_cell_center')
 
           field%val = self%geom%z0_r
 
-        CASE ('zocn_r')
+        CASE ('zocn_r',                                                        &
+              'model_level_depth_at_cell_center')
 
           field%val = self%geom%z_r
 
-        CASE ('z0ocn_w')
+        CASE ('z0ocn_w',                                                       &
+              'unvarying_model_level_depth_at_cell_top_face')
 
           field%val = self%geom%z0_w
 
-        CASE ('zocn_w')
+        CASE ('zocn_w',                                                        &
+              'model_level_depth_at_cell_top_face')
 
           field%val = self%geom%z_w
 
@@ -2538,6 +2631,7 @@ SUBROUTINE roms_fields_write_nf90 (self, S, romsTime)
   SourceFile = MyFile                  !< current executed ROMS routine
   model    = geom%model                !< ROMS numerical kernel
   ng       = geom%ng                   !< nested grid number
+  Message = " "
 
   ! Get output fields fractional "datenum".
 
@@ -2609,12 +2703,24 @@ SUBROUTINE roms_fields_write_nf90 (self, S, romsTime)
 
       field%DateNumber = DateNumber
 
-      varid = var_id(vindex)                        ! NetCDF variable ID
+      varid = var_id(vindex)                             ! NetCDF variable ID
 
-      SELECT CASE (field%name)
-
-        CASE ('ssh', 'u2docn', 'v2docn',                                       &
-              'DU_avg1', 'DV_avg1', 'DU_avg2', 'DV_avg2')      ! 2D variables
+      SELECT CASE (TRIM(field%name))
+                                                         ! 2D variables
+        CASE ('ssh',                                                           &
+              'sea_surface_height_above_geoid',                                &
+              'u2docn',                                                        &
+              'barotropic_sea_water_x_velocity',                               &
+              'v2docn',                                                        &
+              'barotropic_sea_water_y_velocity',                               &
+              'DU_avg1',                                                       &
+              'sea_water_time_average_of_barotropic_x_velocity_flux',          &
+              'DV_avg1',                                                       &
+              'sea_water_time_average_of_barotropic_y_velocity_flux',          &
+              'DU_avg2',                                                       &
+              'sea_water_correct_barotropic_x_velocity_flux_for_coupling',     &
+              'DV_avg2',                                                       &
+              'sea_water_correct_barotropic_y_velocity_flux_for_coupling')
 
           CALL nc_err (nf_fwrite2d(ng, model, S(ng)%ncid, idfld, varid,        &
                                    S(ng)%Rindex, Cgrid,                        &
@@ -2626,12 +2732,32 @@ SUBROUTINE roms_fields_write_nf90 (self, S, romsTime)
                        nf90_noerr, io_nf90, __LINE__, MyFile)
 
           IF (LocalPET .eq. 0) THEN
-            PRINT 10, field%name, field%MinValue, field%MaxValue,              &
+            PRINT 10, field%metadata%io_name, field%MinValue, field%MaxValue,  &
                       S(ng)%Rindex, INT(stats(3), KIND=8)
           END IF
 
-        CASE ('uocn', 'vocn', 'tocn', 'socn',                                  &
-              'Hzocn', 'Kvocn', 'Ktocn', 'Ksocn')              ! 3D variables
+                                                         ! 3D variables
+        CASE ('uocn',                                                          &
+              'sea_water_x_velocity',                                          &
+              'vocn',                                                          &
+              'sea_water_y_velocity',                                          &
+              'uaocn',                                                         &
+              'eastward_sea_water_velocity',                                   &
+              'vaocn',                                                         &
+              'northward_sea_water_velocity',                                  &
+              'tocn',                                                          &
+              'sea_water_temperature',                                         &
+              'sea_water_potential_temperature',                               &
+              'socn',                                                          &
+              'sea_water_salinity',                                            &
+              'Hzocn',                                                         &
+              'model_level_thickness_at_cell_center',                          &
+              'Kvocn',                                                         &
+              'vertical_viscosity_coefficient_of_sea_water',                   &
+              'Ktocn',                                                         &
+              'vertical_diffusion_coefficient_of_temperature_in_sea_water',    &
+              'Ksocn',                                                         &
+              'vertical_diffusion_coefficient_of_salinity_in_sea_water')
 
           CALL nc_err (nf_fwrite3d(ng, model, S(ng)%ncid, idfld, varid,        &
                                    S(ng)%Rindex, Cgrid,                        &
@@ -2643,7 +2769,7 @@ SUBROUTINE roms_fields_write_nf90 (self, S, romsTime)
                        nf90_noerr, io_nf90, __LINE__, MyFile)
 
           IF (LocalPET .eq. 0) THEN
-            PRINT 10, field%name, field%MinValue, field%MaxValue,              &
+            PRINT 10, field%metadata%io_name, field%MinValue, field%MaxValue,  &
                       S(ng)%Rindex, INT(stats(3), KIND=8)
           END IF
 
@@ -2653,16 +2779,22 @@ SUBROUTINE roms_fields_write_nf90 (self, S, romsTime)
 
       SELECT CASE (field%name)
 
-        CASE ('zocn_r', 'z0ocn_r',                                             &
-              'zocn_w', 'z0ocn_w')
+        CASE ('zocn_r',                                                        &
+              'model_level_depth_at_cell_center',                              &
+              'z0ocn_r',                                                       &
+              'unvarying_model_level_depth_at_cell_center',                    &
+              'zocn_w',                                                        &
+              'model_level_depth_at_cell_top_face',                            &
+              'z0ocn_w',                                                       &
+              'unvarying_model_level_depth_at_cell_top_face')
 
         ! Ignore time-dependent metric variables.
 
         CASE DEFAULT
 
           WRITE (Message,'(6a)')                                               &
-                'roms_fields::write_nf90: Cannot find and option to write = ', &
-                field%name, " - ", field%metadata%getval_name,                 &
+                'roms_fields::write_nf90: Cannot find an option to write = ',  &
+                TRIM(field%name), ' - ', TRIM(field%metadata%io_name),         &
                 ', file: ', TRIM(S(ng)%name)
           CALL abor1_ftn (TRIM(Message))
 
@@ -2678,7 +2810,7 @@ SUBROUTINE roms_fields_write_nf90 (self, S, romsTime)
   IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
     CALL abor1_ftn (TRIM(Message))
 
-  10 FORMAT (2x,'- ',a,':',t15,'Min = ',1p,e15.8,',  Max = ',1p,e15.8,         &
+  10 FORMAT (2x,'- ',a,':',t30,'Min = ',1p,e15.8,',  Max = ',1p,e15.8,         &
              ',  Rec = ',i3,',  CheckSum = ',i0)
 
 END SUBROUTINE roms_fields_write_nf90
@@ -2739,7 +2871,12 @@ SUBROUTINE roms_fields_write_zero_nf90 (self, S)
 
         SELECT CASE (TRIM(var_name(i)))        
 
-          CASE ('ubar', 'DU_avg1', 'DU_avg2')
+          CASE ('ubar', 'u2docn',                                              &
+                'barotropic_sea_water_x_velocity',                             &
+                'DU_avg1',                                                     &
+                'sea_water_time_average_of_barotropic_x_velocity_flux',        &
+                'DU_avg2',                                                     &
+                'sea_water_correct_barotropic_x_velocity_flux_for_coupling')
 
             IF (.not.allocated(F2dat)) THEN
               allocate ( F2dat(LBi:UBi, LBj:UBj) )
@@ -2763,7 +2900,12 @@ SUBROUTINE roms_fields_write_zero_nf90 (self, S)
             END IF
             deallocate ( F2dat )
 
-          CASE ('vbar', 'DV_avg1', 'DV_avg2')
+          CASE ('vbar', 'v2docn',                                              &
+                'barotropic_sea_water_y_velocity',                             &
+                'DV_avg1',                                                     &
+                'sea_water_time_average_of_barotropic_y_velocity_flux',        &
+                'DV_avg2',                                                     &
+                'sea_water_correct_barotropic_y_velocity_flux_for_coupling')
 
             IF (.not.allocated(F2dat)) THEN
               allocate ( F2dat(LBi:UBi, LBj:UBj) )
@@ -2787,7 +2929,12 @@ SUBROUTINE roms_fields_write_zero_nf90 (self, S)
             END IF
             deallocate ( F2dat )
 
-          CASE ('AKs', 'AKt', 'AKv')
+          CASE ('AKv', 'Kvocn',                                                &
+                'vertical_viscosity_coefficient_of_sea_water',                 &
+                'AKt', 'Ktocn',                                                &
+                'vertical_diffusion_coefficient_of_temperature_in_sea_water',  &
+                'AKs', 'Ksocn',                                                &
+                'vertical_diffusion_coefficient_of_salinity_in_sea_water')
 
             LBk=0
             IF (.not.allocated(F3dat)) THEN
@@ -2823,7 +2970,7 @@ SUBROUTINE roms_fields_write_zero_nf90 (self, S)
   IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
     CALL abor1_ftn (TRIM(Message))
 
-  10 FORMAT (2x,'- ',a,':',t15,'Min = ',1p,e15.8,',  Max = ',1p,e15.8,         &
+  10 FORMAT (2x,'- ',a,':',t30,'Min = ',1p,e15.8,',  Max = ',1p,e15.8,         &
              ',  Rec = ',i3,',  CheckSum = ',i0)
 
 END SUBROUTINE roms_fields_write_zero_nf90
@@ -2989,9 +3136,21 @@ SUBROUTINE roms_fields_read_pio (self, InpRec, ncname, DateString, DateNumber)
       ! Read in variable.
       
       SELECT CASE (field%name)
-
-        CASE ('ssh', 'u2docn', 'v2docn',                                       &
-              'DU_avg1', 'DV_avg1', 'DU_avg2', 'DV_avg2')      ! 2D variables
+                                                         ! 2D variables
+        CASE ('ssh',                                                           &
+              'sea_surface_height_above_geoid',                                &
+              'u2docn',                                                        &
+              'barotropic_sea_water_x_velocity',                               &
+              'v2docn',                                                        &
+              'barotropic_sea_water_y_velocity',                               &
+              'DU_avg1',                                                       &
+              'sea_water_time_average_of_barotropic_x_velocity_flux',          &
+              'DV_avg1',                                                       &
+              'sea_water_time_average_of_barotropic_y_velocity_flux',          &
+              'DU_avg2',                                                       &
+              'sea_water_correct_barotropic_x_velocity_flux_for_coupling',     &
+              'DV_avg2'                                                        &
+              'sea_water_correct_barotropic_y_velocity_flux_for_coupling')
 
           CALL nc_err (nf_fread2d(ng, model, ncname, pioFile,                  &
                                   field%metadata%io_name,                      &
@@ -3004,12 +3163,30 @@ SUBROUTINE roms_fields_read_pio (self, InpRec, ncname, DateString, DateNumber)
                        PIO_noerr, io_pio, __LINE__, MyFile)
 
           IF (LocalPET .eq. 0) THEN
-            WRITE (stdout,20) field%metadata%getval_name,                      &
+            WRITE (stdout,20) field%metadata%io_name,                          &
                               field%MinValue, field%MaxValue, Fhash
           END IF
 
-        CASE ('uocn', 'vocn', 'tocn', 'socn',                                  &
-              'Kvocn', 'Ktocn', 'Ksocn')                       ! 3D variables
+                                                         ! 3D variables
+        CASE ('uocn',                                                          &
+              'sea_water_x_velocity',                                          &
+              'vocn',                                                          &
+              'sea_water_y_velocity',                                          &
+              'uaocn',                                                         &
+              'eastward_sea_water_velocity',                                   &
+              'vaocn',                                                         &
+              'northward_sea_water_velocity',                                  &
+              'tocn',                                                          &
+              'sea_water_temperature',                                         &
+              'sea_water_potential_temperature',                               &
+              'socn',                                                          &
+              'sea_water_salinity',                                            &
+              'Kvocn',                                                         &
+              'vertical_viscosity_coefficient_of_sea_water',                   &
+              'Ktocn',                                                         &
+              'vertical_diffusion_coefficient_of_temperature_in_sea_water',    &
+              'Ksocn',                                                         &
+              'vertical_diffusion_coefficient_of_salinity_in_sea_water')
 
           CALL nc_err (nf_fread3d(ng, model, ncname, pioFile,                  &
                                   field%metadata%io_name,                      &
@@ -3022,7 +3199,7 @@ SUBROUTINE roms_fields_read_pio (self, InpRec, ncname, DateString, DateNumber)
                        PIO_noerr, io_pio, __LINE__, MyFile)
 
           IF (LocalPET .eq. 0) THEN
-            WRITE (stdout,20) field%metadata%getval_name,                      &
+            WRITE (stdout,20) field%metadata%io_name,                          &
                               field%MinValue, field%MaxValue, Fhash
           END IF
 
@@ -3034,8 +3211,8 @@ SUBROUTINE roms_fields_read_pio (self, InpRec, ncname, DateString, DateNumber)
         PRINT '(2(a,i0),a,a)', 'ncid   = ', ncid, ', varid  = ', varid,        &
                                ', ncname = ', TRIM(ncname)
         PRINT '(6a)',          'field  = ', field%metadata%io_name,            &
-                               ' :: ', field%metadata%name,                    &
-                               ' :: ', field%metadata%getval_name
+                               ' :: ', field%metadata%short_name,              &
+                               ' :: ', field%metadata%name
         PRINT '(a,3(i0,1x))',  'shape  = ', SHAPE(field%val)
         PRINT '(a,6(i0,1x))',  'bounds = ', LBi, UBi, LBj, UBj, LBk, UBk
       END IF
@@ -3052,15 +3229,61 @@ SUBROUTINE roms_fields_read_pio (self, InpRec, ncname, DateString, DateNumber)
 
       SELECT CASE (field%name)
 
-        CASE ('ssh', 'uocn', 'vocn', 'tocn', 'socn')
-          WRITE (Message,'(4a)')                                               &
-                'roms_fields::write_pio: Cannot find and option to read = ',   &
-                field%name, " - ", field%metadata%getval_name
+        CASE ('ssh',                                                           &
+              'sea_surface_height_above_geoid',                                &
+              'uocn',                                                          &
+              'sea_water_x_velocity',                                          &
+              'vocn',                                                          &  
+              'sea_water_y_velocity',                                          &
+              'uaocn',                                                         &
+              'eastward_sea_water_velocity',                                   &
+              'vaocn',                                                         &
+              'northward_sea_water_velocity',                                  &
+              'tocn',                                                          &
+              'sea_water_temperature',                                         &
+              'sea_water_potential_temperature',                               &
+              'socn',                                                          &
+              'sea_water_salinity')
+
+          WRITE (Message,'(6a)')                                               &
+                'roms_fields::write_pio: Cannot find an option to read = ',    &
+                TRIM(field%name), ' - ', TRIM(field%metadata%io_name),         &
+                ', file: ', TRIM(ncname)
           CALL abor1_ftn (TRIM(Message))
 
-        CASE ('Kvocn', 'Ktocn', 'Ksocn')
+        CASE ('Kvocn',                                                         &
+              'vertical_viscosity_coefficient_of_sea_water',                   &
+              'Ktocn',                                                         &
+              'vertical_diffusion_coefficient_of_temperature_in_sea_water',    &
+              'Ksocn'                                                          &
+              'vertical_diffusion_coefficient_of_salinity_in_sea_water')
 
-          field%val = 1.0E-5_kind_real         ! vertical mixing coefficients
+          field%val = 1.0E-5_kind_real
+
+        CASE ('Hzocn',                                                         &
+              'model_level_thickness_at_cell_center')
+
+          field%val = self%geom%Hz
+
+        CASE ('z0ocn_r',                                                       &
+              'unvarying_model_level_depth_at_cell_center')
+
+          field%val = self%geom%z0_r
+
+        CASE ('zocn_r',                                                        &
+              'model_level_depth_at_cell_center')
+
+          field%val = self%geom%z_r
+
+        CASE ('z0ocn_w',                                                       &
+              'unvarying_model_level_depth_at_cell_top_face')
+
+          field%val = self%geom%z0_w
+
+        CASE ('zocn_w',                                                        &
+              'model_level_depth_at_cell_top_face')
+
+          field%val = self%geom%z_w
 
         CASE DEFAULT
 
@@ -3254,9 +3477,21 @@ SUBROUTINE roms_fields_write_pio (self, S, romsTime)
       ! Write out variable.
 
       SELECT CASE (field%name)
-
-        CASE ('ssh', 'u2docn', 'v2docn',                                       &
-              'DU_avg1', 'DV_avg1', 'DU_avg2', 'DV_avg2')      ! 2D variables
+                                                         ! 2D variables
+        CASE ('ssh',                                                           &
+              'sea_surface_height_above_geoid',                                &
+              'u2docn',                                                        &
+              'barotropic_sea_water_x_velocity',                               &
+              'v2docn',                                                        &
+              'barotropic_sea_water_y_velocity',                               &
+              'DU_avg1',                                                       &
+              'sea_water_time_average_of_barotropic_x_velocity_flux',          &
+              'DV_avg1',                                                       &
+              'sea_water_time_average_of_barotropic_y_velocity_flux',          &
+              'DU_avg2',                                                       &
+              'sea_water_correct_barotropic_x_velocity_flux_for_coupling',     &
+              'DV_avg2'                                                        &
+              'sea_water_correct_barotropic_y_velocity_flux_for_coupling')
 
           CALL nc_err (nf_fwrite2d(ng, model, S(ng)%pioFile, idfld,            &
                                    pioVar, S(ng)%Rindex, ioDesc,               &
@@ -3268,12 +3503,32 @@ SUBROUTINE roms_fields_write_pio (self, S, romsTime)
                        PIO_noerr, io_pio, __LINE__, MyFile)
 
           IF (LocalPET .eq. 0) THEN
-            PRINT 10, field%name, field%MinValue, field%MaxValue,              &
+            PRINT 10, field%metadata%io_name, field%MinValue, field%MaxValue,  &
                       S(ng)%Rindex, INT(stats(3), KIND=8)
           END IF
 
-        CASE ('uocn', 'vocn', 'tocn', 'socn',                                  &
-              'Hzocn', 'Kvocn', 'Ktocn', 'Ksocn')              ! 3D variables
+                                                         ! 3D variables
+        CASE ('uocn',                                                          &
+              'sea_water_x_velocity',                                          &
+              'vocn',                                                          &
+              'sea_water_y_velocity',                                          &
+              'uaocn',                                                         &
+              'eastward_sea_water_velocity',                                   &
+              'vaocn',                                                         &
+              'northward_sea_water_velocity',                                  &
+              'tocn',                                                          &
+              'sea_water_temperature',                                         &
+              'sea_water_potential_temperature',                               &
+              'socn',                                                          &
+              'sea_water_salinity',                                            &
+              'Hzocn',                                                         &
+              'model_level_thickness_at_cell_center',                          &
+              'Kvocn',                                                         &
+              'vertical_viscosity_coefficient_of_sea_water',                   &
+              'Ktocn',                                                         &
+              'vertical_diffusion_coefficient_of_temperature_in_sea_water',    &
+              'Ksocn',                                                         &
+              'vertical_diffusion_coefficient_of_salinity_in_sea_water')
 
           CALL nc_err (nf_fwrite3d(ng, model, S(ng)%pioFile, idfld,            &
                                    pioVar, S(ng)%Rindex, ioDesc,               &
@@ -3285,7 +3540,7 @@ SUBROUTINE roms_fields_write_pio (self, S, romsTime)
                        PIO_noerr, io_pio, __LINE__, MyFile)
 
           IF (LocalPET .eq. 0) THEN
-            PRINT 10, field%name, field%MinValue, field%MaxValue,              &
+            PRINT 10, field%metadata%io_name, field%MinValue, field%MaxValue,  &
                       S(ng)%Rindex, INT(stats(3), KIND=8)
           END IF
 
@@ -3295,16 +3550,22 @@ SUBROUTINE roms_fields_write_pio (self, S, romsTime)
 
       SELECT CASE (field%name)
 
-        CASE ('zocn_r', 'z0ocn_r',                                             &
-              'zocn_w', 'z0ocn_w')
+        CASE ('zocn_r',                                                        &
+              'model_level_depth_at_cell_center',                              &
+              'z0ocn_r',                                                       &
+              'unvarying_model_level_depth_at_cell_center',                    &
+              'zocn_w',                                                        &
+              'model_level_depth_at_cell_top_face',                            &
+              'z0ocn_w',                                                       &
+              'unvarying_model_level_depth_at_cell_top_face')
 
         ! Ignore time-dependent metric variables.
 
         CASE DEFAULT
 
           WRITE (Message,'(6a)')                                               &
-                'roms_fields::write_pio: Cannot find and option to write = ',  &
-                field%name, " - ", field%metadata%getval_name,                 &
+                'roms_fields::write_pio: Cannot find an option to write = ',   &
+                TRIM(field%name), ' - ', TRIM(field%metadata%io_name),         &
                 ', file: ', TRIM(S(ng)%name)
           CALL abor1_ftn (TRIM(Message))
 
@@ -3320,7 +3581,7 @@ SUBROUTINE roms_fields_write_pio (self, S, romsTime)
   IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
     CALL abor1_ftn (TRIM(Message))
 
-  10 FORMAT (2x,'- ',a,':',t15,'Min = ',1p,e15.8,',  Max = ',1p,e15.8,         &
+  10 FORMAT (2x,'- ',a,':',t30,'Min = ',1p,e15.8,',  Max = ',1p,e15.8,         &
              ',  Rec = ',i3,',  CheckSum = ',i0)
 
 END SUBROUTINE roms_fields_write_pio
@@ -3387,7 +3648,12 @@ SUBROUTINE roms_fields_write_zero_pio (self, S)
 
         SELECT CASE (TRIM(var_name(i)))        
 
-          CASE ('ubar', 'DU_avg1', 'DU_avg2')
+          CASE ('ubar', 'u2docn',                                              &
+                'barotropic_sea_water_x_velocity',                             &
+                'DU_avg1',                                                     &
+                'sea_water_time_average_of_barotropic_x_velocity_flux',        &
+                'DU_avg2',                                                     &
+                'sea_water_correct_barotropic_x_velocity_flux_for_coupling')
 
             IF (.not.allocated(F2dat)) THEN
               allocate ( F2dat(LBi:UBi, LBj:UBj) )
@@ -3420,7 +3686,12 @@ SUBROUTINE roms_fields_write_zero_pio (self, S)
             END IF
             deallocate ( F2dat )
 
-          CASE ('vbar', 'DV_avg1', 'DV_avg2')
+          CASE ('vbar', 'v2docn',                                              &
+                'barotropic_sea_water_y_velocity',                             &
+                'DV_avg1',                                                     &
+                'sea_water_time_average_of_barotropic_y_velocity_flux',        &
+                'DV_avg2',                                                     &
+                'sea_water_correct_barotropic_y_velocity_flux_for_coupling')
 
             IF (.not.allocated(F2dat)) THEN
               allocate ( F2dat(LBi:UBi, LBj:UBj) )
@@ -3453,7 +3724,12 @@ SUBROUTINE roms_fields_write_zero_pio (self, S)
             END IF
             deallocate ( F2dat )
 
-          CASE ('AKs', 'AKt', 'AKv')
+          CASE ('AKv', 'Kvocn',                                                &
+                'vertical_viscosity_coefficient_of_sea_water',                 &
+                'AKt', 'Ktocn',                                                &
+                'vertical_diffusion_coefficient_of_temperature_in_sea_water',  &
+                'AKs', 'Ksocn',                                                &
+                'vertical_diffusion_coefficient_of_salinity_in_sea_water')
 
             LBk=0
             IF (.not.allocated(F3dat)) THEN
@@ -3498,7 +3774,7 @@ SUBROUTINE roms_fields_write_zero_pio (self, S)
   IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
     CALL abor1_ftn (TRIM(Message))
 
-  10 FORMAT (2x,'- ',a,':',t15,'Min = ',1p,e15.8,',  Max = ',1p,e15.8,         &
+  10 FORMAT (2x,'- ',a,':',t30,'Min = ',1p,e15.8,',  Max = ',1p,e15.8,         &
              ',  Rec = ',i3,',  CheckSum = ',i0)
 
 END SUBROUTINE roms_fields_write_zero_pio

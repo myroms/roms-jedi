@@ -8,7 +8,12 @@ geometry:
   fields metadata: Data/fields_metadata.yaml
   ng: 1                                        # ROMS nested grid number
 
-recenter variables: &roms_state [ssh, uocn, vocn, tocn, socn]
+recenter variables: &roms_state
+- sea_surface_height_above_geoid
+- sea_water_x_velocity                         # C-grid
+- sea_water_y_velocity                         # C-grid
+- sea_water_temperature
+- sea_water_salinity
 
 center:                                        # Central state
   fields_dir: Data/wc13/input

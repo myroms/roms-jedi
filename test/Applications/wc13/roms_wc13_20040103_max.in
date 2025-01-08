@@ -267,8 +267,8 @@ ad_VolCons(north) ==  F                            ! northern boundary
 ! Output history, quicksave, average, and diagnostic files parameters.
 
      LDEFOUT == T
-        NHIS == 1          ! every timestep
-!       NHIS == 4          ! every 2-hours
+!       NHIS == 1          ! every timestep
+        NHIS == 4          ! every 2-hours
      NDEFHIS == 0
         NXTR == 1          ! every timestep
      NDEFXTR == 0
@@ -285,13 +285,13 @@ ad_VolCons(north) ==  F                            ! northern boundary
 ! Output tangent linear and adjoint models parameters.
 
    LcycleTLM == F
-        NTLM == 1          ! every timestep
-!       NTLM == 4          ! every 2-hours
+!       NTLM == 1          ! every timestep
+        NTLM == 4          ! every 2-hours
 !       NTLM == 48         ! daily
      NDEFTLM == 0
    LcycleADJ == F
-        NADJ == 1          ! every timestep
-!       NADJ == 192        ! Strong constraint
+!       NADJ == 1          ! every timestep
+        NADJ == 192        ! Strong constraint
 !       NADJ == 48         ! Weak constraint (daily)
      NDEFADJ == 0
         NSFF == 48         ! daily

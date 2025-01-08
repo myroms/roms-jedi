@@ -14,8 +14,21 @@ model timestep:  &TimeStep PT1800S                 # WC13 has a 30 minutes times
 
 initial date: &date 2004-01-03T00:00:00Z           # initial DA window
 
-roms analysis:  &roms_analysis [ssh, uocn, vocn, tocn, socn]
-roms state:     &roms_state    [ssh, uocn, vocn, tocn, socn, zocn_r]
+roms analysis: &roms_analysis
+- sea_surface_height_above_geoid
+- sea_water_temperature
+- sea_water_salinity
+
+roms state: &roms_state
+- sea_surface_height_above_geoid
+- sea_water_x_velocity                           # C-grid
+- sea_water_y_velocity                           # C-grid
+- sea_water_temperature
+- sea_water_salinity
+- model_level_depth_at_cell_center
+- vertical_diffusion_coefficient_of_temperature_in_sea_water
+- vertical_diffusion_coefficient_of_salinity_in_sea_water
+- vertical_viscosity_coefficient_of_sea_water
 
 cost function:
   cost type: 4D-Var
@@ -50,9 +63,9 @@ cost function:
         covariance model: SABER
         saber central block:
           saber block name: BUMP_NICAS
-          active variables: &rho_vars [ssh, tocn, socn]
+          active variables: *roms_analysis
           fields metadata:
-            ssh:
+            sea_surface_height_above_geoid:
               vert_coord: vert_coord_2d
           read:
             drivers:
@@ -70,11 +83,12 @@ cost function:
             grids:
             - model:
                 variables:
-                - ssh
+                - sea_surface_height_above_geoid
             - model:
                 variables:
-                 - tocn
-                 - socn
+                - sea_water_temperature
+                - sea_water_salinity
+
         saber outer blocks:
         - saber block name: StdDev
           read:
@@ -86,15 +100,16 @@ cost function:
               date: *date
       weight:                                      # Static B weight
         value: 0.4
+
     - covariance:
         covariance model: ensemble                 # Ensemble error covariance
         localization:
           localization method: SABER
           saber central block:
             saber block name: BUMP_NICAS
-            active variables: &rho_vars [ssh, tocn, socn]
+            active variables: *roms_analysis
             fields metadata:
-              ssh:
+              sea_surface_height_above_geoid:
                 vert_coord: vert_coord_2d
             read:
               drivers:

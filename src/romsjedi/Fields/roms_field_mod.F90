@@ -1,4 +1,4 @@
-! (C) Copyright 2017-2023 UCAR
+! (C) Copyright 2017-2025 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://Qwww.apache.org/licenses/LICENSE-2.0.
@@ -22,11 +22,17 @@ USE fckit_mpi_module,           ONLY : fckit_mpi_comm,                         &
                                        fckit_mpi_max
 USE kinds,                      ONLY : kind_real
 
+!> ROMS module association.
+
+USE get_hash_mod,               ONLY : get_hash
 USE roms_interpolate_mod,       ONLY : roms_interp_type,                       &
                                        roms_interp_delete,                     &
                                        roms_interp_fractional,                 &
                                        roms_horiz_interp
+USE mod_param,                  ONLY : r2dvar, u2dvar, v2dvar
 USE mod_scalars,                ONLY : NoError, exit_flag
+
+!> ROMS-JEDI interface module association.
 
 USE roms_fields_metadata_mod,   ONLY : roms_field_metadata
 USE roms_fieldsutils_mod,       ONLY : LdebugField
@@ -212,18 +218,28 @@ SUBROUTINE roms_field_copy (self, rhs)
   integer                           :: lstr
   integer                           :: LBi, UBi, LBj, UBj, N
 
+  ! Report fields to process.
+
   IF (LdebugField .and. (my_comm%rank() .eq. 0)) THEN
-    PRINT '(9a,5(a,i0))', 'ROMS_DEBUG roms_field::copy: Processing RHS - ',    &
-                          ' name = ', rhs%name,                                & 
-                          ', metadata%name ', rhs%metadata%name,               &
-                          ', getval_name ', rhs%metadata%getval_name,          &
-                          ', getval_name_surface = ',                          &
-                          rhs%metadata%getval_name_surface,                    &
-                          ', LBi = ', LBOUND(rhs%val,DIM=1),                   &
-                          ', UBi = ', UBOUND(rhs%val,DIM=1),                   &
-                          ', LBj = ', LBOUND(rhs%val,DIM=2),                   &
-                          ', UBj = ', UBOUND(rhs%val,DIM=2),                   &
-                          ', N = ',   UBOUND(rhs%val,DIM=3)
+    PRINT '(a)', 'ROMS_DEBUG roms_field::copy: Copying RHS into SELF:'
+    PRINT '(8(a))', '  - RHS:  name = ', rhs%name,                             &
+                  ', short_name = ', rhs%metadata%short_name,                  &
+                  ', metadata%name = ', rhs%metadata%name,                     &
+                  ', surface_name = ', rhs%metadata%surface_name
+    PRINT '(6(a,i0))', '  - RHS:  LBi = ', LBOUND(rhs%val,DIM=1),              &
+                       ', UBi = ', UBOUND(rhs%val,DIM=1),                      &
+                       ', LBj = ', LBOUND(rhs%val,DIM=2),                      &
+                       ', UBj = ', UBOUND(rhs%val,DIM=2),                      &
+                       ', N = ',   SIZE(rhs%val,DIM=3), ', rhs%N = ', rhs%N
+    PRINT '(8(a))', '  - SELF: name = ', self%name,                            &
+                    ', short_name = ', self%metadata%short_name,               &
+                    ', metadata%name = ', self%metadata%name,                  &
+                    ', surface_name = ', self%metadata%surface_name
+    PRINT '(6(a,i0))', '  - SELF: LBi = ', LBOUND(self%val,DIM=1),             &
+                       ', UBi = ', UBOUND(self%val,DIM=1),                     &
+                       ', LBj = ', LBOUND(self%val,DIM=2),                     &
+                       ', UBj = ', UBOUND(self%val,DIM=2),                     &
+                       ', N = ',   SIZE(self%val,DIM=3), ', self%N = ', self%N
   END IF
 
   ! Sometimes, fields are transformed by the variable change operator that
@@ -232,10 +248,11 @@ SUBROUTINE roms_field_copy (self, rhs)
   ! or other fields.  In such a case, deallocate/allocate "self" to the correct
   ! third dimension of "rhs"
 
-  IF ((rhs%name .eq. rhs%metadata%getval_name_surface) .and.                   &
-      (SIZE(self%val, DIM=3) .ne. SIZE(rhs%val, DIM=3))) THEN
+  IF ((rhs%name .eq. rhs%metadata%surface_name) .and.                          &
+      ((SIZE(self%val, DIM=3) .ne. SIZE(rhs%val, DIM=3)) .or.                  &
+       (self%N .ne. rhs%N))) THEN
 
-    deallocate (self%val)
+    IF ( allocated(self%val) )  deallocate (self%val)
 
     LBi = LBOUND(rhs%val, DIM=1)
     UBi = UBOUND(rhs%val, DIM=1)
@@ -244,11 +261,7 @@ SUBROUTINE roms_field_copy (self, rhs)
     N   = UBOUND(rhs%val, DIM=3)
 
     allocate ( self%val(LBi:UBi, LBj:UBj, N) )
-    self%N = N
-
-    self%name = rhs%name                      ! update field name and metadata
-    self%metadata = rhs%metadata
-    self%metadata%name = rhs%name 
+    self%N = rhs%N
   END IF
 
   ! Special case for processing RHS variable with GeoVaLs as short-name.
@@ -316,13 +329,13 @@ SUBROUTINE roms_field_delete (self)
   CLASS (roms_field), intent(inout) :: self      !< Field object
 
   IF (LdebugField .and. (my_comm%rank() .eq. 0)) THEN
-    PRINT '(2a,a5,5(a,i0))', 'ROMS_DEBUG roms_field::delete:',                 &
-                             ', variable = ', self%metadata%io_name,           &
-                             '  LBi = ', LBOUND(self%val,DIM=1),               &
-                             ', UBi = ', UBOUND(self%val,DIM=1),               &
-                             ', LBj = ', LBOUND(self%val,DIM=2),               &
-                             ', UBj = ', UBOUND(self%val,DIM=2),               &
-                             ', N = ',   UBOUND(self%val,DIM=3)
+    PRINT '(3a,t55,5(a,i0))', 'ROMS_DEBUG roms_field::delete:',                 &
+                              ' variable = ', self%metadata%short_name,         &
+                              '  LBi = ', LBOUND(self%val,DIM=1),               &
+                              ', UBi = ', UBOUND(self%val,DIM=1),               &
+                              ', LBj = ', LBOUND(self%val,DIM=2),               &
+                              ', UBj = ', UBOUND(self%val,DIM=2),               &
+                              ', N = ',   UBOUND(self%val,DIM=3)
   END IF
 
   self%IsAdjointField = .FALSE.
@@ -348,10 +361,10 @@ SUBROUTINE roms_field_delete (self)
     deallocate (self%metadata%levels)
   IF (allocated(self%metadata%name))                                           &
     deallocate (self%metadata%name)
-  IF (allocated(self%metadata%getval_name))                                    &
-    deallocate (self%metadata%getval_name)
-  IF (allocated(self%metadata%getval_name_surface))                            &
-    deallocate (self%metadata%getval_name_surface)
+  IF (allocated(self%metadata%short_name))                                     &
+    deallocate (self%metadata%short_name)
+  IF (allocated(self%metadata%surface_name))                                   &
+    deallocate (self%metadata%surface_name)
   IF (allocated(self%metadata%io_file))                                        &
     deallocate (self%metadata%io_file)
   IF (allocated(self%metadata%io_name))                                        &
@@ -372,6 +385,33 @@ SUBROUTINE roms_field_check_congruent (self, rhs)
   integer                        :: i
   character (len=1)              :: mydim
   character (len=4)              :: self_N, rhs_N
+
+  ! Report fields to process.
+
+  IF (LdebugField .and. (my_comm%rank() .eq. 0)) THEN
+    PRINT '(a)', 'ROMS_DEBUG roms_field::check_congruent:'
+    PRINT 10, '  SELF:  name = ', self%name,                                  &
+              ', short_name = ', self%metadata%short_name,                    &
+              ', metadata%name = ', self%metadata%name,                       &
+              ', surface_name = ', self%metadata%surface_name,                &
+              ', LBi = ', LBOUND(self%val,DIM=1),                             &
+              ', UBi = ', UBOUND(self%val,DIM=1),                             &
+              ', LBj = ', LBOUND(self%val,DIM=2),                             &
+              ', UBj = ', UBOUND(self%val,DIM=2),                             &
+              ', N = ',   SIZE(self%val,DIM=3), ', self%N = ', self%N
+    PRINT 10, '   RHS:  name = ', rhs%name,                                   &
+              ', short_name = ', rhs%metadata%short_name,                     &
+              ', metadata%name = ', rhs%metadata%name,                        &
+              ', surface_name = ', rhs%metadata%surface_name,                 &
+              ', LBi = ', LBOUND(rhs%val,DIM=1),                              &
+              ', UBi = ', UBOUND(rhs%val,DIM=1),                              &
+              ', LBj = ', LBOUND(rhs%val,DIM=2),                              &
+              ', UBj = ', UBOUND(rhs%val,DIM=2),                              &
+              ', N = ',   SIZE(rhs%val,DIM=3), ', rhs%N = ', rhs%N
+ 10 FORMAT (8a,6(a,i0))
+  END IF
+
+  ! Check fields for congruencia.
 
   IF (self%N .ne. rhs%N) THEN
     WRITE (self_N,'(i0)') self%N
@@ -511,8 +551,6 @@ END SUBROUTINE roms_field_stencil_interp
 !> Initializes ROMS field interpolation structure.
 
 SUBROUTINE roms_field_interp_initialize (self, interp, geom, gtype)
-
-  USE mod_ncparam, ONLY : r2dvar, u2dvar, v2dvar
 
   CLASS (roms_field),      intent(inout) :: self      !< source Field object
   TYPE (roms_interp_type), intent(inout) :: interp    !< Interpolation object
@@ -728,8 +766,6 @@ END FUNCTION roms_field_io_has_var
 !> It computes global field statistics: Min and Max.
 
 SUBROUTINE roms_field_stats (self, fstats)
-
-  USE get_hash_mod, ONLY : get_hash                   !< ROMS module
 
   CLASS (roms_field),     intent(in ) :: self         !< Field object  
   real (kind=kind_real),  intent(out) :: fstats(3)    !< Field statistics

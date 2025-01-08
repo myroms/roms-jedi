@@ -1,5 +1,4 @@
-
-! (C) Copyright 2017-2024 UCAR
+! (C) Copyright 2017-2025 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -26,9 +25,12 @@ USE fckit_mpi_module,           ONLY : fckit_mpi_comm
 USE kinds,                      ONLY : kind_real
 USE oops_variables_mod,         ONLY : oops_variables
 
-USE mod_ncparam,                ONLY : r2dvar
-USE mod_param,                  ONLY : iNLM
+!> ROMS module association.
+
+USE mod_param,                  ONLY : iNLM, r2dvar
 USE mp_exchange_mod,            ONLY : mp_exchange2d
+
+!> ROMS-JEDI interface module association.
 
 USE roms_fields_metadata_mod,   ONLY : roms_field_metadata
 USE roms_fieldsutils_mod,       ONLY : LdebugGeometry
@@ -168,7 +170,7 @@ SUBROUTINE roms_geom_get_num_levels_c (c_key_self, c_vars,                     &
   integer (c_size_t),  intent(in ) :: c_levels_size
   integer (c_size_t),  intent(out) :: c_levels(c_levels_size)
 
-  TYPE (roms_field_metadata)       :: field
+  TYPE (roms_field_metadata)       :: field_meta
   TYPE (roms_geom), pointer        :: self
   TYPE (oops_variables)            :: vars
   integer                          :: i
@@ -180,20 +182,20 @@ SUBROUTINE roms_geom_get_num_levels_c (c_key_self, c_vars,                     &
   DO i = 1,vars%nvars()
 
     field_name = vars%variable(i)
-    field = self%fieldsinfo%get(field_name)
+    field_meta = self%FieldsInfo%get(field_name)
 
-    SELECT CASE(field%levels)
+    SELECT CASE(field_meta%levels)
       CASE ('1', 'surface')
         c_levels(i) = 1
       CASE ('full_ocn')
-        IF (field_name .eq. field%getval_name_surface) THEN
+        IF (field_name .eq. field_meta%surface_name) THEN
           c_levels(i) = 1
         ELSE
           c_levels(i) = self%N
         END IF
       CASE DEFAULT
         CALL abor1_ftn ('c_roms_geo_get_num_levels: Unknown "levels" ' //      &
-                        field%levels)
+                        field_meta%levels)
     END SELECT
 
   END DO

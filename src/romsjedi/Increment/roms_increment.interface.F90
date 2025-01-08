@@ -1,4 +1,4 @@
-! (C) Copyright 2020-2022 UCAR
+! (C) Copyright 2020-2025 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -122,7 +122,7 @@ SUBROUTINE roms_increment_dirac_c (c_key_self, c_conf)                         &
   integer (c_int),     intent(in) :: c_key_self     !< Increment object pointer
   TYPE (c_ptr), value, intent(in) :: c_conf         !< Configuration
 
-  TYPE (roms_increment), pointer :: self
+  TYPE (roms_increment),  pointer :: self
 
   CALL roms_increment_registry%get (c_key_self, self)
   CALL self%dirac (fckit_configuration(c_conf))
@@ -135,9 +135,9 @@ END SUBROUTINE roms_increment_dirac_c
 SUBROUTINE roms_increment_random_c (c_key_self)                                &
                               BIND (c, name='roms_increment_random_f90')
 
-  integer (c_int),    intent(in) :: c_key_self      !< Increment object pointer
+  integer (c_int),     intent(in) :: c_key_self     !< Increment object pointer
 
-  TYPE (roms_increment), pointer :: self
+  TYPE (roms_increment),  pointer :: self
 
   CALL roms_increment_registry%get (c_key_self, self)
   CALL self%random ()

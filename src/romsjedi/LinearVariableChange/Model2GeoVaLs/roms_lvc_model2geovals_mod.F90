@@ -1,4 +1,4 @@
-! (C) Copyright 2020-2023 UCAR
+! (C) Copyright 2020-2025 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -20,10 +20,11 @@ USE kinds,                      ONLY : kind_real
 
 USE fckit_configuration_module, ONLY : fckit_configuration
 
+!> ROMS-JEDI interface module association.
+
 USE roms_field_mod,             ONLY : roms_field
 USE roms_fieldsutils_mod,       ONLY : LdebugLinearModel2Geovals
-USE roms_geom_mod,              ONLY : roms_geom,                              &
-                                       roms_tile
+USE roms_geom_mod,              ONLY : roms_geom
 USE roms_increment_mod,         ONLY : roms_increment
 USE roms_state_mod,             ONLY : roms_state
 
@@ -32,14 +33,6 @@ implicit none
 !-------------------------------------------------------------------------------
 
 TYPE, PUBLIC :: roms_lvc_model2geovals
-
-  integer :: ng                            ! nested grid number
-  integer :: tile                          ! domain parallel partition tile
-
-  integer :: LBi, UBi, LBj, UBj, LBk, UBk  ! array(i,j,k) allocation bounds
-  integer :: N                             ! number of vertical levels
-
-  TYPE (roms_tile) :: bounds(4)            ! tile indices range
 
   CONTAINS
 
@@ -50,8 +43,8 @@ TYPE, PUBLIC :: roms_lvc_model2geovals
 
 END TYPE roms_lvc_model2geovals
 
-!-------------------------------------------------------------------------------
 PRIVATE
+
 !-------------------------------------------------------------------------------
 CONTAINS
 !-------------------------------------------------------------------------------
@@ -66,22 +59,6 @@ SUBROUTINE roms_lvc_model2geovals_create (self, geom, bg, fg, conf)
   TYPE (roms_state),              intent(in   ) :: bg    !< Background State
   TYPE (roms_state),              intent(in   ) :: fg    !< Foreground State
   TYPE (fckit_configuration),     intent(in   ) :: conf  !< Configuration
-
-  !> Domain decomposition ranges and indices.
-
-  self%ng   = geom%ng
-  self%tile = geom%tile
-
-  self%LBi = geom%LBi                   ! lower bound I-dimension
-  self%UBi = geom%UBi                   ! upper bound I-dimension
-  self%LBj = geom%LBj                   ! lower bound J-dimension
-  self%UBj = geom%UBj                   ! upper bound J-dimension
-
-  self%N   = geom%N                     ! number of vertical levels
-  self%LBk = 1                          ! lower bound K-dimension
-  self%UBk = geom%N                     ! upper bound K-dimension
-
-  self%bounds = geom%bounds             ! tile indices range
 
   ! TODO: If background trajectory is required, get needed fields from state.
 
@@ -99,192 +76,263 @@ SUBROUTINE roms_lvc_model2geovals_delete (self)
 END SUBROUTINE roms_lvc_model2geovals_delete
 
 ! ------------------------------------------------------------------------------
-!> It applies the multiply operator for the Linear Variable Change to
-!  GeoVaLs object.
+!> It applies the multiply operator for the Linear Variable Change from
+!  Model-to-GeoVaLs increments.
 
 SUBROUTINE roms_lvc_model2geovals_multiply (self, geom, dxm, dxg)
 
-  USE strings_mod, ONLY : join_string                    !< ROMS strings module
+  CLASS (roms_lvc_model2geovals), intent(inout) :: self  !< LinVarChange object
+  TYPE (roms_geom),               intent(inout) :: geom  !< Geometry object
+  TYPE (roms_increment),          intent(in   ) :: dxm   !< Model Increment
+  TYPE (roms_increment),          intent(inout) :: dxg   !< GeoVaLs Increment
 
-  CLASS (roms_lvc_model2geovals), intent(inout) :: self  !< VarChange object
-  TYPE (roms_geom),               intent(inout) :: geom  !< Geometry
-  TYPE (roms_increment),          intent(in   ) :: dxm   !< Increment (in)
-  TYPE (roms_increment),          intent(inout) :: dxg   !< Increment (out)
+  TYPE (roms_field),                    pointer :: field_in, field_out
 
-  TYPE (roms_field),                    pointer :: field
+  integer                                       :: N, Nsur
+  integer                                       :: counter, findex, i
+  integer                                       :: inp_fields, out_fields
 
-  integer                                       :: Nsur, i
-  integer                                       :: lstr1, lstr2
+  integer,          dimension(SIZE(dxg%fields)) :: unFound
+
   real (kind=kind_real)                         :: stats(3)
-  character (len=:), allocatable                :: dxg_vars(:), dxm_vars(:)
-  character (len=524)                           :: dxg_string, dxm_string
 
-  ! Debug input and output increment metadata.
+  character (len=512)                           :: field_name
 
-  IF (LdebugLinearModel2Geovals .and. (geom%f_comm%rank() .eq. 0)) THEN
-    ALLOCATE (character(len=1024) :: dxg_vars(SIZE(dxg%fields)))
-    DO i = 1, SIZE(dxg%fields)
-      dxg_vars(i) = dxg%fields(i)%name
-    END DO 
-    CALL join_string (dxg_vars, SIZE(dxg%fields), dxg_string, lstr1)
+  ! Report variables to process.
 
-    ALLOCATE (character(len=1024) :: dxm_vars(SIZE(dxm%fields)))
-    DO i = 1, SIZE(dxm%fields)
-      dxm_vars(i) = dxm%fields(i)%name
-    END DO 
-    CALL join_string (dxm_vars, SIZE(dxm%fields), dxm_string, lstr2)
+  IF (LdebugLinearModel2Geovals) THEN
+    inp_fields = SIZE(dxm%fields)
+    IF (geom%f_comm%rank() .eq. 0)                                             &
+      PRINT 10, 'ROMS_DEBUG roms_lvc_model2geovals::multiply:  Input',         &
+                ' DXM Vars = ', (dxm%fields(i)%name, i=1,inp_fields)
+    DO i = 1, inp_fields
+      CALL dxm%fields(i)%stats (stats)
+      IF (geom%f_comm%rank() .eq. 0)                                           &
+        PRINT 20, dxm%fields(i)%name, stats(1), stats(2), INT(stats(3))
+    END DO
 
-    PRINT '(5a)', 'ROMS_DEBUG roms_lvc_model2geovals::multiply:',              &
-                  ' output DXG vars: ', dxg_string(1:lstr1),                   &
-                  ' | input DXM vars: ', dxm_string(1:lstr2)
+    out_fields = SIZE(dxg%fields)
+    IF (geom%f_comm%rank() .eq. 0)                                             &
+      PRINT 10, 'ROMS_DEBUG roms_lvc_model2geovals::multiply:  Input',         &
+                ' DXG Vars = ', (dxg%fields(i)%name, i=1,out_fields)
+    DO i = 1, out_fields
+      CALL dxg%fields(i)%stats (stats)
+      IF (geom%f_comm%rank() .eq. 0)                                           &
+        PRINT 20, dxg%fields(i)%name, stats(1), stats(2), INT(stats(3))
+    END DO
+ 10 FORMAT (a, a, *(1x,a,','))
+ 20 FORMAT (2x,'- ',a35,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,      &
+            ',  CheckSum = ', i0)
   END IF
 
-  ! Apply the required linear variable change to variables in the DXG vector.
-  ! Here, the number of variables in the increment vectors DXM and DXG state
-  ! vectors are the same (usually, we have  ssh, uocn, vocn, tocn, and socn).
+  ! Identity Transform: Copy state variable values with a one-to-one
+  !                     relationship.
+
+  counter = 0
+  unFound = 0
 
   DO i = 1, SIZE(dxg%fields)
+    IF (dxm%has(dxg%fields(i)%name, findex)) THEN
+      dxg%fields(i)%val = dxm%fields(findex)%val
+    ELSE
+      counter = counter + 1
+      unFound(counter) = i
+    END IF
+  END DO
+
+  ! Variable Changes Transform: There are unfound variables to process.
+
+  IF (counter .gt. 0) THEN
 
     IF (LdebugLinearModel2Geovals .and. (geom%f_comm%rank() .eq. 0)) THEN
-    ! PRINT '(8a)', 'ROMS_DEBUG roms_lvc_model2geovals::multiply: '//          &
-    !               'Changing DXG name = ', dxg%fields(i)%name,                &
-    !               ', metadata%name = ',                                      &
-    !               dxg%fields(i)%metadata%name,                               &
-    !               ', metadata%getval_name = ',                               &
-    !               dxg%fields(i)%metadata%getval_name,                        &
-    !               ', metadata%getval_name_surface = ',                       &
-    !               dxg%fields(i)%metadata%getval_name_surface
+      PRINT 10,'ROMS_DEBUG roms_lvc_model2geovals::multiply:  ',               &
+               'unFound Vars = ', (dxg%fields(unFound(i))%name, i=1,counter)
     END IF
 
-    CALL dxm%get (dxg%fields(i)%metadata%name, field)
+    DO i = 1, counter
 
-    IF ((dxg%fields(i)%name .eq. field%metadata%name) .or.                     &
-        (dxg%fields(i)%name .eq. field%metadata%getval_name)) THEN
+      field_name = dxg%fields(unFound(i))%name
 
-      ! Loading full field.
+      CALL dxg%get (TRIM(field_name), field_out)
 
-      dxg%fields(i)%val(:,:,:) = field%val(:,:,:)
+      SELECT CASE (TRIM(field_name))
 
-    ELSE IF (dxg%fields(i)%name .eq. field%metadata%getval_name_surface) THEN
+        CASE ('sea_surface_temperature')               !< SST
 
-      ! Loading surface field.
+          IF (dxm%has('sea_water_potential_temperature', findex)) THEN
+            CALL dxm%get ('sea_water_potnetial_temperature', field_in)
+          ELSE
+            CALL dxm%get ('sea_water_temperature', field_in)
+          END IF
+          Nsur = field_in%N
+          field_out%val(:,:,1) = field_in%val(:,:,Nsur)
+!         field_out%N = 1
 
-      Nsur = field%N
-      dxg%fields(i)%val(:,:,1) = field%val(:,:,Nsur)
+        CASE ('sea_surface_salinity')                  !< SSS
 
-    ELSE
+          CALL dxm%get ('sea_water_salinity', field_in)
+          Nsur = field_in%N
+          field_out%val(:,:,1) = field_in%val(:,:,Nsur)
+!         field_out%N = 1
 
-      CALL abor1_ftn ('roms_lvc_model2geovals_multiply: error while '//        &
-                      'processing field: '//TRIM(dxg%fields(i)%name))
-    END IF
+        CASE DEFAULT
 
-    IF (LdebugLinearModel2Geovals) THEN
+          CALL abor1_ftn ('roms_lvc_model2geovals_multiply: cannot find '//    &
+                          'an option for processing field: '//TRIM(field_name))
+
+      END SELECT
+
+    END DO
+
+  END IF  
+
+  ! Report debugging information.
+
+  IF (LdebugLinearModel2Geovals) THEN
+    DO i = 1, SIZE(dxg%fields)
       CALL dxg%fields(i)%stats (stats)
       IF (geom%f_comm%rank() .eq. 0) THEN
-        PRINT 10, dxg%fields(i)%name, stats(1), stats(2), INT(stats(3))
- 10     FORMAT (2x,'- ',a35,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,  &
-                ',  CheckSum = ', i0)
+        IF (i.eq.1) PRINT '(a)', 'ROMS_DEBUG roms_lvc_model2geovals::'//       &
+                                 'multiply:  Output DXG Vars:'
+        PRINT 20, dxg%fields(i)%name, stats(1), stats(2), INT(stats(3))
       END IF
-    END IF
-
-  END DO
+    END DO
+  END IF
 
 END SUBROUTINE roms_lvc_model2geovals_multiply
 
 ! ------------------------------------------------------------------------------
-!> It applies the adjoint multiply operator for the Linear Variable Change to
-!  GeoVaLs object.
+!> It applies the adjoint multiply operator for the Linear Variable Change from
+!  Model-to-GeoVaLs increments.
 
 SUBROUTINE roms_lvc_model2geovals_multiplyAD (self, geom, dxg, dxm)
 
-  USE strings_mod, ONLY : join_string                    !< ROMS strings module
-
   CLASS (roms_lvc_model2geovals), intent(inout) :: self  !< VarChange object
-  TYPE (roms_geom),               intent(inout) :: geom  !< Geometry
-  TYPE (roms_increment),          intent(in   ) :: dxg   !< Increment (in)
-  TYPE (roms_increment),          intent(inout) :: dxm   !< Increment (out)
+  TYPE (roms_geom),               intent(in   ) :: geom  !< Geometry object
+  TYPE (roms_increment),          intent(in   ) :: dxg   !< GeoVaLs Increment
+  TYPE (roms_increment),          intent(inout) :: dxm   !< Model Increment
 
-  TYPE (roms_field),                    pointer :: field
+  TYPE (roms_field),                    pointer :: field_in, field_out
 
-  integer                                       :: Nsur, i
-  integer                                       :: lstr1, lstr2
+  integer                                       :: N, Nsur
+  integer                                       :: counter, findex, i
+  integer                                       :: inp_fields, out_fields
+
+  integer,          dimension(SIZE(dxm%fields)) :: unFound
+
   real (kind=kind_real)                         :: stats(3)
-  character (len=:), allocatable                :: dxg_vars(:), dxm_vars(:)
-  character (len=524)                           :: dxg_string, dxm_string
 
-  ! Debug input and output increment metadata.
+  character (len=512)                           :: field_name
 
-  IF (LdebugLinearModel2Geovals .and. (geom%f_comm%rank() .eq. 0)) THEN
-    ALLOCATE (character(len=1024) :: dxg_vars(SIZE(dxg%fields)))
-    DO i = 1, SIZE(dxg%fields)
-      dxg_vars(i) = dxg%fields(i)%name
-    END DO 
-    CALL join_string (dxg_vars, SIZE(dxg%fields), dxg_string, lstr1)
+  ! Report variables to process.
 
-    ALLOCATE (character(len=1024) :: dxm_vars(SIZE(dxm%fields)))
-    DO i = 1, SIZE(dxm%fields)
-      dxm_vars(i) = dxm%fields(i)%name
-    END DO 
-    CALL join_string (dxm_vars, SIZE(dxm%fields), dxm_string, lstr2)
+  IF (LdebugLinearModel2Geovals) THEN
+    inp_fields = SIZE(dxg%fields)
+    IF (geom%f_comm%rank() .eq. 0)                                             &
+      PRINT 10, 'ROMS_DEBUG roms_lvc_model2geovals::multiplyAD:  Input',       &
+                ' DXG Vars = ', (dxg%fields(i)%name, i=1,inp_fields)
+    DO i = 1, inp_fields
+      CALL dxg%fields(i)%stats (stats)
+      IF (geom%f_comm%rank() .eq. 0)                                           &
+        PRINT 20, dxg%fields(i)%name, stats(1), stats(2), INT(stats(3))
+    END DO
 
-    PRINT '(5a)', 'ROMS_DEBUG roms_lvc_model2geovals::multiplyAD:',            &
-                  ' input DXG vars: ', dxg_string(1:lstr1),                    &
-                  ' | output DXM vars: ', dxm_string(1:lstr2)
+    out_fields = SIZE(dxm%fields)
+    IF (geom%f_comm%rank() .eq. 0)                                             &
+      PRINT 10, 'ROMS_DEBUG roms_lvc_model2geovals::multiplyAD:  Input',       &
+                ' DXM Vars = ', (dxm%fields(i)%name, i=1,out_fields)
+    DO i = 1, out_fields
+      CALL dxm%fields(i)%stats (stats)
+      IF (geom%f_comm%rank() .eq. 0)                                           &
+        PRINT 20, dxm%fields(i)%name, stats(1), stats(2), INT(stats(3))
+    END DO
+ 10 FORMAT (a, a, *(1x,a,','))
+ 20 FORMAT (2x,'- ',a35,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,      &
+            ',  CheckSum = ', i0)
   END IF
 
   ! Apply the required adjoint variable change to variables in the DXM vector.
-  ! In most cases, the number of variables in the DXM state vector (ssh, uocn,
-  ! vocn, tocn, and socn) is larger the than in the DXG increment vector, which
-  ! contains the observed variables (sea_water_temperature, sea_water_salinity,
-  ! sea_surface_temperature, and sea_surface_height_above_geoid)
+  ! In most cases, the number of variables in the DXM increment vector is larger
+  ! the than in the DXG increment vector, which contains only fields associated
+  ! with the observations for a particular data assimilation cycle.
 
-  DO i = 1, SIZE(dxg%fields)
+  counter = 0
+  unFound = 0
+
+  DO i = 1, SIZE(dxm%fields)
+    IF (dxg%has(dxm%fields(i)%name, findex)) THEN
+      dxm%fields(i)%val = dxm%fields(i)%val + dxg%fields(findex)%val
+    ELSE
+      counter = counter + 1
+      unFound(counter) = i
+    END IF
+  END DO
+
+  ! Variable Changes Transform: There are unfound variables to process.
+
+  IF (counter .gt. 0) THEN
 
     IF (LdebugLinearModel2Geovals .and. (geom%f_comm%rank() .eq. 0)) THEN
-    ! PRINT '(8a)', 'ROMS_DEBUG roms_lvc_model2geovals::multiplyAD: '//        &
-    !               'Updating DXM name = ', dxg%fields(i)%name,                &
-    !               ', metadata%name = ',                                      &
-    !               dxg%fields(i)%metadata%name,                               &
-    !               ', metadata%getval_name = ',                               &
-    !               dxg%fields(i)%metadata%getval_name,                        &
-    !               ', metadata%getval_name_surface = ',                       &
-    !               dxg%fields(i)%metadata%getval_name_surface
+      PRINT 10,'ROMS_DEBUG roms_lvc_model2geovals::multiplyAD:  ',               &
+               'unFound Vars = ', (dxm%fields(unFound(i))%name, i=1,counter)
     END IF
 
-    CALL dxm%get (dxg%fields(i)%metadata%name, field)
+    DO i = 1, counter
 
-    IF ((dxg%fields(i)%name .eq. field%metadata%name) .or.                     &
-        (dxg%fields(i)%name .eq. field%metadata%getval_name)) THEN
+      field_name = dxm%fields(unFound(i))%name
 
-      ! Adjoint of load full field.
+      CALL dxm%get (TRIM(field_name), field_out)
 
-      field%val = field%val + dxg%fields(i)%val
+      SELECT CASE (TRIM(field_name))
 
-    ELSE IF (dxg%fields(i)%name .eq. field%metadata%getval_name_surface) THEN
+        CASE ('sea_surface_temperature')               !< SST
 
-      ! Adjoint of load surface field.
+          IF (dxg%has('sea_water_potential_temperature', findex)) THEN
+            CALL dxg%get ('sea_water_potential_temperature', field_in)
+          ELSE
+            CALL dxg%get ('sea_water_temperature', field_in)
+          END IF
+          Nsur = field_in%N
+          field_out%val(:,:,1) = field_out%val(:,:,1) + field_in%val(:,:,Nsur)
+!         field_out%N = 1
 
-      Nsur = field%N
-      field%val(:,:,Nsur) = field%val(:,:,Nsur) +                              &
-                            dxg%fields(i)%val(:,:,1)
+        CASE ('sea_surface_salinity')                  !< SSS
 
-    ELSE
+          CALL dxg%get ('sea_water_salinity', field_in)
+          Nsur = field_in%N
+          field_out%val(:,:,1) = field_out%val(:,:,1) + field_in%val(:,:,Nsur)
+!         field_out%N = 1
 
-      CALL abor1_ftn ('roms_lvc_model2geovals_multiplyAD: error while '//      &
-                          'processing field: '//TRIM(dxg%fields(i)%name))
+        CASE DEFAULT
 
-    END IF
+          !  Check only for fields in the input increment DXG, which are
+          !  associated with the observations to assimilate. Other fields
+          !  do not require variable changes.
 
-    IF (LdebugLinearModel2Geovals) THEN
-      CALL field%stats (stats)
+          IF (dxg%has(TRIM(field_name), findex)) THEN
+            CALL abor1_ftn ('roms_lvc_model2geovals_multiplyAD: cannot ' //    &
+                            'find an option for processing field: ' //         &
+                            TRIM(field_name))
+          END IF
+
+      END SELECT
+
+    END DO
+
+  END IF
+
+  ! Report debugging information.
+
+  IF (LdebugLinearModel2Geovals) THEN
+    DO i = 1, SIZE(dxm%fields)
+      CALL dxm%fields(i)%stats (stats)
       IF (geom%f_comm%rank() .eq. 0) THEN
-        PRINT 10, field%name, stats(1), stats(2), INT(stats(3))
- 10     FORMAT (2x,'- ',a35,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,    &
-                ',  CheckSum = ', i0)
+        IF (i.eq.1) PRINT '(a)', 'ROMS_DEBUG roms_lvc_model2geovals::'//       &
+                                 'multiplyAD:  Output DXM Vars:'
+        PRINT 20, dxm%fields(i)%name, stats(1), stats(2), INT(stats(3))
       END IF
-    END IF
-
-  END DO
+    END DO
+  END IF
 
 END SUBROUTINE roms_lvc_model2geovals_multiplyAD
 

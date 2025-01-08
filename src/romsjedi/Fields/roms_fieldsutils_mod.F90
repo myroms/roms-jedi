@@ -1,4 +1,4 @@
-! (C) Copyright 2017-2023 UCAR
+! (C) Copyright 2017-2025 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -61,17 +61,19 @@ END INTERFACE field_info
 
 ! ROMS-JEDI objects debugging switches retieved from environmental variables.
 
-logical, PUBLIC :: LdebugAnalyticInit        = .FALSE.
-logical, PUBLIC :: LdebugField               = .FALSE.
-logical, PUBLIC :: LdebugFields              = .FALSE.
-logical, PUBLIC :: LdebugFieldsUtils         = .FALSE.
-logical, PUBLIC :: LdebugGeometry            = .FALSE.
-logical, PUBLIC :: LdebugLinearModel         = .FALSE.
-logical, PUBLIC :: LdebugLinearModel2Geovals = .FALSE.
-logical, PUBLIC :: LdebugModel               = .FALSE.
-logical, PUBLIC :: LdebugModel2Geovals       = .FALSE.
-logical, PUBLIC :: LdebugTrajectory          = .FALSE.
-logical, PUBLIC :: set_environment           = .FALSE.
+logical, PUBLIC :: LdebugAnalyticInit         = .FALSE.
+logical, PUBLIC :: LdebugField                = .FALSE.
+logical, PUBLIC :: LdebugFields               = .FALSE.
+logical, PUBLIC :: LdebugFieldsUtils          = .FALSE.
+logical, PUBLIC :: LdebugGeometry             = .FALSE.
+logical, PUBLIC :: LdebugLinearModel          = .FALSE.
+logical, PUBLIC :: LdebugLinearModel2Analysis = .FALSE.
+logical, PUBLIC :: LdebugLinearModel2Geovals  = .FALSE.
+logical, PUBLIC :: LdebugModel                = .FALSE.
+logical, PUBLIC :: LdebugModel2Analysis       = .FALSE.
+logical, PUBLIC :: LdebugModel2Geovals        = .FALSE.
+logical, PUBLIC :: LdebugTrajectory           = .FALSE.
+logical, PUBLIC :: set_environment            = .FALSE.
 
 PRIVATE
 
@@ -141,7 +143,6 @@ FUNCTION ana_fields (name, mask, lon, lat, z, h, Tb, Sb, Ub, Vb)               &
     CASE ('tocn', 'ptocn',                                                     &
           'sea_water_temperature',                                             &
           'sea_water_potential_temperature',                                   &
-          'sst', 'SST',                                                        &
           'sea_surface_temperature',                                           &
           'sea_surface_skin_temperature')
       fac1=COS(lon*deg2rad)*COS(lat*deg2rad)/dscale
@@ -151,7 +152,6 @@ FUNCTION ana_fields (name, mask, lon, lat, z, h, Tb, Sb, Ub, Vb)               &
     CASE ('socn',                                                              &
           'sea_water_practical_salinity',                                      &
           'sea_water_salinity',                                                &
-          'sss', 'SSS',                                                        &
           'sea_surface_salinity')
       fac1=COS(lon*deg2rad)*COS(lat*deg2rad)/dscale
       fac2=-0.5*U0*dscale*f*SQRT(pi)/(Scoef*g*h)
@@ -584,16 +584,18 @@ SUBROUTINE roms_get_env ()
 
   IF (.not.set_environment) THEN
     set_environment = .TRUE.
-    status = get_env('LdebugAnalyticInit',        LdebugAnalyticInit)
-    status = get_env('LdebugField',               LdebugField)
-    status = get_env('LdebugFields',              LdebugFields)
-    status = get_env('LdebugFieldsUtils',         LdebugFieldsUtils)
-    status = get_env('LdebugGeometry',            LdebugGeometry)
-    status = get_env('LdebugLinearModel',         LdebugLinearModel)
-    status = get_env('LdebugLinearModel2Geovals', LdebugLinearModel2Geovals)
-    status = get_env('LdebugModel',               LdebugModel)
-    status = get_env('LdebugModel2Geovals',       LdebugModel2Geovals)
-    status = get_env('LdebugTrajectory',          LdebugTrajectory)
+    status = get_env('LdebugAnalyticInit',         LdebugAnalyticInit)
+    status = get_env('LdebugField',                LdebugField)
+    status = get_env('LdebugFields',               LdebugFields)
+    status = get_env('LdebugFieldsUtils',          LdebugFieldsUtils)
+    status = get_env('LdebugGeometry',             LdebugGeometry)
+    status = get_env('LdebugLinearModel',          LdebugLinearModel)
+    status = get_env('LdebugLinearModel2Analysis', LdebugLinearModel2Analysis)
+    status = get_env('LdebugLinearModel2Geovals',  LdebugLinearModel2Geovals)
+    status = get_env('LdebugModel',                LdebugModel)
+    status = get_env('LdebugModel2Analysis',       LdebugModel2Analysis)
+    status = get_env('LdebugModel2Geovals',        LdebugModel2Geovals)
+    status = get_env('LdebugTrajectory',           LdebugTrajectory)
   END IF
 
 END SUBROUTINE roms_get_env
@@ -614,63 +616,103 @@ FUNCTION roms_metadata_index (name) RESULT (var_index)
   ! Set ROMS native variable index.
 
   SELECT CASE (TRIM(name))
-    CASE ('ssh')
+    CASE ('ssh',                                                               &
+          'sea_surface_height_above_geoid')
       var_index = idFsur
-    CASE ('u2docn', 'ubar')
+    CASE ('u2docn', 'ubar',                                                    &
+          'barotropic_sea_water_x_velocity')
       var_index = idUbar
-    CASE ('v2docn', 'vbar')
+    CASE ('v2docn', 'vbar',                                                    &
+          'barotropic_sea_water_y_velocity')
       var_index = idVbar
-    CASE ('DU_avg1')
+    CASE ('DU_avg1',                                                           &
+          'sea_water_time_average_of_barotropic_x_velocity_flux')
       var_index = idUfx1
-    CASE ('DV_avg1')
+    CASE ('DV_avg1',                                                           &
+          'sea_water_time_average_of_barotropic_y_velocity_flux')
       var_index = idVfx1
-    CASE ('DU_avg2')
+    CASE ('DU_avg2',                                                           &
+          'sea_water_correct_barotropic_x_velocity_flux_for_coupling')
       var_index = idUfx2
-    CASE ('DV_avg2')
-      var_index = idVfx2
-    CASE ('uocn')
+    CASE ('DV_avg2',                                                           &
+          'sea_water_correct_barotropic_y_velocity_flux_for_coupling')
+      var_index = idVfx2  
+    CASE ('uocn',                                                              &
+          'sea_water_x_velocity')
       var_index = idUvel
-    CASE ('vocn')
+    CASE ('uaocn',                                                             &
+          'eastward_sea_water_velocity')
+      var_index = idu3dE
+    CASE ('vocn',                                                              &
+          'sea_water_y_velocity')
       var_index = idVvel
-    CASE ('tocn')
+    CASE ('vaocn',                                                             &
+          'northward_sea_water_velocity')
+      var_index = idv3dN
+    CASE ('tocn',                                                              &
+          'sea_water_temperature',                                             &
+          'sea_water_potential_temperature')
       var_index = idTvar(itemp)
-    CASE ('socn')
+    CASE ('socn',                                                              &
+          'sea_water_salinity')
       var_index = idTvar(isalt)
-    CASE ('Hzocn')
+    CASE ('Hzocn',                                                             &
+          'model_level_thickness_at_cell_center')
       var_index = idHzdz
-    CASE ('Ktocn', 'AKt')
+    CASE ('Ktocn', 'AKt',                                                      &
+          'vertical_diffusion_coefficient_of_temperature_in_sea_water')
       var_index = idTdif
-    CASE ('Ksocn', 'AKs')
+    CASE ('Ksocn', 'AKs',                                                      &
+          'vertical_diffusion_coefficient_of_salinity_in_sea_water')
       var_index = idSdif
-    CASE ('Kvocn', 'AKv')
+    CASE ('Kvocn', 'AKv',                                                      &
+          'vertical_viscosity_coefficient_of_sea_water')
       var_index = idVvis
-    CASE ('hocn')
+    CASE ('hocn',                                                              &
+          'sea_floor_depth')
       var_index = idtopo
-    CASE ('z0ocn_r', 'zocn_r')
+    CASE ('z0ocn_r',                                                           &
+          'unvarying_model_level_depth_at_cell_center',                        &
+          'zocn_r',                                                            &
+          'model_level_depth_at_cell_center')
       var_index = idpthR
-    CASE ('z0ocn_w', 'zocn_w')
+    CASE ('z0ocn_w',                                                           &
+          'unvarying_model_level_depth_at_cell_top_face',                      &
+          'zocn_w',                                                            &
+          'model_level_depth_at_cell_top_face')
       var_index = idpthW
-    CASE ('Pair')
+    CASE ('Pair',                                                              &
+          'surface_air_pressure')
       var_index = idpair
-    CASE ('Uwind')
+    CASE ('Uwind',                                                             &
+          'surface_eastward_wind')
       var_index = idUair
-    CASE ('Vwind')
+    CASE ('Vwind',                                                             &
+          'surface_northward_wind')
       var_index = idVair
-    CASE ('sustr')
+    CASE ('sustr',                                                             &
+          'surface_downward_x_stress')
       var_index = idUsms
-    CASE ('svstr')
+    CASE ('svstr',                                                             &
+          'surface_downward_y_stress')
       var_index = idVsms
-    CASE ('shflux')
+    CASE ('shflux',                                                            &
+          'surface_downward_heat_flux_in_sea_water')
       var_index = idTsur(itemp)
-    CASE ('ssflux')
+    CASE ('ssflux',                                                            &
+          'salt_flux_into_sea_water')
       var_index = idTsur(isalt)
-    CASE ('latent')
+    CASE ('latent',                                                            &
+          'surface_upward_latent_heat_flux')
       var_index = idLhea
-    CASE ('sensible')
+    CASE ('sensible',                                                          &
+          'surface_upward_sensible_heat_flux')
       var_index = idShea
-    CASE ('lwrad')
+    CASE ('lwrad',                                                             &
+          'surface_net_downward_longwave_flux')
       var_index = idLrad
-    CASE ('swrad')
+    CASE ('swrad',                                                             &
+          'net_downward_shortwave_flux_at_sea_water_surface')
       var_index = idSrad
     CASE DEFAULT
       WRITE (Message,'(2a)')                                                   &
@@ -696,9 +738,16 @@ FUNCTION roms_tracer_index (name) RESULT (tracer_index)
   ! Set ROMS tracer-type variable and diffusion array index.
 
   SELECT CASE (TRIM(name))
-    CASE ('tocn', 'Ktocn')                 !< potential temperature
+    CASE ('tocn',                                                              &
+          'sea_water_temperature',                                             &
+          'sea_water_potential_temperature',                                   &
+          'Ktocn',                                                             &
+          'vertical_diffusion_coefficient_of_temperature_in_sea_water')
       tracer_index = itemp
-    CASE ('socn', 'Ksocn')                 !< salinity
+    CASE ('socn',                                                              &
+          'sea_water_salinity',                                                &
+          'Ksocn',                                                             &
+          'vertical_diffusion_coefficient_of_salinity_in_sea_water')
       tracer_index = isalt
     CASE DEFAULT
       WRITE (Message,'(2a)')                                                   &
@@ -808,7 +857,6 @@ SUBROUTINE roms_create_ncfile_nf90 (ng, model, LocalPET, S, metadata)
   TYPE (roms_field_metadata), intent(in   ) :: metadata(:) !< field Metadata
 
   integer                      :: i, itrc
-  integer                      :: OldFillMode
   integer                      :: DimIDs(nDimID)
   integer                      :: r2dgrd(3), u2dgrd(3), v2dgrd(3)
   integer                      :: r3dgrd(4), u3dgrd(4), v3dgrd(4), w3dgrd(4)
@@ -918,11 +966,12 @@ SUBROUTINE roms_create_ncfile_nf90 (ng, model, LocalPET, S, metadata)
 
     SELECT CASE (metadata(i)%name)
 
-      CASE ('ssh')                             !< free-surface
+      CASE ('ssh',                                                             &
+            'sea_surface_height_above_geoid')
 
         Vinfo( 1)=Vname(1,idFsur)
         Vinfo( 2)=Vname(2,idFsur)
-        Vinfo(21)=metadata(i)%getval_name
+        Vinfo(21)=metadata(i)%name
         Vinfo( 3)=Vname(3,idFsur)
         Vinfo(16)=Vname(1,idtime)
         Vinfo(22)='coordinates'
@@ -932,11 +981,12 @@ SUBROUTINE roms_create_ncfile_nf90 (ng, model, LocalPET, S, metadata)
                              NF_FOUT, 3, r2dgrd, Aval, Vinfo, ncname),         &
                      nf90_noerr, io_nf90, __LINE__, MyFile)
 
-      CASE ('u2docn')                          !< 2D U-momentum component
+      CASE ('u2docn',                                                          &
+            'barotropic_sea_water_x_velocity')
 
         Vinfo( 1)=Vname(1,idUbar)
         Vinfo( 2)=Vname(2,idUbar)
-        Vinfo(21)=metadata(i)%getval_name
+        Vinfo(21)=metadata(i)%name
         Vinfo( 3)=Vname(3,idUbar)
         Vinfo(16)=Vname(1,idtime)
         Vinfo(22)='coordinates'
@@ -946,11 +996,12 @@ SUBROUTINE roms_create_ncfile_nf90 (ng, model, LocalPET, S, metadata)
                              NF_FOUT, 3, u2dgrd, Aval, Vinfo, ncname),         &
                      nf90_noerr, io_nf90, __LINE__, MyFile)
 
-      CASE ('v2docn')                          !< 2D v-momentum component
+      CASE ('v2docn',                                                          &
+            'barotropic_sea_water_y_velocity')
 
         Vinfo( 1)=Vname(1,idVbar)
         Vinfo( 2)=Vname(2,idVbar)
-        Vinfo(21)=metadata(i)%getval_name
+        Vinfo(21)=metadata(i)%name
         Vinfo( 3)=Vname(3,idVbar)
         Vinfo(14)=Vname(4,idVbar)
         Vinfo(16)=Vname(1,idtime)
@@ -961,11 +1012,12 @@ SUBROUTINE roms_create_ncfile_nf90 (ng, model, LocalPET, S, metadata)
                              NF_FOUT, 3, v2dgrd, Aval, Vinfo, ncname),         &
                      nf90_noerr, io_nf90, __LINE__, MyFile)
 
-      CASE ('DU_avg1')                         !< averaged 2D U-momentum flux
+      CASE ('DU_avg1',                                                         &
+            'sea_water_time_average_of_barotropic_x_velocity_flux')
 
         Vinfo( 1)=Vname(1,idUfx1)
         Vinfo( 2)=Vname(2,idUfx1)
-        Vinfo(21)=metadata(i)%getval_name
+        Vinfo(21)=metadata(i)%name
         Vinfo( 3)=Vname(3,idUfx1)
         Vinfo(16)=Vname(1,idtime)
         Vinfo(22)='coordinates'
@@ -975,11 +1027,12 @@ SUBROUTINE roms_create_ncfile_nf90 (ng, model, LocalPET, S, metadata)
                              NF_FOUT, 3, u2dgrd, Aval, Vinfo, ncname),         &
                      nf90_noerr, io_nf90, __LINE__, MyFile)
 
-      CASE ('DU_avg2')                         !< coupling 2D U-momentum flux
+      CASE ('DU_avg2',                                                         &
+            'sea_water_correct_barotropic_x_velocity_flux_for_coupling')
 
         Vinfo( 1)=Vname(1,idUfx2)
         Vinfo( 2)=Vname(2,idUfx2)
-        Vinfo(21)=metadata(i)%getval_name
+        Vinfo(21)=metadata(i)%name
         Vinfo( 3)=Vname(3,idUfx2)
         Vinfo(16)=Vname(1,idtime)
         Vinfo(22)='coordinates'
@@ -989,11 +1042,12 @@ SUBROUTINE roms_create_ncfile_nf90 (ng, model, LocalPET, S, metadata)
                              NF_FOUT, 3, u2dgrd, Aval, Vinfo, ncname),         &
                      nf90_noerr, io_nf90, __LINE__, MyFile)
 
-      CASE ('DV_avg1')                         !< averaged 2D V-momentum flux
+      CASE ('DV_avg1',                                                         &
+            'sea_water_time_average_of_barotropic_y_velocity_flux')
 
         Vinfo( 1)=Vname(1,idVfx1)
         Vinfo( 2)=Vname(2,idVfx1)
-        Vinfo(21)=metadata(i)%getval_name
+        Vinfo(21)=metadata(i)%name
         Vinfo( 3)=Vname(3,idVfx1)
         Vinfo(16)=Vname(1,idtime)
         Vinfo(22)='coordinates'
@@ -1003,11 +1057,12 @@ SUBROUTINE roms_create_ncfile_nf90 (ng, model, LocalPET, S, metadata)
                              NF_FOUT, 3, v2dgrd, Aval, Vinfo, ncname),         &
                      nf90_noerr, io_nf90, __LINE__, MyFile)
 
-      CASE ('DV_avg2')                         !< coupling 2D V-momentum flux
+      CASE ('DV_avg2',                                                         &
+            'sea_water_correct_barotropic_y_velocity_flux_for_coupling')
 
         Vinfo( 1)=Vname(1,idVfx2)
         Vinfo( 2)=Vname(2,idVfx2)
-        Vinfo(21)=metadata(i)%getval_name
+        Vinfo(21)=metadata(i)%name
         Vinfo( 3)=Vname(3,idVfx2)
         Vinfo(16)=Vname(1,idtime)
         Vinfo(22)='coordinates'
@@ -1017,11 +1072,27 @@ SUBROUTINE roms_create_ncfile_nf90 (ng, model, LocalPET, S, metadata)
                              NF_FOUT, 3, v2dgrd, Aval, Vinfo, ncname),         &
                      nf90_noerr, io_nf90, __LINE__, MyFile)
 
-      CASE ('uocn')                            !< 3D U-momentum component
+       CASE ('uaocn',                                                          &
+             'eastward_sea_water_velocity')    !< A-grid
+
+        Vinfo( 1)=Vname(1,idu3dE)
+        Vinfo( 2)=Vname(2,idu3dE)
+        Vinfo(21)=metadata(i)%name
+        Vinfo( 3)=Vname(3,idu3dE)
+        Vinfo(16)=Vname(1,idtime)
+        Vinfo(22)='coordinates'
+        Aval(5)=REAL(Iinfo(1,idu3dE,ng),r8)
+
+        CALL nc_err (def_var(ng, model, S(ng)%ncid, S(ng)%Vid(idu3dE),         &
+                             NF_FOUT, 4, r3dgrd, Aval, Vinfo, ncname),         &
+                     nf90_noerr, io_nf90, __LINE__, MyFile)
+
+      CASE ('uocn',                                                            &
+            'sea_water_x_velocity')            !< C-grid
 
         Vinfo( 1)=Vname(1,idUvel)
         Vinfo( 2)=Vname(2,idUvel)
-        Vinfo(21)=metadata(i)%getval_name
+        Vinfo(21)=metadata(i)%name
         Vinfo( 3)=Vname(3,idUvel)
         Vinfo(16)=Vname(1,idtime)
         Vinfo(22)='coordinates'
@@ -1031,11 +1102,27 @@ SUBROUTINE roms_create_ncfile_nf90 (ng, model, LocalPET, S, metadata)
                              NF_FOUT, 4, u3dgrd, Aval, Vinfo, ncname),         &
                      nf90_noerr, io_nf90, __LINE__, MyFile)
 
-      CASE ('vocn')                            !< 3D V-momentum component
+       CASE ('vaocn',                                                          &
+             'northward_sea_water_velocity')   !< A-grid
+
+        Vinfo( 1)=Vname(1,idv3dN)
+        Vinfo( 2)=Vname(2,idv3dN)
+        Vinfo(21)=metadata(i)%name
+        Vinfo( 3)=Vname(3,idv3dN)
+        Vinfo(16)=Vname(1,idtime)
+        Vinfo(22)='coordinates'
+        Aval(5)=REAL(Iinfo(1,idv3dN,ng),r8)
+
+        CALL nc_err (def_var(ng, model, S(ng)%ncid, S(ng)%Vid(idv3dN),         &
+                             NF_FOUT, 4, r3dgrd, Aval, Vinfo, ncname),         &
+                     nf90_noerr, io_nf90, __LINE__, MyFile)
+
+      CASE ('vocn',                                                            &
+            'sea_water_y_velocity')            !< C-grid
 
         Vinfo( 1)=Vname(1,idVvel)
         Vinfo( 2)=Vname(2,idVvel)
-        Vinfo(21)=metadata(i)%getval_name
+        Vinfo(21)=metadata(i)%name
         Vinfo( 3)=Vname(3,idVvel)
         Vinfo(16)=Vname(1,idtime)
         Vinfo(22)='coordinates'
@@ -1045,12 +1132,16 @@ SUBROUTINE roms_create_ncfile_nf90 (ng, model, LocalPET, S, metadata)
                              NF_FOUT, 4, v3dgrd, Aval, Vinfo, ncname),         &
                      nf90_noerr, io_nf90, __LINE__, MyFile)
 
-      CASE ('tocn', 'socn')                    !< tracer-type variables
+      CASE ('tocn',                                                            &
+            'sea_water_temperature',                                           &
+            'sea_water_potential_temperature',                                 &
+            'socn',                                                            &
+            'sea_water_salinity')
 
         itrc = roms_tracer_index(metadata(i)%name)
         Vinfo( 1)=Vname(1,idTvar(itrc))
         Vinfo( 2)=Vname(2,idTvar(itrc))
-        Vinfo(21)=metadata(i)%getval_name
+        Vinfo(21)=metadata(i)%name
         Vinfo( 3)=Vname(3,idTvar(itrc))
         Vinfo(16)=Vname(1,idtime)
         Vinfo(22)='coordinates'
@@ -1060,11 +1151,12 @@ SUBROUTINE roms_create_ncfile_nf90 (ng, model, LocalPET, S, metadata)
                              NF_FOUT, 4, r3dgrd, Aval, Vinfo, ncname),         &
                      nf90_noerr, io_nf90, __LINE__, MyFile)
 
-      CASE ('Hzocn')                           !< level thickness
+      CASE ('Hzocn',                                                           &
+            'model_level_thickness_at_cell_center')
 
         Vinfo( 1)=Vname(1,idHzdz)
         Vinfo( 2)=Vname(2,idHzdz)
-        Vinfo(21)=metadata(i)%getval_name
+        Vinfo(21)=metadata(i)%name
         Vinfo( 3)=Vname(3,idHzdz)
         Vinfo(16)=Vname(1,idtime)
         Vinfo(22)='coordinates'
@@ -1074,11 +1166,12 @@ SUBROUTINE roms_create_ncfile_nf90 (ng, model, LocalPET, S, metadata)
                              NF_FOUT, 4, r3dgrd, Aval, Vinfo, ncname),         &
                      nf90_noerr, io_nf90, __LINE__, MyFile)
 
-      CASE ('Ktocn')                           !< vertical T-diffusion
+      CASE ('Ktocn',                                                           &
+            'vertical_diffusion_coefficient_of_temperature_in_sea_water')
 
         Vinfo( 1)=Vname(1,idTdif)
         Vinfo( 2)=Vname(2,idTdif)
-        Vinfo(21)=metadata(i)%getval_name
+        Vinfo(21)=metadata(i)%name
         Vinfo( 3)=Vname(3,idTdif)
         Vinfo(16)=Vname(1,idtime)
         Vinfo(22)='coordinates'
@@ -1088,11 +1181,12 @@ SUBROUTINE roms_create_ncfile_nf90 (ng, model, LocalPET, S, metadata)
                              NF_FOUT, 4, w3dgrd, Aval, Vinfo, ncname),         &
                      nf90_noerr, io_nf90, __LINE__, MyFile)
 
-      CASE ('Ksocn')                           !< vertical S-diffusion
+      CASE ('Ksocn',                                                           &
+            'vertical_diffusion_coefficient_of_salinity_in_sea_water')
 
         Vinfo( 1)=Vname(1,idSdif)
         Vinfo( 2)=Vname(2,idSdif)
-        Vinfo(21)=metadata(i)%getval_name
+        Vinfo(21)=metadata(i)%name
         Vinfo( 3)=Vname(3,idSdif)
         Vinfo(16)=Vname(1,idtime)
         Vinfo(22)='coordinates'
@@ -1102,11 +1196,12 @@ SUBROUTINE roms_create_ncfile_nf90 (ng, model, LocalPET, S, metadata)
                              NF_FOUT, 4, w3dgrd, Aval, Vinfo, ncname),         &
                      nf90_noerr, io_nf90, __LINE__, MyFile)
 
-      CASE ('Kvocn')                           !< vertical viscosity
+      CASE ('Kvocn',                                                           &
+            'vertical_viscosity_coefficient_of_sea_water')
 
         Vinfo( 1)=Vname(1,idVvis)
         Vinfo( 2)=Vname(2,idVvis)
-        Vinfo(21)=metadata(i)%getval_name
+        Vinfo(21)=metadata(i)%name
         Vinfo( 3)=Vname(3,idVvis)
         Vinfo(16)=Vname(1,idtime)
         Vinfo(22)='coordinates'
@@ -1116,11 +1211,12 @@ SUBROUTINE roms_create_ncfile_nf90 (ng, model, LocalPET, S, metadata)
                              NF_FOUT, 4, w3dgrd, Aval, Vinfo, ncname),         &
                      nf90_noerr, io_nf90, __LINE__, MyFile)
 
-      CASE ('zocn_r')                          !< depth of RHO-points
+      CASE ('zocn_r',                                                          &
+            'model_level_depth_at_cell_center')
 
         Vinfo( 1)=Vname(1,idpthR)
         Vinfo( 2)=Vname(2,idpthR)
-        Vinfo(21)=metadata(i)%getval_name
+        Vinfo(21)=metadata(i)%name
         Vinfo( 3)=Vname(3,idpthR)
         Vinfo(16)=Vname(1,idtime)
         Vinfo(22)='coordinates'
@@ -1130,12 +1226,12 @@ SUBROUTINE roms_create_ncfile_nf90 (ng, model, LocalPET, S, metadata)
                              NF_FOUT, 4, r3dgrd, Aval, Vinfo, ncname),         &
                      nf90_noerr, io_nf90, __LINE__, MyFile)
 
-
-      CASE ('zocn_w')                          !< depth of W-points
+      CASE ('zocn_w',                                                          &
+            'model_level_depth_at_cell_top_face')
 
         Vinfo( 1)=Vname(1,idpthW)
         Vinfo( 2)=Vname(2,idpthW)
-        Vinfo(21)=metadata(i)%getval_name
+        Vinfo(21)=metadata(i)%name
         Vinfo( 3)=Vname(3,idpthW)
         Vinfo(16)=Vname(1,idtime)
         Vinfo(22)='coordinates'
@@ -1149,7 +1245,7 @@ SUBROUTINE roms_create_ncfile_nf90 (ng, model, LocalPET, S, metadata)
   
         WRITE (Message,'(4a)')                                                 &
               'roms_create_ncfile::nf90: Cannot find an option to define = ',  &
-              metadata(i)%name, " - ", metadata(i)%getval_name
+              metadata(i)%name, " - ", metadata(i)%name
         CALL abor1_ftn (TRIM(Message))
 
     END SELECT
@@ -1882,11 +1978,12 @@ SUBROUTINE roms_create_ncfile_pio (ng, model, LocalPET, S, metadata)
 
     SELECT CASE (metadata(i)%name)
 
-      CASE ('ssh')                             !< free-surface
+      CASE ('ssh',                                                             &
+            'sea_surface_height_above_geoid')
 
         Vinfo( 1)=Vname(1,idFsur)
         Vinfo( 2)=Vname(2,idFsur)
-        Vinfo(21)=metadata(i)%getval_name
+        Vinfo(21)=metadata(i)%name
         Vinfo( 3)=Vname(3,idFsur)
         Vinfo(16)=Vname(1,idtime)
         Vinfo(22)='coordinates'
@@ -1899,11 +1996,12 @@ SUBROUTINE roms_create_ncfile_pio (ng, model, LocalPET, S, metadata)
                              PIO_FOUT, 3, r2dgrd, Aval, Vinfo, ncname),        &
                      PIO_noerr, io_pio, __LINE__, MyFile)
 
-      CASE ('u2docn')                          !< 2D U-momentum component
+      CASE ('u2docn',                                                          &
+            'barotropic_sea_water_x_velocity')
 
         Vinfo( 1)=Vname(1,idUbar)
         Vinfo( 2)=Vname(2,idUbar)
-        Vinfo(21)=metadata(i)%getval_name
+        Vinfo(21)=metadata(i)%name
         Vinfo( 3)=Vname(3,idUbar)
         Vinfo(16)=Vname(1,idtime)
         Vinfo(22)='coordinates'
@@ -1916,11 +2014,12 @@ SUBROUTINE roms_create_ncfile_pio (ng, model, LocalPET, S, metadata)
                              PIO_FOUT, 3, u2dgrd, Aval, Vinfo, ncname),        &
                      PIO_noerr, io_pio, __LINE__, MyFile)
 
-      CASE ('v2docn')                          !< 2D v-momentum component
+      CASE ('v2docn',                                                          &
+            'barotropic_sea_water_y_velocity')
 
         Vinfo( 1)=Vname(1,idVbar)
         Vinfo( 2)=Vname(2,idVbar)
-        Vinfo(21)=metadata(i)%getval_name
+        Vinfo(21)=metadata(i)%name
         Vinfo( 3)=Vname(3,idVbar)
         Vinfo(16)=Vname(1,idtime)
         Vinfo(22)='coordinates'
@@ -1933,11 +2032,12 @@ SUBROUTINE roms_create_ncfile_pio (ng, model, LocalPET, S, metadata)
                              PIO_FOUT, 3, v2dgrd, Aval, Vinfo, ncname),        &
                      PIO_noerr, io_pio, __LINE__, MyFile)
 
-      CASE ('DU_avg1')                         !< averaged 2D U-momentum flux
+      CASE ('DU_avg1',                                                         &
+            'sea_water_time_average_of_barotropic_x_velocity_flux')
 
         Vinfo( 1)=Vname(1,idUfx1)
         Vinfo( 2)=Vname(2,idUfx1)
-        Vinfo(21)=metadata(i)%getval_name
+        Vinfo(21)=metadata(i)%name
         Vinfo( 3)=Vname(3,idUfx1)
         Vinfo(16)=Vname(1,idtime)
         Vinfo(22)='coordinates'
@@ -1950,11 +2050,12 @@ SUBROUTINE roms_create_ncfile_pio (ng, model, LocalPET, S, metadata)
                              PIO_FOUT, 3, u2dgrd, Aval, Vinfo, ncname),        &
                      PIO_noerr, io_pio, __LINE__, MyFile)
 
-      CASE ('DU_avg2')                         !< coupling 2D U-momentum flux
+      CASE ('DU_avg2',                                                         &
+            'sea_water_correct_barotropic_x_velocity_flux_for_coupling')
 
         Vinfo( 1)=Vname(1,idUfx2)
         Vinfo( 2)=Vname(2,idUfx2)
-        Vinfo(21)=metadata(i)%getval_name
+        Vinfo(21)=metadata(i)%name
         Vinfo( 3)=Vname(3,idUfx2)
         Vinfo(16)=Vname(1,idtime)
         Vinfo(22)='coordinates'
@@ -1967,11 +2068,12 @@ SUBROUTINE roms_create_ncfile_pio (ng, model, LocalPET, S, metadata)
                              PIO_FOUT, 3, u2dgrd, Aval, Vinfo, ncname),        &
                      PIO_noerr, io_pio, __LINE__, MyFile)
 
-      CASE ('DV_avg1')                         !< averaged 2D V-momentum flux
+      CASE ('DV_avg1',                                                         &
+            'sea_water_time_average_of_barotropic_y_velocity_flux')
 
         Vinfo( 1)=Vname(1,idVfx1)
         Vinfo( 2)=Vname(2,idVfx1)
-        Vinfo(21)=metadata(i)%getval_name
+        Vinfo(21)=metadata(i)%name
         Vinfo( 3)=Vname(3,idVfx1)
         Vinfo(16)=Vname(1,idtime)
         Vinfo(22)='coordinates'
@@ -1984,11 +2086,12 @@ SUBROUTINE roms_create_ncfile_pio (ng, model, LocalPET, S, metadata)
                              PIO_FOUT, 3, v2dgrd, Aval, Vinfo, ncname),        &
                      PIO_noerr, io_pio, __LINE__, MyFile)
 
-      CASE ('DV_avg2')                         !< coupling 2D V-momentum flux
+      CASE ('DV_avg2',                                                         &
+            'sea_water_correct_barotropic_y_velocity_flux_for_coupling')
 
         Vinfo( 1)=Vname(1,idVfx2)
         Vinfo( 2)=Vname(2,idVfx2)
-        Vinfo(21)=metadata(i)%getval_name
+        Vinfo(21)=metadata(i)%name
         Vinfo( 3)=Vname(3,idVfx2)
         Vinfo(16)=Vname(1,idtime)
         Vinfo(22)='coordinates'
@@ -2001,11 +2104,30 @@ SUBROUTINE roms_create_ncfile_pio (ng, model, LocalPET, S, metadata)
                              PIO_FOUT, 3, v2dgrd, Aval, Vinfo, ncname),        &
                      PIO_noerr, io_pio, __LINE__, MyFile)
 
-      CASE ('uocn')                            !< 3D U-momentum component
+       CASE ('uaocn',                                                          &
+             'eastward_sea_water_velocity')    !< A-grid
+
+        Vinfo( 1)=Vname(1,idu3dE)
+        Vinfo( 2)=Vname(2,idu3dE)
+        Vinfo(21)=metadata(i)%name
+        Vinfo( 3)=Vname(3,idu3dE)
+        Vinfo(16)=Vname(1,idtime)
+        Vinfo(22)='coordinates'
+        Aval(5)=REAL(Iinfo(1,idu3dE,ng),r8)
+        S(ng)%pioVar(idu3dE)%dkind=PIO_FOUT
+        S(ng)%pioVar(idu3dE)%gtype=r3dvar
+
+        CALL nc_err (def_var(ng, model, S(ng)%pioFile,                         &
+                             S(ng)%pioVar(idu3dE)%vd,                          &
+                             PIO_FOUT, 4, r3dgrd, Aval, Vinfo, ncname),        &
+                     PIO_noerr, io_pio, __LINE__, MyFile)
+
+      CASE ('uocn',                                                            &
+            'sea_water_x_velocity')            !< C-grid
 
         Vinfo( 1)=Vname(1,idUvel)
         Vinfo( 2)=Vname(2,idUvel)
-        Vinfo(21)=metadata(i)%getval_name
+        Vinfo(21)=metadata(i)%name
         Vinfo( 3)=Vname(3,idUvel)
         Vinfo(16)=Vname(1,idtime)
         Vinfo(22)='coordinates'
@@ -2018,11 +2140,30 @@ SUBROUTINE roms_create_ncfile_pio (ng, model, LocalPET, S, metadata)
                              PIO_FOUT, 4, u3dgrd, Aval, Vinfo, ncname),        &
                      PIO_noerr, io_pio, __LINE__, MyFile)
 
-      CASE ('vocn')                            !< 3D V-momentum component
+       CASE ('vaocn',                                                          &
+             'northward_sea_water_velocity')   !< A-grid
+
+        Vinfo( 1)=Vname(1,idv3dN)
+        Vinfo( 2)=Vname(2,idv3dN)
+        Vinfo(21)=metadata(i)%name
+        Vinfo( 3)=Vname(3,idv3dN)
+        Vinfo(16)=Vname(1,idtime)
+        Vinfo(22)='coordinates'
+        Aval(5)=REAL(Iinfo(1,idv3dN,ng),r8)
+        S(ng)%pioVar(idv3dN)%dkind=PIO_FOUT
+        S(ng)%pioVar(idv3dN)%gtype=r3dvar
+
+        CALL nc_err (def_var(ng, model, S(ng)%pioFile,                         &
+                             S(ng)%pioVar(idv3dN)%vd,                          &
+                             PIO_FOUT, 4, r3dgrd, Aval, Vinfo, ncname),        &
+                     PIO_noerr, io_pio, __LINE__, MyFile)
+
+      CASE ('vocn',                                                            &
+            'sea_water_y_velocity')            !< C-grid
 
         Vinfo( 1)=Vname(1,idVvel)
         Vinfo( 2)=Vname(2,idVvel)
-        Vinfo(21)=metadata(i)%getval_name
+        Vinfo(21)=metadata(i)%name
         Vinfo( 3)=Vname(3,idVvel)
         Vinfo(16)=Vname(1,idtime)
         Vinfo(22)='coordinates'
@@ -2035,12 +2176,16 @@ SUBROUTINE roms_create_ncfile_pio (ng, model, LocalPET, S, metadata)
                              PIO_FOUT, 4, v3dgrd, Aval, Vinfo, ncname),        &
                      PIO_noerr, io_pio, __LINE__, MyFile)
 
-      CASE ('tocn', 'socn')                    !< tracer-type variables
+      CASE ('tocn',                                                            &
+            'sea_water_temperature',                                           &
+            'sea_water_potential_temperature',                                 &
+            'socn',                                                            &
+            'sea_water_salinity')
 
         itrc = roms_tracer_index(metadata(i)%name)
         Vinfo( 1)=Vname(1,idTvar(itrc))
         Vinfo( 2)=Vname(2,idTvar(itrc))
-        Vinfo(21)=metadata(i)%getval_name
+        Vinfo(21)=metadata(i)%name
         Vinfo( 3)=Vname(3,idTvar(itrc))
         Vinfo(16)=Vname(1,idtime)
         Vinfo(22)='coordinates'
@@ -2053,11 +2198,12 @@ SUBROUTINE roms_create_ncfile_pio (ng, model, LocalPET, S, metadata)
                              PIO_FOUT, 4, r3dgrd, Aval, Vinfo, ncname),        &
                      PIO_noerr, io_pio, __LINE__, MyFile)
 
-      CASE ('Hzocn')                           !< level thickness
+      CASE ('Hzocn',                                                           &
+            'model_level_thickness_at_cell_center')
 
         Vinfo( 1)=Vname(1,idHzdz)
         Vinfo( 2)=Vname(2,idHzdz)
-        Vinfo(21)=metadata(i)%getval_name
+        Vinfo(21)=metadata(i)%name
         Vinfo( 3)=Vname(3,idHzdz)
         Vinfo(16)=Vname(1,idtime)
         Vinfo(22)='coordinates'
@@ -2070,11 +2216,12 @@ SUBROUTINE roms_create_ncfile_pio (ng, model, LocalPET, S, metadata)
                              PIO_FOUT, 4, r3dgrd, Aval, Vinfo, ncname),        &
                      PIO_noerr, io_pio, __LINE__, MyFile)
 
-      CASE ('Ktocn')                           !< vertical T-diffusion
+      CASE ('Ktocn',                                                           &
+            'vertical_diffusion_coefficient_of_temperature_in_sea_water')
 
         Vinfo( 1)=Vname(1,idTdif)
         Vinfo( 2)=Vname(2,idTdif)
-        Vinfo(21)=metadata(i)%getval_name
+        Vinfo(21)=metadata(i)%name
         Vinfo( 3)=Vname(3,idTdif)
         Vinfo(16)=Vname(1,idtime)
         Vinfo(22)='coordinates'
@@ -2087,11 +2234,12 @@ SUBROUTINE roms_create_ncfile_pio (ng, model, LocalPET, S, metadata)
                              PIO_FOUT, 4, w3dgrd, Aval, Vinfo, ncname),        &
                      PIO_noerr, io_pio, __LINE__, MyFile)
 
-      CASE ('Ksocn')                           !< vertical S-diffusion
+      CASE ('Ksocn',                                                           &
+            'vertical_diffusion_coefficient_of_salinity_in_sea_water')
 
         Vinfo( 1)=Vname(1,idSdif)
         Vinfo( 2)=Vname(2,idSdif)
-        Vinfo(21)=metadata(i)%getval_name
+        Vinfo(21)=metadata(i)%name
         Vinfo( 3)=Vname(3,idSdif)
         Vinfo(16)=Vname(1,idtime)
         Vinfo(22)='coordinates'
@@ -2104,11 +2252,12 @@ SUBROUTINE roms_create_ncfile_pio (ng, model, LocalPET, S, metadata)
                              PIO_FOUT, 4, w3dgrd, Aval, Vinfo, ncname),        &
                      PIO_noerr, io_pio, __LINE__, MyFile)
 
-      CASE ('Kvocn')                           !< vertical viscosity
+      CASE ('Kvocn',                                                           &
+            'vertical_viscosity_coefficient_of_sea_water')
 
         Vinfo( 1)=Vname(1,idVvis)
         Vinfo( 2)=Vname(2,idVvis)
-        Vinfo(21)=metadata(i)%getval_name
+        Vinfo(21)=metadata(i)%name
         Vinfo( 3)=Vname(3,idVvis)
         Vinfo(16)=Vname(1,idtime)
         Vinfo(22)='coordinates'
@@ -2121,11 +2270,12 @@ SUBROUTINE roms_create_ncfile_pio (ng, model, LocalPET, S, metadata)
                              PIO_FOUT, 4, w3dgrd, Aval, Vinfo, ncname),        &
                      PIO_noerr, io_pio, __LINE__, MyFile)
 
-      CASE ('zocn_r')                          !< depth of RHO-points
+      CASE ('zocn_r',                                                          &
+            'model_level_depth_at_cell_center')
 
         Vinfo( 1)=Vname(1,idpthR)
         Vinfo( 2)=Vname(2,idpthR)
-        Vinfo(21)=metadata(i)%getval_name
+        Vinfo(21)=metadata(i)%name
         Vinfo( 3)=Vname(3,idpthR)
         Vinfo(16)=Vname(1,idtime)
         Vinfo(22)='coordinates'
@@ -2138,11 +2288,12 @@ SUBROUTINE roms_create_ncfile_pio (ng, model, LocalPET, S, metadata)
                              PIO_FOUT, 4, r3dgrd, Aval, Vinfo, ncname),        &
                      PIO_noerr, io_pio, __LINE__, MyFile)
 
-      CASE ('zocn_w')                          !< depth of W-points
+      CASE ('zocn_w',                                                          &
+            'model_level_depth_at_cell_top_face')
 
         Vinfo( 1)=Vname(1,idpthW)
         Vinfo( 2)=Vname(2,idpthW)
-        Vinfo(21)=metadata(i)%getval_name
+        Vinfo(21)=metadata(i)%name
         Vinfo( 3)=Vname(3,idpthW)
         Vinfo(16)=Vname(1,idtime)
         Vinfo(22)='coordinates'
@@ -2159,7 +2310,7 @@ SUBROUTINE roms_create_ncfile_pio (ng, model, LocalPET, S, metadata)
   
         WRITE (Message,'(4a)')                                                 &
               'roms_create_ncfile::pio: Cannot find an option to define = ',   &
-              metadata(i)%name, " - ", metadata(i)%getval_name
+              metadata(i)%name, " - ", metadata(i)%name
         CALL abor1_ftn (TRIM(Message))
 
     END SELECT
