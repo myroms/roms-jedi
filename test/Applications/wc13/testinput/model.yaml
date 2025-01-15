@@ -10,7 +10,7 @@ ForecastLength: &ForecastLength PT96H
 
 model test:
   forecast length: *ForecastLength
-  final norm: 8609.087389304004319
+  final norm: 8609.087434055891208
   tolerance: 1.0e-2
   test reforecast: false
 

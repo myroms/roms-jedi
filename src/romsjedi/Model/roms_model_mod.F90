@@ -31,7 +31,10 @@ USE fckit_mpi_module,           ONLY : fckit_mpi_comm
 
 USE roms_kernel_mod
 USE mod_param,                  ONLY : BOUNDS, Ngrids, iNLM
-USE mod_scalars,                ONLY : NoError, exit_flag
+USE mod_scalars,                ONLY : INItime, NoError, blowup_string, dt,    &
+                                       exit_flag, iic, ntend, ntimes,          &
+                                       sec2day, tdays, time
+USE mod_stepping,               ONLY : knew, kstp, nnew, nstp
 
 !> ROMS-JEDI interface module association.
 
@@ -215,10 +218,6 @@ END SUBROUTINE roms_model_delete
 
 SUBROUTINE roms_model_initialize (self, state, vdate)
 
-  USE mod_ncparam,  ONLY : Ngrids
-  USE mod_scalars,  ONLY : INItime, dt, ntimes, sec2day, tdays, time
-  USE mod_stepping, ONLY : knew, kstp, nnew, nstp
-
   CLASS (roms_model), intent(inout) :: self    !< ROMS NLM object
   CLASS (roms_state), intent(inout) :: state   !< State fields object
   TYPE (datetime),    intent(in   ) :: vdate   !< State valid DateTime
@@ -326,9 +325,6 @@ END SUBROUTINE roms_model_initialize
 !> Advances ROMS NLM kernel for specified time interval in seconds.
 
 SUBROUTINE roms_model_step (self, state, geom, vdate)
-
-  USE mod_scalars,   ONLY : blowup_string, iic, ntend
-  USE mod_stepping,  ONLY : knew, kstp, nnew, nstp
 
   CLASS (roms_model), intent(inout) :: self    !< ROMS NLM object
   CLASS (roms_state), intent(inout) :: state   !< State fields object

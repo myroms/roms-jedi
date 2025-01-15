@@ -15,7 +15,6 @@
 
 #include "eckit/config/Configuration.h"
 
-#include "oops/base/LinearVariableChangeParametersBase.h"
 #include "oops/util/parameters/OptionalParameter.h"
 #include "oops/util/parameters/Parameter.h"
 #include "oops/util/parameters/Parameters.h"

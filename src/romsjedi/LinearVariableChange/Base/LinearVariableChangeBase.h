@@ -14,7 +14,7 @@
 
 #include <boost/noncopyable.hpp>
 
-#include "oops/base/LinearVariableChangeParametersBase.h"
+#include "oops/base/ParameterTraitsVariables.h"
 #include "oops/base/Variables.h"
 #include "oops/util/AssociativeContainers.h"
 #include "oops/util/parameters/ConfigurationParameter.h"
@@ -32,13 +32,16 @@ namespace romsjedi {
 
 // -----------------------------------------------------------------------------
 
-  class LinearVariableChangeParametersBase
-    : public oops::LinearVariableChangeParametersBase {
+  class LinearVariableChangeParametersBase : public oops::Parameters {
     OOPS_ABSTRACT_PARAMETERS(LinearVariableChangeParametersBase,
-                             oops::LinearVariableChangeParametersBase)
+                             oops::Parameters)
    public:
     oops::OptionalParameter<std::string> name{"linear variable change name",
                                               this};
+    oops::OptionalParameter<oops::Variables> inputVariables{"input variables",
+                                                            this};
+    oops::OptionalParameter<oops::Variables> outputVariables{"output variables",
+                                                             this};
   };
 
 // -----------------------------------------------------------------------------
@@ -73,10 +76,9 @@ namespace romsjedi {
 
 // -----------------------------------------------------------------------------
 
-  class LinearVariableChangeParametersWrapper
-    : public oops::LinearVariableChangeParametersBase {
+  class LinearVariableChangeParametersWrapper : public oops::Parameters {
     OOPS_CONCRETE_PARAMETERS(LinearVariableChangeParametersWrapper,
-                             oops::LinearVariableChangeParametersBase)
+                             oops::Parameters)
    public:
     oops::PolymorphicParameter<romsjedi::LinearVariableChangeParametersBase,
                                LinearVariableChangeFactory>

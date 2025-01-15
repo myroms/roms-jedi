@@ -110,7 +110,7 @@ SUBROUTINE roms_trajectory_construct (self, state)
   DO i = 1, Nvars
 
     self%fields(i)%name     =  state%fields(i)%name
-    self%fields(i)%metadata =  state%geom%fieldsinfo%get(self%fields(i)%name)
+    self%fields(i)%metadata =  state%geom%FieldsInfo%get(self%fields(i)%name)
     self%fields(i)%bounds   =  state%fields(i)%bounds
     self%fields(i)%N        =  state%fields(i)%N
     self%fields(i)%angle    => state%fields(i)%angle

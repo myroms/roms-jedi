@@ -8,9 +8,6 @@
 #include <ostream>
 #include <string>
 
-#include "boost/none_t.hpp"
-
-#include "oops/base/VariableChangeParametersBase.h"
 #include "oops/mpi/mpi.h"
 #include "oops/util/Logger.h"
 #include "oops/util/parameters/OptionalParameter.h"

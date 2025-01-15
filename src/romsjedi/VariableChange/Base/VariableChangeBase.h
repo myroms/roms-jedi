@@ -14,7 +14,7 @@
 
 #include <boost/noncopyable.hpp>
 
-#include "oops/base/VariableChangeParametersBase.h"
+#include "oops/base/ParameterTraitsVariables.h"
 #include "oops/base/Variables.h"
 #include "oops/util/AssociativeContainers.h"
 #include "oops/util/parameters/ConfigurationParameter.h"
@@ -31,12 +31,15 @@ namespace romsjedi {
 
 // -----------------------------------------------------------------------------
 
-  class VariableChangeParametersBase
-    : public oops::VariableChangeParametersBase {
+  class VariableChangeParametersBase : public oops::Parameters {
     OOPS_ABSTRACT_PARAMETERS(VariableChangeParametersBase,
-                             oops::VariableChangeParametersBase)
+                             oops::Parameters)
    public:
     oops::OptionalParameter<std::string> name{"variable change name", this};
+    oops::OptionalParameter<oops::Variables> inputVariables{"input variables",
+                                                            this};
+    oops::OptionalParameter<oops::Variables> outputVariables{"output variables",
+                                                             this};
   };
 
 // -----------------------------------------------------------------------------
