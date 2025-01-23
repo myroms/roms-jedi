@@ -338,7 +338,7 @@ namespace romsjedi {
     roms_linearModel_step_ad_f90(keySelf_,
                                  dx.toFortran(),
                                  itra1->second,
-                                 itra1->second,
+                                 itra2->second,
                                  fac1,
                                  fac2,
                                  &dtp);
