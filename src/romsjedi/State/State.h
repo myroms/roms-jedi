@@ -120,6 +120,13 @@ namespace romsjedi {
       size_t serialSize() const override;
       void serialize(std::vector<double> &) const override;
       void deserialize(const std::vector<double> &, size_t &) override;
+      void transpose(const State & DistState,
+                     const eckit::mpi::Comm & global,
+                     const int ensNum,
+                     const int transNum) {
+        throw eckit::NotImplemented("ROMSJEDI State::transpose unimplemented",
+                                    Here());
+        }
 
       /// Utilities
 
