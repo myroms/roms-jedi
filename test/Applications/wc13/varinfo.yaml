@@ -1,11 +1,10 @@
 # ROMS I/O NetCDF Metadata Dictionary
 #
 #git $Id$
-#svn $Id: varinfo.yaml 1189 2023-08-15 21:26:58Z arango $
 #========================================================= Hernan G. Arango ==#
-#  Copyright (c) 2002-2023 The ROMS/TOMS Group                                #
+#  Copyright (c) 2002-2025 The ROMS Group                                     #
 #    Licensed under a MIT/X style license                                     #
-#    See License_ROMS.txt                                                     #
+#    See License_ROMS.md                                                      #
 #=============================================================================#
 #
 #  Field Metadata Keywords:
@@ -41,7 +40,7 @@
 #     field = field (source_units) * scale + add_offset
 #
 
-svn_repository: $URL: https://github.com/myroms/roms/External/varinfo.yaml $
+git_repository: $URL: https://github.com/myroms/roms/External/varinfo.yaml $
 
 convention:     CF 1.10
 
@@ -152,7 +151,7 @@ metadata:
     standard_name:  eastward_sea_water_velocity
     long_name:      eastward momentum component at RHO-points
     units:          meter second-1                                   # [m/s]
-    field:          u-velocity
+    field:          u-eastward
     time:           ocean_time
     index_code:     idu3dE
     type:           r3dvar
@@ -163,7 +162,7 @@ metadata:
     standard_name:  northward_sea_water_velocity
     long_name:      northward momentum component at RHO-points
     units:          meter second-1                                   # [m/s]
-    field:          v-velocity
+    field:          v-northward
     time:           ocean_time
     index_code:     idv3dN
     type:           r3dvar
@@ -196,7 +195,7 @@ metadata:
     standard_name:  surface_eastward_sea_water_velocity
     long_name:      surface eastward momentum component at RHO-points
     units:          meter second-1                                   # [m/s]
-    field:          surface u-velocity
+    field:          surface u-eastward
     time:           ocean_time
     index_code:     idUsuE
     type:           r2dvar
@@ -207,10 +206,54 @@ metadata:
     standard_name:  surface_northward_sea_water_velocity
     long_name:      surface northward momentum component at RHO-points
     units:          meter second-1                                   # [m/s]
-    field:          surface v-velocity
+    field:          surface v-northward
     time:           ocean_time
     index_code:     idVsuN
     type:           r2dvar
+    add_offset:     0.0d0
+    scale:          1.0d0
+
+  - variable:       u_slice                                          # Output
+    standard_name:  sea_water_surface_x_velocity
+    long_name:      u-momentum component
+    units:          meter second-1                                   # [m/s]
+    field:          u-velocity constant depth slice
+    time:           ocean_time
+    index_code:     idUzsl
+    type:           u3dvar
+    add_offset:     0.0d0
+    scale:          1.0d0
+
+  - variable:       v_slice                                          # Output
+    standard_name:  sea_water_surface_y_velocity
+    long_name:      v-momentum component
+    units:          meter second-1                                   # [m/s]
+    field:          v-velocity constant depth slice
+    time:           ocean_time
+    index_code:     idVzsl
+    type:           v3dvar
+    add_offset:     0.0d0
+    scale:          1.0d0
+
+  - variable:       u_eastward_slice                                 # Output
+    standard_name:  eastward_sea_water_velocity
+    long_name:      eastward momentum component at RHO-points
+    units:          meter second-1                                   # [m/s]
+    field:          u-eastward constant depth slice
+    time:           ocean_time
+    index_code:     idUzsE
+    type:           r3dvar
+    add_offset:     0.0d0
+    scale:          1.0d0
+
+  - variable:       v_northward_slice                                # Output
+    standard_name:  northward_sea_water_velocity
+    long_name:      northward momentum component at RHO-points
+    units:          meter second-1                                   # [m/s]
+    field:          v-northward constant depth slice
+    time:           ocean_time
+    index_code:     idVzsN
+    type:           r3dvar
     add_offset:     0.0d0
     scale:          1.0d0
 
@@ -299,6 +342,29 @@ metadata:
     time:           ocean_time
     index_code:     idsurT(isalt)
     type:           r2dvar
+    add_offset:     0.0d0
+    scale:          1.0d0
+
+  - variable:       temp_slice                                       # Output
+    standard_name:  sea_water_potential_temperature
+    long_name:      potential temperature
+    units:          Celsius                                          # [Celsius]
+    field:          temperature constant depth slices
+    time:           ocean_time
+    index_code:     idzslT(itemp)
+    type:           r3dvar
+    add_offset:     0.0d0
+    scale:          1.0d0
+
+  - variable:       salt_slice                                       # Output
+    standard_name:  sea_water_practical_salinity
+    standard_name:  sea_surface_salinity
+    long_name:      salinity
+    units:          nondimensional                                   # [PSS]
+    field:          salinity constant depth slices
+    time:           ocean_time
+    index_code:     idzslT(isalt)
+    type:           r3dvar
     add_offset:     0.0d0
     scale:          1.0d0
 
@@ -1621,6 +1687,17 @@ metadata:
     field:          surface air pressure
     time:           pair_time
     index_code:     idPair
+    type:           r2dvar
+    add_offset:     0.0d0
+    scale:          1.0d0
+
+  - variable:       PBLh                                             # Input
+    standard_name:  atmosphere_boundary_layer_thickness
+    long_name:      atmosphere boundary layer thickness
+    units:          m                                                # [m]
+    field:          planetary boundary layer height
+    time:           pblh_time
+    index_code:     idPBLh
     type:           r2dvar
     add_offset:     0.0d0
     scale:          1.0d0
@@ -5984,6 +6061,28 @@ metadata:
     add_offset:     0.0d0
     scale:          1.0d0
 
+  - variable:       Uice_eastward                                    # Input/Output
+    standard_name:  eastward_sea_ice_velocity
+    long_name:      eastward sea ice velocity at RHO-points
+    units:          meter second-1                                   # [m/s]
+    field:          sea ice x-velocity
+    time:           ocean_time
+    index_code:     idUiER
+    type:           r2dvar
+    add_offset:     0.0d0
+    scale:          1.0d0
+
+  - variable:       Vice_northward                                   # Input/Output
+    standard_name:  northward_sea_ice_velocity
+    long_name:      northward sea ice velocity at RHO-points
+    units:          meter second-1                                   # [m/s]
+    field:          sea ice y-velocity
+    time:           ocean_time
+    index_code:     idViNR
+    type:           r2dvar
+    add_offset:     0.0d0
+    scale:          1.0d0
+
   - variable:       ice_Sxx                                          # Input/Output
     standard_name:  sea_ice_internal_xx_stress
     long_name:      internal ice stress xx-component
@@ -6079,6 +6178,17 @@ metadata:
     field:          air-ocean melt/freeze rate
     time:           ocean_time
     index_code:     idW_ao
+    type:           r2dvar
+    add_offset:     0.0d0
+    scale:          1.0d0
+
+  - variable:       frazil_freeze                                    # Output
+    standard_name:  rate_of_frazil_ice_growth
+    long_name:      rate of frazil ice growth in full water column
+    units:          meter second-1                                   # [m/s]
+    field:          frazil ice growth rate
+    time:           ocean_time
+    index_code:     idW_fr
     type:           r2dvar
     add_offset:     0.0d0
     scale:          1.0d0
@@ -6259,7 +6369,7 @@ metadata:
   # 2D Momentum Terms
 
   - variable:       pvorticity_bar                                   # Input/Output
-    standard_name:  ocean_barotropic_potential_vorticity
+    standard_name:  sea_water_barotropic_potential_vorticity
     long_name:      2D potential vorticity
     units:          meter-1 second-1                                 # [1/m/s]
     field:          barotropic potential vorticity
@@ -6270,7 +6380,7 @@ metadata:
     scale:          1.0d0
 
   - variable:       rvorticity_bar                                   # Input/Output
-    standard_name:  ocean_barotropic_relative_vorticity
+    standard_name:  sea_water_barotropic_relative_vorticity
     long_name:      2D relative vorticity
     units:          second-1                                         # [1/s]
     field:          barotropic relative vorticity
@@ -6546,8 +6656,8 @@ metadata:
 
   # 3D Momentum Terms
 
-  - variable:       pvorticity                                       # Input/Output
-    standard_name:  ocean_potential_vorticity
+  - variable:       pvorticity                                       # Output
+    standard_name:  sea_water_potential_vorticity
     long_name:      potential vorticity
     units:          meter-1 second-1                                 # [1/m/s]
     field:          potential vorticity
@@ -6557,13 +6667,35 @@ metadata:
     add_offset:     0.0d0
     scale:          1.0d0
 
-  - variable:       rvorticity                                       # Input/Output
-    standard_name:  ocean_relative_vorticity
+  - variable:       pvorticity_slice                                 # Output
+    standard_name:  sea_water_potential_vorticity
+    long_name:      potential vorticity
+    units:          meter-1 second-1                                 # [1/m/s]
+    field:          potential vorticity constant depth slice
+    time:           ocean_time
+    index_code:     idPVzs
+    type:           p3dvar
+    add_offset:     0.0d0
+    scale:          1.0d0
+
+  - variable:       rvorticity                                       # Output
+    standard_name:  sea_water_relative_vorticity
     long_name:      relative vorticity, vertical component
     units:          second-1                                         # [1/s]
     field:          relative vorticity
     time:           ocean_time
     index_code:     id3dRV
+    type:           p3dvar
+    add_offset:     0.0d0
+    scale:          1.0d0
+
+  - variable:       rvorticity_slice                                 # Output
+    standard_name:  sea_water_relative_vorticity
+    long_name:      surface relative vorticity
+    units:          second-1                                         # [1/s]
+    field:          relative vorticity constant depth slice
+    time:           ocean_time
+    index_code:     idRVzs
     type:           p3dvar
     add_offset:     0.0d0
     scale:          1.0d0
