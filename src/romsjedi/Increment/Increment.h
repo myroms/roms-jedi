@@ -88,6 +88,7 @@ namespace romsjedi {
 
   void diff(const State &, const State &);
   void ones();
+  void sqrt();
   void zero();
   void zero(const util::DateTime &);
   Increment & operator =(const Increment &);
