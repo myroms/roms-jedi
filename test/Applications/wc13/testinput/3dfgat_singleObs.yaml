@@ -1,0 +1,197 @@
+# ROMS-JEDI 3D-FGAT Single Observation Test: WC13 Application
+#
+# It uses ROMS 4D state vector and the 3D-FGAT cost function (check
+# OOPS #2195 Pull Request for details). It should produce identical
+# results as the 4D-Var cost function with Identity tangent linear
+# and adjoint operators. The B-matrix for the 3D-FGAT is valid for
+# the middle of the DA window. Thus, the analysis (first guess plus
+# increment) is written for the middle of the DA window.
+#
+# Notice that it does not require ROMS TLM and ADM kernels.
+#
+
+forecast length: &ForecastLength PT96H           # 96 hours (4 days) window ending on 2004-01-07T00:00:00Z
+                                                 # or other smaller interval
+model timestep:  &TimeStep PT1800S               # WC13 has a 30 minutes timestep
+
+initial date: &date 2004-01-03T00:00:00Z         # initial DA window
+middle date:  &mid_date 2004-01-05T00:00:00Z     # middle  DA window
+
+roms analysis: &roms_analysis
+- sea_surface_height_above_geoid
+- sea_water_x_velocity                           # C-grid
+- sea_water_y_velocity                           # C-grid
+- sea_water_temperature
+- sea_water_salinity
+
+roms state: &roms_state
+- sea_surface_height_above_geoid
+- sea_water_x_velocity                           # C-grid
+- sea_water_y_velocity                           # C-grid
+- sea_water_temperature
+- sea_water_salinity
+- model_level_depth_at_cell_center
+- vertical_viscosity_coefficient_of_sea_water
+- vertical_diffusion_coefficient_of_temperature_in_sea_water
+- vertical_diffusion_coefficient_of_salinity_in_sea_water
+
+cost function:
+  cost type: 3D-FGAT
+  time window:
+    begin: *date
+    length: *ForecastLength
+  analysis variables: *roms_analysis
+
+  geometry: &geom
+    project_dir: Data/wc13
+    roms_stdinp: roms_wc13_20040103.in
+    fields metadata: Data/fields_metadata.yaml
+    ng: 1                                        # ROMS nested grid number
+
+  model:
+    name: ROMS
+    model variables: *roms_state
+    simulation length: *ForecastLength
+    tstep: *TimeStep
+
+  background:
+    fields_dir: Data/wc13/input
+    fields_filename: wc13_roms_ini_20040103.nc
+    fields_record: 1
+    state variables: *roms_state
+    date: *date
+
+  background error:
+    covariance model: SABER
+    saber central block:
+      saber block name: BUMP_NICAS
+      active variables: *roms_analysis
+      fields metadata:
+        sea_surface_height_above_geoid:
+          vert_coord: vert_coord_2d
+      read:
+        drivers:
+          multivariate strategy: univariate
+          read global nicas: false
+          read local nicas: true
+        model:
+          level for 2d variables: last
+          do not cross mask boundaries: true
+        nicas:
+          interpolation in global file: false
+        io:
+          data directory: Data/bump
+          files prefix: wc13_bump_cor
+        grids:
+        - model:
+            variables:
+            - sea_surface_height_above_geoid
+        - model:
+            variables:
+            - sea_water_temperature
+            - sea_water_salinity
+
+    saber outer blocks:
+    - saber block name: StdDev
+      read:
+        model file:
+          fields_dir: Data/wc13/input
+          fields_filename: wc13_roms_std_i.nc
+          fields_record: 1
+          state variables: *roms_analysis
+          date: *mid_date
+
+  observations:
+    obs perturbations: false                     # default
+    observers:
+
+    - obs space:
+        name: InsituTS
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile: Data/wc13/obs/wc13_TS_single_obs_20040105.nc4
+        obsdataout:
+          engine:
+            type: H5File
+            obsfile: Data/3dfgat/singleObs/wc13_TS_3dfgat.nc4
+        simulated variables: [salinity, waterTemperature]
+      obs operator:
+        name: VertInterp
+        vertical coordinate: model_level_depth_at_cell_center
+        observation vertical coordinate: depth
+        observation alias file: testinput/obsop_name_map.yaml
+      obs error:
+        covariance model: diagonal
+
+#    - obs space:
+#        name: SST
+#        obsdatain:
+#          engine:
+#            type: H5File
+#            obsfile: Data/wc13/obs/wc13_sst_single_obs_20040105.nc4
+#        obsdataout:
+#          engine:
+#            type: H5File
+#            obsfile: Data/3dfgat/singleObs/wc13_sst_3dfgat.nc4
+#        simulated variables: [seaSurfaceTemperature]
+#      obs operator:
+#        name: Identity
+#        observation alias file: testinput/obsop_name_map.yaml
+#      obs error:
+#        covariance model: diagonal
+
+#    - obs space:
+#        name: ADT
+#        obsdatain:
+#          engine:
+#            type: H5File
+#            obsfile: Data/wc13/obs/wc13_adt_single_obs_20040105.nc4
+#        obsdataout:
+#          engine:
+#            type: H5File
+#            obsfile: Data/3dfgat/singleObs/wc13_adt_3dfgat.nc4
+#        simulated variables: [absoluteDynamicTopography]
+#      obs operator:
+#        name: ADT
+#      obs error:
+#        covariance model: diagonal
+
+
+variational:
+  minimizer:
+    algorithm: RPCG
+  iterations:                                    # each item defines an outer loop
+  - ninner: 1
+    gradient norm reduction: 1.0e-10
+    geometry: *geom
+    diagnostics:                                 # Written into output IODA files
+      departures: ombg                           # OBS - H(Xb)
+    online diagnostics:
+      write increment: true
+      increment:                                 # DA increment output file
+        state component:
+          single_record: true
+          data_dir: Data/3dfgat/singleObs
+          prefix: wc13_roms
+          exp: 3dfgat
+          type: inc
+          date: *mid_date
+
+final:                                           # Written into output IODA files
+  diagnostics:
+    departures: oman                             # saving OBS - H(Xa) in output file
+
+output:                                          # Analysis (first guess plus increment)
+  single_record: true
+  data_dir: Data/3dfgat/singleObs
+  prefix: wc13_roms
+  exp: 3dfgat
+  type: ana
+  date: *mid_date
+
+test:
+  reference filename: testref/3dfgat_singleObs.ref
+  float relative tolerance: 1.0
+  log output filename: testoutput/3dfgat_singleObs.log
+  test output filename: testoutput/3dfgat_singleObs.out

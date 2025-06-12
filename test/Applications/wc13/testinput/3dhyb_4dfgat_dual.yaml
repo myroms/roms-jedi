@@ -36,7 +36,7 @@ cost function:
   time window:
     begin: *date
     length: *ForecastLength
-  analysis variables: *roms_analysis 
+  analysis variables: *roms_analysis
 
   geometry: &geom
     project_dir: Data/wc13
@@ -55,7 +55,7 @@ cost function:
     fields_filename: wc13_roms_ini_20040103.nc     # initial fields for 2004-01-03T00:00:00Z
     fields_record: 1
     state variables: *roms_state
-    date: *date 
+    date: *date
 
   background error:
     covariance model: hybrid
@@ -74,7 +74,7 @@ cost function:
               read global nicas: false
               read local nicas: true
             model:
-              level for 2d variables: last            
+              level for 2d variables: last
               do not cross mask boundaries: true
             nicas:
               interpolation in global file: false
@@ -94,7 +94,7 @@ cost function:
           read:
             model file:
               fields_dir: Data/wc13/input
-              fields_filename: wc13_roms_std_i.nc  # same as ROMS native RBL4D-Var
+              fields_filename: wc13_roms_std_i.nc
               fields_record: 1
               state variables: *roms_analysis
               date: *date
@@ -117,7 +117,7 @@ cost function:
                 read global nicas: false
                 read local nicas: true
               model:
-                level for 2d variables: last            
+                level for 2d variables: last
                 do not cross mask boundaries: true
               nicas:
                 interpolation in global file: false
@@ -151,7 +151,7 @@ cost function:
         obsdataout:
           engine:
             type: H5File
-            obsfile: Data/3dhyb/4dfgat/dual/wc13_temp_3dhyb_4dfgat.nc4
+            obsfile: Data/3dhyb/4dfgat/dual/wc13_temp_3dhyb.nc4
         simulated variables: [waterTemperature]
       obs operator:
         name: VertInterp
@@ -160,7 +160,7 @@ cost function:
         observation alias file: testinput/obsop_name_map.yaml
       obs error:
         covariance model: diagonal
- 
+
     - obs space:
         name: InsituSalinity
         obsdatain:
@@ -170,7 +170,7 @@ cost function:
         obsdataout:
          engine:
             type: H5File
-            obsfile: Data/3dhyb/4dfgat/dual/wc13_salt_3dhyb_4dfgat.nc4
+            obsfile: Data/3dhyb/4dfgat/dual/wc13_salt_3dhyb.nc4
         simulated variables: [salinity]
       obs operator:
         name: VertInterp
@@ -179,7 +179,7 @@ cost function:
         observation alias file: testinput/obsop_name_map.yaml
       obs error:
         covariance model: diagonal
- 
+
     - obs space:
         name: SST
         obsdatain:
@@ -189,7 +189,7 @@ cost function:
         obsdataout:
           engine:
             type: H5File
-            obsfile: Data/3dhyb/4dfgat/dual/wc13_sst_3dhyb_4dfgat.nc4
+            obsfile: Data/3dhyb/4dfgat/dual/wc13_sst_3dhyb.nc4
         simulated variables: [seaSurfaceTemperature]
       obs operator:
         name: Identity
@@ -206,7 +206,7 @@ cost function:
         obsdataout:
           engine:
             type: H5File
-            obsfile: Data/3dhyb/4dfgat/dual/wc13_adt_3dhyb_4dfgat.nc4
+            obsfile: Data/3dhyb/4dfgat/dual/wc13_adt_3dhyb.nc4
         simulated variables: [absoluteDynamicTopography]
       obs operator:
         name: ADT

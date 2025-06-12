@@ -8,21 +8,38 @@ geometry:
   fields metadata: Data/fields_metadata.yaml
   ng: 1                                        # ROMS nested grid number
 
-AnalisysVariables: &Avars [ssh, uocn, vocn, tocn, socn]
-
-TrajectoryVariables: &Tvars [ssh, u2docn, v2docn,
-                             uocn, vocn, tocn, socn,
-                             DU_avg1, DV_avg1, DU_avg2, DV_avg2,
-                             Ktocn, Ksocn, Kvocn]
-
 ForecastLength: &ForecastLength __TLAD_FORECAST_LENGTH__
+
+roms analysis: &roms_analysis
+- sea_surface_height_above_geoid
+- sea_water_x_velocity                                              # C-grid
+- sea_water_y_velocity                                              # C-grid
+- sea_water_temperature
+- sea_water_salinity
+
+roms state: &roms_state
+- sea_surface_height_above_geoid
+- sea_water_x_velocity                                              # C-grid
+- sea_water_y_velocity                                              # C-grid
+- sea_water_temperature
+- sea_water_salinity
+- model_level_depth_at_cell_center
+- barotropic_sea_water_x_velocity
+- barotropic_sea_water_y_velocity
+- sea_water_time_average_of_barotropic_x_velocity_flux
+- sea_water_time_average_of_barotropic_y_velocity_flux
+- sea_water_correct_barotropic_x_velocity_flux_for_coupling
+- sea_water_correct_barotropic_y_velocity_flux_for_coupling
+- vertical_viscosity_coefficient_of_sea_water
+- vertical_diffusion_coefficient_of_temperature_in_sea_water
+- vertical_diffusion_coefficient_of_salinity_in_sea_water
 
 model:
   name: ROMS
-  model variables: *Tvars
-  tstep: __ROMS_TIMESTEP__
+  tstep: &TimeStep __ROMS_TIMESTEP__
   simulation length: *ForecastLength
- 
+  model variables: *roms_state
+
 model aux control: null
 
 initial condition:
@@ -30,11 +47,11 @@ initial condition:
   fields_dir: __FIELDS_DIR__
   fields_filename: __ROMS_INI_PRIOR__
   fields_record: __INI_PRIOR_RECORD__
-  state variables: *Tvars
+  state variables: *roms_state
 
 background error:
   covariance model: romsjedi-ID
-  analysis variables: *Avars
+  analysis variables: *roms_analysis
   date: *date
   bump:
     general:
@@ -44,7 +61,7 @@ background error:
       strategy: specific_univariate
   correlation:
   - name: ocn
-    variables: *Avars
+    variables: *roms_analysis
 
 linear model test:
   forecast length: *ForecastLength
@@ -57,15 +74,16 @@ linear model test:
 linear model:
   name: LMROMS
   date: *date
-  tstep: __ROMS_TIMESTEP__
+  tstep: *TimeStep
   simulation length: *ForecastLength
-  lm variables: *Avars
+  lm variables: *roms_analysis
   trajectory:
-    model variables: *Tvars
+    model variables: *roms_state
+    tstep: *TimeStep
 
 model aux control: null
 
-analysis variables: *Avars
+analysis variables: *roms_analysis
 
 
 # NOTES:
@@ -77,4 +95,4 @@ analysis variables: *Avars
 #   'tolerance zero length forecast' is utilized in the zero-length
 #   unit test, which involves calling the 'initialize' and
 #   'finalize' routines and comparing the norms of the analysis
-#   vector (Avars).
+#   vector (roms_analysis).

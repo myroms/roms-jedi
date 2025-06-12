@@ -1,0 +1,125 @@
+# ROMS-JEDI BUMP Covariance Training Parameters (BUMP_NICAS) Test: __ROMS_APPLICATION__
+#
+# It sets correlation parameters to model the background error covariance
+# using BUMP/NICAS.
+#
+# Notice that BUMP uses ATLAS which only supports the computations at the center
+# of grid cell (ROMS's RHO-points). We need to figure out what to do for the
+# staggered U- and V-points state variables later.
+
+geometry:
+  project_dir: __PROJECT_DIR__
+  roms_stdinp: __ROMS_STDINP_MAX__
+  fields metadata: Data/fields_metadata.yaml
+  ng: 1                                               # ROMS nested grid number
+
+background:
+  date: &date __INITIAL_DATE__
+  fields_dir: __FIELDS_DIR__
+  fields_filename: __ROMS_INI_PRIOR__
+  fields_record: __INI_PRIOR_RECORD__
+
+  state variables: &roms_state
+  - sea_surface_height_above_geoid
+  - sea_water_x_velocity                              # C-grid
+  - sea_water_y_velocity                              # C-grid
+  - sea_water_temperature
+  - sea_water_salinity
+
+# In SABER, by default, all the length scales are defined as the half-witdh
+# Gaspari-Cohn (1999) support radius, c. The relationship with the Daley (1991)
+# correlation Gaussian length, L, is:  L = 2 * c * SQRT(0.3) and
+#                                      c = 0.5 * L / SQRT(0.3)
+
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: BUMP_NICAS
+
+    active variables: &roms_analysis
+    - sea_surface_height_above_geoid
+    - sea_water_temperature
+    - sea_water_salinity
+
+    fields metadata:
+      sea_surface_height_above_geoid:
+        vert_coord: vert_coord_2d
+
+    calibration:
+      drivers:
+        compute nicas: true                           # Run NICAS driver
+        multivariate strategy: univariate             # NICAS multivariate strategy
+        write diagnostics: true
+        write global nicas: false                     # single file: parallel I/O bug
+        write local nicas: true                       # multiple files: one per process
+      io:
+        data directory: Data/bump                     # BUMP data directory
+        files prefix: __ROMS_APP___bump_cor_max
+      model:
+        level for 2d variables: last
+        do not cross mask boundaries: true
+      nicas:
+        interpolation in global file: false           # needed for single file: has parallel bug
+#       max horizontal grid size: 2500
+#       resolution: 6.0                               # NICAS subgrid resolution
+        resolution: 10.0                              # NICAS subgrid resolution (smoother)
+        explicit length-scales: true
+
+        horizontal length-scale:
+        - groups:
+          - sea_surface_height_above_geoid
+          value: __STATIC_B_HCORRELATION_SSH__
+
+        - groups:
+          - sea_water_temperature
+          value: __STATIC_B_HCORRELATION_TOCN__
+
+        - groups:
+          - sea_water_salinity
+          value: __STATIC_B_HCORRELATION_SOCN__
+
+        vertical length-scale:
+        - groups:
+          - sea_surface_height_above_geoid
+          value: __STATIC_B_VCORRELATION_SSH__
+
+        - groups:
+          - sea_water_temperature
+          value: __STATIC_B_VCORRELATION_TOCN__
+
+        - groups:
+          - sea_water_salinity
+          value: __STATIC_B_VCORRELATION_SOCN__
+
+      grids:
+      - model:
+          variables:
+          - sea_surface_height_above_geoid
+      - model:
+          variables:
+          - sea_water_temperature
+          - sea_water_salinity
+
+      output model files:                             # Write horizontal correlations NetCDF file
+      - parameter: cor_rh
+        file:
+          single_record: true
+          data_dir: Data/bump
+          prefix: __ROMS_APP__
+          exp: bump
+          type: cor_rh_max
+          date: *date
+      - parameter: cor_rv                             # Write vertical correlations NetCDF file
+        file:
+          single_record: true
+          data_dir: Data/bump
+          prefix: __ROMS_APP__
+          exp: bump
+          type: cor_rv_max
+          date: *date
+
+test:
+  reference filename: testref/parameters_bump_cor_nicas_max.ref
+  float relative tolerance: 1.0e-3
+  log output filename: testoutput/parameters_bump_cor_nicas_max.log
+  test output filename: testoutput/parameters_bump_cor_nicas_max.out

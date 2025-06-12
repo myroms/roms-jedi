@@ -64,13 +64,13 @@ ecbuild_add_executable( TARGET  romsjedi_forecast.x
                         LIBS    romsjedi
                       )
 
-ecbuild_add_executable( TARGET  romsjedi_hofx_nomodel.x
-                        SOURCES HofXNoModel.cc
+ecbuild_add_executable( TARGET  romsjedi_hofx3d.x
+                        SOURCES HofX3d.cc
                         LIBS    romsjedi
                       )
 
-ecbuild_add_executable( TARGET  romsjedi_hofx.x
-                        SOURCES HofX.cc
+ecbuild_add_executable( TARGET  romsjedi_hofx4d.x
+                        SOURCES HofX4d.cc
                         LIBS    romsjedi
                       )
 

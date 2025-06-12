@@ -1,0 +1,25 @@
+Norm of input parameter StdDev: 7.7717431208293929e+03
+CostJb   : Nonlinear Jb = 0.0000000000000000e+00
+CostJo   : Nonlinear Jo(InsituTS) = 3.1338552399216111e+00, nobs = 2, Jo/n = 1.5669276199608055e+00, err = 4.3293454646615259e-01
+CostFunction: Nonlinear J = 3.1338552399216111e+00
+RPCGMinimizer: reduction in residual norm = 5.3105026457866272e-02
+CostFunction::addIncrement: Analysis: 
+  Valid time: 2004-01-03T00:00:00Z
+                              sea_surface_height_above_geoid   Min=    -0.279513927084655   Max=     0.221655299559480   Mean=    -0.012596749005035
+                                        sea_water_x_velocity   Min=    -0.446971292212522   Max=     0.456028027289591   Mean=     0.001900466381031
+                                        sea_water_y_velocity   Min=    -0.551383331006554   Max=     0.329409302652754   Mean=    -0.008603990000599
+                                       sea_water_temperature   Min=     1.113311665206734   Max=    18.374444754692373   Mean=     6.391045107636360
+                                          sea_water_salinity   Min=    31.913544186520049   Max=    34.689664764587278   Mean=    33.941475456479395
+                            model_level_depth_at_cell_center   Min= -4947.840267560327447   Max=    -0.245773375763171   Mean= -1072.647945779627889
+                             barotropic_sea_water_x_velocity   Min=    -0.131252241341794   Max=     0.200719797187564   Mean=    -0.000444420800809
+                             barotropic_sea_water_y_velocity   Min=    -0.222975398383573   Max=     0.177798918688555   Mean=    -0.000934699921709
+        sea_water_time_average_of_barotropic_x_velocity_flux   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
+        sea_water_time_average_of_barotropic_y_velocity_flux   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
+   sea_water_correct_barotropic_x_velocity_flux_for_coupling   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
+   sea_water_correct_barotropic_y_velocity_flux_for_coupling   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
+                 vertical_viscosity_coefficient_of_sea_water   Min=     0.000010000000000   Max=     0.099938258749165   Mean=     0.001999479476404
+  vertical_diffusion_coefficient_of_temperature_in_sea_water   Min=     0.000010000000000   Max=     0.651978113997239   Mean=     0.003204976323812
+     vertical_diffusion_coefficient_of_salinity_in_sea_water   Min=     0.000010000000000   Max=     0.651978113997239   Mean=     0.003204976323812
+CostJb   : Nonlinear Jb = 0.668666294822641
+CostJo   : Nonlinear Jo(InsituTS) = 1.333193656944397, nobs = 2, Jo/n = 0.666596828472198, err = 0.432934546466153
+CostFunction: Nonlinear J = 2.001859951767037

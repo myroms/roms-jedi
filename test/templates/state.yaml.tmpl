@@ -10,11 +10,17 @@ state test:
   date: &date __INITIAL_DATE__
 
   statefile:                                   # Reads an existing state NetCDF file
+    date: *date
     fields_dir: __FIELDS_DIR__
     fields_filename: __ROMS_INI_PRIOR__
     fields_record: __INI_PRIOR_RECORD__
-    date: *date
-    state variables: &roms_state [ssh, uocn, vocn, tocn, socn]
+
+    state variables: &roms_state
+    - sea_surface_height_above_geoid
+    - eastward_sea_water_velocity              # A-grid
+    - northward_sea_water_velocity             # A-grid
+    - sea_water_temperature
+    - sea_water_salinity
 
   state generate:                              # Generates an analytical state
     analytic init:
@@ -28,6 +34,7 @@ state test:
 
   construct to variables: *roms_state
 
-  norm file: 8609.0895530693979
-  norm generated state: 9463.4685549140231
+  norm file: 8609.08686297755
+  norm generated state: 9463.486307973802468
+
   tolerance: 1.0e-12

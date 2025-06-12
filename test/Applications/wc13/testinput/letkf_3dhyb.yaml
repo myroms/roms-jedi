@@ -41,7 +41,7 @@ cost function:
   time window:
     begin: *date
     length: *ForecastLength
-  analysis variables: *roms_analysis 
+  analysis variables: *roms_analysis
 
   geometry: &geom
     project_dir: Data/wc13
@@ -60,7 +60,7 @@ cost function:
     fields_filename: wc13_roms_letkf_mem000_2004-01-03-00.00.00.nc
     fields_record: 1
     state variables: *roms_state
-    date: *date 
+    date: *date
 
   background error:
     covariance model: hybrid
@@ -79,7 +79,7 @@ cost function:
               read global nicas: false
               read local nicas: true
             model:
-              level for 2d variables: last            
+              level for 2d variables: last
               do not cross mask boundaries: true
             nicas:
               interpolation in global file: false
@@ -100,7 +100,7 @@ cost function:
           read:
             model file:
               fields_dir: Data/wc13/input
-              fields_filename: wc13_roms_std_i.nc  # same as ROMS native RBL4D-Var
+              fields_filename: wc13_roms_std_i.nc
               fields_record: 1
               state variables: *roms_analysis
               date: *date
@@ -119,11 +119,11 @@ cost function:
                 vert_coord: vert_coord_2d
             read:
               drivers:
-                multivariate strategy: duplicated 
+                multivariate strategy: duplicated
                 read global nicas: false
                 read local nicas: true
               model:
-                level for 2d variables: last            
+                level for 2d variables: last
                 do not cross mask boundaries: true
               nicas:
                 interpolation in global file: false
@@ -137,12 +137,12 @@ cost function:
             fields_filename: wc13_roms_ensemble_mem%mem%_2004-01-03-00.00.00.nc
 #           fields_dir: Data/letkf/solver
 #           fields_filename: wc13_roms_letkf_mem%mem%_2004-01-03-00.00.00.nc
-            fields_record: 1                       # 2004-01-03T00:00:00Z
+            fields_record: 1
             state variables: *roms_state
           pattern: %mem%
           nmembers: 10
           zero padding: 3
-      weight:                                      # Ensemble B weight
+      weight:                                    # Ensemble B weight
         value: 0.6
 
   observations:
@@ -167,7 +167,7 @@ cost function:
         observation alias file: testinput/obsop_name_map.yaml
       obs error:
         covariance model: diagonal
- 
+
     - obs space:
         name: InsituSalinity
         obsdatain:
@@ -186,7 +186,7 @@ cost function:
         observation alias file: testinput/obsop_name_map.yaml
       obs error:
         covariance model: diagonal
- 
+
     - obs space:
         name: SST
         obsdatain:
@@ -255,7 +255,7 @@ output:
   data_frequency: *frequency
   data_dir: Data/letkf/3dhyb
   prefix: wc13_roms
-  exp: letfg_3dhyb
+  exp: letkf_3dhyb
   type: nlm
   date: *date
 

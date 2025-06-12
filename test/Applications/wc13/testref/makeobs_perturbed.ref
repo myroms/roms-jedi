@@ -1,0 +1,44 @@
+Initial state: 
+  Valid time: 2004-01-03T00:00:00Z
+                              sea_surface_height_above_geoid   Min=    -0.279513704894890   Max=     0.221655332464472   Mean=    -0.012596751185210
+                                        sea_water_x_velocity   Min=    -0.446971292212522   Max=     0.456028027289591   Mean=     0.001900466381031
+                                        sea_water_y_velocity   Min=    -0.551383331006554   Max=     0.329409302652754   Mean=    -0.008603990000599
+                                       sea_water_temperature   Min=     1.113311665316177   Max=    18.374451897040654   Mean=     6.394165342246293
+                                          sea_water_salinity   Min=    31.913544665185302   Max=    34.689664764584805   Mean=    33.941371661127505
+                  unvarying_model_level_depth_at_cell_center   Min= -4947.840267560327447   Max=    -0.245773375763171   Mean= -1072.647945779628117
+Final state: 
+  Valid time: 2004-01-07T00:00:00Z
+                              sea_surface_height_above_geoid   Min=    -0.256640384682066   Max=     0.241639712874815   Mean=    -0.003037941323634
+                                        sea_water_x_velocity   Min=    -0.431169100198108   Max=     0.543454598827385   Mean=     0.008451070289920
+                                        sea_water_y_velocity   Min=    -0.425112511265465   Max=     0.982832294370646   Mean=     0.003425830376461
+                                       sea_water_temperature   Min=     1.113297358155251   Max=    18.314431824710201   Mean=     6.352316089945876
+                                          sea_water_salinity   Min=    31.898658091644123   Max=    34.689663764036425   Mean=    33.940089023870378
+                  unvarying_model_level_depth_at_cell_center   Min= -4947.840267560327447   Max=    -0.245773375763171   Mean= -1072.647945779628117
+H(x): 
+InsituTS nobs= 160 Min=2.094118154540254, Max=34.586281339407094, RMS=24.591948360155445
+
+InsituTemperature nobs= 168 Min=1.993023167629123, Max=14.946127853094588, RMS=9.835819219201703
+
+InsituSalinity nobs= 125 Min=32.353401144685002, Max=34.586281311867786, RMS=33.631453117722039
+
+SST nobs= 4952 Min=7.977870676017180, Max=17.786489613145811, RMS=13.340984662863445
+
+SSS nobs= 125 Min=32.362338349514069, Max=33.299856768090940, RMS=32.832505640766833
+
+ADT nobs= 1570 Min=-0.241679585239746, Max=0.239292953616629, RMS=0.103410712500914
+
+End H(x)
+Perturbed H(x): 
+InsituTS nobs= 160 Min=1.974119444391664, Max=34.601547336670912, RMS=24.603827805689249
+
+InsituTemperature nobs= 168 Min=1.815645065086630, Max=14.998007912540611, RMS=9.814338052995529
+
+InsituSalinity nobs= 125 Min=32.347441809663017, Max=34.598257630859891, RMS=33.637432035446558
+
+SST nobs= 4952 Min=7.745877043336161, Max=18.691789874379069, RMS=13.348665631012183
+
+SSS nobs= 125 Min=32.119789182135044, Max=33.426932964780697, RMS=32.830246427059691
+
+ADT nobs= 1570 Min=-0.252817644403964, Max=0.262300620930051, RMS=0.105963585478809
+
+End Perturbed H(x)

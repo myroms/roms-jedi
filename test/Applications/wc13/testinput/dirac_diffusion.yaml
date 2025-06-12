@@ -39,7 +39,7 @@ background error:
 
     read:
 #     model:
-#       level for 2d variables: last            
+#       level for 2d variables: last
 #       do not cross mask boundaries: true
 #     nicas:
 #       interpolation in global file: false
@@ -54,7 +54,7 @@ background error:
 #         filepath: Data/diffusion/wc13_diffusion_hcor_100
 #         filepath: Data/diffusion/wc13_diffusion_hcor_120
 
-      - variables: 
+      - variables:
         - sea_water_temperature
         - sea_water_salinity
         multivariate strategy: univariate
@@ -85,7 +85,7 @@ dirac:
   izdir:                                       # field Z-index impulse location
   - 1
   - 30
-  - 30                       
+  - 30
 
 output dirac:
   single_record: true

@@ -199,7 +199,7 @@ namespace romsjedi {
 // -----------------------------------------------------------------------------
 
   void Increment::sqrt() {
-    oops::Log::trace() << classname() << ":sqrt starting" 
+    oops::Log::trace() << classname() << ":sqrt starting"
                        << std::endl;
     atlas::FieldSet fset{};
     toFieldSet(fset);

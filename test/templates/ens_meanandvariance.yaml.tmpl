@@ -9,11 +9,16 @@ geometry:
 ensemble:
   members from template:
     template:
-      date: &date __INITIAL_DATE__ 
+      date: &date __INITIAL_DATE__
       fields_dir: Data/ensembles
       fields_filename: __ROMS_APP___roms_ensemble_mem%mem%___INI_DATETIME__.nc
       fields_record: __INI_PRIOR_RECORD__
-      state variables: &roms_state [ssh, uocn, vocn, tocn, socn]
+      state variables: &roms_state
+      - sea_surface_height_above_geoid
+      - sea_water_x_velocity                   # C-grid
+      - sea_water_y_velocity                   # C-grid
+      - sea_water_temperature
+      - sea_water_salinity
     pattern: %mem%
     nmembers: __NMEMBERS__
     zero padding: 3

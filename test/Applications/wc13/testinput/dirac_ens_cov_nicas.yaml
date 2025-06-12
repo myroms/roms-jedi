@@ -49,13 +49,13 @@ background error:
               read global nicas: false
               read local nicas: true
             model:
-              level for 2d variables: last            
+              level for 2d variables: last
               do not cross mask boundaries: true
             nicas:
               interpolation in global file: false
             io:
               data directory: Data/bump_loc
-              files prefix: wc13_bump_loc 
+              files prefix: wc13_bump_loc
 
       members from template:
         template:
@@ -87,7 +87,7 @@ dirac:
   izdir:                                       # field Z-index impulse location
   - 1
   - 30
-  - 30                       
+  - 30
 
 output dirac:
   file_policy: PT98H                           # single output file with 49 records

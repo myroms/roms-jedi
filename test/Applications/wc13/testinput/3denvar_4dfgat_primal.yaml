@@ -35,7 +35,7 @@ cost function:
   time window:
     begin: *date
     length: *ForecastLength
-  analysis variables: *roms_analysis 
+  analysis variables: *roms_analysis
 
   geometry: &geom
     project_dir: Data/wc13
@@ -54,7 +54,7 @@ cost function:
     fields_filename: wc13_roms_ini_20040103.nc   # initial fields for 2004-01-03T00:00:00Z
     fields_record: 1
     state variables: *roms_state
-    date: *date 
+    date: *date
 
   background error:
     covariance model: ensemble
@@ -72,7 +72,7 @@ cost function:
             read global nicas: false
             read local nicas: true
           model:
-            level for 2d variables: last            
+            level for 2d variables: last
             do not cross mask boundaries: true
           nicas:
             interpolation in global file: false
@@ -104,7 +104,7 @@ cost function:
         obsdataout:
           engine:
             type: H5File
-            obsfile: Data/3denvar/4dfgat/primal/wc13_temp_3denvar_4dfgat.nc4
+            obsfile: Data/3denvar/4dfgat/primal/wc13_temp_3denvar.nc4
         simulated variables: [waterTemperature]
       obs operator:
         name: VertInterp
@@ -113,7 +113,7 @@ cost function:
         observation alias file: testinput/obsop_name_map.yaml
       obs error:
         covariance model: diagonal
- 
+
     - obs space:
         name: InsituSalinity
         obsdatain:
@@ -123,7 +123,7 @@ cost function:
         obsdataout:
          engine:
             type: H5File
-            obsfile: Data/3denvar/4dfgat/primal/wc13_salt_3denvar_4dfgat.nc4
+            obsfile: Data/3denvar/4dfgat/primal/wc13_salt_3denvar.nc4
         simulated variables: [salinity]
       obs operator:
         name: VertInterp
@@ -132,7 +132,7 @@ cost function:
         observation alias file: testinput/obsop_name_map.yaml
       obs error:
         covariance model: diagonal
- 
+
     - obs space:
         name: SST
         obsdatain:
@@ -142,7 +142,7 @@ cost function:
         obsdataout:
           engine:
             type: H5File
-            obsfile: Data/3denvar/4dfgat/primal/wc13_sst_3denvar_4dfgat.nc4
+            obsfile: Data/3denvar/4dfgat/primal/wc13_sst_3denvar.nc4
         simulated variables: [seaSurfaceTemperature]
       obs operator:
         name: Identity
@@ -159,7 +159,7 @@ cost function:
         obsdataout:
           engine:
             type: H5File
-            obsfile: Data/3denvar/4dfgat/primal/wc13_adt_3denvar_4dfgat.nc4
+            obsfile: Data/3denvar/4dfgat/primal/wc13_adt_3denvar.nc4
         simulated variables: [absoluteDynamicTopography]
       obs operator:
         name: ADT

@@ -10,16 +10,38 @@ forecast length: &ForecastLength __FORECAST_LENGTH__
 
 model:
   name: ROMS
-  model variables: [ssh, uocn, vocn, tocn, socn]
   tstep: __ROMS_TIMESTEP__
   simulation length: *ForecastLength
 
+  model variables:
+  - sea_surface_height_above_geoid
+  - sea_water_x_velocity                       # C-grid
+  - sea_water_y_velocity                       # C-grid
+  - sea_water_temperature
+  - sea_water_salinity
+
 initial condition:
+  date: &initial_date __INITIAL_DATE__
+
   fields_dir: __FIELDS_DIR__
   fields_filename: __ROMS_INI_PRIOR__
   fields_record: __INI_PRIOR_RECORD__
-  state variables: [ssh, uocn, vocn, tocn, socn]
-  date: &initial_date __INITIAL_DATE__
+
+  state variables:
+  - sea_surface_height_above_geoid
+  - sea_water_x_velocity                       # C-grid
+  - sea_water_y_velocity                       # C-grid
+  - sea_water_temperature
+  - sea_water_salinity
+  - barotropic_sea_water_x_velocity
+  - barotropic_sea_water_y_velocity
+  - sea_water_time_average_of_barotropic_x_velocity_flux
+  - sea_water_time_average_of_barotropic_y_velocity_flux
+  - sea_water_correct_barotropic_x_velocity_flux_for_coupling
+  - sea_water_correct_barotropic_y_velocity_flux_for_coupling
+  - vertical_viscosity_coefficient_of_sea_water
+  - vertical_diffusion_coefficient_of_temperature_in_sea_water
+  - vertical_diffusion_coefficient_of_salinity_in_sea_water
 
 output:
   file_policy: __OUTPUT_FILE_POLICY__

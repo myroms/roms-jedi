@@ -9,7 +9,7 @@ geometry:
 ensemble:
   members from template:
     template:
-      date: &date 2004-01-03T00:00:00Z 
+      date: &date 2004-01-03T00:00:00Z
       fields_dir: Data/ensembles
       fields_filename: wc13_roms_ensemble_mem%mem%_2004-01-03-00.00.00.nc
       fields_record: 1                         # 2004-01-03T00:00:00Z

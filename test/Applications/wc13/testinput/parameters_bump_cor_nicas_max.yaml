@@ -14,10 +14,10 @@ geometry:
   ng: 1                                               # ROMS nested grid number
 
 background:
-  fields_dir: Data/wc13/input
-  fields_filename: wc13_roms_ini_20040103.nc   
-  fields_record: 1                                    # initial fields
   date: &date 2004-01-03T00:00:00Z                    # initial fields date
+  fields_dir: Data/wc13/input
+  fields_filename: wc13_roms_ini_20040103.nc
+  fields_record: 1                                    # initial fields
 
   state variables: &roms_state
   - sea_surface_height_above_geoid
@@ -28,7 +28,7 @@ background:
 
 # In SABER, by default, all the length scales are defined as the half-witdh
 # Gaspari-Cohn (1999) support radius, c. The relationship with the Daley (1991)
-# correlation Gaussian length, L, is:  L = 2 * c * SQRT(0.3) and 
+# correlation Gaussian length, L, is:  L = 2 * c * SQRT(0.3) and
 #                                      c = 0.5 * L / SQRT(0.3)
 
 background error:
@@ -50,8 +50,8 @@ background error:
         compute nicas: true                           # Run NICAS driver
         multivariate strategy: univariate             # NICAS multivariate strategy
         write diagnostics: true
-        write local nicas: true                       # multiple files: one per process
         write global nicas: false                     # single file: parallel I/O bug
+        write local nicas: true                       # multiple files: one per process
       io:
         data directory: Data/bump                     # BUMP data directory
         files prefix: wc13_bump_cor_max
@@ -130,7 +130,7 @@ background error:
           date: *date
 
 test:
-  reference filename: testref/parameters_bump_cor_nicas.ref
+  reference filename: testref/parameters_bump_cor_nicas_max.ref
   float relative tolerance: 1.0e-3
-  log output filename: testoutput/parameters_bump_cor_nicas.log
-  test output filename: testoutput/parameters_bump_cor_nicas.out
+  log output filename: testoutput/parameters_bump_cor_nicas_max.log
+  test output filename: testoutput/parameters_bump_cor_nicas_max.out

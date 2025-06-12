@@ -11,8 +11,6 @@ geometry:
 
 inc variables:
 - sea_surface_height_above_geoid
-- sea_water_x_velocity                         # C-grid
-- sea_water_y_velocity                         # C-grid
 - sea_water_temperature
 - sea_water_salinity
 

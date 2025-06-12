@@ -57,7 +57,7 @@ observations:
       obsdataout:
         engine:
           type: H5File
-          obsfile: Data/hofx/wc13_TS_hofx_4d.nc4
+          obsfile: Data/hofx/4d/wc13_TS_hofx.nc4
       simulated variables: [salinity, waterTemperature]
     obs operator:
       name: VertInterp
@@ -74,7 +74,7 @@ observations:
       obsdataout:
         engine:
           type: H5File
-          obsfile: Data/hofx/wc13_temp_hofx_4d.nc4
+          obsfile: Data/hofx/4d/wc13_temp_hofx.nc4
       simulated variables: [waterTemperature]
     obs operator:
       name: VertInterp
@@ -91,7 +91,7 @@ observations:
       obsdataout:
         engine:
           type: H5File
-          obsfile: Data/hofx/wc13_salt_hofx_4d.nc4
+          obsfile: Data/hofx/4d/wc13_salt_hofx.nc4
       simulated variables: [salinity]
     obs operator:
       name: VertInterp
@@ -108,7 +108,7 @@ observations:
       obsdataout:
         engine:
           type: H5File
-          obsfile: Data/hofx/wc13_sst_hofx_4d.nc4
+          obsfile: Data/hofx/4d/wc13_sst_hofx.nc4
       simulated variables: [seaSurfaceTemperature]
     obs operator:
       name: Identity
@@ -123,7 +123,7 @@ observations:
       obsdataout:
         engine:
           type: H5File
-          obsfile: Data/hofx/wc13_sss_hofx_4d.nc4
+          obsfile: Data/hofx/4d/wc13_sss_hofx_4d.nc4
       simulated variables: [seaSurfaceSalinity]
     obs operator:
       name: Identity
@@ -138,7 +138,7 @@ observations:
       obsdataout:
         engine:
           type: H5File
-          obsfile: Data/hofx/wc13_adt_hofx_4d.nc4
+          obsfile: Data/hofx/4d/wc13_adt_hofx.nc4
       simulated variables: [absoluteDynamicTopography]
     obs operator:
       name: ADT
@@ -152,7 +152,7 @@ observations:
 #     obsdataout:
 #       engine:
 #         type: H5File
-#         obsfile: Data/hofx/wc13_uv_sur_hofx_4d.nc4
+#         obsfile: Data/hofx/4d/wc13_uv_sur_hofx.nc4
 #     simulated variables: [waterSurfaceZonalVelocity,
 #                           waterSurfaceMeridionalVelocity]
 #   obs operator:
@@ -168,7 +168,7 @@ observations:
 #     obsdataout:
 #       engine:
 #         type: H5File
-#         obsfile: Data/hofx/wc13_usur_hofx_4d.nc4
+#         obsfile: Data/hofx/4d/wc13_usur_hofx.nc4
 #     simulated variables: [waterSurfaceZonalVelocity]
 #   obs operator:
 #     name: Identity

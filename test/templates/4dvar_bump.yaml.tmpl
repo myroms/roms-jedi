@@ -12,18 +12,36 @@ model timestep:  &TimeStep __ROMS_TIMESTEP__
 
 initial date: &date __INITIAL_DATE__
 
-roms analysis: &roms_analysis [ssh, uocn, vocn, tocn, socn]
-roms state:    &roms_state    [ssh, uocn, vocn, tocn, socn, zocn_r,
-                               u2docn, v2docn,
-                               DU_avg1, DV_avg1, DU_avg2, DV_avg2,
-                               Ktocn, Ksocn, Kvocn]
+roms analysis: &roms_analysis
+- sea_surface_height_above_geoid
+- sea_water_x_velocity                           # C-grid
+- sea_water_y_velocity                           # C-grid
+- sea_water_temperature
+- sea_water_salinity
+
+roms state: &roms_state
+- sea_surface_height_above_geoid
+- sea_water_x_velocity                           # C-grid
+- sea_water_y_velocity                           # C-grid
+- sea_water_temperature
+- sea_water_salinity
+- model_level_depth_at_cell_center
+- barotropic_sea_water_x_velocity
+- barotropic_sea_water_y_velocity
+- sea_water_time_average_of_barotropic_x_velocity_flux
+- sea_water_time_average_of_barotropic_y_velocity_flux
+- sea_water_correct_barotropic_x_velocity_flux_for_coupling
+- sea_water_correct_barotropic_y_velocity_flux_for_coupling
+- vertical_viscosity_coefficient_of_sea_water
+- vertical_diffusion_coefficient_of_temperature_in_sea_water
+- vertical_diffusion_coefficient_of_salinity_in_sea_water
 
 cost function:
   cost type: 4D-Var
   time window:
     begin: *date
     length: *ForecastLength
-  analysis variables: *roms_analysis 
+  analysis variables: *roms_analysis
 
   geometry: &geom
     project_dir: __PROJECT_DIR__
@@ -42,36 +60,38 @@ cost function:
     fields_filename: __ROMS_INI_PRIOR__
     fields_record: __INI_PRIOR_RECORD__
     state variables: *roms_state
-    date: *date 
+    date: *date
 
   background error:
     covariance model: SABER
     saber central block:
       saber block name: BUMP_NICAS
-      active variables: &rho_vars [ssh, tocn, socn]
+      active variables: *roms_analysis
       fields metadata:
-        ssh:
+        sea_surface_height_above_geoid:
           vert_coord: vert_coord_2d
       read:
         drivers:
           multivariate strategy: univariate
-          read global nicas: true
+          read global nicas: false
+          read local nicas: true
         model:
           level for 2d variables: last
           do not cross mask boundaries: true
         nicas:
-          interpolation in global file: true
+          interpolation in global file: false
         io:
           data directory: Data/bump
-          files prefix: __ROMS_APP___bump_cor
+          files prefix: __ROMS_APP___bump_cor_max
         grids:
         - model:
             variables:
-            - ssh
+            - sea_surface_height_above_geoid
         - model:
             variables:
-            - tocn
-            - socn
+            - sea_water_temperature
+            - sea_water_salinity
+
     saber outer blocks:
     - saber block name: StdDev
       read:
@@ -86,82 +106,13 @@ cost function:
     obs perturbations: false                     # default
     observers:
 
-    - obs space:
-        name: InsituTemperature
-        obsdatain:
-          engine:
-            type: H5File
-            obsfile: __TEMPERATURE_OBS__
-        obsdataout:
-          engine:
-            type: H5File
-            obsfile: Data/4dvar/bump/__ROMS_APP___temp_4dvar.nc4
-        simulated variables: [waterTemperature]
-      obs operator:
-        name: VertInterp
-        vertical coordinate: model_level_depth_at_cell_center
-        observation vertical coordinate: depth
-        observation alias file: testinput/obsop_name_map.yaml
-      obs error:
-        covariance model: diagonal
- 
-    - obs space:
-        name: InsituSalinity
-        obsdatain:
-          engine:
-            type: H5File
-            obsfile: __SALINITY_OBS__
-        obsdataout:
-          engine:
-            type: H5File
-            obsfile: Data/4dvar/bump/__ROMS_APP___salt_4dvar.nc4
-        simulated variables: [salinity]
-      obs operator:
-        name: VertInterp
-        vertical coordinate: model_level_depth_at_cell_center
-        observation vertical coordinate: depth
-        observation alias file: testinput/obsop_name_map.yaml
-      obs error:
-        covariance model: diagonal
- 
-    - obs space:
-        name: SST
-        obsdatain:
-          engine:
-            type: H5File
-            obsfile: __SST_OBS__
-        obsdataout:
-          engine:
-            type: H5File
-            obsfile: Data/4dvar/bump/__ROMS_APP___sst_4dvar.nc4
-        simulated variables: [seaSurfaceTemperature]
-      obs operator:
-        name: Identity
-        observation alias file: testinput/obsop_name_map.yaml
-      obs error:
-        covariance model: diagonal
-
-    - obs space:
-        name: ADT
-        obsdatain:
-          engine:
-            type: H5File
-            obsfile: __ADT_OBS__
-        obsdataout:
-          engine:
-            type: H5File
-            obsfile: Data/4dvar/bump/__ROMS_APP___adt_4dvar.nc4
-        simulated variables: [absoluteDynamicTopography]
-      obs operator:
-        name: ADT
-      obs error:
-        covariance model: diagonal
+    __OBSERVATION_DATA__
 
 variational:
   minimizer:
     algorithm: RPCG                              # Dual   formulation
   iterations:
-  - ninner: __NINNER__
+  - ninner: __4DVAR_NINNER__
     gradient norm reduction: 1E-10
     test: on
     online diagnostics:

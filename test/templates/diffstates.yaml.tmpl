@@ -13,22 +13,27 @@ increment geometry:
   ng: 1                                        # ROMS nested grid number
 
 state1:
+  date: &initial_date __INITIAL_DATE__
   fields_dir: __FIELDS_DIR__
   fields_filename: __ROMS_INI_PRIOR__
   fields_record: __INI_PRIOR_RECORD__
-  state variables: [ssh, uocn, vocn, tocn, socn]
-  date: &initial_date __INITIAL_DATE__
+  state variables: &roms_state
+  - sea_surface_height_above_geoid
+  - sea_water_x_velocity                       # C-grid
+  - sea_water_y_velocity                       # C-grid
+  - sea_water_temperature
+  - sea_water_salinity
 
 state2:
+  date: *initial_date
   fields_dir: __FIELDS_DIR__
   fields_filename: __ROMS_MID_PRIOR__
   fields_record: __INI_PRIOR_RECORD__
-  state variables: [ssh, uocn, vocn, tocn, socn]
-  date: *initial_date
+  state variables: *roms_state
 
 output:                                        # state1 - state2
   single_record: true
-  data_dir: Data/diff
+  data_dir: Data/difference
   prefix: __ROMS_APP___roms
   exp: nlm
   type: diffstates

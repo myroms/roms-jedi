@@ -6,55 +6,70 @@
 # Create input/output directories for the tests and symlinks for all files.
 
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data)
+
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/dual)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/primal)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/singleObs)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/zeroObs)
+
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dfgat)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dfgat/dual)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dfgat/primal)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dfgat/singleObs)
+
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/4dfgat)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/4dfgat/dual)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/4dfgat/primal)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/4dfgat/singleObs)
+
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3denvar)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3denvar/4dfgat/dual)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3denvar/4dfgat/primal)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3denvar/regular/dual)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3denvar/regular/primal)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3denvar/nofgat/dual)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3denvar/nofgat/primal)
+
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dhyb)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dhyb/4dfgat/dual)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dhyb/4dfgat/primal)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dhyb/regular/dual)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dhyb/regular/primal)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/3dfgat)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/3dfgat/dual)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/3dfgat/primal)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/4dfgat)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/4dfgat/dual)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/4dfgat/primal)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/regular)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/regular/dual)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/regular/primal)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/singleObs)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/singleObs/3dfgat)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/singleObs/4dfgat)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/singleObs/regular)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dvar/zeroObs)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dhyb/nofgat/dual)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/3dhyb/nofgat/primal)
+
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/4dvar)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/4dvar/bump)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/4dvar/diffusion)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/4dvar/singleObs)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/4dvar/singleObs/bump)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/4dvar/singleObs/diffusion)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/bump)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/bump_loc)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/diff)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/diffusion)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/dirac)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/ensembles)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/forecast)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/hofx)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/hofx/ensembles)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/increment)
+
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/letkf)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/letkf/3dhyb)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/letkf/solver)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/letkf/split_observer)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/letkf/split_solver)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/letkf/splitObserver)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/letkf/splitSolver)
+
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/bump)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/bump_loc)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/diffusion)
+
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/difference)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/dirac)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/ensembles)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/forecast)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/increment)
+
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/hofx)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/hofx/3d)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/hofx/4d)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/hofx/ensembles)
+
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/makeobs)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/makeobs/truth)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/makeobs/perturbed)
+
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/roms)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Data/trajectory)
+
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testinput)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testoutput)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testref)
@@ -159,31 +174,31 @@ ecbuild_add_test(
 #================================================================================
 
 ecbuild_add_test(
-  TARGET       test_romsjedi_hofx_nomodel
+  TARGET       test_romsjedi_hofx3d
   MPI          ${MPI_NCPUS}
-  COMMAND      romsjedi_hofx_nomodel.x
-  ARGS         testinput/hofx_nomodel.yaml
+  COMMAND      romsjedi_hofx3d.x
+  ARGS         testinput/hofx_3d.yaml
   TEST_DEPENDS test_romsjedi_geometry  )
 
 ecbuild_add_test(
-  TARGET       test_romsjedi_hofx_4d
+  TARGET       test_romsjedi_hofx4d
   MPI          ${MPI_NCPUS}
-  COMMAND      romsjedi_hofx.x
+  COMMAND      romsjedi_hofx4d.x
   ARGS         testinput/hofx_4d.yaml
   TEST_DEPENDS test_romsjedi_geometry  )
 
 ecbuild_add_test(
-  TARGET       test_romsjedi_makeobs_4d
+  TARGET       test_romsjedi_makeobs
   MPI          ${MPI_NCPUS}
-  COMMAND      romsjedi_hofx.x
-  ARGS         testinput/makeobs_4d.yaml
+  COMMAND      romsjedi_hofx4d.x
+  ARGS         testinput/makeobs.yaml
   TEST_DEPENDS test_romsjedi_hofx_4d )
 
 ecbuild_add_test(
-  TARGET       test_romsjedi_makeobs_4d_perturbed
+  TARGET       test_romsjedi_makeobs_perturbed
   MPI          ${MPI_NCPUS}
-  COMMAND      romsjedi_hofx.x
-  ARGS         testinput/makeobs_4d_perturbed.yaml
+  COMMAND      romsjedi_hofx4d.x
+  ARGS         testinput/makeobs_perturbed.yaml
   TEST_DEPENDS test_romsjedi_hofx_4d )
 
 ecbuild_add_test(
@@ -302,50 +317,42 @@ ecbuild_add_test(
 #================================================================================
 
 ecbuild_add_test(
-  TARGET       test_romsjedi_3dvar_zero_obs
+  TARGET       test_romsjedi_3dvar_zeroObs
   MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_var.x
-  ARGS         testinput/3dvar_zero_obs.yaml
+  ARGS         testinput/3dvar_zeroObs.yaml
   LIBS         romsjedi
   TEST_DEPENDS test_romsjedi_bump_parameters_cor_nicas )
 
 ecbuild_add_test(
-  TARGET       test_romsjedi_3dvar_regular_single_obs
+  TARGET       test_romsjedi_3dvar_singleObs
   MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_var.x
-  ARGS         testinput/3dvar_regular_single_obs.yaml
+  ARGS         testinput/3dvar_singleObs.yaml
   LIBS         romsjedi
   TEST_DEPENDS test_romsjedi_bump_parameters_cor_nicas )
 
 ecbuild_add_test(
-  TARGET       test_romsjedi_3dfgat_single_obs
+  TARGET       test_romsjedi_3dvar_primal
   MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_var.x
-  ARGS         testinput/3dfgat_single_obs.yaml
-  LIBS         romsjedi
-  TEST_DEPENDS test_romsjedi_bump_parameters_cor_nicas )
-
-ecbuild_add_test(
-  TARGET       test_romsjedi_4dfgat_single_obs
-  MPI          ${MPI_NCPUS}
-  COMMAND      romsjedi_var.x
-  ARGS         testinput/4dfgat_single_obs.yaml
-  LIBS         romsjedi
-  TEST_DEPENDS test_romsjedi_bump_parameters_cor_nicas )
-
-ecbuild_add_test(
-  TARGET       test_romsjedi_3dvar_regular_primal
-  MPI          ${MPI_NCPUS}
-  COMMAND      romsjedi_var.x
-  ARGS         testinput/3dvar_regular_primal.yaml
+  ARGS         testinput/3dvar_primal.yaml
   LIBS         romsjedi
   TEST_DEPENDS test_romsjed_bump_parameters_cor_nicas )
 
 ecbuild_add_test(
-  TARGET       test_romsjedi_3dvar_regular_dual
+  TARGET       test_romsjedi_3dvar_dual
   MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_var.x
-  ARGS         testinput/3dvar_regular_dual.yaml
+  ARGS         testinput/3dvar_dual.yaml
+  LIBS         romsjedi
+  TEST_DEPENDS test_romsjedi_bump_parameters_cor_nicas )
+
+ecbuild_add_test(
+  TARGET       test_romsjedi_3dfgat_singleObs
+  MPI          ${MPI_NCPUS}
+  COMMAND      romsjedi_var.x
+  ARGS         testinput/3dfgat_singleObs.yaml
   LIBS         romsjedi
   TEST_DEPENDS test_romsjedi_bump_parameters_cor_nicas )
 
@@ -366,6 +373,14 @@ ecbuild_add_test(
   TEST_DEPENDS test_romsjedi_bump_parameters_cor_nicas )
 
 ecbuild_add_test(
+  TARGET       test_romsjedi_4dfgat_singleObs
+  MPI          ${MPI_NCPUS}
+  COMMAND      romsjedi_var.x
+  ARGS         testinput/4dfgat_singleObs.yaml
+  LIBS         romsjedi
+  TEST_DEPENDS test_romsjedi_bump_parameters_cor_nicas )
+
+ecbuild_add_test(
   TARGET       test_romsjedi_4dfgat_primal
   MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_var.x
@@ -382,18 +397,18 @@ ecbuild_add_test(
   TEST_DEPENDS test_romsjedi_bump_parameters_cor_nicas )
 
 ecbuild_add_test(
-  TARGET       test_romsjedi_4dvar_bump_single_obs
+  TARGET       test_romsjedi_4dvar_singleObs_bump
   MPI          ${MPI_NCPUS_MAX}
   COMMAND      romsjedi_var.x
-  ARGS         testinput/4dvar_bump_single_obs.yaml
+  ARGS         testinput/4dvar_singleObs_bump.yaml
   LIBS         romsjedi
   TEST_DEPENDS test_romsjedi_bump_parameters_cor_nicas )
 
 ecbuild_add_test(
-  TARGET       test_romsjedi_4dvar_diffusion_single_obs
+  TARGET       test_romsjedi_4dvar_singleObs_diffusion
   MPI          ${MPI_NCPUS_MAX}
   COMMAND      romsjedi_var.x
-  ARGS         testinput/4dvar_diffusion_single_obs.yaml
+  ARGS         testinput/4dvar_singleObs_diffusion.yaml
   LIBS         romsjedi
   TEST_DEPENDS test_romsjedi_parameters_diffusion )
 
@@ -418,19 +433,19 @@ ecbuild_add_test(
 #================================================================================
 
 ecbuild_add_test(
-  TARGET       test_romsjedi_3denvar_regular_primal
+  TARGET       test_romsjedi_3denvar_nofgat_primal
   MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_var.x
-  ARGS         testinput/3denvar_regular_primal.yaml
+  ARGS         testinput/3denvar_nofgat_primal.yaml
   LIBS         romsjedi
   TEST_DEPENDS test_romsjedi_bump_loc_parameters_cor_nicas
                test_romsjedi_ens_pert )
 
 ecbuild_add_test(
-  TARGET       test_romsjedi_3denvar_regular_dual
+  TARGET       test_romsjedi_3denvar_nofgat_dual
   MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_var.x
-  ARGS         testinput/3denvar_regular_dual.yaml
+  ARGS         testinput/3denvar_nofgat_dual.yaml
   LIBS         romsjedi
   TEST_DEPENDS test_romsjedi_bump_loc_parameters_cor_nicas
                test_romsjedi_ens_pert )
@@ -454,20 +469,20 @@ ecbuild_add_test(
                test_romsjedi_ens_pert )
 
 ecbuild_add_test(
-  TARGET       test_romsjedi_3dhyb_regular_primal
+  TARGET       test_romsjedi_3dhyb_nofgat_primal
   MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_var.x
-  ARGS         testinput/3dhyb_regular_primal.yaml
+  ARGS         testinput/3dhyb_nofgat_primal.yaml
   LIBS         romsjedi
   TEST_DEPENDS test_romsjedi_bump_parameters_cor_nicas
                test_romsjedi_bump_loc_parameters_cor_nicas
                test_romsjedi_ens_pert )
 
 ecbuild_add_test(
-  TARGET       test_romsjedi_3dhyb_regular_dual
+  TARGET       test_romsjedi_3dhyb_nofgat_dual
   MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_var.x
-  ARGS         testinput/3dhyb_regular_dual.yaml
+  ARGS         testinput/3dhyb_nofgat_dual.yaml
   LIBS         romsjedi
   TEST_DEPENDS test_romsjedi_bump_parameters_cor_nicas
                test_romsjedi_bump_loc_parameters_cor_nicas
@@ -498,29 +513,29 @@ ecbuild_add_test(
 #================================================================================
 
 ecbuild_add_test(
-  TARGET       test_romsjedi_letkf
+  TARGET       test_romsjedi_letkf_solver
   MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_letkf.x
-  ARGS         testinput/letkf.yaml
+  ARGS         testinput/letkf_solver.yaml
   LIBS         romsjedi
   TEST_DEPENDS test_romsjedi_ens_pert )
 
 ecbuild_add_test(
-  TARGET       test_romsjedi_letkf_split_observer
+  TARGET       test_romsjedi_letkf_splitObserver
   MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_letkf.x
-  ARGS         testinput/letkf_split_observer.yaml
+  ARGS         testinput/letkf_splitObserver.yaml
   LIBS         romsjedi
   TEST_DEPENDS test_romsjedi_ens_pert )
 
 ecbuild_add_test(
-  TARGET       test_romsjedi_letkf_split_solver
+  TARGET       test_romsjedi_letkf_splitSolver
   MPI          ${MPI_NCPUS}
   COMMAND      romsjedi_letkf.x
-  ARGS         testinput/letkf_split_solver.yaml
+  ARGS         testinput/letkf_splitSolver.yaml
   LIBS         romsjedi
   TEST_DEPENDS test_romsjedi_ens_pert
-               test_romsjedi_letkf_split_observer )
+               test_romsjedi_letkf_splitObserver )
 
 ecbuild_add_test(
   TARGET       test_romsjedi_letkf_3dhyb

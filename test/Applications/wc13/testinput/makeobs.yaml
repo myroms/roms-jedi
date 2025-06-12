@@ -1,0 +1,232 @@
+# ROMS-JEDI MakeObs Pertutbed Unit Test: WC13 Application
+
+geometry:
+  project_dir: Data/wc13
+  roms_stdinp: roms_wc13_20040103.in
+  fields metadata: Data/fields_metadata.yaml
+  ng: 1                                        # ROMS nested grid number
+
+forecast length: &ForecastLength PT96H         # 96 hours (4 days) window ending on 2004-01-07T00:00:00Z
+                                               # or other smaller interval
+model:
+  name: ROMS
+  tstep: PT1800S                               # WC13 has a 30 minutes timestep
+  simulation length: *ForecastLength
+
+  model variables:
+  - sea_surface_height_above_geoid
+  - sea_water_x_velocity                                         # C-grid
+  - sea_water_y_velocity                                         # C-grid
+  - sea_water_temperature
+  - sea_water_salinity
+
+initial condition:
+  date: 2004-01-03T00:00:00Z
+  fields_dir: Data/wc13/input
+  fields_filename: wc13_roms_ini_20040103.nc   # initial fields for 2004-01-03T00:00:00Z
+  fields_record: 1
+
+  state variables:
+  - sea_surface_height_above_geoid
+  - sea_water_x_velocity                                         # C-grid
+  - sea_water_y_velocity                                         # C-grid
+  - sea_water_temperature
+  - sea_water_salinity
+  - model_level_depth_at_cell_center
+
+time window:
+  begin: 2004-01-03T00:00:00Z
+  length: *ForecastLength
+
+observations:
+  observers:
+
+  - obs space:
+      name: InsituTS
+      obsdatain:
+        engine:
+          type: H5File
+          obsfile: Data/wc13/obs/wc13_TS_20040103.nc4
+      obsdataout:
+        engine:
+          type: H5File
+          obsfile: Data/makeobs/truth/wc13_TS_obs.nc4
+      simulated variables: [salinity, waterTemperature]
+      observed variables:  [salinity, waterTemperature]
+    obs operator:
+      name: VertInterp
+      vertical coordinate: model_level_depth_at_cell_center
+      observation vertical coordinate: depth
+      observation alias file: testinput/obsop_name_map.yaml
+    obs error:
+      covariance model: diagonal
+
+  - obs space:
+      name: InsituTemperature
+      obsdatain:
+        engine:
+          type: H5File
+          obsfile: Data/wc13/obs/wc13_temp_20040103.nc4
+      obsdataout:
+        engine:
+          type: H5File
+          obsfile: Data/makeobs/truth/wc13_temp_obs.nc4
+      simulated variables: [waterTemperature]
+      observed variables:  [waterTemperature]
+    obs operator:
+      name: VertInterp
+      vertical coordinate: model_level_depth_at_cell_center
+      observation vertical coordinate: depth
+      observation alias file: testinput/obsop_name_map.yaml
+    obs error:
+      covariance model: diagonal
+
+  - obs space:
+      name: InsituSalinity
+      obsdatain:
+        engine:
+          type: H5File
+          obsfile: Data/wc13/obs/wc13_salt_20040103.nc4
+      obsdataout:
+        engine:
+          type: H5File
+          obsfile: Data/makeobs/truth/wc13_salt_obs.nc4
+      simulated variables: [salinity]
+      observed variables:  [salinity]
+    obs operator:
+      name: VertInterp
+      vertical coordinate: model_level_depth_at_cell_center
+      observation vertical coordinate: depth
+      observation alias file: testinput/obsop_name_map.yaml
+    obs error:
+      covariance model: diagonal
+
+  - obs space:
+      name: SST
+      obsdatain:
+        engine:
+          type: H5File
+          obsfile: Data/wc13/obs/wc13_sst_20040103.nc4
+      obsdataout:
+        engine:
+          type: H5File
+          obsfile: Data/makeobs/truth/wc13_sst_obs.nc4
+      simulated variables: [seaSurfaceTemperature]
+      observed variables:  [seaSurfaceTemperature]
+    obs operator:
+      name: Identity
+      observation alias file: testinput/obsop_name_map.yaml
+    obs error:
+      covariance model: diagonal
+
+  - obs space:
+      name: SSS
+      obsdatain:
+        engine:
+          type: H5File
+          obsfile: Data/wc13/obs/wc13_sss_20040103.nc4
+      obsdataout:
+        engine:
+          type: H5File
+          obsfile: Data/makeobs/truth/wc13_sss_obs.nc4
+      simulated variables: [seaSurfaceSalinity]
+      observed variables:  [seaSurfaceSalinity]
+    obs operator:
+      name: Identity
+      observation alias file: testinput/obsop_name_map.yaml
+    obs error:
+      covariance model: diagonal
+
+  - obs space:
+      name: ADT
+      obsdatain:
+        engine:
+          type: H5File
+          obsfile: Data/wc13/obs/wc13_adt_20040103.nc4
+      obsdataout:
+        engine:
+          type: H5File
+          obsfile: Data/makeobs/truth/wc13_adt_obs.nc4
+      simulated variables: [absoluteDynamicTopography]
+      observed variables:  [absoluteDynamicTopography]
+    obs operator:
+      name: ADT
+    obs error:
+      covariance model: diagonal
+
+# - obs space:
+#     name: SurfaceUV
+#     obsdatain:
+#       engine:
+#         type: H5File
+#         obsfile: Data/wc13/obs/wc13_uv_sur_20040103.nc4
+#     obsdataout:
+#       engine:
+#         type: H5File
+#         obsfile: Data/makeobs/truth/wc13_uvsur_obs.nc4
+#     simulated variables: [waterSurfaceZonalVelocity,
+#                           waterSurfaceMeridionalVelocity]
+#     observed variables:  [waterSurfaceZonalVelocity,
+#                           waterSurfaceMeridionalVelocity]
+#   obs operator:
+#     name: Identity
+#     observation alias file: testinput/obsop_name_map.yaml
+#   obs error:
+#     covariance model: diagonal
+
+# - obs space:
+#     name: SurfaceU
+#     obsdatain:
+#       engine:
+#         type: H5File
+#         obsfile: Data/wc13/obs/wc13_usur_20040103.nc4
+#     obsdataout:
+#       engine:
+#         type: H5File
+#         obsfile: Data/makeobs/truth/wc13_usur_obs.nc4
+#     simulated variables: [waterSurfaceZonalVelocity]
+#     observed variables:  [waterSurfaceZonalVelocity]
+#   obs operator:
+#     name: Identity
+#     observation alias file: testinput/obsop_name_map.yaml
+#   obs error:
+#     covariance model: diagonal
+
+# - obs space:
+#     name: SurfaceV
+#     obsdatain:
+#       engine:
+#         type: H5File
+#         obsfile: Data/wc13/obs/wc13_vsur_20040103.nc4
+#     obsdataout:
+#       engine:
+#         type: H5File
+#         obsfile: Data/makeobs/truth/wc13_vsur_obs.nc4
+#     simulated variables: [waterSurfaceMeridionalVelocity]
+#     observed variables:  [waterSurfaceMeridionalVelocity]
+#   obs operator:
+#     name: Identity
+#     observation alias file: testinput/obsop_name_map.yaml
+#   obs error:
+#     covariance model: diagonal
+
+make obs: true
+
+test:
+  reference filename: testref/makeobs.ref
+  float relative tolerance: 1.0e-3
+  log output filename: testoutput/makeobs.log
+  test output filename: testoutput/makeobs.out
+
+# NOTES:
+#
+# * Check IODA ObsSpace YAML file for metadata naming conventions:
+#
+#   JCSDA repository: ioda/share/ioda/yaml/validation/ObsSpace.yaml
+#   https://github.com/JCSDA-internal/ioda/blob/develop/share/ioda/yaml/validation/ObsSpace.yaml
+#
+# * The WC13 application is configured to run for 96 hours (4-days).
+#   However,  it is possible to use a smaller interval for the
+#   'forecast length' provided that it is an integer multiple the
+#   timestep (1800 s). Then, ROMS internal parameters are changed
+#   to the desired interval via the 'simulation length' property.

@@ -16,7 +16,7 @@ geometry:
 background:
   date: &date 2004-01-03T00:00:00Z                    # initial fields date
   fields_dir: Data/wc13/input
-  fields_filename: wc13_roms_ini_20040103.nc   
+  fields_filename: wc13_roms_ini_20040103.nc
   fields_record: 1                                    # initial fields
 
   state variables: &roms_state
@@ -28,7 +28,7 @@ background:
 
 # In SABER, by default, all the length scales are defined as the half-witdh
 # Gaspari-Cohn (1999) support radius, c. The relationship with the Daley (1991)
-# correlation Gaussian length, L, is:  L = 2 * c * SQRT(0.3) and 
+# correlation Gaussian length, L, is:  L = 2 * c * SQRT(0.3) and
 #                                      c = 0.5 * L / SQRT(0.3)
 
 background error:
@@ -56,8 +56,8 @@ background error:
         write global nicas: false
         write local nicas: true
       model:
-        do not cross mask boundaries: true
         level for 2d variables: last
+        do not cross mask boundaries: true
       nicas:
         interpolation in global file: false
 #       resolution: 6.0                               # NICAS subgrid resolution

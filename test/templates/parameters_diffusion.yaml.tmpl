@@ -10,15 +10,21 @@ geometry:
   ng: 1                                               # ROMS nested grid number
 
 background:
-  fields_dir: __FIELDS_DIR_
-  fields_filename: __ROMS_INI_PRIOR_   
-  fields_record: __INI_PRIOR_RECORD__
-  state variables: [ssh, tocn, socn]
   date: &date __INITIAL_DATE__
+  fields_dir: __FIELDS_DIR__
+  fields_filename: __ROMS_INI_PRIOR__
+  fields_record: __INI_PRIOR_RECORD__
+
+  state variables: &roms_state
+  - sea_surface_height_above_geoid
+  - sea_water_x_velocity                              # C-grid
+  - sea_water_y_velocity                              # C-grid
+  - sea_water_temperature
+  - sea_water_salinity
 
 # In SABER, by default, all the length scales are defined as the half-witdh
 # Gaspari-Cohn (1999) support radius, c. The relationship with the Daley (1991)
-# correlation Gaussian length, L, is:  L = 2 * c * SQRT(0.3) and 
+# correlation Gaussian length, L, is:  L = 2 * c * SQRT(0.3) and
 #                                      c = 0.5 * L / SQRT(0.3)
 # The diffusion operator is defined in terms of L.
 
@@ -26,55 +32,61 @@ background error:
   covariance model: SABER
   saber central block:
     saber block name: diffusion
-    active variables: &rho_vars [ssh, tocn, socn]
+
+    active variables: &roms_analysis
+    - sea_surface_height_above_geoid
+    - sea_water_temperature
+    - sea_water_salinity
+
     fields metadata:
-      ssh:
+      sea_surface_height_above_geoid:
         vert_coord: vert_coord_2d
+
     calibration:
       normalization:
         iterations: 30000                             # Randomization approach
       groups:
       - horizontal:
           as gaussian: true
-          fixed value: __HCOR1__
+          fixed value: __HCOR_50__
           mask: "mask_rho"
         write:
-          filepath: __PATH_HCOR1__
+          filepath: __PATH_HCOR_50__
       - horizontal:
           as gaussian: true
-          fixed value: __HCOR2__
+          fixed value: __HCOR_70__
           mask: "mask_rho"
         write:
-          filepath: __PATH_HCOR2__
+          filepath: __PATH_HCOR_70__
       - horizontal:
           as gaussian: true
-          fixed value: __HCOR3__
+          fixed value: __HCOR_80__
           mask: "mask_rho"
         write:
-          filepath: __PATH_HCOR3__
+          filepath: __PATH_HCOR_80__
       - horizontal:
           as gaussian: true
-          fixed value: __HCOR4__
+          fixed value: __HCOR_100__
           mask: "mask_rho"
         write:
-          filepath: __PATH_HCOR4__
+          filepath: __PATH_HCOR_100__
       - horizontal:
           as gaussian: true
-          fixed value: __HCOR5__
+          fixed value: __HCOR_120__
           mask: "mask_rho"
         write:
-          filepath: __PATH_HCOR5__
+          filepath: __PATH_HCOR_120__
       - vertical:
           as gaussian: true
-          fixed value: __VCOR1__
+          fixed value: __VCOR_5L__
           levels: __NLEVELS__
           mask: "mask_rho"
         write:
-          filepath: __PATH_VCOR1__
+          filepath: __PATH_VCOR_5L__
       - vertical:
           as gaussian: true
-          fixed value: __VCOR2__
+          fixed value: __VCOR_8L__
           levels: __NLEVELS__
           mask: "mask_rho"
         write:
-          filepath: __PATH_VCOR2__
+          filepath: __PATH_VCOR_8L__

@@ -13,6 +13,7 @@ geometry:
 
 forecast length: &ForecastLength PT96H         # 96 hours (4 days) window ending on 2004-01-07T00:00:00Z
                                                # or other smaller interval
+
 members: 10
 
 perturbed variables:
@@ -33,11 +34,11 @@ model:
   - sea_water_salinity
 
 initial condition:
+  date: &date 2004-01-03T00:00:00Z
   fields_dir: Data/wc13/input
   fields_filename: wc13_roms_ini_20040103.nc   # initial fields for 2004-01-03T00:00:00Z
   fields_record: 1
   state variables: *roms_state
-  date: &date 2004-01-03T00:00:00Z
 
 background error:
   covariance model: SABER
@@ -59,7 +60,7 @@ background error:
         read global nicas: false
         read local nicas: true
       model:
-        level for 2d variables: last            
+        level for 2d variables: last
         do not cross mask boundaries: true
       nicas:
         interpolation in global file: false
@@ -80,7 +81,7 @@ background error:
     read:
       model file:
         fields_dir: Data/wc13/input
-        fields_filename: wc13_roms_std_i.nc    # same as ROMS native RBL4D-Var
+        fields_filename: wc13_roms_std_i.nc
         fields_record: 1
         state variables: *roms_state
         date: *date

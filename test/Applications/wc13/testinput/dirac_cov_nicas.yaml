@@ -42,13 +42,14 @@ background error:
         read global nicas: false
         read local nicas: true
       model:
-        level for 2d variables: last            
+        level for 2d variables: last
         do not cross mask boundaries: true
       nicas:
         interpolation in global file: false
       io:
         data directory: Data/bump
         files prefix: wc13_bump_cor
+        io tasks: 1
       grids:
       - model:
           variables:
@@ -74,7 +75,7 @@ dirac:
   izdir:                                       # field Z-index impulse location
   - 1
   - 30
-  - 30                       
+  - 30
 
 output dirac:
   single_record: true

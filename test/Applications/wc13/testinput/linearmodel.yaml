@@ -39,7 +39,7 @@ model:
   tstep: &TimeStep PT1800S                     # WC13 has a 30 minutes NLM timestep
   simulation length: *ForecastLength
   model variables: *roms_state
- 
+
 model aux control: null
 
 initial condition:

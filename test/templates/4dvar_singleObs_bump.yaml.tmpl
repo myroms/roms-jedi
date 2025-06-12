@@ -1,0 +1,168 @@
+# ROMS-JEDI 4D-Var Single Observation Test (BUMP-NICAS): __ROMS_APPLICATION__
+#
+# It uses ROMS 4D state vector and the 4D-Var cost function for
+# Strong-constraint 4D-Var, dual (default) or primal formulation.
+# It computes the analysis increment for the initial state vector
+# (beginning of the DA window).
+#
+
+forecast length: &ForecastLength __FORECAST_LENGTH__
+
+model timestep:  &TimeStep __ROMS_TIMESTEP__
+
+initial date: &date __INITIAL_DATE__
+
+roms analysis: &roms_analysis
+- sea_surface_height_above_geoid
+- sea_water_x_velocity                           # C-grid
+- sea_water_y_velocity                           # C-grid
+- sea_water_temperature
+- sea_water_salinity
+
+roms state: &roms_state
+- sea_surface_height_above_geoid
+- sea_water_x_velocity                           # C-grid
+- sea_water_y_velocity                           # C-grid
+- sea_water_temperature
+- sea_water_salinity
+- model_level_depth_at_cell_center
+- barotropic_sea_water_x_velocity
+- barotropic_sea_water_y_velocity
+- sea_water_time_average_of_barotropic_x_velocity_flux
+- sea_water_time_average_of_barotropic_y_velocity_flux
+- sea_water_correct_barotropic_x_velocity_flux_for_coupling
+- sea_water_correct_barotropic_y_velocity_flux_for_coupling
+- vertical_viscosity_coefficient_of_sea_water
+- vertical_diffusion_coefficient_of_temperature_in_sea_water
+- vertical_diffusion_coefficient_of_salinity_in_sea_water
+
+cost function:
+  cost type: 4D-Var
+  time window:
+    begin: *date
+    length: *ForecastLength
+  analysis variables: *roms_analysis
+
+  geometry: &geom
+    project_dir: __PROJECT_DIR__
+    roms_stdinp: __ROMS_STDINP_MAX__
+    fields metadata: Data/fields_metadata.yaml
+    ng: 1                                        # ROMS nested grid number
+
+  model:
+    name: ROMS
+    model variables: *roms_state
+    simulation length: *ForecastLength
+    tstep: *TimeStep
+
+  background:
+    fields_dir: __FIELDS_DIR__
+    fields_filename: __ROMS_INI_PRIOR__
+    fields_record: __INI_PRIOR_RECORD__
+    state variables: *roms_state
+    date: *date
+
+  background error:
+    covariance model: SABER
+    saber central block:
+      saber block name: BUMP_NICAS
+      active variables: *roms_analysis
+      fields metadata:
+        sea_surface_height_above_geoid:
+          vert_coord: vert_coord_2d
+      read:
+        drivers:
+          multivariate strategy: univariate
+          read global nicas: false
+          read local nicas: true
+        model:
+          level for 2d variables: last
+          do not cross mask boundaries: true
+        nicas:
+          interpolation in global file: false
+        io:
+          data directory: Data/bump
+          files prefix: __ROMS_APP___bump_cor_max
+        grids:
+        - model:
+            variables:
+            - sea_surface_height_above_geoid
+        - model:
+            variables:
+            - sea_water_temperature
+            - sea_water_salinity
+
+    saber outer blocks:
+    - saber block name: StdDev
+      read:
+        model file:
+          fields_dir: __FIELDS_DIR__
+          fields_filename: __ROMS_PRIOR_STD__
+          fields_record: 1
+          state variables: *roms_analysis
+          date: *date
+
+  observations:
+    obs perturbations: false                     # default
+    observers:
+
+    __SINGLE_OBSERVATION_DATA__
+
+variational:
+  minimizer:
+    algorithm: RPCG                              # Dual   formulation
+  iterations:
+  - ninner: 1                                    # each item defined an outer loop
+    gradient norm reduction: 1E-10
+    test: on
+    online diagnostics:
+      adj obs test: false
+      adj tlm test: false
+      online adj test: false
+      tlm approx test: false
+      tlm propag test: false
+      tlm taylor test: false
+    geometry: *geom
+    linear model:
+      name: LMROMS
+      date: *date
+      simulation length: *ForecastLength
+      lm variables: *roms_analysis
+      tstep: *TimeStep
+      trajectory:
+        model variables: *roms_state
+        tstep: __TRAJECTORY_TIMESTEP__
+      variable change: Identity
+    diagnostics:                                 # Written into output IODA files
+      departures: ombg                           # OBS - H(Xb)
+    online diagnostics:
+      write increment: true
+      increment:                                 # DA increment output file
+        state component:
+          single_record: true
+          data_dir: Data/4dvar/singleObs/bump
+          prefix: __ROMS_APP___roms
+          exp: 4dvar
+          type: inc
+          date: *date
+
+final:                                           # Written into output IODA files
+  diagnostics:
+    departures: oman                             # saving OBS - H(Xa) in output file
+
+output:                                          # Forecast from Analysis
+  firt: PT0S
+  frequency: &frequency __OUTPUT_FREQUENCY__
+  file_policy: __OUTPUT_FILE_POLICY__
+  data_frequency: *frequency
+  data_dir: Data/4dvar/singleObs/bump
+  prefix: __ROMS_APP___roms
+  exp: 4dvar
+  type: ana
+  date: *date
+
+test:
+  reference filename: testref/4dvar_singleObs_bump.ref
+  float relative tolerance: 1.0
+  log output filename: testoutput/4dvar_singleObs_bump.log
+  test output filename: testoutput/4dvar_singleObs_bump.out

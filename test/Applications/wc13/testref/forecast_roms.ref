@@ -16,17 +16,17 @@ Initial state:
      vertical_diffusion_coefficient_of_salinity_in_sea_water   Min=     0.000010000000000   Max=     0.651978113997239   Mean=     0.003204976323812
 Final state: 
   Valid time: 2004-01-07T00:00:00Z
-                              sea_surface_height_above_geoid   Min=    -0.256684197981012   Max=     0.241544844066324   Mean=    -0.003043878701598
-                                        sea_water_x_velocity   Min=    -0.431038351229719   Max=     0.543605247403408   Mean=     0.008454893147490
-                                        sea_water_y_velocity   Min=    -0.424531928664566   Max=     0.988330516985094   Mean=     0.003434999042333
-                                       sea_water_temperature   Min=     1.113297358155251   Max=    18.314431824710201   Mean=     6.352358974852228
-                                          sea_water_salinity   Min=    31.898658091644123   Max=    34.689663764036425   Mean=    33.940120312803423
-                             barotropic_sea_water_x_velocity   Min=    -0.232717796739600   Max=     0.190166094825123   Mean=    -0.001446431946874
-                             barotropic_sea_water_y_velocity   Min=    -0.214193522808893   Max=     0.323640967564621   Mean=     0.004309698557844
-        sea_water_time_average_of_barotropic_x_velocity_flux   Min= -20318262.302752692252398   Max= 32704009.181352056562901   Mean= 55398.414415065810317
-        sea_water_time_average_of_barotropic_y_velocity_flux   Min= -33531815.168718121945858   Max= 18849949.235372100025415   Mean= -451725.658662466157693
-   sea_water_correct_barotropic_x_velocity_flux_for_coupling   Min= -20321546.651075486093760   Max= 32705612.099870778620243   Mean= 55487.945759252237622
-   sea_water_correct_barotropic_y_velocity_flux_for_coupling   Min= -33534671.312100339680910   Max= 18846942.092275373637676   Mean= -451818.644546345516574
-                 vertical_viscosity_coefficient_of_sea_water   Min=     0.000022381218542   Max=     0.010000000000000   Mean=     0.000967303373002
-  vertical_diffusion_coefficient_of_temperature_in_sea_water   Min=     0.000010000000000   Max=     0.010000000000000   Mean=     0.000995276523134
-     vertical_diffusion_coefficient_of_salinity_in_sea_water   Min=     0.000010000000000   Max=     0.010000000000000   Mean=     0.000995276523134
+                              sea_surface_height_above_geoid   Min=    -0.256691410002795   Max=     0.241547212177774   Mean=    -0.003041700993439
+                                        sea_water_x_velocity   Min=    -0.432041060475315   Max=     0.543276371670177   Mean=     0.008456065311668
+                                        sea_water_y_velocity   Min=    -0.424305684447628   Max=     0.980022917272947   Mean=     0.003433096226374
+                                       sea_water_temperature   Min=     1.113297358155251   Max=    18.314431824710201   Mean=     6.352328526778383
+                                          sea_water_salinity   Min=    31.898658091644123   Max=    34.689663764036425   Mean=    33.940119135784137
+                             barotropic_sea_water_x_velocity   Min=    -0.232724080234851   Max=     0.190165722537116   Mean=    -0.001446464361211
+                             barotropic_sea_water_y_velocity   Min=    -0.214192670246498   Max=     0.323643718458166   Mean=     0.004309507746375
+        sea_water_time_average_of_barotropic_x_velocity_flux   Min= -20318974.228332664817572   Max= 32703945.222809843719006   Mean= 55383.200925894016109
+        sea_water_time_average_of_barotropic_y_velocity_flux   Min= -33531681.703132271766663   Max= 18850002.260283850133419   Mean= -451709.040295405895449
+   sea_water_correct_barotropic_x_velocity_flux_for_coupling   Min= -20322259.294792514294386   Max= 32705548.302067726850510   Mean= 55472.871802099434717
+   sea_water_correct_barotropic_y_velocity_flux_for_coupling   Min= -33534538.285302139818668   Max= 18846995.735329255461693   Mean= -451801.872386112227105
+                 vertical_viscosity_coefficient_of_sea_water   Min=     0.000022381218542   Max=     0.010000000000000   Mean=     0.000956832548780
+  vertical_diffusion_coefficient_of_temperature_in_sea_water   Min=     0.000010000000000   Max=     0.010000000000000   Mean=     0.000981274631947
+     vertical_diffusion_coefficient_of_salinity_in_sea_water   Min=     0.000010000000000   Max=     0.010000000000000   Mean=     0.000981274631947

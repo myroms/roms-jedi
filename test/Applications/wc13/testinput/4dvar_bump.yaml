@@ -41,7 +41,7 @@ cost function:
   time window:
     begin: *date
     length: *ForecastLength
-  analysis variables: *roms_analysis 
+  analysis variables: *roms_analysis
 
   geometry: &geom
     project_dir: Data/wc13
@@ -57,10 +57,10 @@ cost function:
 
   background:
     fields_dir: Data/wc13/input
-    fields_filename: wc13_roms_ini_20040103.nc   # initial fields for 2004-01-03T00:00:00Z
+    fields_filename: wc13_roms_ini_20040103.nc
     fields_record: 1
     state variables: *roms_state
-    date: *date 
+    date: *date
 
   background error:
     covariance model: SABER
@@ -76,7 +76,7 @@ cost function:
           read global nicas: false
           read local nicas: true
         model:
-          level for 2d variables: last            
+          level for 2d variables: last
           do not cross mask boundaries: true
         nicas:
           interpolation in global file: false
@@ -97,7 +97,7 @@ cost function:
       read:
         model file:
           fields_dir: Data/wc13/input
-          fields_filename: wc13_roms_std_i.nc    # same as ROMS native RBL4D-Var
+          fields_filename: wc13_roms_std_i.nc
           fields_record: 1
           state variables: *roms_analysis
           date: *date
@@ -124,7 +124,7 @@ cost function:
         observation alias file: testinput/obsop_name_map.yaml
       obs error:
         covariance model: diagonal
- 
+
     - obs space:
         name: InsituSalinity
         obsdatain:
@@ -143,7 +143,7 @@ cost function:
         observation alias file: testinput/obsop_name_map.yaml
       obs error:
         covariance model: diagonal
- 
+
     - obs space:
         name: SST
         obsdatain:

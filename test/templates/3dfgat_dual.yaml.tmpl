@@ -1,4 +1,4 @@
-# ROMS-JEDI 3D-FGAT (Dual Formulation) Test: __ROMS_APPLICATION__
+# ROMS-JEDI 3D-FGAT Cost Function (Dual Formulation) Test: __ROMS_APPLICATION__
 #
 # It uses ROMS 4D state vector and the 3D-FGAT cost function (check
 # OOPS #2195 Pull Request for details). It should produce identical
@@ -15,17 +15,32 @@ forecast length: &ForecastLength __FORECAST_LENGTH__
 model timestep:  &TimeStep __ROMS_TIMESTEP__
 
 initial date: &date __INITIAL_DATE__
-middle date:  &mid_date __MIDDLE_DATE_
+middle date:  &mid_date __MIDDLE_DATE__
 
-roms analysis:  &roms_analysis [ssh, uocn, vocn, tocn, socn]
-roms state:     &roms_state    [ssh, uocn, vocn, tocn, socn, zocn_r]
+roms analysis: &roms_analysis
+- sea_surface_height_above_geoid
+- sea_water_x_velocity                           # C-grid
+- sea_water_y_velocity                           # C-grid
+- sea_water_temperature
+- sea_water_salinity
+
+roms state: &roms_state
+- sea_surface_height_above_geoid
+- sea_water_x_velocity                           # C-grid
+- sea_water_y_velocity                           # C-grid
+- sea_water_temperature
+- sea_water_salinity
+- model_level_depth_at_cell_center
+- vertical_diffusion_coefficient_of_temperature_in_sea_water
+- vertical_diffusion_coefficient_of_salinity_in_sea_water
+- vertical_viscosity_coefficient_of_sea_water
 
 cost function:
   cost type: 3D-FGAT
   time window:
     begin: *date
     length: *ForecastLength
-  analysis variables: *roms_analysis 
+  analysis variables: *roms_analysis
 
   geometry: &geom
     project_dir: __PROJECT_DIR__
@@ -44,36 +59,38 @@ cost function:
     fields_filename: __ROMS_INI_PRIOR__
     fields_record: __INI_PRIOR_RECORD__
     state variables: *roms_state
-    date: *date 
+    date: *date
 
   background error:
     covariance model: SABER
     saber central block:
       saber block name: BUMP_NICAS
-      active variables: &rho_vars [ssh, tocn, socn]
+      active variables: *roms_analysis
       fields metadata:
-        ssh:
+        sea_surface_height_above_geoid:
           vert_coord: vert_coord_2d
       read:
         drivers:
           multivariate strategy: univariate
-          read global nicas: true
+          read global nicas: false
+          read local nicas: true
         model:
           level for 2d variables: last
           do not cross mask boundaries: true
         nicas:
-          interpolation in global file: true
+          interpolation in global file: false
         io:
           data directory: Data/bump
           files prefix: __ROMS_APP___bump_cor
         grids:
         - model:
             variables:
-            - ssh
+            - sea_surface_height_above_geoid
         - model:
             variables:
-            - tocn
-            - socn
+            - sea_water_temperature
+            - sea_water_salinity
+
     saber outer blocks:
     - saber block name: StdDev
       read:
@@ -82,82 +99,13 @@ cost function:
           fields_filename: __ROMS_PRIOR_STD__
           fields_record: 1
           state variables: *roms_analysis
-          date: *mid_date 
+          date: *mid_date
 
   observations:
     obs perturbations: false                     # default
     observers:
 
-    - obs space:
-        name: InsituTemperature
-        obsdatain:
-          engine:
-            type: H5File
-            obsfile: __TEMPERATURE_OBS__
-        obsdataout:
-          engine:
-            type: H5File
-            obsfile: Data/3dvar/3dfgat/dual/__ROMS_APP___temp_3dfgat.nc4
-        simulated variables: [waterTemperature]
-      obs operator:
-        name: VertInterp
-        vertical coordinate: model_level_depth_at_cell_center
-        observation vertical coordinate: depth
-        observation alias file: testinput/obsop_name_map.yaml
-      obs error:
-        covariance model: diagonal
- 
-    - obs space:
-        name: InsituSalinity
-        obsdatain:
-          engine:
-            type: H5File
-            obsfile: __SALINITY_OBS__
-        obsdataout:
-          engine:
-            type: H5File
-            obsfile: Data/3dvar/3dfgat/dual/__ROMS_APP___salt_3dfgat.nc4
-        simulated variables: [salinity]
-      obs operator:
-        name: VertInterp
-        vertical coordinate: model_level_depth_at_cell_center
-        observation vertical coordinate: depth
-        observation alias file: testinput/obsop_name_map.yaml
-      obs error:
-        covariance model: diagonal
- 
-    - obs space:
-        name: SST
-        obsdatain:
-          engine:
-            type: H5File
-            obsfile: __SST_OBS__
-        obsdataout:
-          engine:
-            type: H5File
-            obsfile: Data/3dvar/3dfgat/dual/__ROMS_APP___sst_3dfgat.nc4
-        simulated variables: [seaSurfaceTemperature]
-      obs operator:
-        name: Identity
-        observation alias file: testinput/obsop_name_map.yaml
-      obs error:
-        covariance model: diagonal
-
-    - obs space:
-        name: ADT
-        obsdatain:
-          engine:
-            type: H5File
-            obsfile: __ADT_OBS__
-        obsdataout:
-          engine:
-            type: H5File
-            obsfile: Data/3dvar/3dfgat/dual/__ROMS_APP___adt_3dfgat.nc4
-        simulated variables: [absoluteDynamicTopography]
-      obs operator:
-        name: ADT
-      obs error:
-        covariance model: diagonal
+    __OBSERVATION_DATA__
 
 variational:
   minimizer:
@@ -174,7 +122,7 @@ variational:
       increment:                                 # DA increment output file
         state component:
           single_record: true
-          data_dir: Data/3dvar/3dfgat/dual
+          data_dir: Data/3dfgat/dual
           prefix: __ROMS_APP___roms
           exp: 3dfgat
           type: inc
@@ -186,7 +134,7 @@ final:                                           # Written into output IODA file
 
 output:                                          # Analysis (first guess plus increment)
   single_record: true
-  data_dir: Data/3dvar/3dfgat/dual
+  data_dir: Data/3dfgat/dual
   prefix: __ROMS_APP___roms
   exp: 3dfgat
   type: ana
