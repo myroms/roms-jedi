@@ -17,15 +17,17 @@ background:
 
   state variables: &roms_state
   - sea_surface_height_above_geoid
+  - eastward_sea_water_velocity                       # A-grid
+  - northward_sea_water_velocity                      # A-grid
   - sea_water_x_velocity                              # C-grid
   - sea_water_y_velocity                              # C-grid
   - sea_water_temperature
   - sea_water_salinity
 
 # In SABER, by default, all the length scales are defined as the half-witdh
-# Gaspari-Cohn (1999) support radius, c. The relationship with the Daley (1991)
-# correlation Gaussian length, L, is:  L = 2 * c * SQRT(0.3) and
-#                                      c = 0.5 * L / SQRT(0.3)
+# Gaspari-Cohn (1999) support radius, c/2. The relationship with the Daley (1991)
+# correlation Gaussian length, L, is:  L = SQRT(0.3) * c/2   and
+#                                      c = 2 * L / SQRT(0.3)
 # The diffusion operator is defined in terms of L.
 
 background error:
@@ -35,6 +37,10 @@ background error:
 
     active variables: &roms_analysis
     - sea_surface_height_above_geoid
+    - eastward_sea_water_velocity                     # A-grid
+    - northward_sea_water_velocity                    # A-grid
+    - sea_water_x_velocity                            # C-grid
+    - sea_water_y_velocity                            # C-grid
     - sea_water_temperature
     - sea_water_salinity
 
@@ -48,34 +54,53 @@ background error:
       groups:
       - horizontal:
           as gaussian: true
+          fixed value: 40.0e3
+          mask: "mask_rho"
+        write:
+          filepath: Data/diffusion/wc13_diffusion_hcor_40
+
+      - horizontal:
+          as gaussian: true
           fixed value: 50.0e3
           mask: "mask_rho"
         write:
           filepath: Data/diffusion/wc13_diffusion_hcor_50
+
       - horizontal:
           as gaussian: true
-          fixed value: 70.0e3
+          fixed value: 60.0e3
           mask: "mask_rho"
         write:
-          filepath: Data/diffusion/wc13_diffusion_hcor_70
+          filepath: Data/diffusion/wc13_diffusion_hcor_60
+
       - horizontal:
           as gaussian: true
           fixed value: 80.0e3
           mask: "mask_rho"
         write:
           filepath: Data/diffusion/wc13_diffusion_hcor_80
+
       - horizontal:
           as gaussian: true
           fixed value: 100.0e3
           mask: "mask_rho"
         write:
           filepath: Data/diffusion/wc13_diffusion_hcor_100
+
       - horizontal:
           as gaussian: true
           fixed value: 120.0e3
           mask: "mask_rho"
         write:
           filepath: Data/diffusion/wc13_diffusion_hcor_120
+
+      - horizontal:
+          as gaussian: true
+          fixed value: 160.0e3
+          mask: "mask_rho"
+        write:
+          filepath: Data/diffusion/wc13_diffusion_hcor_160
+
       - vertical:
           as gaussian: true
           fixed value: 5.0                            # 5 levels
@@ -83,6 +108,7 @@ background error:
           mask: "mask_rho"
         write:
           filepath: Data/diffusion/wc13_diffusion_vcor_5
+
       - vertical:
           as gaussian: true
           fixed value: 8.0                            # 8 levels

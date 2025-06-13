@@ -72,12 +72,14 @@ END SUBROUTINE roms_linearModel_delete_c
 ! ------------------------------------------------------------------------------
 !> Binding interface to initialize TLROMS object.
 
-SUBROUTINE roms_linearModel_initialize_tl_c (c_key_self, c_key_incr,           &
+SUBROUTINE roms_linearModel_initialize_tl_c (c_key_self,                       &
+                                             c_key_geom, c_key_incr,           &
                                              c_key_traj1, c_key_traj2,         &
                                              c_fac1, c_fac2, c_dt)             &
                            BIND (c, name='roms_linearModel_initialize_tl_f90')
 
   integer (c_int),      intent(in) :: c_key_self  !< LinearModel object pointer
+  integer (c_int),      intent(in) :: c_key_geom  !< Geometry object pointer
   integer (c_int),      intent(in) :: c_key_incr  !< Increment object pointer
   integer (c_int),      intent(in) :: c_key_traj1 !< Trajectory time-1 pointer
   integer (c_int),      intent(in) :: c_key_traj2 !< Trajectory time-2 pointer
@@ -86,11 +88,13 @@ SUBROUTINE roms_linearModel_initialize_tl_c (c_key_self, c_key_incr,           &
   TYPE (c_ptr),         intent(in) :: c_dt        !< Increment dateTime pointer
 
   TYPE (roms_linearModel), pointer :: self
+  TYPE (roms_geom),        pointer :: geom
   TYPE (roms_increment),   pointer :: incr
   TYPE (roms_trajectory),  pointer :: traj1, traj2
   real (kind=kind_real)            :: fac1, fac2
   TYPE (datetime)                  :: fdate
 
+  CALL roms_geom_registry%get (c_key_geom, geom)
   CALL roms_increment_registry%get (c_key_incr, incr)
   CALL roms_linearModel_registry%get (c_key_self, self)
   CALL roms_trajectory_registry%get (c_key_traj1, traj1)
@@ -99,19 +103,21 @@ SUBROUTINE roms_linearModel_initialize_tl_c (c_key_self, c_key_incr,           &
   fac1 = c_fac1
   fac2 = c_fac2
 
-  CALL self%initialize_tl (incr, traj1, traj2, fac1, fac2, fdate)
+  CALL self%initialize_tl (geom, incr, traj1, traj2, fac1, fac2, fdate)
 
 END SUBROUTINE roms_linearModel_initialize_tl_c
 
 ! ------------------------------------------------------------------------------
 !> Binding interface to advance TLROMS kernel for specified time interval.
 
-SUBROUTINE roms_linearModel_step_tl_c (c_key_self, c_key_incr,                 &
+SUBROUTINE roms_linearModel_step_tl_c (c_key_self,                             &
+                                       c_key_geom, c_key_incr,                 &
                                        c_key_traj1, c_key_traj2,               &
                                        c_fac1, c_fac2, c_dt)                   &
                            BIND (c, name='roms_linearModel_step_tl_f90')
 
   integer (c_int),      intent(in) :: c_key_self  !< LinearModel object pointer
+  integer (c_int),      intent(in) :: c_key_geom  !< Geometry object pointer
   integer (c_int),      intent(in) :: c_key_incr  !< Increment object pointer
   integer (c_int),      intent(in) :: c_key_traj1 !< Trajectory time-1 pointer
   integer (c_int),      intent(in) :: c_key_traj2 !< Trajectory time-2 pointer
@@ -120,11 +126,13 @@ SUBROUTINE roms_linearModel_step_tl_c (c_key_self, c_key_incr,                 &
   TYPE (c_ptr),      intent(inout) :: c_dt        !< DateTime object pointer
 
   TYPE (roms_linearModel), pointer :: self
+  TYPE (roms_geom),        pointer :: geom
   TYPE (roms_increment),   pointer :: incr
   TYPE (roms_trajectory),  pointer :: traj1, traj2
   TYPE (datetime)                  :: fdate
   real (kind=kind_real)            :: fac1, fac2
 
+  CALL roms_geom_registry%get (c_key_geom, geom)
   CALL roms_linearModel_registry%get (c_key_self, self)
   CALL roms_increment_registry%get (c_key_incr, incr)
   CALL roms_trajectory_registry%get (c_key_traj1, traj1)
@@ -133,39 +141,44 @@ SUBROUTINE roms_linearModel_step_tl_c (c_key_self, c_key_incr,                 &
   fac1 = c_fac1
   fac2 = c_fac2
 
-  CALL self%step_tl (incr, traj1, traj2, fac1, fac2, fdate)
+  CALL self%step_tl (geom, incr, traj1, traj2, fac1, fac2, fdate)
 
 END SUBROUTINE roms_linearModel_step_tl_c
 
 ! ------------------------------------------------------------------------------
 !> Binding interface to finalize TLROMS kernel integration.
 
-SUBROUTINE roms_linearModel_finalize_tl_c (c_key_self, c_key_incr)             &
+SUBROUTINE roms_linearModel_finalize_tl_c (c_key_self, c_key_geom, c_key_incr) &
                            BIND (c, name='roms_linearModel_finalize_tl_f90')
 
   integer (c_int),      intent(in) :: c_key_self  !< LinearModel object pointer
+  integer (c_int),      intent(in) :: c_key_geom  !< Geometry object pointer
   integer (c_int),      intent(in) :: c_key_incr  !< Increment object pointer
 
 
   TYPE (roms_linearModel), pointer :: self
+  TYPE (roms_geom),        pointer :: geom
   TYPE (roms_increment),   pointer :: incr
 
+  CALL roms_geom_registry%get (c_key_geom, geom)
   CALL roms_increment_registry%get (c_key_incr, incr)
   CALL roms_linearModel_registry%get (c_key_self, self)
 
-  CALL self%finalize_tl (incr)
+  CALL self%finalize_tl (geom, incr)
 
 END SUBROUTINE roms_linearModel_finalize_tl_c
 
 ! ------------------------------------------------------------------------------
 !> Binding interface to initialize ADROMS object.
 
-SUBROUTINE roms_linearModel_initialize_ad_c (c_key_self, c_key_incr,           &
+SUBROUTINE roms_linearModel_initialize_ad_c (c_key_self,                       &
+                                             c_key_geom, c_key_incr,           &
                                              c_key_traj1, c_key_traj2,         &
                                              c_fac1, c_fac2, c_dt)             &
                            BIND (c, name='roms_linearModel_initialize_ad_f90')
 
   integer (c_int),      intent(in) :: c_key_self  !< LinearModel object pointer
+  integer (c_int),      intent(in) :: c_key_geom  !< Geometry object pointer
   integer (c_int),      intent(in) :: c_key_incr  !< Increment object pointer
   integer (c_int),      intent(in) :: c_key_traj1 !< Trajectory time-1 pointer
   integer (c_int),      intent(in) :: c_key_traj2 !< Trajectory time-2 pointer
@@ -174,11 +187,13 @@ SUBROUTINE roms_linearModel_initialize_ad_c (c_key_self, c_key_incr,           &
   TYPE (c_ptr),         intent(in) :: c_dt        !< Increment dateTime pointer
 
   TYPE (roms_linearModel), pointer :: self
+  TYPE (roms_geom),        pointer :: geom
   TYPE (roms_increment),   pointer :: incr
   TYPE (roms_trajectory),  pointer :: traj1, traj2
   TYPE (datetime)                  :: fdate
   real (kind=kind_real)            :: fac1, fac2
 
+  CALL roms_geom_registry%get (c_key_geom, geom)
   CALL roms_increment_registry%get (c_key_incr, incr)
   CALL roms_linearModel_registry%get (c_key_self, self)
   CALL roms_trajectory_registry%get (c_key_traj1, traj1)
@@ -187,20 +202,22 @@ SUBROUTINE roms_linearModel_initialize_ad_c (c_key_self, c_key_incr,           &
   fac1 = c_fac1
   fac2 = c_fac2
 
-  CALL self%initialize_ad (incr, traj1, traj2, fac1, fac2, fdate)
+  CALL self%initialize_ad (geom, incr, traj1, traj2, fac1, fac2, fdate)
 
 END SUBROUTINE roms_linearModel_initialize_ad_c
 
 ! ------------------------------------------------------------------------------
 !> Binding interface to timestep backwards ADROMS for specified time interval.
 
-SUBROUTINE roms_linearModel_step_ad_c (c_key_self, c_key_incr,                 &
+SUBROUTINE roms_linearModel_step_ad_c (c_key_self,                             &
+                                       c_key_geom, c_key_incr,                 &
                                        c_key_traj1, c_key_traj2,               &
                                        c_fac1, c_fac2, c_dt)                   &
                            BIND (c, name='roms_linearModel_step_ad_f90')
 
-  integer (c_int),   intent(in   ) :: c_key_self  !< LinearModel object pointer
-  integer (c_int),   intent(in   ) :: c_key_incr  !< Increment object pointer
+  integer (c_int),      intent(in) :: c_key_self  !< LinearModel object pointer
+  integer (c_int),      intent(in) :: c_key_geom  !< Geometry object pointer
+  integer (c_int),      intent(in) :: c_key_incr  !< Increment object pointer
   integer (c_int),      intent(in) :: c_key_traj1 !< Trajectory time-1 pointer
   integer (c_int),      intent(in) :: c_key_traj2 !< Trajectory time-2 pointer
   real (c_double),      intent(in) :: c_fac1      !< traj1 interpolation weight
@@ -208,11 +225,13 @@ SUBROUTINE roms_linearModel_step_ad_c (c_key_self, c_key_incr,                 &
   TYPE (c_ptr),      intent(inout) :: c_dt        !< Increment dateTime pointer
 
   TYPE (roms_linearModel), pointer :: self
+  TYPE (roms_geom),        pointer :: geom
   TYPE (roms_increment),   pointer :: incr
   TYPE (roms_trajectory),  pointer :: traj1, traj2
   TYPE (datetime)                  :: fdate
   real (kind=kind_real)            :: fac1, fac2
 
+  CALL roms_geom_registry%get (c_key_geom, geom)
   CALL roms_linearModel_registry%get (c_key_self, self)
   CALL roms_increment_registry%get (c_key_incr, incr)
   CALL roms_trajectory_registry%get (c_key_traj1, traj1)
@@ -221,26 +240,29 @@ SUBROUTINE roms_linearModel_step_ad_c (c_key_self, c_key_incr,                 &
   fac1 = c_fac1
   fac2 = c_fac2
 
-  CALL self%step_ad (incr, traj1, traj2, fac1, fac2, fdate)
+  CALL self%step_ad (geom, incr, traj1, traj2, fac1, fac2, fdate)
 
 END SUBROUTINE roms_linearModel_step_ad_c
 
 ! ------------------------------------------------------------------------------
 !> Binding interface to finalize ADROMS kernel integration.
 
-SUBROUTINE roms_linearModel_finalize_ad_c (c_key_self, c_key_incr)             &
+SUBROUTINE roms_linearModel_finalize_ad_c (c_key_self, c_key_geom, c_key_incr) &
                            BIND (c, name='roms_linearModel_finalize_ad_f90')
 
   integer (c_int),      intent(in) :: c_key_self  !< LinearModel object pointer
+  integer (c_int),      intent(in) :: c_key_geom  !< Geometry object pointer
   integer (c_int),      intent(in) :: c_key_incr  !< Increment object pointer
 
   TYPE (roms_linearModel), pointer :: self
+  TYPE (roms_geom),        pointer :: geom
   TYPE (roms_increment),   pointer :: incr
 
+  CALL roms_geom_registry%get (c_key_geom, geom)
   CALL roms_increment_registry%get (c_key_incr, incr)
   CALL roms_linearModel_registry%get (c_key_self, self)
 
-  CALL self%finalize_ad (incr)
+  CALL self%finalize_ad (geom, incr)
 
 END SUBROUTINE roms_linearModel_finalize_ad_c
 

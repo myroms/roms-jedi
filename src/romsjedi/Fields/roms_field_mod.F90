@@ -19,7 +19,8 @@ MODULE roms_field_mod
 USE fckit_log_module,           ONLY : fckit_log
 USE fckit_mpi_module,           ONLY : fckit_mpi_comm,                         &
                                        fckit_mpi_min,                          &
-                                       fckit_mpi_max
+                                       fckit_mpi_max,                          &
+                                       fckit_mpi_sum
 USE kinds,                      ONLY : kind_real
 
 !> ROMS module association.
@@ -758,24 +759,34 @@ FUNCTION roms_field_io_has_var (field, geom, vindex) RESULT (foundit)
 
     END IF
 
+  ELSE
+
+    IF (my_comm%rank() .eq. 0) THEN
+      PRINT '(4a)', 'ROMS_DEBUG roms_field::io_has_var: cannot find ',         &
+                    'NetCDF variable index - io_name = ',                      &
+                    TRIM(field%metadata%io_name),                              &
+                    ', name = ', TRIM(field%name)
+    END IF
+
   END IF
 
 END FUNCTION roms_field_io_has_var
 
 ! ------------------------------------------------------------------------------
-!> It computes global field statistics: Min and Max.
+!> It computes global field statistics: Min, Max, Mean, and CheckSum.
 
 SUBROUTINE roms_field_stats (self, fstats)
 
   CLASS (roms_field),     intent(in ) :: self         !< Field object  
-  real (kind=kind_real),  intent(out) :: fstats(3)    !< Field statistics
+  real (kind=kind_real),  intent(out) :: fstats(4)    !< Field statistics
 
-  logical,                allocatable :: mask(:,:)
   integer                             :: IstrD, IendD, JstrD, JendD, LBk, UBk
-  integer                             :: Npts, k
+  integer                             :: Npts, i, j, k
   integer (kind=SELECTED_INT_KIND(8)) :: checksum
+  real (kind=kind_real),    parameter :: spval = 1.0E+37_kind_real
   real (kind=kind_real),  allocatable :: Cwrk(:)
-  real (kind=kind_real),  allocatable :: buffer(:,:)
+  real (kind=kind_real)               :: my_avg, my_min, my_max
+  real (kind=kind_real)               :: my_water_cells, water_cells
   real (kind=kind_real)               :: stats(3)
 
   ! Initialize.
@@ -788,45 +799,46 @@ SUBROUTINE roms_field_stats (self, fstats)
   UBk   = UBOUND(self%val, DIM=3)
   Npts  = (IendD-IstrD+1)*(JendD-JstrD+1)*(UBk-LBk+1)
 
-  ! Get the mask and the total number of grid cells.
-
-  allocate ( mask(IstrD:IendD, JstrD:JendD) )
-
-  IF (.not. ASSOCIATED(self%mask)) THEN
-    mask = .true.
-  ELSE
-    mask = self%mask(IstrD:IendD, JstrD:JendD) > 0.0_kind_real
-  END IF
-
   ! Compute field statistics.
 
-  allocate ( buffer(2,LBk:UBk) )
+  my_min = spval
+  my_max = -spval
+  my_avg = 0.0_kind_real
+  my_water_cells = 0.0_kind_real
 
   DO k = LBk, UBK
-    buffer(1,k) = MINVAL(self%val(IstrD:IendD, JstrD:JendD, k), MASK=mask)
-    buffer(2,k) = MAXVAL(self%val(IstrD:IendD, JstrD:JendD, k), MASK=mask)
+    DO j = JstrD, JendD
+      DO i = IstrD, IendD
+        IF (self%mask(i,j) .gt. 0.0_kind_real) THEN
+          my_min = MIN(my_min, self%val(i,j,k))
+          my_max = MAX(my_max, self%val(i,j,k))
+          my_avg = my_avg + self%val(i,j,k)
+          my_water_cells = my_water_cells + 1.0_kind_real
+        END IF
+      END DO
+    END DO
   END DO
+  stats(1) = my_min
+  stats(2) = my_max
+  stats(3) = my_avg
 
-  stats(1) = MINVAL(buffer(1,:))
-  stats(2) = MAXVAL(buffer(2,:))
-
-  ! Global reductions
+  ! Global reductions.
 
   CALL my_comm%allreduce (stats(1), fstats(1), fckit_mpi_min())
   CALL my_comm%allreduce (stats(2), fstats(2), fckit_mpi_max())
+  CALL my_comm%allreduce (stats(3), fstats(3), fckit_mpi_sum())
 
-  ! Compute order invariant 'checksum'.
+  CALL my_comm%allreduce (my_water_cells, water_cells, fckit_mpi_sum())
+  fstats(3) = fstats(3) / water_cells
+
+  ! Compute order invariant 'CheckSum'.
 
   IF (.not.allocated(Cwrk)) allocate ( Cwrk(Npts) )
   Cwrk = PACK(self%val(IstrD:IendD, JstrD:JendD, LBk:UBk), .TRUE.)
   CALL get_hash (Cwrk, Npts, checksum, .TRUE.)
   IF (allocated(Cwrk)) deallocate (Cwrk)  
 
-  fstats(3) = REAL(checksum, KIND=kind_real)
-
-  ! Deallocate.
-
-  IF (allocated(mask)) deallocate (mask)
+  fstats(4) = REAL(checksum, KIND=kind_real)
 
 END SUBROUTINE roms_field_stats
 

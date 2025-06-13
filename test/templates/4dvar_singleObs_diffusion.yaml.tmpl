@@ -14,6 +14,8 @@ initial date: &date __INITIAL_DATE__
 
 roms analysis: &roms_analysis
 - sea_surface_height_above_geoid
+- eastward_sea_water_velocity                    # A-grid
+- northward_sea_water_velocity                   # A-grid
 - sea_water_x_velocity                           # C-grid
 - sea_water_y_velocity                           # C-grid
 - sea_water_temperature
@@ -21,6 +23,8 @@ roms analysis: &roms_analysis
 
 roms state: &roms_state
 - sea_surface_height_above_geoid
+- eastward_sea_water_velocity                    # A-grid
+- northward_sea_water_velocity                   # A-grid
 - sea_water_x_velocity                           # C-grid
 - sea_water_y_velocity                           # C-grid
 - sea_water_temperature
@@ -56,11 +60,11 @@ cost function:
     tstep: *TimeStep
 
   background:
+    date: *date
     fields_dir: __FIELDS_DIR__
     fields_filename: __ROMS_INI_PRIOR__
     fields_record: __INI_PRIOR_RECORD__
     state variables: *roms_state
-    date: *date
 
   background error:
     covariance model: SABER
@@ -123,7 +127,7 @@ cost function:
 
 variational:
   minimizer:
-    algorithm: RPCG                              # Dual   formulation
+    algorithm: RPCG                              # Dual formulation
   iterations:
   - ninner: 1                                    # each item defined an outer loop
     gradient norm reduction: 1E-10
@@ -152,6 +156,7 @@ variational:
       write increment: true
       increment:                                 # DA increment output file
         state component:
+          add_varchange: true                    # Add fields from variable change
           single_record: true
           data_dir: Data/4dvar/singleObs/diffusion
           prefix: __ROMS_APP___roms

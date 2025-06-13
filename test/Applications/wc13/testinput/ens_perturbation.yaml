@@ -18,6 +18,8 @@ members: 10
 
 perturbed variables:
 - sea_surface_height_above_geoid
+- eastward_sea_water_velocity                  # A-grid
+- northward_sea_water_velocity                 # A-grid
 - sea_water_temperature
 - sea_water_salinity
 
@@ -28,6 +30,8 @@ model:
 
   model variables: &roms_state
   - sea_surface_height_above_geoid
+  - eastward_sea_water_velocity                # A-grid
+  - northward_sea_water_velocity               # A-grid
   - sea_water_x_velocity                       # C-grid
   - sea_water_y_velocity                       # C-grid
   - sea_water_temperature
@@ -47,6 +51,8 @@ background error:
 
     active variables:
     - sea_surface_height_above_geoid
+    - eastward_sea_water_velocity              # A-grid
+    - northward_sea_water_velocity             # A-grid
     - sea_water_temperature
     - sea_water_salinity
 
@@ -73,6 +79,8 @@ background error:
           - sea_surface_height_above_geoid
       - model:
           variables:
+          - eastward_sea_water_velocity
+          - northward_sea_water_velocity
           - sea_water_temperature
           - sea_water_salinity
 

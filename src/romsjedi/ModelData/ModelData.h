@@ -11,6 +11,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 #include "eckit/config/LocalConfiguration.h"
 #include "oops/util/Printable.h"
@@ -26,6 +27,14 @@ namespace romsjedi {
   class ModelData : public util::Printable {
    public:
     static const std::string classname() {return "romsjedi::ModelData";}
+    static const oops::Variables defaultVariables() {
+      return oops::Variables(std::vector<std::string>(
+                             {"sea_surface_height_above_geoid",
+                              "eastward_sea_water_velocity",
+                              "northward_sea_water_velocity",
+                              "sea_water_potential_temperature",
+                              "sea_water_salinity"}));
+    }
 
     explicit ModelData(const Geometry &) {}
     ~ModelData() {}

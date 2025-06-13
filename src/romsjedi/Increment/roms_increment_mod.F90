@@ -48,8 +48,8 @@ TYPE, PUBLIC, EXTENDS(roms_fields) :: roms_increment
 
   ! Get/set a single point
 
-  PROCEDURE :: getpoint   => roms_increment_getpoint
-  PROCEDURE :: setpoint   => roms_increment_setpoint
+  PROCEDURE :: getpoint      => roms_increment_getpoint
+  PROCEDURE :: setpoint      => roms_increment_setpoint
 
   ! Operators
 
@@ -357,8 +357,6 @@ END SUBROUTINE roms_increment_change_resol
 SUBROUTINE roms_increment_zero_boundary (self)
 
   CLASS (roms_increment), intent(inout) :: self     !< Increment fields
-
-  TYPE (roms_field),  target    :: field
 
   integer                               :: i, ng, tile
   integer                               :: IstrC, IendC, JstrC, JendC

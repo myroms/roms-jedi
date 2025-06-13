@@ -91,26 +91,26 @@ namespace romsjedi {
     OOPS_CONCRETE_PARAMETERS(IncrementWriteParameters, Parameters)
 
    public:
-    oops::OptionalParameter<std::string> Bparameter{
-      "parameter",
-      "Background Error Covariance parameter",
+    oops::OptionalParameter<bool> addVarChange{
+      "add_varchange",
+      "Increment output includes variable change fields",
       this};
     oops::OptionalParameter<bool> singleTimeRecord{
       "single_record",
-      "State is written into single time record file",
+      "Increment is written into single time record file",
       this};
     oops::OptionalParameter<util::Duration> filePolicy{
       "file_policy",
-      "State output new file creation policy time interval for "
+      "Increment output new file creation policy time interval for "
       "single or multiple files",
       this};
     oops::OptionalParameter<util::Duration> dataFrequency{
       "data_frequency",
-      "State data writing frequency",
+      "Increment data writing frequency",
       this};
     oops::RequiredParameter<std::string> dataDir{
       "data_dir",
-      "State output file(s) directory",
+      "Increment output file(s) directory",
       this};
     oops::RequiredParameter<std::string> prefix{
       "prefix",
@@ -118,11 +118,11 @@ namespace romsjedi {
       this};
     oops::RequiredParameter<std::string> exp{
       "exp",
-      "State 'exp' label used in the generation of filename(s)",
+      "Increment 'exp' label used in the generation of filename(s)",
       this};
     oops::RequiredParameter<std::string> type{
       "type",
-      "State 'type' label used in the generation of filename(s)",
+      "Increment 'type' label used in the generation of filename(s)",
       this};
     oops::OptionalParameter<util::Duration> forecastLength{
       "forecast length",

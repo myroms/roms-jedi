@@ -1,7 +1,6 @@
 # ROMS-JEDI 4D HofX Unit Test: WC13 Application
 #
 # 4D Hofx  unit test for the period of Jan 3-7, 2004
-#   We either use an initial state for Jan 3, 2004
 
 geometry:
   project_dir: Data/wc13
@@ -19,6 +18,8 @@ model:
 
   model variables:
   - sea_surface_height_above_geoid
+  - eastward_sea_water_velocity                                  # A-grid
+  - northward_sea_water_velocity                                 # A-grid
   - sea_water_x_velocity                                         # C-grid
   - sea_water_y_velocity                                         # C-grid
   - sea_water_temperature
@@ -35,6 +36,8 @@ initial condition:
 
   state variables:
   - sea_surface_height_above_geoid
+  - eastward_sea_water_velocity                                  # A-grid
+  - northward_sea_water_velocity                                 # A-grid
   - sea_water_x_velocity                                         # C-grid
   - sea_water_y_velocity                                         # C-grid
   - sea_water_temperature
@@ -183,7 +186,7 @@ observations:
 #     obsdataout:
 #       engine:
 #         type: H5File
-#         obsfile: Data/hofx/wc13_vsur_hofx_4d.nc4
+#         obsfile: Data/hofx/4d/wc13_vsur_hofx.nc4
 #     simulated variables: [waterSurfaceMeridionalVelocity]
 #   obs operator:
 #     name: Identity

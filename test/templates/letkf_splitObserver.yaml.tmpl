@@ -12,6 +12,8 @@ time window:
 
 increment variables: &roms_analysis
 - sea_surface_height_above_geoid
+- eastward_sea_water_velocity                    # A-grid
+- northward_sea_water_velocity                   # A-grid
 - sea_water_x_velocity                           # C-grid
 - sea_water_y_velocity                           # C-grid
 - sea_water_temperature
@@ -42,6 +44,8 @@ background:
       fields_record: __INI_PRIOR_RECORD__
       state variables: &roms_state
       - sea_surface_height_above_geoid
+      - eastward_sea_water_velocity              # A-grid
+      - northward_sea_water_velocity             # A-grid
       - sea_water_x_velocity                     # C-grid
       - sea_water_y_velocity                     # C-grid
       - sea_water_temperature
@@ -150,6 +154,7 @@ local ensemble DA:
   solver: LETKF
 
 output:
+  add_varchange: true                            # Add fields from variable change
   single_record: true
   data_dir: Data/letkf/splitObserver
   prefix: __ROMS_APP___roms

@@ -1,0 +1,27 @@
+# ROMS-JEDI Variable Change Unit Test: __ROMS_APPLICATION__
+
+geometry:
+  project_dir: __PROJECT_DIR__
+  roms_stdinp: __PROJECT_DIR__
+  fields metadata: Data/fields_metadata.yaml
+  ng: 1                                        # ROMS nested grid number
+
+variable change tests:
+  - variable change:
+      variable change name: Model2Analysis
+      output variables:
+      - eastward_sea_water_velocity            # A-grid
+      - northward_sea_water_velocity           # A-grid
+      input variables:
+      - sea_water_x_velocity                   # C-grid
+      - sea_water_y_velocity                   # C-grid
+    state:
+      date: 2004-01-05T00:00:00Z
+      fields_dir: Data/wc13/input
+      fields_filename: wc13_roms_ini_20040103.nc
+      fields_record: 1
+      state variables:
+      - sea_water_x_velocity                   # C-grid
+      - sea_water_y_velocity                   # C-grid
+    tolerance inverse: 1.0e-4
+    inverse first: true

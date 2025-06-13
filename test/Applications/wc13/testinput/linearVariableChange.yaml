@@ -1,0 +1,46 @@
+# ROMS-JEDI Variable Change Unit Test: WC13 Application
+
+geometry:
+  project_dir: Data/wc13
+  roms_stdinp: roms_wc13_20040103.in
+  fields metadata: Data/fields_metadata.yaml
+  ng: 1                                               # ROMS nested grid number
+
+background:
+  date: &date 2004-01-03T00:00:00Z                    # initial fields date
+  fields_dir: Data/wc13/input
+  fields_filename: wc13_roms_ini_20040103.nc
+  fields_record: 1                                    # initial fields
+
+  state variables: &roms_state
+  - sea_surface_height_above_geoid
+  - sea_water_x_velocity                              # C-grid
+  - sea_water_y_velocity                              # C-grid
+  - eastward_sea_water_velocity                       # A-grid
+  - northward_sea_water_velocity                      # A-grid
+  - sea_water_temperature
+  - sea_water_salinity
+
+linear variable change tests:
+- linear variable change:
+    linear variable change name: Model2GeoVaLs
+    input variables:
+    - sea_surface_height_above_geoid
+    - eastward_sea_water_velocity                     # A-grid
+    - northward_sea_water_velocity                    # A-grid
+    - sea_water_x_velocity                            # C-grid
+    - sea_water_y_velocity                            # C-grid
+    - sea_water_temperature
+    - sea_water_salinity
+    output variables:
+    - sea_surface_height_above_geoid
+    - surface_eastward_sea_water_velocity             # A-grid
+    - surface_northward_sea_water_velocity            # A-grid
+    - eastward_sea_water_velocity                     # A-grid
+    - northward_sea_water_velocity                    # A-grid
+    - sea_surface_temperature
+    - sea_surface_salinity
+    - sea_water_temperature
+    - sea_water_salinity
+  test inverse: false
+  tolerance inverse: 10000

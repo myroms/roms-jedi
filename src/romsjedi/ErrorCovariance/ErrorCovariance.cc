@@ -42,7 +42,7 @@ ErrorCovariance::ErrorCovariance(const Geometry & geom,
 // -----------------------------------------------------------------------------
 
 ErrorCovariance::~ErrorCovariance() {
-  oops::Log::trace() << "ErrorCovariance destructed" << std::endl;
+  oops::Log::trace() << "ErrorCovariance destroyed" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

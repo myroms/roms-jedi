@@ -19,6 +19,8 @@ model:
 
   model variables:
   - sea_surface_height_above_geoid
+  - eastward_sea_water_velocity                                  # A-grid
+  - northward_sea_water_velocity                                 # A-grid
   - sea_water_x_velocity                                         # C-grid
   - sea_water_y_velocity                                         # C-grid
   - sea_water_temperature
@@ -32,6 +34,8 @@ initial condition:
 
   state variables:
   - sea_surface_height_above_geoid
+  - eastward_sea_water_velocity                                  # A-grid
+  - northward_sea_water_velocity                                 # A-grid
   - sea_water_x_velocity                                         # C-grid
   - sea_water_y_velocity                                         # C-grid
   - sea_water_temperature

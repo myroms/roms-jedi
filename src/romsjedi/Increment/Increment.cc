@@ -136,7 +136,7 @@ namespace romsjedi {
 
   Increment::~Increment() {
     roms_increment_delete_f90(toFortran());
-    Log::trace() << classname() << ":Increment destructed"
+    Log::trace() << classname() << ":Increment destroyed"
                  << std::endl;
   }
 
@@ -379,15 +379,17 @@ namespace romsjedi {
 
   void Increment::write(const eckit::Configuration & config) const {
     const util::DateTime * dtp = &time_;
+    Log::trace() << classname() << ":write starting" << std::endl;
     roms_increment_write_file_f90(toFortran(),
                                   config,
                                   &dtp);
+    Log::trace() << classname() << ":write done" << std::endl;
   }
 
 // -----------------------------------------------------------------------------
 
   void Increment::print(std::ostream & os) const {
-    os << std::endl << "  Valid time: " << validTime();
+    os << std::endl << "  Valid time: " << validTime() << std::endl;
     int n0, nf;
     roms_increment_sizes_f90(keyFlds_,
                              n0, n0, n0, nf);
@@ -397,17 +399,15 @@ namespace romsjedi {
                               nf,
                               zstat[0]);
 
+    // Report field statistics in scientific notation, setw = precision+7
+
     for (int jj = 0; jj < nf; ++jj) {
-      os << std::endl << std::right << std::setw(60) << vars_[jj]
-                      << std::setprecision(15)
-                      << "   Min= "      << std::fixed << std::setw(21) <<
-                                            std::right << zstat[4*jj]
-                      << "   Max= "      << std::fixed << std::setw(21) <<
-                                            std::right << zstat[4*jj+1]
-                      << "   Mean= "     << std::fixed << std::setw(21) <<
-                                            std::right << zstat[4*jj+2];
-      //              << "   CheckSum= " << std::fixed << std::right <<
-      //                                    static_cast<int>(zstat[4*jj+3]);
+      os << std::left << std::setw(60) << vars_[jj]
+         << std::scientific << std::setprecision(15)
+         << "  Min = "  << std::right << std::setw(22) << zstat[4*jj]
+         << "  Min = "  << std::right << std::setw(22) << zstat[4*jj+1]
+         << "  Mean = " << std::right << std::setw(22) << zstat[4*jj+2]
+         << std::endl;
     }
   }
 

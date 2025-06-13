@@ -14,13 +14,15 @@ initial date: &date 2004-01-03T00:00:00Z         # initial DA window
 
 roms analysis: &roms_analysis
 - sea_surface_height_above_geoid
-- sea_water_x_velocity                           # C-grid
-- sea_water_y_velocity                           # C-grid
+- eastward_sea_water_velocity                    # A-grid
+- northward_sea_water_velocity                   # A-grid
 - sea_water_temperature
 - sea_water_salinity
 
 roms state: &roms_state
 - sea_surface_height_above_geoid
+- eastward_sea_water_velocity                    # A-grid
+- northward_sea_water_velocity                   # A-grid
 - sea_water_x_velocity                           # C-grid
 - sea_water_y_velocity                           # C-grid
 - sea_water_temperature
@@ -84,26 +86,47 @@ cost function:
         - variables:
           - sea_surface_height_above_geoid
           horizontal:
+#           filepath: Data/diffusion/wc13_diffusion_hcor_40
 #           filepath: Data/diffusion/wc13_diffusion_hcor_50
-#           filepath: Data/diffusion/wc13_diffusion_hcor_70
-            filepath: Data/diffusion/wc13_diffusion_hcor_80
+            filepath: Data/diffusion/wc13_diffusion_hcor_60
+#            filepath: Data/diffusion/wc13_diffusion_hcor_80
 #           filepath: Data/diffusion/wc13_diffusion_hcor_100
 #           filepath: Data/diffusion/wc13_diffusion_hcor_120
+#           filepath: Data/diffusion/wc13_diffusion_hcor_160
+
+        - variables:
+          - eastward_sea_water_velocity
+          - northward_sea_water_velocity
+          multivariate strategy: univariate
+          horizontal:
+#           filepath: Data/diffusion/wc13_diffusion_hcor_40
+#           filepath: Data/diffusion/wc13_diffusion_hcor_50
+            filepath: Data/diffusion/wc13_diffusion_hcor_60
+#           filepath: Data/diffusion/wc13_diffusion_hcor_80
+#           filepath: Data/diffusion/wc13_diffusion_hcor_100
+#           filepath: Data/diffusion/wc13_diffusion_hcor_120
+#           filepath: Data/diffusion/wc13_diffusion_hcor_160
+          vertical:
+            levels: 30
+            filepath: Data/diffusion/wc13_diffusion_vcor_5
+#           filepath: Data/diffusion/wc13_diffusion_vcor_8
 
         - variables:
           - sea_water_temperature
           - sea_water_salinity
           multivariate strategy: univariate
           horizontal:
+#           filepath: Data/diffusion/wc13_diffusion_hcor_40
 #           filepath: Data/diffusion/wc13_diffusion_hcor_50
-#           filepath: Data/diffusion/wc13_diffusion_hcor_70
-            filepath: Data/diffusion/wc13_diffusion_hcor_80
+            filepath: Data/diffusion/wc13_diffusion_hcor_60
+#           filepath: Data/diffusion/wc13_diffusion_hcor_80
 #           filepath: Data/diffusion/wc13_diffusion_hcor_100
 #           filepath: Data/diffusion/wc13_diffusion_hcor_120
+#           filepath: Data/diffusion/wc13_diffusion_hcor_160
           vertical:
             levels: 30
-#           filepath: Data/diffusion/wc13_diffusion_vcor_5
-            filepath: Data/diffusion/wc13_diffusion_vcor_8
+            filepath: Data/diffusion/wc13_diffusion_vcor_5
+#           filepath: Data/diffusion/wc13_diffusion_vcor_8
 
     saber outer blocks:                          # standard deviation impulse scaling
     - saber block name: StdDev
@@ -217,13 +240,14 @@ variational:
       trajectory:
         model variables: *roms_state
         tstep: PT2H                              # Every two hours trajectory snapshots
-      variable change: Identity
+      variable change: Model2Analysis
     diagnostics:                                 # Written into output IODA files
       departures: ombg                           # OBS - H(Xb)
     online diagnostics:
       write increment: true
       increment:                                 # DA increment output file
         state component:
+          add_varchange: true                    # Add fields from variable change
           single_record: true
           data_dir: Data/4dvar/diffusion
           prefix: wc13_roms

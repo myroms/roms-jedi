@@ -1,33 +1,47 @@
 Input Dirac increment:
   Valid time: 2004-01-03T00:00:00Z
-                               ssh   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.000491883915396
-                              uocn   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
-                              vocn   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
-                              tocn   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.000016396130513
-                              socn   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.000016396130513
+sea_surface_height_above_geoid                                Min =  0.000000000000000e+00  Min =  1.000000000000000e+00  Mean =  4.918839153959665e-04
+sea_water_x_velocity                                          Min =  0.000000000000000e+00  Min =  0.000000000000000e+00  Mean =  0.000000000000000e+00
+sea_water_y_velocity                                          Min =  0.000000000000000e+00  Min =  0.000000000000000e+00  Mean =  0.000000000000000e+00
+eastward_sea_water_velocity                                   Min =  0.000000000000000e+00  Min =  1.000000000000000e+00  Mean =  1.639613051319888e-05
+northward_sea_water_velocity                                  Min =  0.000000000000000e+00  Min =  1.000000000000000e+00  Mean =  1.639613051319888e-05
+sea_water_temperature                                         Min =  0.000000000000000e+00  Min =  1.000000000000000e+00  Mean =  1.639613051319888e-05
+sea_water_salinity                                            Min =  0.000000000000000e+00  Min =  1.000000000000000e+00  Mean =  1.639613051319888e-05
+
 Covariance(hybrid) * Increment:
   Valid time: 2004-01-03T00:00:00Z
-                               ssh   Min=    -0.004019349552751   Max=     0.001840614123377   Mean=    -0.000038915824423
-                              uocn   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
-                              vocn   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
-                              tocn   Min=    -0.014750128105399   Max=     0.620603154237939   Mean=     0.000853535654277
-                              socn   Min=    -0.033372175114886   Max=     0.013084504553957   Mean=    -0.000013416545937
+sea_surface_height_above_geoid                                Min = -6.167826186971932e-04  Min =  3.318577690779909e-03  Mean =  1.170057112516411e-05
+sea_water_x_velocity                                          Min =  0.000000000000000e+00  Min =  0.000000000000000e+00  Mean =  0.000000000000000e+00
+sea_water_y_velocity                                          Min =  0.000000000000000e+00  Min =  0.000000000000000e+00  Mean =  0.000000000000000e+00
+eastward_sea_water_velocity                                   Min = -6.171535510680875e-32  Min =  6.376968038082180e-32  Mean = -9.514100562705197e-36
+northward_sea_water_velocity                                  Min = -1.212693888315829e-31  Min =  9.442406532898531e-32  Mean =  6.093597248469360e-38
+sea_water_temperature                                         Min = -5.843949524069342e-02  Min =  9.912228028305990e-02  Mean =  5.705606138834208e-05
+sea_water_salinity                                            Min = -4.014613677592854e-03  Min =  8.384309955510993e-03  Mean =  1.113731320117970e-05
+
 Covariance(hybrid1_ensemble) * Increment:
   Valid time: 2004-01-03T00:00:00Z
-                               ssh   Min=    -0.004019349552751   Max=     0.001840614123377   Mean=    -0.000038915824423
-                              uocn   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
-                              vocn   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
-                              tocn   Min=    -0.014750128105399   Max=     0.620603154237939   Mean=     0.000853535654277
-                              socn   Min=    -0.033372175114886   Max=     0.013084504553957   Mean=    -0.000013416545937
+sea_surface_height_above_geoid                                Min = -6.167826186971932e-04  Min =  3.318577690779909e-03  Mean =  1.170057112516411e-05
+sea_water_x_velocity                                          Min =  0.000000000000000e+00  Min =  0.000000000000000e+00  Mean =  0.000000000000000e+00
+sea_water_y_velocity                                          Min =  0.000000000000000e+00  Min =  0.000000000000000e+00  Mean =  0.000000000000000e+00
+eastward_sea_water_velocity                                   Min = -6.171535510680875e-32  Min =  6.376968038082180e-32  Mean = -9.514100562705197e-36
+northward_sea_water_velocity                                  Min = -1.212693888315829e-31  Min =  9.442406532898531e-32  Mean =  6.093597248469360e-38
+sea_water_temperature                                         Min = -5.843949524069342e-02  Min =  9.912228028305990e-02  Mean =  5.705606138834208e-05
+sea_water_salinity                                            Min = -4.014613677592854e-03  Min =  8.384309955510993e-03  Mean =  1.113731320117970e-05
+
 Localization(hybrid1_ensemble_localization) diagnostics:
 - Localization at zero separation:
-  + Value for variable ssh, subwindow 0, at (longitude, latitude, vertical index) point (-125.66667, 36.66667, 1): 3.1183933580481309e+00
-  + Value for variable tocn, subwindow 0, at (longitude, latitude, vertical index) point (-124.00000, 33.33333, 30): 1.4488483497275748e+00
-  + Value for variable socn, subwindow 0, at (longitude, latitude, vertical index) point (-127.33333, 43.33333, 30): 2.5970249880281919e+00
+  + Value for variable sea_surface_height_above_geoid, subwindow 0, at (longitude, latitude, vertical index) point (-125.66667, 36.66667, 1): 1.8406954073861754e+00
+  + Value for variable eastward_sea_water_velocity, subwindow 0, at (longitude, latitude, vertical index) point (-129.00000, 40.00000, 30): 1.1497478532677681e+00
+  + Value for variable northward_sea_water_velocity, subwindow 0, at (longitude, latitude, vertical index) point (-129.00000, 41.66667, 30): 1.1223261408272569e+00
+  + Value for variable sea_water_temperature, subwindow 0, at (longitude, latitude, vertical index) point (-124.00000, 33.33333, 30): 1.2217396215150291e+00
+  + Value for variable sea_water_salinity, subwindow 0, at (longitude, latitude, vertical index) point (-127.33333, 43.33333, 30): 1.8486864006737587e+00
 Localization(hybrid1_ensemble) * Increment:
   Valid time: 2004-01-03T00:00:00Z
-                               ssh   Min=     0.000000000000000   Max=     3.118393358048131   Mean=     0.160628748758547
-                              uocn   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
-                              vocn   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
-                              tocn   Min=     0.000000000000000   Max=     3.118393358048131   Mean=     0.021872224460206
-                              socn   Min=     0.000000000000000   Max=     3.118393358048131   Mean=     0.021872224460206
+sea_surface_height_above_geoid                                Min =  0.000000000000000e+00  Min =  1.848686400673759e+00  Mean =  9.022828172378464e-02
+sea_water_x_velocity                                          Min =  0.000000000000000e+00  Min =  0.000000000000000e+00  Mean =  0.000000000000000e+00
+sea_water_y_velocity                                          Min =  0.000000000000000e+00  Min =  0.000000000000000e+00  Mean =  0.000000000000000e+00
+eastward_sea_water_velocity                                   Min =  0.000000000000000e+00  Min =  1.848686400673759e+00  Mean =  1.101060458597924e-02
+northward_sea_water_velocity                                  Min =  0.000000000000000e+00  Min =  1.848686400673759e+00  Mean =  1.101060458597924e-02
+sea_water_temperature                                         Min =  0.000000000000000e+00  Min =  1.848686400673759e+00  Mean =  1.101060458597924e-02
+sea_water_salinity                                            Min =  0.000000000000000e+00  Min =  1.848686400673759e+00  Mean =  1.101060458597924e-02
+

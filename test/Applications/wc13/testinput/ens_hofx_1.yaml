@@ -20,6 +20,8 @@ model:
 
   model variables:
   - sea_surface_height_above_geoid
+  - eastward_sea_water_velocity                                  # A-grid
+  - northward_sea_water_velocity                                 # A-grid
   - sea_water_x_velocity                                         # C-grid
   - sea_water_y_velocity                                         # C-grid
   - sea_water_temperature
@@ -33,14 +35,13 @@ initial condition:
 
   state variables:
   - sea_surface_height_above_geoid
+  - eastward_sea_water_velocity                                  # A-grid
+  - northward_sea_water_velocity                                 # A-grid
   - sea_water_x_velocity                                         # C-grid
   - sea_water_y_velocity                                         # C-grid
   - sea_water_temperature
   - sea_water_salinity
   - model_level_depth_at_cell_center
-  - vertical_diffusion_coefficient_of_temperature_in_sea_water
-  - vertical_diffusion_coefficient_of_salinity_in_sea_water
-  - vertical_viscosity_coefficient_of_sea_water
 
 observations:
   observers:

@@ -1,177 +1,222 @@
 Initial state for member 1:
   Valid time: 2004-01-03T00:00:00Z
-                              sea_surface_height_above_geoid   Min=    -0.308315583562010   Max=     0.286840385413477   Mean=    -0.012262843112917
-                                        sea_water_x_velocity   Min=    -0.446971292212522   Max=     0.456028027289591   Mean=     0.002573124697403
-                                        sea_water_y_velocity   Min=    -0.551383331006554   Max=     0.329409302652754   Mean=    -0.006725988600569
-                                       sea_water_temperature   Min=     1.113311588764191   Max=    19.084773177741511   Mean=     6.431578263591262
-                                          sea_water_salinity   Min=    31.424749178294221   Max=    34.860175852775910   Mean=    33.937827475946520
+sea_surface_height_above_geoid                                Min = -3.065685731417676e-01  Min =  2.944275511176722e-01  Mean = -1.236480765069121e-02
+eastward_sea_water_velocity                                   Min = -4.373005351869918e-01  Min =  4.329664045803049e-01  Mean =  2.559831438368985e-03
+northward_sea_water_velocity                                  Min = -5.479762106314453e-01  Min =  2.856445190323965e-01  Mean = -6.588996520104036e-03
+sea_water_x_velocity                                          Min = -4.469712922125222e-01  Min =  4.560280272895911e-01  Mean =  2.573124697403169e-03
+sea_water_y_velocity                                          Min = -5.513833310065539e-01  Min =  3.294093026527541e-01  Mean = -6.725988600568519e-03
+sea_water_temperature                                         Min =  1.113311588764191e+00  Min =  1.880499451410002e+01  Mean =  6.373534116603804e+00
+sea_water_salinity                                            Min =  3.148651544846243e+01  Min =  3.468966475940142e+01  Mean =  3.393723031342336e+01
+
 Initial state for member 2:
   Valid time: 2004-01-03T00:00:00Z
-                              sea_surface_height_above_geoid   Min=    -0.309212968684337   Max=     0.239988394004216   Mean=    -0.010829634773702
-                                        sea_water_x_velocity   Min=    -0.446971292212522   Max=     0.456028027289591   Mean=     0.002573124697403
-                                        sea_water_y_velocity   Min=    -0.551383331006554   Max=     0.329409302652754   Mean=    -0.006725988600569
-                                       sea_water_temperature   Min=     1.113311588764191   Max=    19.375898525656741   Mean=     6.361239795728256
-                                          sea_water_salinity   Min=    31.445799348962392   Max=    34.689664759401417   Mean=    33.934566746250667
+sea_surface_height_above_geoid                                Min = -3.031915037302994e-01  Min =  2.543979481450187e-01  Mean = -1.136738350098987e-02
+eastward_sea_water_velocity                                   Min = -4.373005351869918e-01  Min =  4.329664045803049e-01  Mean =  2.559831438368985e-03
+northward_sea_water_velocity                                  Min = -5.479762106314453e-01  Min =  2.856445190323965e-01  Mean = -6.588996520104036e-03
+sea_water_x_velocity                                          Min = -4.469712922125222e-01  Min =  4.560280272895911e-01  Mean =  2.573124697403169e-03
+sea_water_y_velocity                                          Min = -5.513833310065539e-01  Min =  3.294093026527541e-01  Mean = -6.725988600568519e-03
+sea_water_temperature                                         Min =  1.113311588764191e+00  Min =  1.897848356518517e+01  Mean =  6.332825649238711e+00
+sea_water_salinity                                            Min =  3.157942006226817e+01  Min =  3.468966475940142e+01  Mean =  3.393888235049081e+01
+
 Initial state for member 3:
   Valid time: 2004-01-03T00:00:00Z
-                              sea_surface_height_above_geoid   Min=    -0.276447925136257   Max=     0.232064518768504   Mean=    -0.014477975656193
-                                        sea_water_x_velocity   Min=    -0.446971292212522   Max=     0.456028027289591   Mean=     0.002573124697403
-                                        sea_water_y_velocity   Min=    -0.551383331006554   Max=     0.329409302652754   Mean=    -0.006725988600569
-                                       sea_water_temperature   Min=     1.113311588764191   Max=    19.096659470752243   Mean=     6.367579447693971
-                                          sea_water_salinity   Min=    30.065141978402622   Max=    34.689664759401417   Mean=    33.942796006210251
+sea_surface_height_above_geoid                                Min = -2.735134940869424e-01  Min =  2.342607356458669e-01  Mean = -1.402636646169008e-02
+eastward_sea_water_velocity                                   Min = -4.373005351869918e-01  Min =  4.329664045803049e-01  Mean =  2.559831438368985e-03
+northward_sea_water_velocity                                  Min = -5.479762106314453e-01  Min =  2.856445190323965e-01  Mean = -6.588996520104036e-03
+sea_water_x_velocity                                          Min = -4.469712922125222e-01  Min =  4.560280272895911e-01  Mean =  2.573124697403169e-03
+sea_water_y_velocity                                          Min = -5.513833310065539e-01  Min =  3.294093026527541e-01  Mean = -6.725988600568519e-03
+sea_water_temperature                                         Min =  1.113311588764191e+00  Min =  1.851847480131587e+01  Mean =  6.387561582105175e+00
+sea_water_salinity                                            Min =  3.127445284199851e+01  Min =  3.468966475940142e+01  Mean =  3.393794382426100e+01
+
 Initial state for member 4:
   Valid time: 2004-01-03T00:00:00Z
-                              sea_surface_height_above_geoid   Min=    -0.269381968773227   Max=     0.229528703727365   Mean=    -0.010003452913085
-                                        sea_water_x_velocity   Min=    -0.446971292212522   Max=     0.456028027289591   Mean=     0.002573124697403
-                                        sea_water_y_velocity   Min=    -0.551383331006554   Max=     0.329409302652754   Mean=    -0.006725988600569
-                                       sea_water_temperature   Min=     1.113311588764191   Max=    18.986804369174781   Mean=     6.290905519599440
-                                          sea_water_salinity   Min=    31.125057250458873   Max=    34.689664759401417   Mean=    33.937773582026388
+sea_surface_height_above_geoid                                Min = -2.662052701496477e-01  Min =  2.282739070008967e-01  Mean = -1.050648226965689e-02
+eastward_sea_water_velocity                                   Min = -4.373005351869918e-01  Min =  4.329664045803049e-01  Mean =  2.559831438368985e-03
+northward_sea_water_velocity                                  Min = -5.479762106314453e-01  Min =  2.856445190323965e-01  Mean = -6.588996520104036e-03
+sea_water_x_velocity                                          Min = -4.469712922125222e-01  Min =  4.560280272895911e-01  Mean =  2.573124697403169e-03
+sea_water_y_velocity                                          Min = -5.513833310065539e-01  Min =  3.294093026527541e-01  Mean = -6.725988600568519e-03
+sea_water_temperature                                         Min =  1.113311588764191e+00  Min =  1.867609837036643e+01  Mean =  6.393045174998908e+00
+sea_water_salinity                                            Min =  3.150237075819180e+01  Min =  3.468966475940142e+01  Mean =  3.394219432120195e+01
+
 Initial state for member 5:
   Valid time: 2004-01-03T00:00:00Z
-                              sea_surface_height_above_geoid   Min=    -0.293574420233925   Max=     0.265339861436735   Mean=    -0.015600794384126
-                                        sea_water_x_velocity   Min=    -0.446971292212522   Max=     0.456028027289591   Mean=     0.002573124697403
-                                        sea_water_y_velocity   Min=    -0.551383331006554   Max=     0.329409302652754   Mean=    -0.006725988600569
-                                       sea_water_temperature   Min=     1.113311588764191   Max=    20.072820093049923   Mean=     6.427169079282842
-                                          sea_water_salinity   Min=    31.035109356294097   Max=    34.689664759401417   Mean=    33.936544539914003
+sea_surface_height_above_geoid                                Min = -2.932532400039718e-01  Min =  2.604515468289279e-01  Mean = -1.490318876544060e-02
+eastward_sea_water_velocity                                   Min = -4.373005351869918e-01  Min =  4.329664045803049e-01  Mean =  2.559831438368985e-03
+northward_sea_water_velocity                                  Min = -5.479762106314453e-01  Min =  2.856445190323965e-01  Mean = -6.588996520104036e-03
+sea_water_x_velocity                                          Min = -4.469712922125222e-01  Min =  4.560280272895911e-01  Mean =  2.573124697403169e-03
+sea_water_y_velocity                                          Min = -5.513833310065539e-01  Min =  3.294093026527541e-01  Mean = -6.725988600568519e-03
+sea_water_temperature                                         Min =  1.113311588764191e+00  Min =  1.891357937338944e+01  Mean =  6.391931299203687e+00
+sea_water_salinity                                            Min =  3.121146760468874e+01  Min =  3.468966475940142e+01  Mean =  3.393429921282335e+01
+
 Initial state for member 6:
   Valid time: 2004-01-03T00:00:00Z
-                              sea_surface_height_above_geoid   Min=    -0.272959550585917   Max=     0.238521889355636   Mean=    -0.008447029675763
-                                        sea_water_x_velocity   Min=    -0.446971292212522   Max=     0.456028027289591   Mean=     0.002573124697403
-                                        sea_water_y_velocity   Min=    -0.551383331006554   Max=     0.329409302652754   Mean=    -0.006725988600569
-                                       sea_water_temperature   Min=     1.113311588764191   Max=    19.250431059607319   Mean=     6.382239917235778
-                                          sea_water_salinity   Min=    31.216864674652374   Max=    34.689664759401417   Mean=    33.936570615885323
+sea_surface_height_above_geoid                                Min = -2.816942762696585e-01  Min =  2.394333185001412e-01  Mean = -9.708729102518004e-03
+eastward_sea_water_velocity                                   Min = -4.373005351869918e-01  Min =  4.329664045803049e-01  Mean =  2.559831438368985e-03
+northward_sea_water_velocity                                  Min = -5.479762106314453e-01  Min =  2.856445190323965e-01  Mean = -6.588996520104036e-03
+sea_water_x_velocity                                          Min = -4.469712922125222e-01  Min =  4.560280272895911e-01  Mean =  2.573124697403169e-03
+sea_water_y_velocity                                          Min = -5.513833310065539e-01  Min =  3.294093026527541e-01  Mean = -6.725988600568519e-03
+sea_water_temperature                                         Min =  1.113311588764191e+00  Min =  1.893198460927869e+01  Mean =  6.383432227845094e+00
+sea_water_salinity                                            Min =  3.152045012236116e+01  Min =  3.474404878905172e+01  Mean =  3.393753893781063e+01
+
 Initial state for member 7:
   Valid time: 2004-01-03T00:00:00Z
-                              sea_surface_height_above_geoid   Min=    -0.296187124666822   Max=     0.235774625133389   Mean=    -0.012124543716031
-                                        sea_water_x_velocity   Min=    -0.446971292212522   Max=     0.456028027289591   Mean=     0.002573124697403
-                                        sea_water_y_velocity   Min=    -0.551383331006554   Max=     0.329409302652754   Mean=    -0.006725988600569
-                                       sea_water_temperature   Min=     1.113311588764191   Max=    18.374139291732039   Mean=     6.342899701800567
-                                          sea_water_salinity   Min=    31.341792873746247   Max=    34.689664759401417   Mean=    33.933984404297810
+sea_surface_height_above_geoid                                Min = -2.911899286496822e-01  Min =  2.388548091790647e-01  Mean = -1.227356118696258e-02
+eastward_sea_water_velocity                                   Min = -4.373005351869918e-01  Min =  4.329664045803049e-01  Mean =  2.559831438368985e-03
+northward_sea_water_velocity                                  Min = -5.479762106314453e-01  Min =  2.856445190323965e-01  Mean = -6.588996520104036e-03
+sea_water_x_velocity                                          Min = -4.469712922125222e-01  Min =  4.560280272895911e-01  Mean =  2.573124697403169e-03
+sea_water_y_velocity                                          Min = -5.513833310065539e-01  Min =  3.294093026527541e-01  Mean = -6.725988600568519e-03
+sea_water_temperature                                         Min =  1.113311588764191e+00  Min =  1.859856187693739e+01  Mean =  6.381011695219537e+00
+sea_water_salinity                                            Min =  3.167080958750427e+01  Min =  3.475754857553033e+01  Mean =  3.394571747913733e+01
+
 Initial state for member 8:
   Valid time: 2004-01-03T00:00:00Z
-                              sea_surface_height_above_geoid   Min=    -0.285288413466059   Max=     0.225858510694315   Mean=    -0.013163459028470
-                                        sea_water_x_velocity   Min=    -0.446971292212522   Max=     0.456028027289591   Mean=     0.002573124697403
-                                        sea_water_y_velocity   Min=    -0.551383331006554   Max=     0.329409302652754   Mean=    -0.006725988600569
-                                       sea_water_temperature   Min=     1.113311588764191   Max=    18.824755680821340   Mean=     6.396114612462110
-                                          sea_water_salinity   Min=    31.483685279792102   Max=    34.689664759401417   Mean=    33.944762229305560
+sea_surface_height_above_geoid                                Min = -2.816417328403918e-01  Min =  2.290868157906636e-01  Mean = -1.304607690383311e-02
+eastward_sea_water_velocity                                   Min = -4.373005351869918e-01  Min =  4.329664045803049e-01  Mean =  2.559831438368985e-03
+northward_sea_water_velocity                                  Min = -5.479762106314453e-01  Min =  2.856445190323965e-01  Mean = -6.588996520104036e-03
+sea_water_x_velocity                                          Min = -4.469712922125222e-01  Min =  4.560280272895911e-01  Mean =  2.573124697403169e-03
+sea_water_y_velocity                                          Min = -5.513833310065539e-01  Min =  3.294093026527541e-01  Mean = -6.725988600568519e-03
+sea_water_temperature                                         Min =  1.113311588764191e+00  Min =  1.904143277519663e+01  Mean =  6.372658229239213e+00
+sea_water_salinity                                            Min =  3.179995726575614e+01  Min =  3.520633001909638e+01  Mean =  3.394861889274608e+01
+
 Initial state for member 9:
   Valid time: 2004-01-03T00:00:00Z
-                              sea_surface_height_above_geoid   Min=    -0.265465751439715   Max=     0.227874876700141   Mean=    -0.011874795917266
-                                        sea_water_x_velocity   Min=    -0.446971292212522   Max=     0.456028027289591   Mean=     0.002573124697403
-                                        sea_water_y_velocity   Min=    -0.551383331006554   Max=     0.329409302652754   Mean=    -0.006725988600569
-                                       sea_water_temperature   Min=     1.113311588764191   Max=    18.509135137969590   Mean=     6.376965582862775
-                                          sea_water_salinity   Min=    31.219345895015987   Max=    34.689664759401417   Mean=    33.946698757429075
+sea_surface_height_above_geoid                                Min = -2.678771147436041e-01  Min =  2.206664891350461e-01  Mean = -1.212216202235394e-02
+eastward_sea_water_velocity                                   Min = -4.373005351869918e-01  Min =  4.329664045803049e-01  Mean =  2.559831438368985e-03
+northward_sea_water_velocity                                  Min = -5.479762106314453e-01  Min =  2.856445190323965e-01  Mean = -6.588996520104036e-03
+sea_water_x_velocity                                          Min = -4.469712922125222e-01  Min =  4.560280272895911e-01  Mean =  2.573124697403169e-03
+sea_water_y_velocity                                          Min = -5.513833310065539e-01  Min =  3.294093026527541e-01  Mean = -6.725988600568519e-03
+sea_water_temperature                                         Min =  1.113311588764191e+00  Min =  1.869605375361978e+01  Mean =  6.398543553010393e+00
+sea_water_salinity                                            Min =  3.170831929651294e+01  Min =  3.468966475940142e+01  Mean =  3.393571640033516e+01
+
 Initial state for member 10:
   Valid time: 2004-01-03T00:00:00Z
-                              sea_surface_height_above_geoid   Min=    -0.276669893591242   Max=     0.227610645801496   Mean=    -0.018340562152756
-                                        sea_water_x_velocity   Min=    -0.446971292212522   Max=     0.456028027289591   Mean=     0.002573124697403
-                                        sea_water_y_velocity   Min=    -0.551383331006554   Max=     0.329409302652754   Mean=    -0.006725988600569
-                                       sea_water_temperature   Min=     1.113311588764191   Max=    19.397975256022132   Mean=     6.391433624650121
-                                          sea_water_salinity   Min=    30.328799206442799   Max=    34.689664759401417   Mean=    33.929485122240251
+sea_surface_height_above_geoid                                Min = -2.675191655474788e-01  Min =  2.304482719749574e-01  Mean = -1.672725025338244e-02
+eastward_sea_water_velocity                                   Min = -4.373005351869918e-01  Min =  4.329664045803049e-01  Mean =  2.559831438368985e-03
+northward_sea_water_velocity                                  Min = -5.479762106314453e-01  Min =  2.856445190323965e-01  Mean = -6.588996520104036e-03
+sea_water_x_velocity                                          Min = -4.469712922125222e-01  Min =  4.560280272895911e-01  Mean =  2.573124697403169e-03
+sea_water_y_velocity                                          Min = -5.513833310065539e-01  Min =  3.294093026527541e-01  Mean = -6.725988600568519e-03
+sea_water_temperature                                         Min =  1.113311588764191e+00  Min =  1.864529733405430e+01  Mean =  6.380716753187962e+00
+sea_water_salinity                                            Min =  3.146288190832464e+01  Min =  3.468966475940142e+01  Mean =  3.393940624679169e+01
+
 H(x) for member 1:
 
-SST nobs= 4952 Min=7.969699859619141, Max=18.310522079467773, RMS=13.857849658969311
+SST nobs= 4952 Min=7.731047630310059e+00, Max=1.829253196716309e+01, RMS=1.355377595362972e+01
 
-ADT nobs= 1570 Min=-0.271750390529633, Max=0.268302381038666, RMS=0.115694609109528
+ADT nobs= 1570 Min=-2.710059583187103e-01, Max=2.583824396133423e-01, RMS=1.146224211118079e-01
 
 H(x) for member 2:
 
-SST nobs= 4952 Min=7.716406822204590, Max=18.492349624633789, RMS=13.555379166950958
+SST nobs= 4952 Min=7.786784172058105e+00, Max=1.824413681030273e+01, RMS=1.337765373995845e+01
 
-ADT nobs= 1570 Min=-0.286472827196121, Max=0.262728512287140, RMS=0.117894649878378
+ADT nobs= 1570 Min=-2.795650660991669e-01, Max=2.780243754386902e-01, RMS=1.167321750889217e-01
 
 H(x) for member 3:
 
-SST nobs= 4952 Min=7.452914714813232, Max=17.699785232543945, RMS=13.337213917393077
+SST nobs= 4952 Min=7.756220817565918e+00, Max=1.835508346557617e+01, RMS=1.352458904245937e+01
 
-ADT nobs= 1570 Min=-0.249883398413658, Max=0.258629053831100, RMS=0.112710766676703
+ADT nobs= 1570 Min=-2.470264583826065e-01, Max=2.607477605342865e-01, RMS=1.120148413843392e-01
 
 H(x) for member 4:
 
-SST nobs= 4952 Min=7.177269935607910, Max=18.271060943603516, RMS=13.240852124491621
+SST nobs= 4952 Min=7.899986743927002e+00, Max=1.863294982910156e+01, RMS=1.376317700344218e+01
 
-ADT nobs= 1570 Min=-0.246012881398201, Max=0.252897799015045, RMS=0.110458923115468
+ADT nobs= 1570 Min=-2.426244765520096e-01, Max=2.480600178241730e-01, RMS=1.109537784466179e-01
 
 H(x) for member 5:
 
-SST nobs= 4952 Min=8.686854362487793, Max=19.383707046508789, RMS=13.957529891579469
+SST nobs= 4952 Min=7.868516921997070e+00, Max=1.891357994079590e+01, RMS=1.375121635516469e+01
 
-ADT nobs= 1570 Min=-0.265345841646194, Max=0.249246776103973, RMS=0.115070325860594
+ADT nobs= 1570 Min=-2.655855417251587e-01, Max=2.534334659576416e-01, RMS=1.147958933503364e-01
 
 H(x) for member 6:
 
-SST nobs= 4952 Min=7.720188140869141, Max=19.250431060791016, RMS=13.524962578391717
+SST nobs= 4952 Min=7.793035984039307e+00, Max=1.893198394775391e+01, RMS=1.348790873561050e+01
 
-ADT nobs= 1570 Min=-0.252503544092178, Max=0.258977890014648, RMS=0.110402395736663
+ADT nobs= 1570 Min=-2.599344551563263e-01, Max=2.561764419078827e-01, RMS=1.113896573146866e-01
 
 H(x) for member 7:
 
-SST nobs= 4952 Min=4.952234268188477, Max=18.216455459594727, RMS=13.215236940556686
+SST nobs= 4952 Min=8.196397781372070e+00, Max=1.784548950195312e+01, RMS=1.343789258178451e+01
 
-ADT nobs= 1570 Min=-0.270376920700073, Max=0.261584818363190, RMS=0.112783225921559
+ADT nobs= 1570 Min=-2.653872668743134e-01, Max=2.646574974060059e-01, RMS=1.129825724724539e-01
 
 H(x) for member 8:
 
-SST nobs= 4952 Min=7.896877288818359, Max=18.790115356445312, RMS=13.889700071740595
+SST nobs= 4952 Min=6.948707580566406e+00, Max=1.863687896728516e+01, RMS=1.343327587585492e+01
 
-ADT nobs= 1570 Min=-0.259102255105972, Max=0.249047368764877, RMS=0.112220506746062
+ADT nobs= 1570 Min=-2.556719779968262e-01, Max=2.485115975141525e-01, RMS=1.119966054036388e-01
 
 H(x) for member 9:
 
-SST nobs= 4952 Min=7.083646297454834, Max=18.380702972412109, RMS=13.416120587132736
+SST nobs= 4952 Min=7.801444530487061e+00, Max=1.836791801452637e+01, RMS=1.358797507909260e+01
 
-ADT nobs= 1570 Min=-0.228417709469795, Max=0.236715614795685, RMS=0.114339429032619
+ADT nobs= 1570 Min=-2.404928207397461e-01, Max=2.357276231050491e-01, RMS=1.137469751056180e-01
 
 H(x) for member 10:
 
-SST nobs= 4952 Min=7.339293479919434, Max=19.397975921630859, RMS=13.879109942702364
+SST nobs= 4952 Min=8.344124794006348e+00, Max=1.816777229309082e+01, RMS=1.358463052343136e+01
 
-ADT nobs= 1570 Min=-0.243704169988632, Max=0.260576367378235, RMS=0.119363311634504
+ADT nobs= 1570 Min=-2.363797128200531e-01, Max=2.615877091884613e-01, RMS=1.177275408729491e-01
 
 H(x) ensemble background mean: 
 
-SST nobs= 4952 Min=8.369289588928224, Max=17.871019935607912, RMS=13.560309478277878
+SST nobs= 4952 Min=8.633923149108886e+00, Max=1.788042640686035e+01, RMS=1.353312101042054e+01
 
-ADT nobs= 1570 Min=-0.256339433789253, Max=0.250186277925968, RMS=0.111846660831355
+ADT nobs= 1570 Min=-2.539254531264305e-01, Max=2.510912612080574e-01, RMS=1.113805336664287e-01
 
 background y - H(x): 
 
-SST nobs= 4952 Min=-2.047923851013184, Max=1.636590671539306, RMS=0.426163817179347
+SST nobs= 4952 Min=-1.853987216949463e+00, Max=2.197841596603393e+00, RMS=4.472159381180433e-01
 
-ADT nobs= 1570 Min=-0.150255746394396, Max=0.143760631233454, RMS=0.033530377340419
+ADT nobs= 1570 Min=-1.504941962659359e-01, Max=1.325341603253037e-01, RMS=3.352549137227596e-02
 
 Background mean :
   Valid time: 2004-01-03T00:00:00Z
-                              sea_surface_height_above_geoid   Min=    -0.282087377831981   Max=     0.224438333508928   Mean=    -0.012712509133031
-                                        sea_water_x_velocity   Min=    -0.446971292212522   Max=     0.456028027289591   Mean=     0.002573124697403
-                                        sea_water_y_velocity   Min=    -0.551383331006554   Max=     0.329409302652754   Mean=    -0.006725988600569
-                                       sea_water_temperature   Min=     1.113311588764191   Max=    18.374139291732035   Mean=     6.376812554490711
-                                          sea_water_salinity   Min=    31.913467132068078   Max=    34.689664759401417   Mean=    33.938100947950588
+sea_surface_height_above_geoid                                Min = -2.796593458578758e-01  Min =  2.264086275384933e-01  Mean = -1.270460081175192e-02
+eastward_sea_water_velocity                                   Min = -4.373005351869919e-01  Min =  4.329664045803049e-01  Mean =  2.559831438368983e-03
+northward_sea_water_velocity                                  Min = -5.479762106314455e-01  Min =  2.856445190323965e-01  Mean = -6.588996520104035e-03
+sea_water_x_velocity                                          Min = -4.469712922125224e-01  Min =  4.560280272895911e-01  Mean =  2.573124697403169e-03
+sea_water_y_velocity                                          Min = -5.513833310065540e-01  Min =  3.294093026527541e-01  Mean = -6.725988600568520e-03
+sea_water_temperature                                         Min =  1.113311588764191e+00  Min =  1.837413929173204e+01  Mean =  6.379526028065261e+00
+sea_water_salinity                                            Min =  3.191346713206808e+01  Min =  3.468966475940142e+01  Mean =  3.393975479790202e+01
+
 Analysis mean :
   Valid time: 2004-01-03T00:00:00Z
-                              sea_surface_height_above_geoid   Min=    -0.275184644225736   Max=     0.222702663274321   Mean=    -0.014076233898498
-                                        sea_water_x_velocity   Min=    -0.446971292212522   Max=     0.456028027289591   Mean=     0.002573124697403
-                                        sea_water_y_velocity   Min=    -0.551383331006554   Max=     0.329409302652754   Mean=    -0.006725988600569
-                                       sea_water_temperature   Min=     1.113311588764191   Max=    18.606484738260551   Mean=     6.373788099020500
-                                          sea_water_salinity   Min=    30.620082207359694   Max=    34.689664759401417   Mean=    33.930971336898175
+sea_surface_height_above_geoid                                Min = -2.734559883548449e-01  Min =  2.257172151702475e-01  Mean = -1.313215595970028e-02
+eastward_sea_water_velocity                                   Min = -4.373005351869919e-01  Min =  4.329664045803049e-01  Mean =  2.559831438368983e-03
+northward_sea_water_velocity                                  Min = -5.479762106314455e-01  Min =  2.856445190323965e-01  Mean = -6.588996520104035e-03
+sea_water_x_velocity                                          Min = -4.469712922125224e-01  Min =  4.560280272895911e-01  Mean =  2.573124697403169e-03
+sea_water_y_velocity                                          Min = -5.513833310065540e-01  Min =  3.294093026527541e-01  Mean = -6.725988600568520e-03
+sea_water_temperature                                         Min =  1.113311588764191e+00  Min =  1.837413929173204e+01  Mean =  6.374095530723800e+00
+sea_water_salinity                                            Min =  3.163425862720680e+01  Min =  3.468966475940142e+01  Mean =  3.394059510941409e+01
+
 Analysis mean increment :
   Valid time: 2004-01-03T00:00:00Z
-                              sea_surface_height_above_geoid   Min=    -0.146278289397033   Max=     0.080821265699566   Mean=    -0.001363724765467
-                                        sea_water_x_velocity   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
-                                        sea_water_y_velocity   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
-                                       sea_water_temperature   Min=    -3.724989282102678   Max=     3.837381628963717   Mean=    -0.003024455470211
-                                          sea_water_salinity   Min=    -1.789298695121225   Max=     1.203751265059260   Mean=    -0.007129611052411
+sea_surface_height_above_geoid                                Min = -1.503440532016582e-01  Min =  8.692994518261926e-02  Mean = -4.275551479484552e-04
+eastward_sea_water_velocity                                   Min =  0.000000000000000e+00  Min =  0.000000000000000e+00  Mean =  0.000000000000000e+00
+northward_sea_water_velocity                                  Min =  0.000000000000000e+00  Min =  0.000000000000000e+00  Mean =  0.000000000000000e+00
+sea_water_x_velocity                                          Min =  0.000000000000000e+00  Min =  0.000000000000000e+00  Mean =  0.000000000000000e+00
+sea_water_y_velocity                                          Min =  0.000000000000000e+00  Min =  0.000000000000000e+00  Mean =  0.000000000000000e+00
+sea_water_temperature                                         Min = -3.189197369308099e+00  Min =  3.444727174010614e+00  Mean = -5.430497341432047e-03
+sea_water_salinity                                            Min = -9.150306555970715e-01  Min =  1.474917842183032e+00  Mean =  8.403115119148312e-04
+
 Forecast variance :
   Valid time: 2004-01-03T00:00:00Z
-                              sea_surface_height_above_geoid   Min=     0.000013031820865   Max=     0.006145700636222   Mean=     0.000627946519463
-                                        sea_water_x_velocity   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
-                                        sea_water_y_velocity   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
-                                       sea_water_temperature   Min=     0.000000000000000   Max=     9.075674575486003   Mean=     0.213362391112858
-                                          sea_water_salinity   Min=     0.000000000000000   Max=     1.282033384593902   Mean=     0.010815987272852
+sea_surface_height_above_geoid                                Min =  1.628232583217679e-05  Min =  6.615197119784458e-03  Mean =  6.330328213292462e-04
+eastward_sea_water_velocity                                   Min =  0.000000000000000e+00  Min =  0.000000000000000e+00  Mean =  0.000000000000000e+00
+northward_sea_water_velocity                                  Min =  0.000000000000000e+00  Min =  0.000000000000000e+00  Mean =  0.000000000000000e+00
+sea_water_x_velocity                                          Min =  0.000000000000000e+00  Min =  0.000000000000000e+00  Mean =  0.000000000000000e+00
+sea_water_y_velocity                                          Min =  0.000000000000000e+00  Min =  0.000000000000000e+00  Mean =  0.000000000000000e+00
+sea_water_temperature                                         Min =  0.000000000000000e+00  Min =  7.680240610068501e+00  Mean =  1.324269073522878e-01
+sea_water_salinity                                            Min =  0.000000000000000e+00  Min =  1.045082295550468e+00  Mean =  7.308501899105343e-03
+
 Analysis variance :
   Valid time: 2004-01-03T00:00:00Z
-                              sea_surface_height_above_geoid   Min=     0.000009319917286   Max=     0.004132814913934   Mean=     0.000450883352451
-                                        sea_water_x_velocity   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
-                                        sea_water_y_velocity   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
-                                       sea_water_temperature   Min=     0.000000000000000   Max=     6.783524243860954   Mean=     0.154015033344332
-                                          sea_water_salinity   Min=     0.000000000000000   Max=     1.027296278213912   Mean=     0.008201758118681
+sea_surface_height_above_geoid                                Min =  1.156260701608896e-05  Min =  4.460033299642793e-03  Mean =  4.593745627994689e-04
+eastward_sea_water_velocity                                   Min =  0.000000000000000e+00  Min =  9.256488100869474e-49  Mean =  1.915588188817863e-51
+northward_sea_water_velocity                                  Min =  0.000000000000000e+00  Min =  4.941361040374054e-49  Mean =  2.053418460352141e-51
+sea_water_x_velocity                                          Min =  0.000000000000000e+00  Min =  9.256488100869474e-49  Mean =  2.030043610780438e-51
+sea_water_y_velocity                                          Min =  0.000000000000000e+00  Min =  5.857042361608699e-49  Mean =  2.304722470059667e-51
+sea_water_temperature                                         Min =  0.000000000000000e+00  Min =  5.706572136274843e+00  Mean =  9.607038274069409e-02
+sea_water_salinity                                            Min =  0.000000000000000e+00  Min =  8.641135033783742e-01  Mean =  5.531203468963753e-03
+

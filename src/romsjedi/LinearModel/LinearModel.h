@@ -78,6 +78,7 @@ namespace romsjedi {
 
   // Data
 
+    const Geometry & geom_;
     F90flds keyFlds_;
     F90model keySelf_;
     util::Duration tstep_;

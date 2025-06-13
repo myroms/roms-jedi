@@ -26,6 +26,7 @@ USE oops_variables_mod
 
 USE roms_geom_mod,              ONLY : roms_geom
 USE roms_geom_reg,              ONLY : roms_geom_registry
+USE roms_fieldsutils_mod,       ONLY : LwroteAnalysis
 USE roms_increment_mod,         ONLY : roms_increment
 USE roms_increment_reg,         ONLY : roms_increment_registry
 USE roms_state_mod,             ONLY : roms_state
@@ -220,6 +221,10 @@ SUBROUTINE roms_state_write_file_c (c_key_fld, c_conf, c_dt)                   &
 
   f_conf = fckit_configuration (c_conf)
   CALL fld%write (f_conf, fdate)
+
+  ! Processed output analysis.
+
+  LwroteAnalysis = .TRUE.
 
 END SUBROUTINE roms_state_write_file_c
 

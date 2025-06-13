@@ -1,3 +1,4 @@
+#undef UV_CHANGE
 ! (C) Copyright 2017-2025 UCAR
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
@@ -29,12 +30,20 @@ USE fckit_mpi_module,           ONLY : fckit_mpi_comm
 
 !> ROMS modules association.
 
-USE roms_kernel_mod
+USE dateclock_mod,              ONLY : time_string
+USE mod_arrays,                 ONLY : ROMS_deallocate_arrays
+USE mod_boundary,               ONLY : initialize_boundary
+USE mod_coupling,               ONLY : COUPLING, initialize_coupling
+USE mod_forces,                 ONLY : initialize_forces
+USE mod_grid,                   ONLY : GRID
+USE mod_mixing,                 ONLY : MIXING, initialize_mixing
+USE mod_ocean,                  ONLY : OCEAN,  initialize_ocean
 USE mod_param,                  ONLY : BOUNDS, Ngrids, iNLM
 USE mod_scalars,                ONLY : INItime, NoError, blowup_string, dt,    &
-                                       exit_flag, iic, ntend, ntimes,          &
-                                       sec2day, tdays, time
+                                       exit_flag, iic, jic, ntend, ntimes,     &
+                                       sec2day, tdays, time, time4jedi
 USE mod_stepping,               ONLY : knew, kstp, nnew, nstp
+USE roms_kernel_mod
 
 !> ROMS-JEDI interface module association.
 
@@ -42,11 +51,15 @@ USE roms_geom_mod,              ONLY : roms_geom,                              &
                                        roms_tile
 USE roms_field_mod,             ONLY : roms_field
 USE roms_fieldsutils_mod,       ONLY : date2string,                            & 
-                                       field_info,                             &
                                        LdebugModel,                            &
+                                       LwroteIncrement,                        &
                                        roms_date2time,                         &
                                        roms_tracer_index
 USE roms_state_mod,             ONLY : roms_state
+#ifdef UV_CHANGE
+USE roms_utils_mod,             ONLY : vector_a_to_c,                          &
+                                       vector_c_to_a
+#endif
 
 implicit none
 
@@ -197,8 +210,6 @@ END SUBROUTINE roms_model_create
 
 SUBROUTINE roms_model_delete (self)
 
-  USE mod_arrays, ONLY : ROMS_deallocate_arrays
-
   CLASS (roms_model), intent(inout) :: self
 
   ! Deallocate ROMS state arrays and vectors. It forces regular allocation and
@@ -216,10 +227,11 @@ END SUBROUTINE roms_model_delete
 !! because it is specific to a particular algorithm.  We need a generic JEDI
 !! initialization of ROMS with using the state object.
 
-SUBROUTINE roms_model_initialize (self, state, vdate)
+SUBROUTINE roms_model_initialize (self, state, geom, vdate)
 
   CLASS (roms_model), intent(inout) :: self    !< ROMS NLM object
   CLASS (roms_state), intent(inout) :: state   !< State fields object
+  TYPE (roms_geom),   intent(inout) :: geom    !< geometry object
   TYPE (datetime),    intent(in   ) :: vdate   !< State valid DateTime
 
   integer                           :: LocalPET, MyComm, Tindex2d, Tindex3d
@@ -280,7 +292,8 @@ SUBROUTINE roms_model_initialize (self, state, vdate)
   Tindex2d = kstp(ng)                              ! timestep 2D index
   Tindex3d = nstp(ng)                              ! timestep 3D index
 
-  CALL jedi2roms_state (ng, iNLM, Tindex2d, Tindex3d, state, CurrentDateString)
+  CALL jedi2roms_state (ng, iNLM, Tindex2d, Tindex3d, state, geom,             &
+                        CurrentDateString)
 
   !> ROMS-JEDI phase 2 initialization. Compleate the initialization using
   !> the state fields loaded above. Compute depths, density, and horizontal
@@ -308,13 +321,14 @@ SUBROUTINE roms_model_initialize (self, state, vdate)
   !> ROMS applied lateral boundary conditions to the initial state vector.
   !> Pass the outdated state vector back to JEDI.
 
-  CALL roms2jedi_state (ng, iNLM, Tindex2d, Tindex3d, state, state%geom,       &
+  CALL roms2jedi_state (ng, iNLM, Tindex2d, Tindex3d, state, geom,             &
                         CurrentDateString)
 
   !> If debugging, write out initial state vector into ROMS-JEDI history,
-  !> which can be used to compare to native ROMS solution.
+  !> which can be used to compare to native ROMS solution.  Avoid writing
+  !> during the analysis phase because of I/O interference.
 
-  IF (LdebugModel) THEN
+  IF (.not. LwroteIncrement .and. LdebugModel) THEN
     ncname = 'Data/trajectory/roms_jedi_his.nc'
     CALL state%write_debug (ncname, vdate)               ! create and write
   END IF
@@ -362,9 +376,10 @@ SUBROUTINE roms_model_step (self, state, geom, vdate)
                         TRIM(self%roms_datetime))
 
   !> If debugging, write out NLM state vector into ROMS-JEDI history, which
-  !> can be used to compare to native ROMS solution.
+  !> can be used to compare to native ROMS solution. Avoid writing during the
+  !> analysis phase because of I/O interference.
 
-  IF (LdebugModel) THEN
+  IF (.not. LwroteIncrement .and. LdebugModel) THEN
     ncname = 'Data/trajectory/roms_jedi_his.nc'
     CALL state%write_debug (ncname, vdate,                                     &
                             Append = .TRUE.)             ! append records
@@ -394,12 +409,6 @@ END SUBROUTINE roms_model_step
 
 SUBROUTINE roms_model_finalize (self, state)
 
-  USE mod_boundary, ONLY : initialize_boundary
-  USE mod_coupling, ONLY : initialize_coupling
-  USE mod_mixing,   ONLY : initialize_mixing
-  USE mod_forces,   ONLY : initialize_forces
-  USE mod_ocean,    ONLY : initialize_ocean
-
   CLASS (roms_model), target :: self
   CLASS (roms_state)         :: state
 
@@ -428,27 +437,62 @@ END SUBROUTINE roms_model_finalize
 ! ------------------------------------------------------------------------------
 !> It loads JEDI nonlinear state fields into ROMS fields structures.
 
-SUBROUTINE jedi2roms_state (ng, kernel, Tindex2d, Tindex3d, state, DateString)
+SUBROUTINE jedi2roms_state (ng, kernel, Tindex2d, Tindex3d, state, geom,       &
+                            DateString)
 
-  USE mod_ocean,    ONLY : OCEAN
-  USE mod_mixing,   ONLY : MIXING
-  USE mod_scalars,  ONLY : jic, time
+  integer,                   intent(in   ) :: ng         !< nested grid number
+  integer,                   intent(in   ) :: kernel     !< ROMS kernel
+  integer,                   intent(in   ) :: Tindex2d   !< ROMS 2D time index
+  integer,                   intent(in   ) :: Tindex3d   !< ROMS 3d time index
+  TYPE (roms_state), target, intent(in   ) :: state      !< State fields object
+  TYPE (roms_geom),          intent(inout) :: geom       !< geometry object
+  character (len=*),         intent(in   ) :: DateString !< State valid DateTime
 
-  integer,                   intent(in) :: ng          !< nested grid number
-  integer,                   intent(in) :: kernel      !< ROMS kernel identifier
-  integer,                   intent(in) :: Tindex2d    !< ROMS 2D time index
-  integer,                   intent(in) :: Tindex3d    !< ROMS 3d time index
-  TYPE (roms_state), target, intent(in) :: state       !< State fields object
-  character (len=*),         intent(in) :: DateString  !< State valid DateTime
+  TYPE (roms_field),               pointer :: field => null()
+#ifdef UV_CHANGE
+  TYPE (roms_field),               pointer :: Ua    => null()
+  TYPE (roms_field),               pointer :: Va    => null()
+  real (kind=kind_real),       allocatable :: Uc(:,:,:), Vc(:,:,:)
 
-  TYPE (roms_field), pointer            :: field
-  integer                               :: i, itrc
-  real (kind=kind_real)                 :: fstats(3)
-  character (len=22)                    :: DateTimeStr
+  logical                                  :: have_Uc, have_Vc
+  logical                                  :: need_Uc, need_Vc
+#endif
+
+  integer                                  :: i, itrc
+  real (kind=kind_real)                    :: stats(4)
+  character (len=22)                       :: DateTimeStr
 
   ! Set ROMS date/time string.
 
   IF (LdebugModel) CALL time_string  (time(ng), DateTimeStr)
+
+#ifdef UV_CHANGE
+  ! If state has A-grid currents, perform variable change from A- to C-grid
+  ! velicities.
+
+  need_Uc = state%has('eastward_sea_water_velocity')
+  need_Vc = state%has('northward_sea_water_velocity')
+
+  have_Uc = .FALSE.
+  have_Vc = .FALSE.
+
+  IF (need_Uc .or. need_Vc) THEN
+    CALL state%get ('eastward_sea_water_velocity',  Ua)
+    CALL state%get ('northward_sea_water_velocity', Va)
+
+    allocate ( Uc(geom%LBi:geom%UBi, geom%LBj:geom%UBj, geom%N) )
+    allocate ( Vc(geom%LBi:geom%UBi, geom%LBj:geom%UBj, geom%N) )
+
+    Uc = 0.0_kind_real
+    Vc = 0.0_kind_real
+
+    CALL vector_a_to_c (geom, Ua%val, Va%val, Uc, Vc)
+    OCEAN(ng)%u(:,:,:,Tindex3d) = Uc
+    OCEAN(ng)%v(:,:,:,Tindex3d) = Vc
+    have_Uc = .TRUE.
+    have_Vc = .TRUE.
+  END IF
+#endif
 
   ! Load NLROMS state into JEDI state object.
 
@@ -466,10 +510,10 @@ SUBROUTINE jedi2roms_state (ng, kernel, Tindex2d, Tindex3d, state, DateString)
       field => state%fields(i)
 
       IF (LdebugModel) THEN
-        CALL field%stats (fstats)
+        CALL field%stats (stats)
         IF (my_comm%rank() .eq. 0)                                             &
           PRINT 20, field%metadata%short_name, field%metadata%io_name,         &
-                    fstats(1), fstats(2), INT(fstats(3),KIND=8)
+                    stats(1), stats(2), INT(stats(4),KIND=8)
       END IF
 
       SELECT CASE (field%name)
@@ -490,17 +534,17 @@ SUBROUTINE jedi2roms_state (ng, kernel, Tindex2d, Tindex3d, state, DateString)
               'eastward_sea_water_velocity')
           OCEAN(ng)%ua = field%val                     !> A-grid
 
-        CASE ('uocn',                                                          &
-              'sea_water_x_velocity')
-          OCEAN(ng)%u(:,:,:,Tindex3d) = field%val      !> C-grid
-
         CASE ('vaocn',                                                         &
               'northward_sea_water_velocity')
           OCEAN(ng)%va = field%val                     !> A-grid
 
+        CASE ('uocn',                                                          &
+              'sea_water_x_velocity')
+          OCEAN(ng)%u(:,:,:,Tindex3d) = field%val      !> C-grid
+
         CASE ('vocn',                                                          &
               'sea_water_y_velocity')
-          OCEAN(ng)%v(:,:,:,Tindex3d) = field%val
+          OCEAN(ng)%v(:,:,:,Tindex3d) = field%val      !> C-grid
 
         CASE ('tocn',                                                          &
               'sea_water_temperature',                                         &
@@ -541,13 +585,6 @@ END SUBROUTINE jedi2roms_state
 SUBROUTINE roms2jedi_state (ng, kernel, Tindex2d, Tindex3d, state, geom,       &
                             DateString)
 
-  USE dateclock_mod, ONLY : time_string
-  USE mod_coupling,  ONLY : COUPLING
-  USE mod_grid,      ONLY : GRID
-  USE mod_mixing,    ONLY : MIXING
-  USE mod_ocean,     ONLY : OCEAN
-  USE mod_scalars,   ONLY : jic, time4jedi
-
   integer,                   intent(in   ) :: ng         !< nested grid number
   integer,                   intent(in   ) :: kernel     !< ROMS kernel ID
   integer,                   intent(in   ) :: Tindex2d   !< ROMS 2D time index
@@ -556,14 +593,51 @@ SUBROUTINE roms2jedi_state (ng, kernel, Tindex2d, Tindex3d, state, geom,       &
   TYPE (roms_geom),          intent(inout) :: geom       !< geometry object
   character (len=*),         intent(in   ) :: DateString !< State valid DateTime
 
-  TYPE (roms_field), pointer               :: field
+  TYPE (roms_field),               pointer :: field => null()
+#ifdef UV_CHANGE
+  TYPE (roms_field),               pointer :: Ua    => null()
+  TYPE (roms_field),               pointer :: Va    => null()
+  real (kind=kind_real),       allocatable :: Uc(:,:,:), Vc(:,:,:)
+
+  logical                                  :: have_Ua, have_Va
+  logical                                  :: need_Ua, need_Va
+#endif
+
   integer                                  :: i, itrc, j, k
-  real (kind=kind_real)                    :: fstats(3)
+  real (kind=kind_real)                    :: stats(4)
   character (len=22)                       :: DateTimeStr
 
   ! Set ROMS DateTimeString
 
   IF (LdebugModel) CALL time_string  (time4jedi(ng), DateTimeStr)
+
+#ifdef UV_CHANGE
+  ! If state needs A-grid currents, perform variable change from C- to A-grid
+  ! velicities.
+
+  need_Ua = state%has('eastward_sea_water_velocity')
+  need_Va = state%has('northward_sea_water_velocity')
+
+  have_Ua = .FALSE.
+  have_Va = .FALSE.
+
+  IF (need_Ua .or. need_Va) THEN
+    CALL state%get ('eastward_sea_water_velocity',  Ua)
+    CALL state%get ('northward_sea_water_velocity', Va)
+
+    allocate ( Uc(geom%LBi:geom%UBi, geom%LBj:geom%UBj, geom%N) )
+    allocate ( Vc(geom%LBi:geom%UBi, geom%LBj:geom%UBj, geom%N) )
+
+    Uc = 0.0_kind_real
+    Vc = 0.0_kind_real
+
+    Uc = OCEAN(ng)%u(:,:,:,Tindex3d)
+    Vc = OCEAN(ng)%v(:,:,:,Tindex3d)
+    CALL vector_c_to_a (geom, Uc, Vc, Ua%val, Va%val)
+    have_Ua = .TRUE.
+    have_Va = .TRUE.
+  END IF
+#endif
 
   ! Load NLROMS state into JEDI state object.
 
@@ -610,19 +684,31 @@ SUBROUTINE roms2jedi_state (ng, kernel, Tindex2d, Tindex3d, state, geom,       &
 
         CASE ('uaocn',                                                         &
               'eastward_sea_water_velocity')
-          field%val        = OCEAN(ng)%ua                 !> A-grid
-
-        CASE ('uocn',                                                          &
-              'sea_water_x_velocity')
-          field%val        = OCEAN(ng)%u(:,:,:,Tindex3d)  !> C-grid
+#ifdef UV_CHANGE
+          IF (have_Ua) THEN
+            OCEAN(ng)%ua = Ua%val                         !> A-grid
+          END IF
+#else
+          field%val = OCEAN(ng)%ua                        !> A-grid
+#endif
 
         CASE ('vaocn',                                                         &
               'northward_sea_water_velocity')
-          field%val        = OCEAN(ng)%va                 !> A-grid
+#ifdef UV_CHANGE
+          IF (have_Va) THEN
+            OCEAN(ng)%va = Va%val                         !> A-grid
+          END IF
+#else
+          field%val = OCEAN(ng)%va                        !> A-grid
+#endif
+        CASE ('uocn',                                                          &
+              'sea_water_x_velocity')
+
+          field%val = OCEAN(ng)%u(:,:,:,Tindex3d)         !> C-grid
 
         CASE ('vocn',                                                          &
               'sea_water_y_velocity')
-          field%val        = OCEAN(ng)%v(:,:,:,Tindex3d)  !> C-grid
+          field%val = OCEAN(ng)%v(:,:,:,Tindex3d)         !> C-grid
 
         CASE ('tocn',                                                          &
               'sea_water_temperature',                                         &
@@ -630,38 +716,30 @@ SUBROUTINE roms2jedi_state (ng, kernel, Tindex2d, Tindex3d, state, geom,       &
               'socn',                                                          &
               'sea_water_salinity')
           itrc = roms_tracer_index(field%name)
-          field%val        = OCEAN(ng)%t(:,:,:,Tindex3d,itrc)
-
-        CASE ('Hzocn',                                                         &
-              'model_level_thickness_at_cell_center')
-          field%val        = GRID(ng)%Hz
+          field%val = OCEAN(ng)%t(:,:,:,Tindex3d,itrc)
 
         CASE ('z0ocn_r',                                                       &
               'unvarying_model_level_depth_at_cell_center')
-          field%val        = GRID(ng)%z0_r
+          field%val = GRID(ng)%z0_r
 
         CASE ('z0ocn_w',                                                       &
               'unvarying_model_level_depth_at_cell_top_face')
-          field%val        = GRID(ng)%z0_w
+          field%val = GRID(ng)%z0_w
 
         CASE ('zocn_r',                                                        &
               'model_level_depth_at_cell_center')
-          field%val        = GRID(ng)%z_r
-
-        CASE ('zocn_w',                                                        &
-              'model_level_depth_at_cell_top_face')
-          field%val        = GRID(ng)%z_w
+          field%val = GRID(ng)%z_r
 
         CASE ('Ktocn',                                                         &
               'vertical_diffusion_coefficient_of_temperature_in_sea_water',    &
               'Ksocn',                                                         &
               'vertical_diffusion_coefficient_of_salinity_in_sea_water')
           itrc = roms_tracer_index(field%name)
-          field%val        = MIXING(ng)%Akt(:,:,:,itrc)
+          field%val = MIXING(ng)%Akt(:,:,:,itrc)
 
         CASE ('Kvocn',                                                         &
               'vertical_viscosity_coefficient_of_sea_water')
-          field%val        = MIXING(ng)%Akv
+          field%val = MIXING(ng)%Akv
 
         CASE DEFAULT
           CALL abor1_ftn (" roms2jedi_state: Cannot find option for field: "// &
@@ -670,10 +748,10 @@ SUBROUTINE roms2jedi_state (ng, kernel, Tindex2d, Tindex3d, state, geom,       &
       END SELECT
 
       IF (LdebugModel) THEN
-        CALL field%stats (fstats)
+        CALL field%stats (stats)
         IF (my_comm%rank() .eq. 0)                                             &
           PRINT 20, field%metadata%short_name, field%metadata%io_name,         &
-                    fstats(1), fstats(2), INT(fstats(3), KIND=8)
+                    stats(1), stats(2), INT(stats(4), KIND=8)
       END IF
 
     END DO
@@ -699,6 +777,13 @@ SUBROUTINE roms2jedi_state (ng, kernel, Tindex2d, Tindex3d, state, geom,       &
     END DO
   END DO
 
+#ifdef UV_CHANGE
+! Deallocate local variables.
+
+  IF (allocated(Uc)) deallocate (Uc)
+  IF (allocated(Vc)) deallocate (Vc)
+#endif
+!
   10 FORMAT (2x,a,', Nfields = ',i2,', timestep = ',i5.5,', timelevel = (',i0, &
              ',',i0,'), date: ',a)
   20 FORMAT (19x,'- ',a,': ',a,/, 22x,'(Min = ',1p,e15.8,' Max = ',1p,e15.8,   &

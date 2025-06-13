@@ -1,14 +1,20 @@
 Input Dirac increment:
   Valid time: 2004-01-03T00:00:00Z
-                               ssh   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.000491883915396
-                              uocn   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
-                              vocn   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
-                              tocn   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.000016396130513
-                              socn   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.000016396130513
+sea_surface_height_above_geoid                                Min =  0.000000000000000e+00  Min =  1.000000000000000e+00  Mean =  4.918839153959665e-04
+eastward_sea_water_velocity                                   Min =  0.000000000000000e+00  Min =  1.000000000000000e+00  Mean =  1.639613051319888e-05
+northward_sea_water_velocity                                  Min =  0.000000000000000e+00  Min =  1.000000000000000e+00  Mean =  1.639613051319888e-05
+sea_water_x_velocity                                          Min =  0.000000000000000e+00  Min =  0.000000000000000e+00  Mean =  0.000000000000000e+00
+sea_water_y_velocity                                          Min =  0.000000000000000e+00  Min =  0.000000000000000e+00  Mean =  0.000000000000000e+00
+sea_water_temperature                                         Min =  0.000000000000000e+00  Min =  1.000000000000000e+00  Mean =  1.639613051319888e-05
+sea_water_salinity                                            Min =  0.000000000000000e+00  Min =  1.000000000000000e+00  Mean =  1.639613051319888e-05
+
 Covariance(SABER) * Increment:
   Valid time: 2004-01-03T00:00:00Z
-                               ssh   Min=     0.000000000000000   Max=     1.000000000000000   Mean=     0.021894162231520
-                              uocn   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
-                              vocn   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
-                              tocn   Min=     0.000000000000000   Max=     1.474949305365866   Mean=     0.004058035448651
-                              socn   Min=     0.000000000000000   Max=     2.621996114729245   Mean=     0.009804688115526
+sea_surface_height_above_geoid                                Min =  0.000000000000000e+00  Min =  1.000000000000001e+00  Mean =  1.197659169543064e-02
+eastward_sea_water_velocity                                   Min =  0.000000000000000e+00  Min =  1.000016515727063e+00  Mean =  1.244102401624714e-02
+northward_sea_water_velocity                                  Min =  0.000000000000000e+00  Min =  9.999737855834576e-01  Mean =  1.267087949997694e-02
+sea_water_x_velocity                                          Min =  0.000000000000000e+00  Min =  0.000000000000000e+00  Mean =  0.000000000000000e+00
+sea_water_y_velocity                                          Min =  0.000000000000000e+00  Min =  0.000000000000000e+00  Mean =  0.000000000000000e+00
+sea_water_temperature                                         Min =  0.000000000000000e+00  Min =  1.221739621515029e+00  Mean =  1.686674218108479e-03
+sea_water_salinity                                            Min =  0.000000000000000e+00  Min =  1.848546877346612e+00  Mean =  3.266349118896454e-03
+

@@ -29,6 +29,7 @@ USE roms_geom_mod,              ONLY : roms_geom
 USE roms_geom_reg,              ONLY : roms_geom_registry
 USE roms_geomIterator_mod,      ONLY : roms_geomIterator
 USE roms_geomIterator_reg,      ONLY : roms_geomIterator_registry
+USE roms_fieldsutils_mod,       ONLY : LwroteIncrement
 USE roms_increment_mod,         ONLY : roms_increment
 USE roms_increment_reg,         ONLY : roms_increment_registry
 USE roms_state_mod,             ONLY : roms_state
@@ -439,6 +440,10 @@ SUBROUTINE roms_increment_write_file_c (c_key_fld, c_conf, c_dt)               &
   CALL roms_increment_registry%get (c_key_fld, fld)
   CALL c_f_datetime (c_dt, fdate)
   CALL fld%write (fckit_configuration(c_conf), fdate)
+
+  ! Processed output increment.
+
+  LwroteIncrement = .TRUE.
 
 END SUBROUTINE roms_increment_write_file_c
 

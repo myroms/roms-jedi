@@ -203,7 +203,7 @@ SUBROUTINE roms_trajectory_set (self, state, vdate)
 
   TYPE (roms_field), pointer             :: field
   integer                                :: i, ng
-  real (kind=kind_real)                  :: fstats(3)
+  real (kind=kind_real)                  :: stats(4)
   character (len=80)                     :: ncname
 
   ! Initialize.
@@ -232,14 +232,14 @@ SUBROUTINE roms_trajectory_set (self, state, vdate)
       CALL state%get (self%fields(i)%name, field)
       self%fields(i)%val = field%val
 
-      CALL field%stats (fstats)
-      self%fields(i)%MinValue = fstats(1)
-      self%fields(i)%MaxValue = fstats(2)
-      self%fields(i)%Checksum = fstats(3)
+      CALL field%stats (stats)
+      self%fields(i)%MinValue = stats(1)
+      self%fields(i)%MaxValue = stats(2)
+      self%fields(i)%Checksum = stats(4)
       IF (LdebugTrajectory .and. (my_comm%rank() .eq. 0))                      &
         PRINT 20, self%fields(i)%metadata%short_name,                          &
                   self%fields(i)%metadata%io_name,                             &
-                  fstats(1), fstats(2), INT(fstats(3),KIND=8)
+                  stats(1), stats(2), INT(stats(4),KIND=8)
     END IF
   END DO
 

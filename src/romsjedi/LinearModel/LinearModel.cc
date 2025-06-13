@@ -39,9 +39,10 @@ namespace romsjedi {
 
 // -----------------------------------------------------------------------------
 
-  LinearModel::LinearModel(const Geometry & resol,
+  LinearModel::LinearModel(const Geometry & geom,
                            const eckit::Configuration & config)
-    : keySelf_(0),
+    : geom_(geom),
+      keySelf_(0),
       tstep_(),
       steptraj_(),
       trajmap_()
@@ -66,7 +67,7 @@ namespace romsjedi {
   // Implementation
 
   roms_linearModel_create_f90(keySelf_,
-                              resol.toFortran(),
+                              geom_.toFortran(),
                               config);
   oops::Log::trace() << classname() << ":LinearModel done" << std::endl;
   }
@@ -151,6 +152,7 @@ namespace romsjedi {
 
     util::DateTime * dtp = &dx.validTime();
     roms_linearModel_initialize_tl_f90(keySelf_,
+                                       geom_.toFortran(),
                                        dx.toFortran(),
                                        itra1->second,
                                        itra2->second,
@@ -209,6 +211,7 @@ namespace romsjedi {
 
     util::DateTime * dtp = &dx.validTime();
     roms_linearModel_step_tl_f90(keySelf_,
+                                 geom_.toFortran(),
                                  dx.toFortran(),
                                  itra1->second,
                                  itra2->second,
@@ -233,7 +236,10 @@ namespace romsjedi {
   // Implementation
 
     roms_linearModel_finalize_tl_f90(keySelf_,
+                                     geom_.toFortran(),
                                      dx.toFortran());
+    oops::Log::debug() << classname() << ":finalizeTL OUTPUT incremnent" << dx
+                       << std::endl;
     oops::Log::trace() << classname() << ":finalizeTL done" << std::endl;
   }
 
@@ -274,6 +280,7 @@ namespace romsjedi {
 
     util::DateTime * dtp = &dx.validTime();
     roms_linearModel_initialize_ad_f90(keySelf_,
+                                       geom_.toFortran(),
                                        dx.toFortran(),
                                        itra1->second,
                                        itra2->second,
@@ -336,6 +343,7 @@ namespace romsjedi {
                        << std::endl;
 
     roms_linearModel_step_ad_f90(keySelf_,
+                                 geom_.toFortran(),
                                  dx.toFortran(),
                                  itra1->second,
                                  itra2->second,
@@ -356,7 +364,10 @@ namespace romsjedi {
   // Implementation
 
     roms_linearModel_finalize_ad_f90(keySelf_,
+                                     geom_.toFortran(),
                                      dx.toFortran());
+    oops::Log::debug() << classname() << ":finalizeAD OUTPUT incremnent" << dx
+                       << std::endl;
     oops::Log::trace() << classname() << ":finalizeAD done" << std::endl;
   }
 

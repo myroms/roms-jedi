@@ -337,6 +337,43 @@ SUBROUTINE roms_geom_gen_mesh_c (c_key_self, c_nodes, c_lon, c_lat, c_ghosts,  &
   !                  owns the point. It is returned as "remote_index" with
   !                  remote_index_base=1
   !   tile_index   - A 0-based rank of tile partition (task) woening the point.
+  !
+  !
+  ! Notice that the mapping "atlas_ij2node(i,j)" can be used for RHO-, U-,
+  ! and V-type variables since ROMS has a left-handed index enumeration
+  ! convention. Since all the arrays are allocated (LBi:UBi, LBj:UBj, :),
+  ! the non-physical for the U-variables are western/eastern boundaries
+  ! and V-variables at the southern/northtern boundaries are filled with
+  ! zeros in "toFieldSet" and "fromFieldSet" but never used.
+  !
+  !
+  !   M   r..u..r..u..r..u..r..u..r..u..r..u..r..u..r..u..r..u..r..u..r
+  !       :                                                           :
+  !    M  v  p++v++p++v++p++v++p++v++p++v++p++v++p++v++p++v++p++v++p  v
+  !       :  +     |     |     |     |     |     |     |     |     +  :
+  !   Mm  r  u  r  u  r  u  r  u  r  u  r  u  r  u  r  u  r  u  r  u  r
+  !       :  +     |     |     |     |     |     |     |     |     +  :
+  !    Mm v  p--v--p--v--p--v--p--v--p--v--p--v--p--v--p--v--p--v--p  v
+  !       :  +     |     |     |     |     |     |     |     |     +  :
+  !       r  u  r  u  r  u  r  u  r  u  r  u  r  u  r  u  r  u  r  u  r
+  !       :  +     |     |     |     |     |     |     |     |     +  :
+  !       v  p--v--p--v--p--v--p--v--p--v--p--v--p--v--p--v--p--v--p  v
+  !       :  +     |     |     |     |     |     |     |     |     +  :
+  !       r  u  r  u  r  u  r  u  r  u  r  u  r  u  r  u  r  u  r  u  r
+  !       :  +     |     |     |     |     |     |     |     |     +  :
+  !       v  p--v--p--v--p--v--p--v--p--v--p--v--p--v--p--v--p--v--p  v
+  !       :  +     |     |     |     |     |     |     |     |     +  :
+  !   2   r  u  r  u  r  u  r  u  r  u  r  u  r  u  r  u  r  u  r  u  r
+  !       :  +     |     |     |     |     |     |     |     |     +  :
+  !    2  v  p--v--p--v--p--v--p--v--p--v--p--v--p--v--p--v--p--v--p  v
+  !       :  +     |     |     |     |     |     |     |     |     +  :
+  !   1   r  u  r  u  r  u  r  u  r  u  r  u  r  u  r  u  r  u  r  u  r
+  !       :  +     |     |     |     |     |     |     |     |     +  :
+  !    1  v  p++v++p++v++p++v++p++v++p++v++p++v++p++v++p++v++p++v++p  v
+  !       :                                                           :
+  !   0   r..u..r..u..r..u..r..u..r..u..r..u..r..u..r..u..r..u..r..u..r
+  !          1     2                                         Lm    L
+  !       0     1     2                                         Lm    L
 
   ic = 0
 

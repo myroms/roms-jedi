@@ -41,153 +41,182 @@ namespace romsjedi {
 
   void LinearVariableChange::changeVarTraj(const State & xfg,
                                            const oops::Variables & vars) {
-    Log::trace() << "LinearVariableChange::changeVarTraj starting"
-                 << std::endl;
-    Log::debug() << "LinearVariableChange::changeVarTraj: " << vars
-                 << std::endl;
-    Log::debug() << "LinearVariableChange::changeVarTraj: xfg" << xfg
-                 << std::endl;
+    Log::trace() << classname() << ":changeVarTraj starting" << std::endl;
+    Log::debug() << classname() << ":changeVarTraj: OOPS " << vars << std::endl;
+    Log::debug() << classname() << ":changeVarTraj: xfg" << xfg<< std::endl;
 
   // Create the variable change
 
     linearVariableChange_.reset(LinearVariableChangeFactory::create(
                           xfg, xfg, *geom_,
                           params_.linearVariableChangeParameters.value()));
-    Log::trace() << "LinearVariableChange::changeVarTraj done"
-                 << std::endl;
+    Log::trace() << classname() << ":changeVarTraj done" << std::endl;
   }
 
 // -----------------------------------------------------------------------------
 
   void LinearVariableChange::changeVarTL(Increment & dx,
                                          const oops::Variables & vars) const {
-    Log::trace() << "LinearVariableChange::changeVarTL starting" << std::endl;
-    Log::debug() << "LinearVariableChange::changeVarTL: " << vars << std::endl;
+    Log::trace() << classname() << ":changeVarTL starting" << std::endl;
+    Log::debug() << classname() << ":changeVarTL: OOPS " << vars << std::endl;
 
-  // If all variables already in incoming state, remove no longer needed fields
+  // If all OOPS variables already in incoming increment, remove no longer
+  // needed fields
+
+    Log::debug() << classname() << ":changeVarTL: Increment "
+                 << dx.variables() << std::endl;
     if (vars <= dx.variables()) {
+      Log::debug() << classname() << ":changeVarTL not required; "
+                   << "all increment variables are available" << std::endl;
       dx.updateFields(vars);
-      oops::Log::trace() << "LinearVariableChange::changeVarTL done"
-                         << " (identity)" << std::endl;
+      Log::debug() << classname() << ":changeVarTL: " << dx << std::endl;
+      Log::trace() << classname() << ":changeVarTL done (identity)"
+                   << std::endl;
       return;
     }
 
   // Create output state
+
     Increment dxout(dx.geometry(), vars, dx.validTime());
 
   // Call variable change
+
     linearVariableChange_->multiply(dx, dxout);
 
   // Allocate any extra fields and remove fields no longer needed
+
     dx.updateFields(vars);
 
   // Copy data from temporary state
+
     dx = dxout;
 
-    Log::debug() << "LinearVariableChange::changeVarTL: " << dx << std::endl;
-    Log::trace() << "LinearVariableChange::changeVarTL done" << dx
-                 << std::endl;
+    Log::debug() << classname() << ":changeVarTL: " << dx << std::endl;
+    Log::trace() << classname() << ":changeVarTL done" << dx << std::endl;
   }
 
 // -----------------------------------------------------------------------------
 
   void LinearVariableChange::changeVarInverseTL(Increment & dx,
                                            const oops::Variables & vars) const {
-    Log::trace() << "LinearVariableChange::changeVarInverseTL starting"
-                 << std::endl;
-    Log::debug() << "LinearVariableChange::changeVarInverseTL: " << vars
+    Log::trace() << classname() << ":changeVarInverseTL starting" << std::endl;
+    Log::debug() << classname() << ":changeVarInverseTL: OOPS " << vars
                  << std::endl;
 
-  // If all variables already in incoming state, remove no longer needed fields
+  // If all OOPS variables already in incoming increment, remove no longer
+  // needed fields
+
     if (vars <= dx.variables()) {
+      Log::debug() << classname() << ":changeVarInverseTL not required; "
+                   << "all increment variables are available" << std::endl;
       dx.updateFields(vars);
-      oops::Log::trace() << "LinearVariableChange::changeVarInverseTL done"
-                         << " (identity)"<< std::endl;
+      Log::debug() << classname() << ":changeVarInverseTL: " << dx << std::endl;
+      oops::Log::trace() << classname() << ":changeVarInverseTL done (identity)"
+                         << std::endl;
       return;
     }
 
   // Create output state
+
     Increment dxout(dx.geometry(), vars, dx.validTime());
 
   // Call variable change
+
     linearVariableChange_->multiplyInverse(dx, dxout);
 
   // Allocate any extra fields and remove fields no longer needed
+
     dx.updateFields(vars);
 
   // Copy data from temporary state
+
     dx = dxout;
 
-    Log::debug() << "LinearVariableChange::changeVarInverseTL: " << dx
-                 << std::endl;
-    Log::trace() << "LinearVariableChange::changeVarInverseTL done"
-                 << std::endl;
+    Log::debug() << classname() << ":changeVarInverseTL: " << dx << std::endl;
+    Log::trace() << classname() << ":changeVarInverseTL done" << std::endl;
   }
 
 // -----------------------------------------------------------------------------
 
   void LinearVariableChange::changeVarAD(Increment & dx,
                                          const oops::Variables & vars) const {
-    Log::trace() << "LinearVariableChange::changeVarAD starting" << std::endl;
-    Log::debug() << "LinearVariableChange::changeVarAD: " << vars << std::endl;
+    Log::trace() << classname() << ":changeVarAD starting" << std::endl;
+    Log::debug() << classname() << ":changeVarAD: OOPS " << vars << std::endl;
 
-  // If all variables already in incoming state, remove no longer needed fields
+  // If all OOPS variables already in incoming increment, remove no longer
+  // needed fields
+
+    Log::debug() << classname() << ":changeVarAD: Increment "
+                 << dx.variables() << std::endl;
     if (vars <= dx.variables()) {
+      Log::debug() << classname() << ":changeVarAD not required; "
+                   << "all increment variables are available" << std::endl;
       dx.updateFields(vars);
-      oops::Log::trace() << "LinearVariableChange::changeVarAD done"
-                         << " (identity)" << std::endl;
+      Log::debug() << classname() << ":changeVarAD: " << dx << std::endl;
+      Log::trace() << classname() << ":changeVarAD done (identity)"
+                   << std::endl;
       return;
     }
 
   // Create output state
+
     Increment dxout(dx.geometry(), vars, dx.validTime());
 
   // Call variable change
+
     linearVariableChange_->multiplyAD(dx, dxout);
 
   // Allocate any extra fields and remove fields no longer needed
+
     dx.updateFields(vars);
 
   // Copy data from temporary state
+
     dx = dxout;
 
-    Log::debug() << "LinearVariableChange::changeVarAD: " << dx << std::endl;
-    Log::trace() << "LinearVariableChange::changeVarAD done" << std::endl;
+    Log::debug() << classname() << ":changeVarAD: " << dx << std::endl;
+    Log::trace() << classname() << ":changeVarAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
   void LinearVariableChange::changeVarInverseAD(Increment & dx,
                                            const oops::Variables & vars) const {
-    Log::trace() << "LinearVariableChange::changeVarInverseAD starting"
-                 << std::endl;
-    Log::debug() << "LinearVariableChange::changeVarInverseAD: " << vars
+    Log::trace() << classname() << ":changeVarInverseAD starting" << std::endl;
+    Log::debug() << classname() << ":changeVarInverseAD: OOPS " << vars
                  << std::endl;
 
-  // If all variables already in incoming state, remove no longer needed fields
+  // If all OOPS variables already in incoming increment, remove no longer
+  // needed fields
+
     if (vars <= dx.variables()) {
+      Log::debug() << classname() << ":changeVarInverseAD not required; "
+                   << "all increment variables are available" << std::endl;
       dx.updateFields(vars);
-      oops::Log::trace() << "LinearVariableChange::changeVarInverseAD done"
-                         << " (identity)" << std::endl;
+      Log::debug() << classname() << ":changeVarInverseAD: " << dx << std::endl;
+      Log::trace() << classname() << ":changeVarInverseAD done (identity)"
+                   << std::endl;
       return;
     }
 
   // Create output state
+
     Increment dxout(dx.geometry(), vars, dx.validTime());
 
   // Call variable change
+
     linearVariableChange_->multiplyInverseAD(dx, dxout);
 
   // Allocate any extra fields and remove fields no longer needed
+
     dx.updateFields(vars);
 
   // Copy data from temporary state
+
     dx = dxout;
 
-    Log::debug() << "LinearVariableChange::changeVarInverseAD: " << dx
-                 << std::endl;
-    Log::trace() << "LinearVariableChange::changeVarInverseAD done"
-                 << std::endl;
+    Log::debug() << classname() << ":changeVarInverseAD: " << dx << std::endl;
+    Log::trace() << classname() << ":changeVarInverseAD done" << std::endl;
   }
 
 // -----------------------------------------------------------------------------

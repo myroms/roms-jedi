@@ -17,10 +17,13 @@ MODULE roms_vc_model2geovals_mod
 
 USE kinds,                ONLY : kind_real
 
+!> ROMS-JEDI interface module association.
+
 USE roms_field_mod,       ONLY : roms_field
 USE roms_fieldsutils_mod, ONLY : LdebugModel2Geovals
 USE roms_geom_mod,        ONLY : roms_geom
 USE roms_state_mod,       ONLY : roms_state
+USE roms_utils_mod,       ONLY : vector_c_to_a
 
 implicit none
 
@@ -50,6 +53,10 @@ SUBROUTINE roms_vc_model2geovals_changeVar (self, geom, xin, xout)
   TYPE (roms_state),             intent(inout) :: xout
 
   TYPE (roms_field),                   pointer :: field_in, field_out
+  TYPE (roms_field),                   pointer :: Uc, Vc
+
+  logical                                      :: have_uaocn,  have_vaocn
+  logical                                      :: need_uaocn,  need_vaocn
 
   integer                                      :: Nsur
   integer                                      :: counter, findex, i
@@ -57,7 +64,8 @@ SUBROUTINE roms_vc_model2geovals_changeVar (self, geom, xin, xout)
 
   integer,        dimension(SIZE(xout%fields)) :: unFound
 
-  real (kind=kind_real)                        :: stats(3)
+  real (kind=kind_real)                        :: stats(4)
+  real (kind=kind_real),           allocatable :: Ua(:,:,:), Va(:,:,:)
 
   character (len=512)                          :: field_name
 
@@ -66,25 +74,26 @@ SUBROUTINE roms_vc_model2geovals_changeVar (self, geom, xin, xout)
   IF (LdebugModel2Geovals) THEN
     in_fields  = SIZE(xin%fields)
     IF (geom%f_comm%rank() .eq. 0)                                             &
-      PRINT 10, 'ROMS_DEBUG roms_vc_model2geovals::changeVar:  Input',         &
+      PRINT 10, 'ROMS_DEBUG roms_vc_model2geovals:changeVar >  Input',         &
                 ' XIN  Vars = ', (xin%fields(i)%name, i=1,in_fields)
     DO i = 1, in_fields
       CALL xin%fields(i)%stats (stats)
       IF (geom%f_comm%rank() .eq. 0)                                           &
-        PRINT 20, xin%fields(i)%name, stats(1), stats(2), INT(stats(3))
+        PRINT 20, xin%fields(i)%metadata%short_name, stats(1), stats(2),       &
+                  INT(stats(4))
     END DO
 
     out_fields = SIZE(xout%fields)
     IF (geom%f_comm%rank() .eq. 0)                                             &
-      PRINT 10, 'ROMS_DEBUG roms_vc_model2geovals::changeVar:  Input',         &
+      PRINT 10, 'ROMS_DEBUG roms_vc_model2geovals:changeVar >  Input',         &
                 ' XOUT Vars = ', (xout%fields(i)%name, i=1,out_fields)
     DO i = 1, out_fields
       CALL xout%fields(i)%stats (stats)
       IF (geom%f_comm%rank() .eq. 0)                                           &
-        PRINT 20, xout%fields(i)%name, stats(1), stats(2), INT(stats(3))
+        PRINT 20, xout%fields(i)%name, stats(1), stats(2), INT(stats(4))
     END DO
  10 FORMAT (a, a, *(1x,a,','))
- 20 FORMAT (2x,'- ',a35,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,      &
+ 20 FORMAT (2x,'- ',a,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,        &
             ',  CheckSum = ', i0)
   END IF
 
@@ -108,8 +117,31 @@ SUBROUTINE roms_vc_model2geovals_changeVar (self, geom, xin, xout)
   IF (counter .gt. 0) THEN
 
     IF (LdebugModel2Geovals .and. (geom%f_comm%rank() .eq. 0)) THEN
-      PRINT 10,'ROMS_DEBUG roms_vc_model2geovals::changeVar:  ',               &
+      PRINT 10,'ROMS_DEBUG roms_vc_model2geovals:changeVar >  ',               &
                'unFound Vars = ', (xout%fields(unFound(i))%name, i=1,counter)
+    END IF
+
+    need_uaocn = xout%has('eastward_sea_water_velocity') .and.                 &
+                 xin%has ('sea_water_x_velocity')
+    need_vaocn = xout%has('northward_sea_water_velocity') .and.                &
+                 xin%has ('sea_water_y_velocity')
+
+    have_uaocn = .FALSE.
+    have_vaocn = .FALSE.
+
+    IF (need_uaocn .or. need_vaocn) THEN
+      CALL xin%get ('sea_water_x_velocity', Uc)
+      CALL xin%get ('sea_water_y_velocity', Vc)
+
+      allocate ( Ua(geom%LBi:geom%UBi, geom%LBj:geom%UBj, geom%N) )
+      allocate ( Va(geom%LBi:geom%UBi, geom%LBj:geom%UBj, geom%N) )
+
+      Ua = 0.0_kind_real
+      Va = 0.0_kind_real
+
+      CALL vector_c_to_a (geom, Uc%val, Vc%val, Ua, Va)
+      have_uaocn = .TRUE.
+      have_vaocn = .TRUE.
     END IF
 
     DO i = 1, counter
@@ -138,6 +170,34 @@ SUBROUTINE roms_vc_model2geovals_changeVar (self, geom, xin, xout)
           field_out%val(:,:,1) = field_in%val(:,:,Nsur)
           field_out%N = 1
 
+        CASE ('surface_eastward_sea_water_velocity')   !< U-Surface A-grid
+
+          IF (have_uaocn) THEN
+            Nsur = SIZE(Ua, 3)
+            field_out%val(:,:,1) = Ua(:,:,Nsur)
+            field_out%N = 1
+          END IF
+
+        CASE ('surface_northward_sea_water_velocity')  !< V-Surface A-grid
+
+          IF (have_vaocn) THEN
+            Nsur = SIZE(Va, 3)
+            field_out%val(:,:,1) = Va(:,:,Nsur)
+            field_out%N = 1
+          END IF
+
+        CASE ('eastward_sea_water_velocity')           !< 3D U-velocity A-grid
+
+          IF (have_uaocn) THEN
+            field_out%val = Ua
+          END IF
+
+        CASE ('northward_sea_water_velocity')          !< 3D V-velocity A-grid
+
+          IF (have_vaocn) THEN
+            field_out%val = Va
+          END IF
+
         CASE DEFAULT
 
           !  Check only for fields in the input increment XOUT, which are
@@ -154,7 +214,10 @@ SUBROUTINE roms_vc_model2geovals_changeVar (self, geom, xin, xout)
 
     END DO
 
-  END IF
+    IF ( allocated(Ua) ) deallocate (Ua)
+    IF ( allocated(Va) ) deallocate (Va)
+
+  END IF  
 
   ! Report debugging information.
 
@@ -162,9 +225,9 @@ SUBROUTINE roms_vc_model2geovals_changeVar (self, geom, xin, xout)
     DO i = 1, SIZE(xout%fields)
       CALL xout%fields(i)%stats (stats)
       IF (geom%f_comm%rank() .eq. 0) THEN
-        IF (i.eq.1) PRINT '(a)', 'ROMS_DEBUG roms_vc_model2geovals::'//        &
-                                 'changeVar:  Output XOUT Vars:'
-        PRINT 20, xout%fields(i)%name, stats(1), stats(2), INT(stats(3))
+        IF (i.eq.1) PRINT '(a)', 'ROMS_DEBUG roms_vc_model2geovals:'//         &
+                                 'changeVar >  Output XOUT Vars:'
+        PRINT 20, xout%fields(i)%name, stats(1), stats(2), INT(stats(4))
       END IF
     END DO
   END IF

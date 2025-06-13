@@ -291,7 +291,8 @@ ad_VolCons(north) ==  F                            ! northern boundary
      NDEFTLM == 0
    LcycleADJ == F
 !       NADJ == 1          ! every timestep
-        NADJ == 192        ! Strong constraint
+        NADJ == 4          ! every 2-hours
+!       NADJ == 192        ! Strong constraint
 !       NADJ == 48         ! Weak constraint (daily)
      NDEFADJ == 0
         NSFF == 48         ! daily
@@ -567,8 +568,8 @@ SO_sdev(isTsur) == 1.0d0 1.0d0             ! NT surface tracers flux
 
 Hout(idUvel) == T       ! u                  3D U-velocity
 Hout(idVvel) == T       ! v                  3D V-velocity
-Hout(idu3dE) == F       ! u_eastward         3D U-eastward  at RHO-points
-Hout(idv3dN) == F       ! v_northward        3D V-northward at RHO-points
+Hout(idu3dE) == T       ! u_eastward         3D U-eastward  at RHO-points
+Hout(idv3dN) == T       ! v_northward        3D V-northward at RHO-points
 Hout(idWvel) == T       ! w                  3D W-velocity
 Hout(idOvel) == T       ! omega              omega vertical velocity
 Hout(idOvil) == F       ! omega_implicit     omega implicit vertical velocity

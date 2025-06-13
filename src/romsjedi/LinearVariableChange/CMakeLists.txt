@@ -12,3 +12,4 @@ roms_target_sources(
 
 add_subdirectory(Base)
 add_subdirectory(Model2GeoVaLs)
+add_subdirectory(Model2Analysis)

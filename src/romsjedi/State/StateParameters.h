@@ -77,6 +77,10 @@ namespace romsjedi {
     OOPS_CONCRETE_PARAMETERS(StateWriteParameters, Parameters)
 
    public:
+    oops::OptionalParameter<bool> addVarChange{
+      "add_varchange",
+      "State output includes variable change fields",
+      this};
     oops::OptionalParameter<bool> singleTimeRecord{
       "single_record",
       "State is written into single time record file",

@@ -1,10 +1,12 @@
 Printing zero increment: 
   Valid time: 2004-01-03T00:00:00Z
-                              sea_surface_height_above_geoid   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
-                                       sea_water_temperature   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
-                                          sea_water_salinity   Min=     0.000000000000000   Max=     0.000000000000000   Mean=     0.000000000000000
+sea_surface_height_above_geoid                                Min =  0.000000000000000e+00  Min =  0.000000000000000e+00  Mean =  0.000000000000000e+00
+sea_water_temperature                                         Min =  0.000000000000000e+00  Min =  0.000000000000000e+00  Mean =  0.000000000000000e+00
+sea_water_salinity                                            Min =  0.000000000000000e+00  Min =  0.000000000000000e+00  Mean =  0.000000000000000e+00
+
 Printing random increment: 
   Valid time: 2004-01-03T00:00:00Z
-                              sea_surface_height_above_geoid   Min=    -3.299602052882106   Max=     3.354007694342200   Mean=    -0.029831206041269
-                                       sea_water_temperature   Min=    -3.971733776769026   Max=     5.000756632682353   Mean=    -0.004814243519374
-                                          sea_water_salinity   Min=    -4.808865614467543   Max=     3.930113477576830   Mean=    -0.001923117876972
+sea_surface_height_above_geoid                                Min = -3.299602052882106e+00  Min =  3.354007694342200e+00  Mean = -2.983120604126858e-02
+sea_water_temperature                                         Min = -3.971733776769026e+00  Min =  5.000756632682353e+00  Mean = -4.814243519374001e-03
+sea_water_salinity                                            Min = -4.808865614467543e+00  Min =  3.930113477576830e+00  Mean = -1.923117876972299e-03
+

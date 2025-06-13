@@ -40,11 +40,11 @@ namespace romsjedi {
 
 // ----------------------------------------------------------------------------
 
-  Model::Model(const Geometry & resol,
+  Model::Model(const Geometry & geom,
                const eckit::Configuration & config)
-    : keyConfig_(0),
+    : geom_(geom),
+      keyConfig_(0),
       tstep_(0),
-      geom_(new Geometry(resol)),
       vars_(config, "model variables")
   {
     Log::trace() << classname() << ":Model starting" << std::endl;
@@ -58,7 +58,7 @@ namespace romsjedi {
                                 << tstep_.toSeconds() << std::endl;
 
     roms_model_create_f90(config,
-                          geom_->toFortran(),
+                          geom_.toFortran(),
                           keyConfig_);
 
     oops::Log::trace() << classname() << ":Model done" << std::endl;
@@ -83,6 +83,7 @@ namespace romsjedi {
 
   roms_model_initialize_f90(keyConfig_,
                             xx.toFortran(),
+                            geom_.toFortran(),
                             &dtp);
 
   Log::trace() << classname() << ":initialize done" << std::endl;
@@ -101,7 +102,7 @@ namespace romsjedi {
 
     roms_model_step_f90(keyConfig_,
                         xx.toFortran(),
-                        geom_->toFortran(),
+                        geom_.toFortran(),
                         &dtp);
 
     Log::trace() << classname() << ":step done" << std::endl;

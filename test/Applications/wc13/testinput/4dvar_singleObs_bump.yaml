@@ -14,13 +14,15 @@ initial date: &date 2004-01-03T00:00:00Z         # initial DA window
 
 roms analysis: &roms_analysis
 - sea_surface_height_above_geoid
-- sea_water_x_velocity                           # C-grid
-- sea_water_y_velocity                           # C-grid
+- eastward_sea_water_velocity                    # A-grid
+- northward_sea_water_velocity                   # A-grid
 - sea_water_temperature
 - sea_water_salinity
 
 roms state: &roms_state
 - sea_surface_height_above_geoid
+- eastward_sea_water_velocity                    # A-grid
+- northward_sea_water_velocity                   # A-grid
 - sea_water_x_velocity                           # C-grid
 - sea_water_y_velocity                           # C-grid
 - sea_water_temperature
@@ -45,6 +47,7 @@ cost function:
 
   geometry: &geom
     project_dir: Data/wc13
+#   roms_stdinp: roms_wc13_20040103_debug.in
     roms_stdinp: roms_wc13_20040103_max.in       # 12 CPUs, 3x4 partition
     fields metadata: Data/fields_metadata.yaml
     ng: 1                                        # ROMS nested grid number
@@ -89,6 +92,8 @@ cost function:
             - sea_surface_height_above_geoid
         - model:
             variables:
+            - eastward_sea_water_velocity
+            - northward_sea_water_velocity
             - sea_water_temperature
             - sea_water_salinity
 
@@ -165,8 +170,8 @@ variational:
     algorithm: RPCG                              # Dual   formulation
 #   algorithm: RPLanczos                         # Dual   formulation
   iterations:
-  - ninner: 1                                    # each item defined an outer loop
-    gradient norm reduction: 1E-10
+  - ninner: 2                                    # each item defined an outer loop
+    gradient norm reduction: 1E-8
     test: on
     online diagnostics:
       adj obs test: false
@@ -185,13 +190,14 @@ variational:
       trajectory:
         model variables: *roms_state
         tstep: PT2H                              # Every two hours trajectory snapshots
-      variable change: Identity
+      variable change: Model2Analysis
     diagnostics:                                 # Written into output IODA files
       departures: ombg                           # OBS - H(Xb)
     online diagnostics:
       write increment: true
       increment:                                 # DA increment output file
         state component:
+          add_varchange: true                    # Add fields from variable change
           single_record: true
           data_dir: Data/4dvar/singleObs/bump
           prefix: wc13_roms

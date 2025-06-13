@@ -34,7 +34,7 @@ namespace romsjedi {
   class LinVarChaModel2GeoVaLs: public LinearVariableChangeBase {
    public:
     static const std::string classname() {
-      return "roms::LinVarChaModel2GeoVaLs";}
+      return "romsjedi::LinVarChaModel2GeoVaLs";}
 
     explicit LinVarChaModel2GeoVaLs(const State &,
                                     const State &,

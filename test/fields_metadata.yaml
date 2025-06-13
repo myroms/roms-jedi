@@ -4,13 +4,14 @@
 # name:                 Variable standard name from convection dictionary
 # gtype:                C-grid location: 'r', 'u', or 'v' (Default: 'r')
 # masked:               Use land/sea mask if true (Default: true)
-# levels:               'surface' or 'full_ocn' (Default: 'surface')
+# levels:               'surface' or 'full_ocn' levelsAreTopDown=false (Default: 'surface')
 # short_name:           Variable short name for internal use
 # surface_name:         Variable surface name for extraction
 # io_file:              Component file domain 'ocn'
 # io_name:              I/O NetCDF file variable name
+# units:                Variable units
+# property;             Variable properties
 # --------------------------------------------------------------------------------------------------
-
 
 # --------------------------------------------------------------------------------------------------
 # Ocean state variables.
@@ -23,6 +24,7 @@
   io file:      'ocn'
   gtype:        'r'
   levels:       'full_ocn'
+  units:        'Celsius'
 
 - name:         'sea_water_salinity'
   surface name: 'sea_surface_salinity'
@@ -31,7 +33,8 @@
   io file:      'ocn'
   gtype:        'r'
   levels:       'full_ocn'
-  property:     'positive_definite'
+  units:        'nondimensional'
+  property:     'positive definite'
 
 - name:         'sea_water_x_velocity'
   surface name: 'sea_water_surface_x_velocity'
@@ -39,6 +42,7 @@
   io name:      'u'
   io file:      'ocn'
   gtype:        'u'                                          # C-grid
+  units:        'meter second-1'
   levels:       'full_ocn'
 
 - name:         'sea_water_y_velocity'
@@ -47,6 +51,7 @@
   io name:      'v'
   io file:      'ocn'
   gtype:        'v'                                          # C-grid
+  units:        'meter second-1'
   levels:       'full_ocn'
 
 - name:         'eastward_sea_water_velocity'
@@ -55,6 +60,7 @@
   io name:      'u_eastward'
   io file:      'ocn'
   gtype:        'r'                                          # A-grid
+  units:        'meter second-1'
   levels:       'full_ocn'
 
 - name:         'northward_sea_water_velocity'
@@ -63,6 +69,7 @@
   io name:      'v_northward'
   io file:      'ocn'
   gtype:        'r'                                          # A-grid
+  units:        'meter second-1'
   levels:       'full_ocn'
 
 - name:         'sea_surface_height_above_geoid'
@@ -71,6 +78,7 @@
   io name:      'zeta'
   io file:      'ocn'
   gtype:        'r'
+  units:        'meter'
 
 # --------------------------------------------------------------------------------------------------
 # Built-in derived variables.
@@ -81,30 +89,37 @@
   io name:      'z_rho'
   io file:      'ocn'
   gtype:        'r'
+  units:        'meter'
   masked:       'false'
   levels:       'full_ocn'
+  property:     'negative'
 
 - name:         'unvarying_model_level_depth_at_cell_top_face'
   short name:   'z0ocn_w'
   io name:      'z_w'
   io file:      'ocn'
   gtype:        'r'
+  units:        'meter'
   masked:       'false'
   levels:       'wfull_ocn'
+  property:     'negative'
 
 - name:         'model_level_depth_at_cell_center'
   short name:   'zocn_r'
   io name:      'z_rho'
   io file:      'ocn'
   gtype:        'r'
+  units:        'meter'
   masked:       'false'
   levels:       'full_ocn'
+  property:     'negative'
 
 - name:         'model_level_depth_at_cell_top_face'
   short name:   'zocn_w'
   io name:      'z_w'
   io file:      'ocn'
   gtype:        'w'
+  units:        'meter'
   masked:       'false'
   levels:       'wfull_ocn'
 
@@ -113,15 +128,19 @@
   io name:      'Hz'
   io file:      'ocn'
   gtype:        'r'
+  units:        'meter'
   masked:       'false'
   levels:       'full_ocn'
+  property:     'positive'
 
 - name:         'sea_floor_depth'
   short name:   'hocn'
   io name:      'h'
   io file:      'ocn'
   gtype:        'r'
+  units:        'meter'
   masked:       'false'
+  property:     'positive'
 
 # --------------------------------------------------------------------------------------------------
 # Other ROMS variables that are not included in the state vector. Mostly all of then are needed in
@@ -133,36 +152,42 @@
   io name:      'ubar'
   io file:      'ocn'
   gtype:        'u'                                          # C-grid
+  units:        'meter second-1'
 
 - name:         'barotropic_sea_water_y_velocity'
   short name:   'v2docn'
   io name:      'vbar'
   io file:      'ocn'
   gtype:        'v'                                          # C-grid
-
+  units:        'meter second-1'
+ 
 - name:         'sea_water_time_average_of_barotropic_x_velocity_flux'
   short name:   'DU_avg1'
   io name:      'DU_avg1'
   io file:      'ocn'
   gtype:        'u'                                          # C-grid
+  units:        'meter3 second-1'
 
 - name:         'sea_water_time_average_of_barotropic_y_velocity_flux'
   short name:   'DV_avg1'
   io name:      'DV_avg1'
   io file:      'ocn'
   gtype:        'v'                                          # C-grid
+  units:        'meter3 second-1'
 
 - name:         'sea_water_correct_barotropic_x_velocity_flux_for_coupling'
   short name:   'DU_avg2'
   io name:      'DU_avg2'
   io file:      'ocn'
   gtype:        'u'                                          # C-grid
+  units:        'meter3 second-1'
 
 - name:         'sea_water_correct_barotropic_y_velocity_flux_for_coupling'
   short name:   'DV_avg2'
   io name:      'DV_avg2'
   io file:      'ocn'
   gtype:        'v'                                          # C-grid
+  units:        'meter3 second-1'
 
 - name:         'vertical_diffusion_coefficient_of_temperature_in_sea_water'
   short name:   'Ktocn'
@@ -170,6 +195,7 @@
   io file:      'ocn'
   gtype:        'w'
   levels:       'wfull_ocn'
+  units:        'meter second-2'
 
 - name:         'vertical_diffusion_coefficient_of_salinity_in_sea_water'
   short name:   'Ksocn'
@@ -177,6 +203,7 @@
   io file:      'ocn'
   gtype:        'w'
   levels:       'wfull_ocn'
+  units:        'meter second-2'
 
 - name:         'vertical_viscosity_coefficient_of_sea_water'
   short name:   'Kvocn'
@@ -184,6 +211,7 @@
   io file:      'ocn'
   gtype:        'w'
   levels:       'wfull_ocn'
+  units:        'meter second-2'
 
 # --------------------------------------------------------------------------------------------------
 # Atmospheric forcing variables.
@@ -194,63 +222,80 @@
   io name:      'Pair'
   io file:      'ocn'
   gtype:        'r'
+  units:        'millibar'
 
 - name:         'surface_eastward_wind'
   short name:   'Uwind'
   io name:      'Uwind'
   io file:      'ocn'
   gtype:        'r'
+  units:        'meter second-1'
 
 - name:         'surface_northward_wind'
   short name:   'Vwind'
   io name:      'Uwind'
   io file:      'ocn'
   gtype:        'r'
+  units:        'meter second-1'
 
 - name:         'surface_downward_x_stress'
   short name:   'sustr'
   io name:      'sustr'
   io file:      'ocn'
   gtype:        'u'
+  units:        'Newton second-2'
 
 - name:         'surface_downward_y_stress'
   short name:   'svstr'
   io name:      'svstr'
   io file:      'ocn'
   gtype:        'v'
+  units:        'Newton second-2'
 
 - name:         'surface_downward_heat_flux_in_sea_water'
   short name:   'shflux'
   io name:      'shflux'
   io file:      'ocn'
   gtype:        'r'
+  units:        'watts meter-2'
+  property:     'positive downward heating, negative upward cooling'
 
 - name:         'salt_flux_into_sea_water'
   short name:   'ssflux'
   io name:      'shflux'
   io file:      'ocn'
   gtype:        'r'
+  units:        'meter second-1'
+  property:     'positive downward salting, negative upward frehening'
 
 - name:         'surface_upward_latent_heat_flux'
   short name:   'latent'
   io name:      'latent'
   io file:      'ocn'
   gtype:        'r'
+  units:        'watts meter-2'
+  property:     'positive downward heating, negative upward cooling'
 
 - name:         'surface_upward_sensible_heat_flux'
   short name:   'sensible'
   io name:      'sensible'
   io file:      'ocn'
   gtype:        'r'
+  units:        'watts meter-2'
+  property:     'positive downward heating, negative upward cooling'
 
 - name:         'surface_net_downward_longwave_flux'
   short name:   'lwrad'
   io name:      'lwrad'
   io file:      'ocn'
   gtype:        'r'
+  units:        'watts meter-2'
+  property:     'positive downward heating, negative upward cooling'
 
 - name:         'net_downward_shortwave_flux_at_sea_water_surface'
   short name:   'swrad'
   io name:      'swrad'
   io file:      'ocn'
   gtype:        'r'
+  units:        'watts meter-2'
+  property:     'positive downward heating, negative upward cooling'

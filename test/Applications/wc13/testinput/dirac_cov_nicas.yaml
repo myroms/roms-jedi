@@ -17,6 +17,8 @@ background:
 
   state variables: &roms_state
   - sea_surface_height_above_geoid
+  - eastward_sea_water_velocity                # A-grid
+  - northward_sea_water_velocity               # A-grid
   - sea_water_x_velocity                       # C-grid
   - sea_water_y_velocity                       # C-grid
   - sea_water_temperature
@@ -29,6 +31,8 @@ background error:
 
     active variables: &roms_analysis
     - sea_surface_height_above_geoid
+    - eastward_sea_water_velocity              # A-grid
+    - northward_sea_water_velocity             # A-grid
     - sea_water_temperature
     - sea_water_salinity
 
@@ -56,24 +60,34 @@ background error:
           - sea_surface_height_above_geoid
       - model:
           variables:
+          - eastward_sea_water_velocity
+          - northward_sea_water_velocity
           - sea_water_temperature
           - sea_water_salinity
 
 dirac:
   ifdir:                                       # State field to perturb
   - sea_surface_height_above_geoid
+  - eastward_sea_water_velocity
+  - northward_sea_water_velocity
   - sea_water_temperature
   - sea_water_salinity
   ixdir:                                       # field X-index impulse location
   - 25
+  - 15
+  - 15
   - 30
   - 20
   iydir:                                       # field Y-index impulse location
   - 20
+  - 30
+  - 35
   - 10
   - 40
   izdir:                                       # field Z-index impulse location
   - 1
+  - 30
+  - 30
   - 30
   - 30
 

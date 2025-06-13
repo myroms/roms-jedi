@@ -18,6 +18,8 @@ model:
 
   model variables:
   - sea_surface_height_above_geoid
+  - eastward_sea_water_velocity                # A-grid
+  - northward_sea_water_velocity               # A-grid
   - sea_water_x_velocity                       # C-grid
   - sea_water_y_velocity                       # C-grid
   - sea_water_temperature
@@ -31,6 +33,8 @@ initial condition:
 
   state variables:
   - sea_surface_height_above_geoid
+  - eastward_sea_water_velocity                # A-grid
+  - northward_sea_water_velocity               # A-grid
   - sea_water_x_velocity                       # C-grid
   - sea_water_y_velocity                       # C-grid
   - sea_water_temperature
@@ -62,21 +66,3 @@ test:
   float relative tolerance: 1.0e-3
   log output filename: testoutput/forecast_roms.log
   test output filename: testoutput/forecast_roms.out
-
-# Notes:
-#
-# * The file creation policy allows to create a new output every "file_policy" intervals.
-#
-#   For example, if file_policy = PT2H (same as output frequency), it creates 49 files over the
-#   4-day window. We can also create a single file (wc13_roms_fct_2004-01-03-00.00.00.nc) with
-#   49 records. In this case, it is advisable for file_policy > PT96H, so the last record is in
-#   a single file. See the logic routine in "roms_field_write", module "roms_fields_mod.F90".
-#   We need the aliases for the initial date and forecast length in the output file(s) creation
-#   policy logic.
-#
-# * Output files are of the form: "prefix_exp_type_date.nc".
-#
-# * The WC13 application is configured to run for 96 hours (4-days). However, it is possible to
-#   use a smaller interval for the 'forecast length' provided that it is an integer multiple the
-#   timestep (1800 s). Then, ROMS internal parameters are changed to the desired interval via
-#   the 'simulation length' property.

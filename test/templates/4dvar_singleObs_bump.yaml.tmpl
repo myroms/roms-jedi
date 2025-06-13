@@ -14,6 +14,8 @@ initial date: &date __INITIAL_DATE__
 
 roms analysis: &roms_analysis
 - sea_surface_height_above_geoid
+- eastward_sea_water_velocity                    # A-grid
+- northward_sea_water_velocity                   # A-grid
 - sea_water_x_velocity                           # C-grid
 - sea_water_y_velocity                           # C-grid
 - sea_water_temperature
@@ -21,6 +23,8 @@ roms analysis: &roms_analysis
 
 roms state: &roms_state
 - sea_surface_height_above_geoid
+- eastward_sea_water_velocity                    # A-grid
+- northward_sea_water_velocity                   # A-grid
 - sea_water_x_velocity                           # C-grid
 - sea_water_y_velocity                           # C-grid
 - sea_water_temperature
@@ -89,6 +93,8 @@ cost function:
             - sea_surface_height_above_geoid
         - model:
             variables:
+            - eastward_sea_water_velocity
+            - northward_sea_water_velocity
             - sea_water_temperature
             - sea_water_salinity
 
@@ -110,7 +116,7 @@ cost function:
 
 variational:
   minimizer:
-    algorithm: RPCG                              # Dual   formulation
+    algorithm: RPCG                              # Dual formulation
   iterations:
   - ninner: 1                                    # each item defined an outer loop
     gradient norm reduction: 1E-10
@@ -132,13 +138,14 @@ variational:
       trajectory:
         model variables: *roms_state
         tstep: __TRAJECTORY_TIMESTEP__
-      variable change: Identity
+      variable change: Model2Analysis
     diagnostics:                                 # Written into output IODA files
       departures: ombg                           # OBS - H(Xb)
     online diagnostics:
       write increment: true
       increment:                                 # DA increment output file
         state component:
+          add_varchange: true                    # Add fields from variable change
           single_record: true
           data_dir: Data/4dvar/singleObs/bump
           prefix: __ROMS_APP___roms

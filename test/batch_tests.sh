@@ -65,8 +65,10 @@ export LdebugFields=0
 export LdebugFieldsUtils=0
 export LdebugGeometry=0
 export LdebugLinearModel=0
+export LdebugLinearModel2Analysis=0
 export LdebugLinearModel2Geovals=0
 export LdebugModel=0
+export LdebugModel2Analysis=0
 export LdebugModel2Geovals=0
 export LdebugTrajectory=0
 
@@ -98,6 +100,8 @@ elif [ ${ALL_TEST} -eq 2 ]; then
   ctest -VV -R test_romsjedi_increment
   ctest -VV -R test_romsjedi_model
   ctest -VV -R test_romsjedi_linearmodel
+  ctest -VV -R test_romsjedi_variableChange
+  ctest -VV -R test_romsjedi_linearVariableChange
   ctest -VV -R test_romsjedi_hofx_3d
   ctest -VV -R test_romsjedi_hofx_4d
   ctest -VV -R test_romsjedi_makeobs
@@ -111,7 +115,7 @@ elif [ ${ALL_TEST} -eq 2 ]; then
   ctest -VV -R test_romsjedi_bump_loc_parameters_cor_nicas_max
   ctest -VV -R test_romsjedi_dirac_cov_nicas
   ctest -VV -R test_romsjedi_dirac_diffusion
-  ctest -VV -R test_romsjedi_ens_pert
+  ctest -VV -R test_romsjedi_ens_perturbation
   ctest -VV -R test_romsjedi_ens_meanandvariance
   ctest -VV -R test_romsjedi_ens_recenter
   ctest -VV -R test_romsjedi_ens_hofx
@@ -123,7 +127,7 @@ elif [ ${ALL_TEST} -eq 2 ]; then
   ctest -VV -R test_romsjedi_3dvar_primal
   ctest -VV -R test_romsjedi_3dvar_dual
   ctest -VV -R test_romsjedi_3dfgat_primal
-  ctest -VV -R test_romsjedi_3fgat_dual
+  ctest -VV -R test_romsjedi_3dfgat_dual
   ctest -VV -R test_romsjedi_4dfgat_primal
   ctest -VV -R test_romsjedi_4dfgat_dual
   ctest -VV -R test_romsjedi_4dvar_singleObs_bump
@@ -138,13 +142,66 @@ elif [ ${ALL_TEST} -eq 2 ]; then
   ctest -VV -R test_romsjedi_3dhyb_nofgat_dual
   ctest -VV -R test_romsjedi_3dhyb_4dfgat_primal
   ctest -VV -R test_romsjedi_3dhyb_4dfgat_dual
-  ctest -VV -R test_romsjedi_letkf
+  ctest -VV -R test_romsjedi_letkf_solver
   ctest -VV -R test_romsjedi_letkf_splitObserver
   ctest -VV -R test_romsjedi_letkf_splitSolver
   ctest -VV -R test_romsjedi_letkf_3dhyb
 
 #-------------------------------------------------------------------------------
 # Run specific Units Test on scpecified number of CPUs (use during debugging).
+#
+# mpirun -n 2  test_romsjedi_geometry testinput/geometry.yaml
+# mpirun -n 2  test_romsjedi_geometryiterator testinput/geometryiterator.yaml
+# mpirun -n 2  test_romsjedi_state testinput/state.yaml
+# mpirun -n 2  test_romsjedi_increment testinput/increment.yaml
+# mpirun -n 2  test_romsjedi_model testinput/model.yaml
+# mpirun -n 2  test_romsjedi_linearmodel testinput/linearmodel.yaml
+# mpirun -n 2  test_romsjedi_variableChange testinput/variableChange.yaml
+# mpirun -n 2  test_romsjedi_linearVariableChange testinput/linearVariableChange.yaml
+# mpirun -n 2  ../../bin/romsjedi_hofx3d.x testinput/hofx_3d.yaml
+# mpirun -n 2  ../../bin/romsjedi_hofx4d.x testinput/hofx_4d.yaml
+# mpirun -n 2  ../../bin/romsjedi_hofx4d.x testinput/makeobs.yaml
+# mpirun -n 2  ../../bin/romsjedi_hofx4d.x testinput/makeobs_perturbed.yaml
+# mpirun -n 2  ../../bin/romsjedi_diffstates.x testinput/diffstates.yaml
+# mpirun -n 12 ../../bin/romsjedi_forecast.x testinput/forecast_roms.yaml
+# mpirun -n 2  ../../bin/romsjedi_error_covariance_toolbox.x testinput/parameters_bump_cor_nicas.yaml
+# mpirun -n 12 ../../bin/romsjedi_error_covariance_toolbox.x testinput/parameters_bump_cor_nicas_max.yaml
+# mpirun -n 2  ../../bin/romsjedi_error_covariance_toolbox.x testinput/parameters_diffusion.yaml
+# mpirun -n 2  ../../bin/romsjedi_error_covariance_toolbox.x testinput/parameters_bump_loc_cor_nicas.yaml
+# mpirun -n 12 ../../bin/romsjedi_error_covariance_toolbox.x testinput/parameters_bump_loc_cor_nicas_max.yaml
+# mpirun -n 2  ../../bin/romsjedi_error_covariance_toolbox.x testinput/dirac_cov_nicas.yaml
+# mpirun -n 2  ../../bin/romsjedi_error_covariance_toolbox.x testinput/dirac_diffusion.yaml
+# mpirun -n 12 ../../bin/romsjedi_ens_pert.x testinput/ens_perturbation.yaml
+# mpirun -n 2  ../../bin/romsjedi_ens_meanandvariance.x testinput/ens_meanandvariance.yaml
+# mpirun -n 2  ../../bin/romsjedi_ens_recenter.x testinput/ens_recenter.yaml
+# mpirun -n 6  ../../bin/romsjedi_ens_hofx.x testinput/ens_hofx.yaml
+# mpirun -n 2  ../../bin/romsjedi_error_covariance_toolbox.x testinput/dirac_ens_cov_nicas.yaml
+# mpirun -n 2  ../../bin/romsjedi_var.x testinput/3dvar_zeroObs.yaml
+# mpirun -n 2  ../../bin/romsjedi_var.x testinput/3dvar_singleObs.yaml
+# mpirun -n 2  ../../bin/romsjedi_var.x testinput/3dfgat_singleObs.yaml
+# mpirun -n 2  ../../bin/romsjedi_var.x testinput/4dfgat_singleObs.yaml
+# mpirun -n 2  ../../bin/romsjedi_var.x testinput/3dvar_primal.yaml
+# mpirun -n 2  ../../bin/romsjedi_var.x testinput/3dvar_dual.yaml
+# mpirun -n 2  ../../bin/romsjedi_var.x testinput/3dfgat_primal.yaml
+# mpirun -n 2  ../../bin/romsjedi_var.x testinput/3dfgat_dual.yaml
+# mpirun -n 2  ../../bin/romsjedi_var.x testinput/4dfgat_primal.yaml
+# mpirun -n 2  ../../bin/romsjedi_var.x testinput/4dfgat_dual.yaml
+# mpirun -n 12 ../../bin/romsjedi_var.x testinput/4dvar_bump_singleObs.yaml
+# mpirun -n 12 ../../bin/romsjedi_var.x testinput/4dvar_diffusion_singleObs.yaml
+# mpirun -n 12 ../../bin/romsjedi_var.x testinput/4dvar_bump.yaml
+# mpirun -n 12 ../../bin/romsjedi_var.x testinput/4dvar_diffusion.yaml
+# mpirun -n 2  ../../bin/romsjedi_var.x testinput/3denvar_nofgat_primal.yaml
+# mpirun -n 2  ../../bin/romsjedi_var.x testinput/3denvar_nofgat_dual.yaml
+# mpirun -n 2  ../../bin/romsjedi_var.x testinput/3denvar_4dfgat_primal.yaml
+# mpirun -n 2  ../../bin/romsjedi_var.x testinput/3denvar_4dfgat_dual.yaml
+# mpirun -n 2  ../../bin/romsjedi_var.x testinput/3dhyb_nofgat_primal.yaml
+# mpirun -n 2  ../../bin/romsjedi_var.x testinput/3dhyb_nodgat_dual.yaml
+# mpirun -n 2  ../../bin/romsjedi_var.x testinput/3dhyb_4dfgat_primal.yaml
+# mpirun -n 2  ../../bin/romsjedi_var.x testinput/3dhyb_4dfgat_dual.yaml
+# mpirun -n 2  ../../bin/romsjedi_letkf.x testinput/letkf_solver.yaml
+# mpirun -n 2  ../../bin/romsjedi_letkf.x testinput/letkf_splitObserver.yaml
+# mpirun -n 2  ../../bin/romsjedi_letkf.x testinput/letkf_splitSolver.yaml
+# mpirun -n 2  ../../bin/romsjedi_var.x testinput/letkf_3dhyb.yaml
 #-------------------------------------------------------------------------------
 
 else
@@ -201,6 +258,22 @@ else
     echo " Test #${ic}: test_romsjedi_linearmodel ..........................  *Failed"
   else
     echo " Test #${ic}: test_romsjedi_linearmodel ..........................  Passed"
+  fi
+
+  ${MPIrun} test_romsjedi_VariableChange testinput/variableChange.yaml 1 >> test_${ic}.log 2>> test.err
+  ic=$(( $ic + 1 ))
+  if [ $? -ne 0 ] ; then
+    echo " Test #${ic}: test_romsjedi_variableChange .......................  *Failed"
+  else
+    echo " Test #${ic}: test_romsjedi_variableChange .......................  Passed"
+  fi
+
+  ${MPIrun} test_romsjedi_linearVariableChange testinput/linearVariableChange.yaml 1 >> test_${ic}.log 2>> test.err
+  ic=$(( $ic + 1 ))
+  if [ $? -ne 0 ] ; then
+    echo " Test #${ic}: test_romsjedi_linearVariableChange .................  *Failed"
+  else
+    echo " Test #${ic}: test_romsjedi_linearVariableChange .................  Passed"
   fi
 
   ic=$(( $ic + 1 ))
@@ -309,9 +382,9 @@ else
   ic=$(( $ic + 1 ))
   mpirun -n 12 ../../bin/romsjedi_ens_pert.x testinput/ens_perturbation.yaml 1>> test_${ic}.log 2>> test.err
   if [ $? -ne 0 ] ; then
-    echo " Test #${ic}: test_romsjedi_ens_pert .............................  *Failed"
+    echo " Test #${ic}: test_romsjedi_ens_perturbation .....................  *Failed"
   else
-    echo " Test #${ic}: test_romsjedi_ens_pert .............................  Passed"
+    echo " Test #${ic}: test_romsjedi_ens_perturbation .....................  Passed"
   fi
 
   ic=$(( $ic + 1 ))

@@ -42,48 +42,52 @@ namespace romsjedi {
 
   void VariableChange::changeVar(State & x,
                                  const oops::Variables & vars) const {
-    oops::Log::trace() << classname() << ":changeVar starting"
-                       << std::endl;
+    oops::Log::trace() << classname() << ":changeVar starting" << std::endl;
     oops::Log::debug() << classname() << ":changeVar State vector: "
                        << x.variables() << std::endl;
 
   // Create output state
+
     State xout(x.geometry(), vars, x.validTime());
 
   // Call variable change
+
     variableChange_->changeVar(x, xout);
 
   // Allocate any extra fields and remove fields no longer needed
+
     x.updateFields(vars);
 
   // Copy data from temporary state
+
     x = xout;
 
-    oops::Log::trace() << classname() << ":changeVar done"
-                       << std::endl;
+    oops::Log::trace() << classname() << ":changeVar done" << std::endl;
   }
 
 // -----------------------------------------------------------------------------
 
   void VariableChange::changeVarInverse(State & x,
                                         const oops::Variables & vars) const {
-    oops::Log::trace() << "VariableChange::changeVarInverse starting"
+    oops::Log::trace() << classname() << ":changeVarInverse starting"
                        << std::endl;
 
   // Create output state
+
     State xout(x.geometry(), vars, x.validTime());
 
   // Call variable change
+
     variableChange_->changeVarInverse(x, xout);
 
   // Allocate any extra fields and remove fields no longer needed
+
     x.updateFields(vars);
 
   // Copy data from temporary state
     x = xout;
 
-    oops::Log::trace() << "VariableChange::changeVarInverse done"
-                       << std::endl;
+    oops::Log::trace() << classname() << ":changeVarInverse done" << std::endl;
   }
 
 // -----------------------------------------------------------------------------

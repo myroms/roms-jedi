@@ -78,29 +78,32 @@ END SUBROUTINE roms_model_delete_c
 ! ------------------------------------------------------------------------------
 !> Binding interface to initialize ROMS NLM kernel object.
 
-SUBROUTINE roms_model_initialize_c (c_key_self, c_key_state, c_dt)             &
+SUBROUTINE roms_model_initialize_c (c_key_self, c_key_state, c_key_geom, c_dt) &
                               BIND (c, name='roms_model_initialize_f90')
 
   integer (c_int), intent(in) :: c_key_self      !< Model object pointer
   integer (c_int), intent(in) :: c_key_state     !< State object pointer
+  integer (c_int), intent(in) :: c_key_geom      !< Geometry object pointer
   TYPE (c_ptr),    intent(in) :: c_dt            !< State valid dateTime pointer
 
   TYPE (roms_model), pointer  :: self
   TYPE (roms_state), pointer  :: state
+  TYPE (roms_geom),  pointer  :: geom
   TYPE (datetime)             :: fdate
 
-  CALL roms_state_registry%get (c_key_state, state)
   CALL roms_model_registry%get (c_key_self, self)
+  CALL roms_state_registry%get (c_key_state, state)
+  CALL roms_geom_registry%get (c_key_geom, geom)
   CALL c_f_datetime (c_dt, fdate)
 
-  CALL self%initialize (state, fdate)
+  CALL self%initialize (state, geom, fdate)
 
 END SUBROUTINE roms_model_initialize_c
 
 ! ------------------------------------------------------------------------------
 !> Binding interface to advance ROMS NLM kernel for specified time interval.
 
-SUBROUTINE roms_model_step_c (c_key_self, c_key_state, c_key_geom, c_dt)     &
+SUBROUTINE roms_model_step_c (c_key_self, c_key_state, c_key_geom, c_dt)       &
                         BIND (c, name='roms_model_step_f90')
 
   integer (c_int), intent(in   ) :: c_key_self   !< Model object pointer

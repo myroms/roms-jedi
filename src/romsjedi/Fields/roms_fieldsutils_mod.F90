@@ -64,6 +64,7 @@ END INTERFACE field_info
 logical, PUBLIC :: LdebugAnalyticInit         = .FALSE.
 logical, PUBLIC :: LdebugField                = .FALSE.
 logical, PUBLIC :: LdebugFields               = .FALSE.
+logical, PUBLIC :: LdebugFieldsVerbose        = .FALSE.
 logical, PUBLIC :: LdebugFieldsUtils          = .FALSE.
 logical, PUBLIC :: LdebugGeometry             = .FALSE.
 logical, PUBLIC :: LdebugLinearModel          = .FALSE.
@@ -74,6 +75,12 @@ logical, PUBLIC :: LdebugModel2Analysis       = .FALSE.
 logical, PUBLIC :: LdebugModel2Geovals        = .FALSE.
 logical, PUBLIC :: LdebugTrajectory           = .FALSE.
 logical, PUBLIC :: set_environment            = .FALSE.
+
+! ROMS-JEDI switches indicating the processing of increment and analysis fields.
+
+logical, PUBLIC :: LwroteIncrement            = .FALSE.
+logical, PUBLIC :: LwroteAnalysis             = .FALSE.
+
 
 PRIVATE
 
@@ -587,6 +594,7 @@ SUBROUTINE roms_get_env ()
     status = get_env('LdebugAnalyticInit',         LdebugAnalyticInit)
     status = get_env('LdebugField',                LdebugField)
     status = get_env('LdebugFields',               LdebugFields)
+    status = get_env('LdebugFieldsVerbose',        LdebugFieldsVerbose)
     status = get_env('LdebugFieldsUtils',          LdebugFieldsUtils)
     status = get_env('LdebugGeometry',             LdebugGeometry)
     status = get_env('LdebugLinearModel',          LdebugLinearModel)

@@ -11,4 +11,5 @@ roms_target_sources(
 # add source code in the subdirectories
 
 add_subdirectory(Base)
+add_subdirectory(Model2Analysis)
 add_subdirectory(Model2GeoVaLs)

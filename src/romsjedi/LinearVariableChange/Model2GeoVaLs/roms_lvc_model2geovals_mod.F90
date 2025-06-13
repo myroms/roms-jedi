@@ -27,6 +27,8 @@ USE roms_fieldsutils_mod,       ONLY : LdebugLinearModel2Geovals
 USE roms_geom_mod,              ONLY : roms_geom
 USE roms_increment_mod,         ONLY : roms_increment
 USE roms_state_mod,             ONLY : roms_state
+USE roms_utils_mod,             ONLY : vector_c_to_a,                          &
+                                       vector_c_to_a_ad
 
 implicit none
 
@@ -86,15 +88,20 @@ SUBROUTINE roms_lvc_model2geovals_multiply (self, geom, dxm, dxg)
   TYPE (roms_increment),          intent(in   ) :: dxm   !< Model Increment
   TYPE (roms_increment),          intent(inout) :: dxg   !< GeoVaLs Increment
 
-  TYPE (roms_field),                    pointer :: field_in, field_out
+  TYPE (roms_field),                    pointer :: field_in  => null()
+  TYPE (roms_field),                    pointer :: field_out => null()
+  TYPE (roms_field),                    pointer :: Ua        => null()
+  TYPE (roms_field),                    pointer :: Va        => null()
 
-  integer                                       :: N, Nsur
+  logical                                       :: have_uaocn,  have_vaocn
+
+  integer                                       :: Nsur
   integer                                       :: counter, findex, i
   integer                                       :: inp_fields, out_fields
 
   integer,          dimension(SIZE(dxg%fields)) :: unFound
 
-  real (kind=kind_real)                         :: stats(3)
+  real (kind=kind_real)                         :: stats(4)
 
   character (len=512)                           :: field_name
 
@@ -103,25 +110,25 @@ SUBROUTINE roms_lvc_model2geovals_multiply (self, geom, dxm, dxg)
   IF (LdebugLinearModel2Geovals) THEN
     inp_fields = SIZE(dxm%fields)
     IF (geom%f_comm%rank() .eq. 0)                                             &
-      PRINT 10, 'ROMS_DEBUG roms_lvc_model2geovals::multiply:  Input',         &
+      PRINT 10, 'ROMS_DEBUG roms_lvc_model2geovals:multiply >  Input',         &
                 ' DXM Vars = ', (dxm%fields(i)%name, i=1,inp_fields)
     DO i = 1, inp_fields
       CALL dxm%fields(i)%stats (stats)
       IF (geom%f_comm%rank() .eq. 0)                                           &
-        PRINT 20, dxm%fields(i)%name, stats(1), stats(2), INT(stats(3))
+        PRINT 20, dxm%fields(i)%name, stats(1), stats(2), INT(stats(4))
     END DO
 
     out_fields = SIZE(dxg%fields)
     IF (geom%f_comm%rank() .eq. 0)                                             &
-      PRINT 10, 'ROMS_DEBUG roms_lvc_model2geovals::multiply:  Input',         &
+      PRINT 10, 'ROMS_DEBUG roms_lvc_model2geovals:multiply >  Input',         &
                 ' DXG Vars = ', (dxg%fields(i)%name, i=1,out_fields)
     DO i = 1, out_fields
       CALL dxg%fields(i)%stats (stats)
       IF (geom%f_comm%rank() .eq. 0)                                           &
-        PRINT 20, dxg%fields(i)%name, stats(1), stats(2), INT(stats(3))
+        PRINT 20, dxg%fields(i)%name, stats(1), stats(2), INT(stats(4))
     END DO
  10 FORMAT (a, a, *(1x,a,','))
- 20 FORMAT (2x,'- ',a35,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,      &
+ 20 FORMAT (2x,'- ',a,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,      &
             ',  CheckSum = ', i0)
   END IF
 
@@ -145,8 +152,22 @@ SUBROUTINE roms_lvc_model2geovals_multiply (self, geom, dxm, dxg)
   IF (counter .gt. 0) THEN
 
     IF (LdebugLinearModel2Geovals .and. (geom%f_comm%rank() .eq. 0)) THEN
-      PRINT 10,'ROMS_DEBUG roms_lvc_model2geovals::multiply:  ',               &
+      PRINT 10,'ROMS_DEBUG roms_lvc_model2geovals:multiply >  ',               &
                'unFound Vars = ', (dxg%fields(unFound(i))%name, i=1,counter)
+    END IF
+
+    have_uaocn = .FALSE.
+    have_vaocn = .FALSE.
+
+    IF (dxm%has('eastward_sea_water_velocity') .and.                           &
+        dxm%has('northward_sea_water_velocity')) THEN
+
+      CALL dxm%get ('eastward_sea_water_velocity',  Ua)
+      have_uaocn = .TRUE.
+
+      CALL dxm%get ('northward_sea_water_velocity', Va)
+      have_vaocn = .TRUE.
+
     END IF
 
     DO i = 1, counter
@@ -166,14 +187,50 @@ SUBROUTINE roms_lvc_model2geovals_multiply (self, geom, dxm, dxg)
           END IF
           Nsur = field_in%N
           field_out%val(:,:,1) = field_in%val(:,:,Nsur)
-!         field_out%N = 1
 
         CASE ('sea_surface_salinity')                  !< SSS
 
           CALL dxm%get ('sea_water_salinity', field_in)
           Nsur = field_in%N
           field_out%val(:,:,1) = field_in%val(:,:,Nsur)
-!         field_out%N = 1
+
+        CASE ('surface_eastward_sea_water_velocity')   !< U-Surface A-grid
+
+          IF (.not.have_uaocn) THEN
+            CALL abor1_ftn ('roms_lvc_model2geovals_multiply: unable to '//    &
+                            'find parent field: '//TRIM(field_name))
+          ELSE
+            Nsur = SIZE(Ua%val, 3)
+            field_out%val(:,:,1) = Ua%val(:,:,Nsur)
+          END IF
+
+        CASE ('surface_northward_sea_water_velocity')  !< V-Surface A-grid
+
+          IF (.not.have_uaocn) THEN
+            CALL abor1_ftn ('roms_lvc_model2geovals_multiply: unable to '//    &
+                            'find parent field: '//TRIM(field_name))
+          ELSE
+            Nsur = SIZE(Va%val, 3)
+            field_out%val(:,:,1) = Va%val(:,:,Nsur)
+          END IF
+
+        CASE ('eastward_sea_water_velocity')           !< 3D U-velocity A-grid
+
+          IF (.not.have_uaocn) THEN
+            CALL abor1_ftn ('roms_lvc_model2geovals_multiply: unable to '//    &
+                            'find parent field: '//TRIM(field_name))
+          ELSE
+            field_out%val = Ua%val
+          END IF
+
+        CASE ('northward_sea_water_velocity')          !< 3D V-velocity A-grid
+
+          IF (.not.have_uaocn) THEN
+            CALL abor1_ftn ('roms_lvc_model2geovals_multiply: unable to '//    &
+                            'find parent field: '//TRIM(field_name))
+          ELSE
+            field_out%val = Va%val
+          END IF
 
         CASE DEFAULT
 
@@ -192,9 +249,9 @@ SUBROUTINE roms_lvc_model2geovals_multiply (self, geom, dxm, dxg)
     DO i = 1, SIZE(dxg%fields)
       CALL dxg%fields(i)%stats (stats)
       IF (geom%f_comm%rank() .eq. 0) THEN
-        IF (i.eq.1) PRINT '(a)', 'ROMS_DEBUG roms_lvc_model2geovals::'//       &
-                                 'multiply:  Output DXG Vars:'
-        PRINT 20, dxg%fields(i)%name, stats(1), stats(2), INT(stats(3))
+        IF (i.eq.1) PRINT '(a)', 'ROMS_DEBUG roms_lvc_model2geovals:'//        &
+                                 'multiply >  Output DXG Vars:'
+        PRINT 20, dxg%fields(i)%name, stats(1), stats(2), INT(stats(4))
       END IF
     END DO
   END IF
@@ -212,15 +269,20 @@ SUBROUTINE roms_lvc_model2geovals_multiplyAD (self, geom, dxg, dxm)
   TYPE (roms_increment),          intent(in   ) :: dxg   !< GeoVaLs Increment
   TYPE (roms_increment),          intent(inout) :: dxm   !< Model Increment
 
-  TYPE (roms_field),                    pointer :: field_in, field_out
+  TYPE (roms_field),                    pointer :: field_in  => null()
+  TYPE (roms_field),                    pointer :: field_out => null()
+  TYPE (roms_field),                    pointer :: Ua        => null()
+  TYPE (roms_field),                    pointer :: Va        => null()
 
-  integer                                       :: N, Nsur
+  logical                                       :: have_uaocn,  have_vaocn
+
+  integer                                       :: Nsur
   integer                                       :: counter, findex, i
   integer                                       :: inp_fields, out_fields
 
   integer,          dimension(SIZE(dxm%fields)) :: unFound
 
-  real (kind=kind_real)                         :: stats(3)
+  real (kind=kind_real)                         :: stats(4)
 
   character (len=512)                           :: field_name
 
@@ -229,25 +291,25 @@ SUBROUTINE roms_lvc_model2geovals_multiplyAD (self, geom, dxg, dxm)
   IF (LdebugLinearModel2Geovals) THEN
     inp_fields = SIZE(dxg%fields)
     IF (geom%f_comm%rank() .eq. 0)                                             &
-      PRINT 10, 'ROMS_DEBUG roms_lvc_model2geovals::multiplyAD:  Input',       &
+      PRINT 10, 'ROMS_DEBUG roms_lvc_model2geovals:multiplyAD >  Input',       &
                 ' DXG Vars = ', (dxg%fields(i)%name, i=1,inp_fields)
     DO i = 1, inp_fields
       CALL dxg%fields(i)%stats (stats)
       IF (geom%f_comm%rank() .eq. 0)                                           &
-        PRINT 20, dxg%fields(i)%name, stats(1), stats(2), INT(stats(3))
+        PRINT 20, dxg%fields(i)%name, stats(1), stats(2), INT(stats(4))
     END DO
 
     out_fields = SIZE(dxm%fields)
     IF (geom%f_comm%rank() .eq. 0)                                             &
-      PRINT 10, 'ROMS_DEBUG roms_lvc_model2geovals::multiplyAD:  Input',       &
+      PRINT 10, 'ROMS_DEBUG roms_lvc_model2geovals:multiplyAD >  Input',       &
                 ' DXM Vars = ', (dxm%fields(i)%name, i=1,out_fields)
     DO i = 1, out_fields
       CALL dxm%fields(i)%stats (stats)
       IF (geom%f_comm%rank() .eq. 0)                                           &
-        PRINT 20, dxm%fields(i)%name, stats(1), stats(2), INT(stats(3))
+        PRINT 20, dxm%fields(i)%name, stats(1), stats(2), INT(stats(4))
     END DO
  10 FORMAT (a, a, *(1x,a,','))
- 20 FORMAT (2x,'- ',a35,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,      &
+ 20 FORMAT (2x,'- ',a,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,        &
             ',  CheckSum = ', i0)
   END IF
 
@@ -273,8 +335,32 @@ SUBROUTINE roms_lvc_model2geovals_multiplyAD (self, geom, dxg, dxm)
   IF (counter .gt. 0) THEN
 
     IF (LdebugLinearModel2Geovals .and. (geom%f_comm%rank() .eq. 0)) THEN
-      PRINT 10,'ROMS_DEBUG roms_lvc_model2geovals::multiplyAD:  ',               &
+      PRINT 10,'ROMS_DEBUG roms_lvc_model2geovals:multiplyAD >  ',             &
                'unFound Vars = ', (dxm%fields(unFound(i))%name, i=1,counter)
+    END IF
+
+    have_uaocn = .FALSE.
+    have_vaocn = .FALSE.
+
+    IF (dxg%has('eastward_sea_water_velocity') .and.                           &
+        dxg%has('northward_sea_water_velocity')) THEN
+
+      CALL dxg%get ('eastward_sea_water_velocity',  Ua)
+      IF (dxm%has('eastward_sea_water_velocity')) THEN
+        have_uaocn = .TRUE.
+      ELSE
+        CALL abor1_ftn ('roms_lvc_model2geovals_multiplyAD: unable to '//      &
+                        'find parent field: '//TRIM(Ua%name))
+      END IF
+
+      CALL dxg%get ('northward_sea_water_velocity', Va)
+      IF (dxg%has('northward_sea_water_velocity')) THEN
+        have_vaocn = .TRUE.
+      ELSE
+        CALL abor1_ftn ('roms_lvc_model2geovals_multiplyAD: unable to '//      &
+                        'find parent field: '//TRIM(Va%name))
+      END IF
+
     END IF
 
     DO i = 1, counter
@@ -294,14 +380,38 @@ SUBROUTINE roms_lvc_model2geovals_multiplyAD (self, geom, dxg, dxm)
           END IF
           Nsur = field_in%N
           field_out%val(:,:,1) = field_out%val(:,:,1) + field_in%val(:,:,Nsur)
-!         field_out%N = 1
 
         CASE ('sea_surface_salinity')                  !< SSS
 
           CALL dxg%get ('sea_water_salinity', field_in)
           Nsur = field_in%N
           field_out%val(:,:,1) = field_out%val(:,:,1) + field_in%val(:,:,Nsur)
-!         field_out%N = 1
+
+        CASE ('surface_eastward_sea_water_velocity')   !< U-Surface A-grid
+
+          IF (have_uaocn) THEN
+            Nsur = SIZE(Ua%val, 3)
+            field_out%val(:,:,1) = field_out%val(:,:,1)+ Ua%val(:,:,Nsur)
+          END IF
+
+        CASE ('surface_northward_sea_water_velocity')  !< V-Surface A-grid
+
+          IF (have_vaocn) THEN
+            Nsur = SIZE(Va%val, 3)
+            field_out%val(:,:,1) = field_out%val(:,:,1) + Va%val(:,:,Nsur)
+          END IF
+
+        CASE ('eastward_sea_water_velocity')           !< 3D U-velocity A-grid
+
+          IF (have_uaocn) THEN
+            field_out%val = field_out%val + Ua%val
+          END IF
+
+        CASE ('northward_sea_water_velocity')          !< 3D V-velocity A-grid
+
+          IF (have_uaocn) THEN
+            field_out%val = field_out%val + Va%val
+          END IF
 
         CASE DEFAULT
 
@@ -327,9 +437,9 @@ SUBROUTINE roms_lvc_model2geovals_multiplyAD (self, geom, dxg, dxm)
     DO i = 1, SIZE(dxm%fields)
       CALL dxm%fields(i)%stats (stats)
       IF (geom%f_comm%rank() .eq. 0) THEN
-        IF (i.eq.1) PRINT '(a)', 'ROMS_DEBUG roms_lvc_model2geovals::'//       &
-                                 'multiplyAD:  Output DXM Vars:'
-        PRINT 20, dxm%fields(i)%name, stats(1), stats(2), INT(stats(3))
+        IF (i.eq.1) PRINT '(a)', 'ROMS_DEBUG roms_lvc_model2geovals:'//        &
+                                 'multiplyAD >  Output DXM Vars:'
+        PRINT 20, dxm%fields(i)%name, stats(1), stats(2), INT(stats(4))
       END IF
     END DO
   END IF

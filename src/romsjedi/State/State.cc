@@ -103,26 +103,15 @@ namespace romsjedi {
 
   State::State(const oops::Variables & vars,
                const State & other)
-    : vars_(other.vars_),
-      time_(other.time_),
-      geom_(other.geom_)
-
+    : State(other)
   {
-    roms_state_create_f90(keyFlds_,
-                          geom_.toFortran(),
-                          vars_);
-    roms_state_copy_f90(toFortran(),
-                        other.toFortran());
-
-    // TODO(HGA): Any variable change needs to go here, but is not current used
-    //            now. I assume that in the future some variable changes, say
-    //            for MyVar, will be needed.
-
-    // eckit::LocalConfiguration varChangeConfig;
-    // varChangeConfig.set("variable change name", "MyVar");
-    // VariableChange MyVar (varChangeConfig, geom_);
-    // MyVar.changeVar(*this, vars);
-    Log::trace() << "State::State created with variable change." << std::endl;
+    Log::trace() << classname() << ":State from variable change starting"
+                 << std::endl;
+    eckit::LocalConfiguration varChangeConfig;
+    VariableChange varChange(varChangeConfig, geom_);
+    varChange.changeVar(*this, vars);
+    Log::trace() << classname() << ":State from variable change done"
+                 << std::endl;
   }
 
 // -----------------------------------------------------------------------------
@@ -144,7 +133,7 @@ namespace romsjedi {
 
   State::~State() {
     roms_state_delete_f90(toFortran());
-    Log::trace() << classname() << ":State destructed" << std::endl;
+    Log::trace() << classname() << ":State destroyed" << std::endl;
   }
 
 // -----------------------------------------------------------------------------
@@ -243,7 +232,7 @@ namespace romsjedi {
   void State::write(const eckit::Configuration & config) const {
     const util::DateTime * dtp = &time_;
     Log::trace() << classname() << ":write starting"
-                 << std::endl;
+                                << std::endl;
     roms_state_write_file_f90(toFortran(),
                               config,
                               &dtp);
@@ -254,24 +243,25 @@ namespace romsjedi {
 // -----------------------------------------------------------------------------
 
   void State::print(std::ostream & os) const {
-    os << std::endl << "  Valid time: " << validTime();
+    os << std::endl << "  Valid time: " << validTime() << std::endl;
     int n0, nf;
     roms_state_sizes_f90(toFortran(),
                          n0, n0, n0, nf);
+
     std::vector<double> zstat(4*nf);
     roms_state_gstats_f90(toFortran(),
-                          nf, zstat[0]);
+                          nf,
+                          zstat[0]);
+
+    // Report field statistics in scientific notation, setw = precision+7
+
     for (int jj = 0; jj < nf; ++jj) {
-      os << std::endl << std::right << std::setw(60) << vars_[jj]
-                      << std::setprecision(15)
-                      << "   Min= "      << std::fixed << std::setw(21) <<
-                                            std::right << zstat[4*jj]
-                      << "   Max= "      << std::fixed << std::setw(21) <<
-                                            std::right << zstat[4*jj+1]
-                      << "   Mean= "     << std::fixed << std::setw(21) <<
-                                            std::right << zstat[4*jj+2];
-      //              << "   CheckSum= " << std::fixed << std::right <<
-      //                                    static_cast<int>(zstat[4*jj+3]);
+      os << std::left << std::setw(60) << vars_[jj]
+         << std::scientific << std::setprecision(15)
+         << "  Min = "  << std::right << std::setw(22) << zstat[4*jj]
+         << "  Min = "  << std::right << std::setw(22) << zstat[4*jj+1]
+         << "  Mean = " << std::right << std::setw(22) << zstat[4*jj+2]
+         << std::endl;
     }
   }
 

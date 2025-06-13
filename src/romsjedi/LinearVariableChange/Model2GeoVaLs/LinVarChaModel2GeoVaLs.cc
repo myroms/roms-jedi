@@ -11,14 +11,13 @@
 #include "eckit/config/Configuration.h"
 
 #include "oops/util/Logger.h"
-#include "oops/util/abor1_cpp.h"
 
 #include "romsjedi/Geometry/Geometry.h"
 #include "romsjedi/Increment/Increment.h"
-#include "romsjedi/State/State.h"
-#include "romsjedi/Traits.h"
 #include "romsjedi/LinearVariableChange/Model2GeoVaLs/LinVarChaModel2GeoVaLs.h"
 #include "romsjedi/LinearVariableChange/Model2GeoVaLs/LinVarChaModel2GeoVaLsFortran.h"
+#include "romsjedi/State/State.h"
+#include "romsjedi/Traits.h"
 
 namespace romsjedi {
 
@@ -36,79 +35,73 @@ namespace romsjedi {
                                          const eckit::LocalConfiguration & conf)
     : LinearVariableChangeBase(), geom_(new Geometry(geom))
   {
-    oops::Log::trace() << classname() << " Constructor starting"
-                       << std::endl;
+    oops::Log::trace() << classname() << ":Constructor starting" << std::endl;
     roms_lvc_model2geovals_create_f90(keySelf_,
                                       geom_->toFortran(),
                                       bg.toFortran(),
                                       fg.toFortran(),
                                       conf);
-    oops::Log::trace() << classname() << " Constructor done"
-                       << std::endl;
+    oops::Log::trace() << classname() << ":Constructor done" << std::endl;
   }
 
 // -----------------------------------------------------------------------------
 
   LinVarChaModel2GeoVaLs::~LinVarChaModel2GeoVaLs() {
-    oops::Log::trace() << classname() << " Destructor starting"
-                       << std::endl;
+    oops::Log::trace() << classname() << ":Destructor starting" << std::endl;
     roms_lvc_model2geovals_delete_f90(keySelf_);
-    oops::Log::trace() << classname() << " Destructor done"
-                       << std::endl;
+    oops::Log::trace() << classname() << ":Destructor done" << std::endl;
   }
 
 // -----------------------------------------------------------------------------
 
   void LinVarChaModel2GeoVaLs::multiply(const Increment & dxin,
                                         Increment & dxout) const {
-    oops::Log::trace() << classname() << " Multiply starting" << std::endl;
+    oops::Log::trace() << classname() << ":Multiply starting: "
+                                      << dxin.validTime() << std::endl;
     roms_lvc_model2geovals_multiply_f90(keySelf_,
                                         geom_->toFortran(),
                                         dxin.toFortran(),
                                         dxout.toFortran());
-    oops::Log::trace() << classname() << " Multiply done" << std::endl;
+    oops::Log::trace() << classname() << ":Multiply done" << std::endl;
   }
 
 // -----------------------------------------------------------------------------
 
   void LinVarChaModel2GeoVaLs::multiplyInverse(const Increment & dxin,
                                                Increment & dxout) const {
-    oops::Log::trace() << classname() << " multiplyInverse starting"
+    oops::Log::trace() << classname() << ":multiplyInverse starting"
                        << std::endl;
     dxout = dxin;
-    oops::Log::trace() << classname() << " multiplyInverse done"
-                       << std::endl;
+    oops::Log::trace() << classname() << ":multiplyInverse done" << std::endl;
   }
 
 // -----------------------------------------------------------------------------
 
   void LinVarChaModel2GeoVaLs::multiplyAD(const Increment & dxin,
                                           Increment & dxout) const {
-    oops::Log::trace() << classname() << " multiplyAD starting"
-                       << std::endl;
+    oops::Log::trace() << classname() << ":multiplyAD starting: "
+                                      << dxin.validTime() << std::endl;
     roms_lvc_model2geovals_multiplyAD_f90(keySelf_,
                                           geom_->toFortran(),
                                           dxin.toFortran(),
                                           dxout.toFortran());
-    oops::Log::trace() << classname() << " multiplyAD done"
-                       << std::endl;
+    oops::Log::trace() << classname() << ":multiplyAD done" << std::endl;
   }
 
 // -----------------------------------------------------------------------------
 
   void LinVarChaModel2GeoVaLs::multiplyInverseAD(const Increment &dxin,
                                                  Increment & dxout) const {
-    oops::Log::trace() << classname() << " multiplyInverseAD starting"
+    oops::Log::trace() << classname() << ":multiplyInverseAD starting"
                        << std::endl;
     dxout = dxin;
-    oops::Log::trace() << classname() << " multiplyInverseAD done"
-                       << std::endl;
+    oops::Log::trace() << classname() << ":multiplyInverseAD done" << std::endl;
   }
 
 // -----------------------------------------------------------------------------
 
   void LinVarChaModel2GeoVaLs::print(std::ostream & os) const {
-    os << classname() << " variable change";
+    os << classname() << " linear variable change";
   }
 
 // -----------------------------------------------------------------------------

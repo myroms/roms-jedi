@@ -16,19 +16,20 @@ initial date: &date 2004-01-03T00:00:00Z           # initial DA window
 
 roms analysis: &roms_analysis
 - sea_surface_height_above_geoid
+- eastward_sea_water_velocity                    # A-grid
+- northward_sea_water_velocity                   # A-grid
 - sea_water_temperature
 - sea_water_salinity
 
 roms state: &roms_state
 - sea_surface_height_above_geoid
+- eastward_sea_water_velocity                    # A-grid
+- northward_sea_water_velocity                   # A-grid
 - sea_water_x_velocity                           # C-grid
 - sea_water_y_velocity                           # C-grid
 - sea_water_temperature
 - sea_water_salinity
 - model_level_depth_at_cell_center
-- vertical_diffusion_coefficient_of_temperature_in_sea_water
-- vertical_diffusion_coefficient_of_salinity_in_sea_water
-- vertical_viscosity_coefficient_of_sea_water
 
 cost function:
   cost type: 4D-Var
@@ -86,6 +87,8 @@ cost function:
                 - sea_surface_height_above_geoid
             - model:
                 variables:
+                - eastward_sea_water_velocity
+                - northward_sea_water_velocity
                 - sea_water_temperature
                 - sea_water_salinity
 
@@ -241,6 +244,7 @@ variational:
       write increment: true
       increment:                                   # DA increment output file
         state component:
+          add_varchange: true                      # Add fields from variable change
           single_record: true
           data_dir: Data/3dhyb/4dfgat/primal
           prefix: wc13_roms

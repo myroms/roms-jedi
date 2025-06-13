@@ -12,8 +12,6 @@ geometry:
   roms_stdinp: __ROMS_STDINP_MAX__
   fields metadata: Data/fields_metadata.yaml
   ng: 1                                           # ROMS nested grid number
-  vertical coordinate: depths                     # ATLAS FunctionSpace default
-# vertical coordinate: levels                     # ATLAS FunctionSpace levels
 
 background:
   date: &date __INITIAL_DATE__
@@ -23,15 +21,17 @@ background:
 
   state variables: &roms_state
   - sea_surface_height_above_geoid
+  - eastward_sea_water_velocity                       # A-grid
+  - northward_sea_water_velocity                      # A-grid
   - sea_water_x_velocity                              # C-grid
   - sea_water_y_velocity                              # C-grid
   - sea_water_temperature
   - sea_water_salinity
 
 # In SABER, by default, all the length scales are defined as the half-witdh
-# Gaspari-Cohn (1999) support radius, c. The relationship with the Daley (1991)
-# correlation Gaussian length, L, is:  L = 2 * c * SQRT(0.3) and
-#                                      c = 0.5 * L / SQRT(0.3)
+# Gaspari-Cohn (1999) support radius, c/2. The relationship with the Daley (1991)
+# correlation Gaussian length, L, is:  L = SQRT(0.3) * c/2   and
+#                                      c = 2 * L / SQRT(0.3)
 
 background error:
   covariance model: SABER
@@ -40,6 +40,10 @@ background error:
 
     active variables: &roms_analysis
     - sea_surface_height_above_geoid
+    - eastward_sea_water_velocity                     # A-grid
+    - northward_sea_water_velocity                    # A-grid
+    - sea_water_x_velocity                            # C-grid
+    - sea_water_y_velocity                            # C-grid
     - sea_water_temperature
     - sea_water_salinity
 
@@ -73,10 +77,15 @@ background error:
         - groups:
           - common
           value: __LOCALIZATION_VCORRELATION__
+
       grids:
       - model:
           variables:
           - sea_surface_height_above_geoid
+          - eastward_sea_water_velocity
+          - northward_sea_water_velocity
+          - sea_water_x_velocity
+          - sea_water_y_velocity
           - sea_water_temperature
           - sea_water_salinity
 
