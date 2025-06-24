@@ -171,8 +171,8 @@ delete @params{@timestamp_vals};
 #--------------------------------------------------------------------------
 
 $/='>';
-my($obs_fname,$dirs,$suf) = fileparse("${templates_dir}/obs.yaml.tmpl", '.tmpl');
-open FILE, "${dirs}obs.yaml.tmpl" || die "Can't open file ${dirs} obs.yaml.tmpl";
+my($obs_fname,$dirs,$suf) = fileparse("${templates_dir}/observations.yaml.tmpl", '.tmpl');
+open FILE, "${dirs}observations.yaml.tmpl" || die "Can't open file ${dirs} observations.yaml.tmpl";
 my %obs;
 my $ob_name;
 # Read the file one entry at a time

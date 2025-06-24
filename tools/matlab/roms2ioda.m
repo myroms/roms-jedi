@@ -1,9 +1,9 @@
-function roms2ioda(ObsData, HisName, prefix, suffix)
+function roms2ioda(ObsData, HisName, prefix, suffix, varargin)
 
 %
 % ROMS2IODA:  Converts ROMS observation NetCDF to IODA NetCDF4 files
 %
-% roms2ioda(ObsData, HisName)
+% roms2ioda(ObsData, HisName, prefix, suffix, addDateVar)
 %
 % This function converts a ROMS 4D-Var observation NetCDF file into several
 % IODA NetCDF files. One file per each observation type is usually the way
@@ -31,11 +31,16 @@ function roms2ioda(ObsData, HisName, prefix, suffix)
 %                  For example, if suffix =  20040103  or
 %                                  suffix = '20040103' then
 %
-%            int64 dateTime(Location);
+%                  int64 dateTime(Location);
 %                  dateTime:units = "seconds since 2004-01-03T00:00:00Z";
 %
 %                  Therefore, input and output time of the observations
 %                  may have different time references!
+%
+%    addDateVar  Switch to include date string variable (OPTIONAL)
+%                  default = false
+%
+%                  string date_time(Location) ;
 %
 % Usage: Example to convert WC13 4D-Var observation file to create the
 %        following IODA-2 files:
@@ -56,15 +61,22 @@ function roms2ioda(ObsData, HisName, prefix, suffix)
 %                obs_k2z.m
 %                obs_read.m
 
-% svn $Id: roms2ioda.m 1156 2023-02-18 01:44:37Z arango $
+% svn $Id$
 %=========================================================================%
-%  Copyright (c) 2002-2023 The ROMS/TOMS Group                            %
+%  Copyright (c) 2002-2025 The ROMS Group                                 %
 %    Licensed under a MIT/X style license                                 %
-%    See License_ROMS.txt                           Hernan G. Arango      %
+%    See License_ROMS.md                            Hernan G. Arango      %
 %=========================================================================%
 
 % Initialize.
 
+switch numel(varargin)
+  case 0
+    addDateVar = false;
+  case 1
+    addDateVar = varargin{1};
+end
+  
 if (ischar(ObsData))
   S = obs_read(ObsData);
 else
@@ -130,6 +142,24 @@ ivvel = find(S.type == 5);
 itemp = find(S.type == 6);
 isalt = find(S.type == 7);
 
+% Currently, one of the strategies to improve the impact of altimetry
+% track data is to repeat their observationsseveral times over the
+% assimilation cycle, but with different errors.
+%
+% Identify such repetitive observations by setting their provenance
+% to negative values.
+
+if (~isempty(issh))
+  [~,IA,~] = unique(complex(S.lat(issh), S.lon(issh)));
+  if (~isempty(IA))
+    sshProv = -abs(S.provenance(issh));      % Set negative SSH provenance
+    for n = 1:length(IA)
+      sshProv(IA(n))= -sshProv(IA(n));       % Turn positive unique values
+    end
+    S.provenance(issh) = sshProv;            % overwrite SSH provenance
+  end
+end
+
 % Get provenance indices for each state variable.
 
 P = struct('ssh', [], 'uvel', [], 'vvel', [], 'temp', [], 'salt', []);
@@ -176,6 +206,7 @@ if (got_ssh)
     Obs = extract_observations(S, issh, DateTimeIODA, has_depth);
     Obs.ncfile         = [prefix '_adt_' suffix '.nc4'];
     Obs.nvars          = 1;
+    Obs.addDateVar     = addDateVar;
     Obs.units          = {'meter'};
     Obs.ncvname        = {'absoluteDynamicTopography'};
     Obs.variables_name = {'absolute_dynamic_topography'};
@@ -198,6 +229,7 @@ if (got_temp)
     Obs = extract_observations(S, isst, DateTimeIODA, has_depth);
     Obs.ncfile         = [prefix '_sst_' suffix '.nc4'];
     Obs.nvars          = 1;
+    Obs.addDateVar     = addDateVar;
     Obs.units          = {'C'};
     Obs.ncvname        = {'seaSurfaceTemperature'};
     Obs.variables_name = {'sea_surface_temperature'};
@@ -226,6 +258,7 @@ if (got_temp)
     Obs = extract_observations(S, ktemp, DateTimeIODA, has_depth);
     Obs.ncfile         = [prefix '_temp_' suffix '.nc4'];
     Obs.nvars          = 1;
+    Obs.addDateVar     = addDateVar;
     Obs.units          = {'C'};
     Obs.ncvname        = {'waterTemperature'};
     Obs.variables_name = {'sea_water_temperature'};
@@ -264,6 +297,7 @@ if (got_temp)
     
     Obs.ncfile         = [prefix '_ptemp_' suffix '.nc4'];
     Obs.nvars          = 1;
+    Obs.addDateVar     = addDateVar;
     Obs.units          = {'C'};
     Obs.ncvname        = {'waterPotentialTemperature'};
     Obs.variables_name = {'sea_water_potential_temperature'};
@@ -292,6 +326,7 @@ if (got_salt)
     Obs = extract_observations(S, isalt, DateTimeIODA, has_depth);
     Obs.ncfile         = [prefix '_salt_' suffix '.nc4'];
     Obs.nvars          = 1;
+    Obs.addDateVar     = addDateVar;
     Obs.units          = {'dimensionless'};
     Obs.ncvname        = {'salinity'};
     Obs.variables_name = {'sea_water_salinity'};
@@ -305,8 +340,8 @@ if (got_salt)
   end
 end
 
-% Process gridded HF radar surface velocities. It assumed that
-% components are rotated to application curvilinear grid.
+% Process gridded HF radar surface velocities. The velocity
+% components 
 
 if (got_uvel && got_vvel)
   if ~(isempty(iuvel) || isempty(iuvel))
@@ -325,11 +360,12 @@ if (got_uvel && got_vvel)
     Obs.PreQC{2}       = Uobs.PreQC;
     Obs.ncfile         = [prefix '_uv_sur_' suffix '.nc4'];
     Obs.nvars          = 2;
+    Obs.addDateVar     = addDateVar;
     Obs.units          = {'m s-1', 'm s-1'};
-    Obs.ncvname        = {'waterSurfaceZonalVelocity',        ...
+    Obs.ncvname        = {'waterSurfaceZonalVelocity',               ...
 		          'waterSurfaceMeridionalVelocity'};
-    Obs.variables_name = {'sea_water_surface_x_velocity',     ...
-                          'sea_water_surface_y_velocity'};
+    Obs.variables_name = {'surface_eastward_sea_water_velocity',     ...
+                          'surface_meridional_sea_water_velocity'};
     Obs.datetime_ref   = DateTimeIODA;
     if (got_flagAtt)
       Obs.flag_values   = int32(P.flag_values(P.uvel));
@@ -345,7 +381,7 @@ return
 %--------------------------------------------------------------------------
 % Extract requested observation type from structure.
 
-function [Obs] = extract_observations(S, ind, DateTimeIODA, has_depth);
+function [Obs] = extract_observations(S, ind, DateTimeIODA, has_depth)
 
 % Initialize structure.
 
@@ -354,6 +390,7 @@ Obs = struct('ncfile'        , [],                                      ...
              'nlocs'         , [],                                      ...
              'nobs'          , [],                                      ...
              'nvars'         , [],                                      ...
+             'addDateVar'    , false,                                   ...
              'units'         , [],                                      ...
              'ncvname'       , [],                                      ...
              'variable_names', [],                                      ...
@@ -410,14 +447,16 @@ return
 %--------------------------------------------------------------------------
 % Writes requested observation type data to ouput NetCDF file.
 
-function write_observations(Obs);
+function write_observations(Obs)
 
 disp(['*** Writing  observations file:  ', Obs.ncfile]);
 
 % Write out 'MetaData' Group variables.
 
 ncwrite(Obs.ncfile, 'MetaData/dateTime', int64(Obs.dateTime));
-ncwrite(Obs.ncfile, 'MetaData/date_time', Obs.date_time);
+if (Obs.addDateVar)
+  ncwrite(Obs.ncfile, 'MetaData/date_time', Obs.date_time);
+end
 if (~isempty(Obs.depth))
   ncwrite(Obs.ncfile, 'MetaData/depth', Obs.depth);
 end

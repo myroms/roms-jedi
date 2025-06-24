@@ -25,11 +25,11 @@ function S = plot_ioda (ncname, varargin)
 %    S             IODA/UFO data (struc)
 %
 
-% svn $Id: plot_ioda.m 1162 2023-03-27 21:08:44Z arango $
+% svn $Id$
 %=========================================================================%
-%  Copyright (c) 2002-2023 The ROMS/TOMS Group                            %
+%  Copyright (c) 2002-2025 The ROMS Group                                 %
 %    Licensed under a MIT/X style license                                 %
-%    See License_ROMS.txt                           Hernan G. Arango      %
+%    See License_ROMS.md                            Hernan G. Arango      %
 %=========================================================================%
 
 % Inquire input NetCDF file.
@@ -201,6 +201,24 @@ for n = 1:S.nvars
       if (~isempty(PNGprefix))
         png_file = strcat(PNGprefix, shortname{n}, '_obsXY.png');
         exportgraphics(gcf, png_file, 'resolution', 300);
+      end
+      
+      if (strcmp(Vname, 'absoluteDynamicTopography'))
+	ind = find(S.provenance > 0);
+	if ~isempty(ind)                % removes repetitive observations
+          figure;                       % with negative provenance
+	  Value = S.ObsValue{n};
+          h2 = plot3(S.longitude(ind), S.latitude(ind), Value(ind), 'r+');
+          xlabel('Longitude');
+          ylabel('latitude');
+          zlabel(Vname);
+          grid on;
+          title(['Group:  UniqueObs,   File:  ', untexlabel(MyFile)]);
+          if (~isempty(PNGprefix))
+            png_file = strcat(PNGprefix, shortname{n}, '_noreps_obsXY.png');
+            exportgraphics(gcf, png_file, 'resolution', 300);
+          end
+	end
       end
     end  
   

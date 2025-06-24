@@ -44,6 +44,7 @@ function create_ioda_obs(S, file)
 %               S.ncfile            NetCDF file name (string)
 %               S.nlocs             number of observations
 %               S.nvars             number of variables
+%               S.addDateVar        switch to define 'date_time'
 %               S.ncvname(:)        IODA NetCDF4 variable name
 %               S.variable_names(:) IODA variable standard name
 %               S.units(:)          variables units
@@ -76,11 +77,11 @@ function create_ioda_obs(S, file)
 % }
 %
 
-% svn $Id: create_ioda_obs.m 1156 2023-02-18 01:44:37Z arango $
+% svn $Id$
 %=========================================================================%
-%  Copyright (c) 2002-2023 The ROMS/TOMS Group                            %
+%  Copyright (c) 2002-2025 The ROMS Group                                 %
 %    Licensed under a MIT/X style license                                 %
-%    See License_ROMS.txt                           Hernan G. Arango      %
+%    See License_ROMS.md                            Hernan G. Arango      %
 %=========================================================================%
 
 if (nargin < 2)
@@ -222,7 +223,9 @@ G(PreQ).gid = netcdf.defGrp(ncid, 'PreQC');
 
 MetaVars = {'dateTime', 'latitude', 'longitude', 'sequenceNumber',      ...
             'variables_name'};
-MetaVars = [MetaVars, 'date_time'];
+if (S.addDateVar)
+  MetaVars = [MetaVars, 'date_time'];
+end
 if (do_depth)
   MetaVars = [MetaVars, 'depth'];
 end

@@ -36,11 +36,11 @@ function [S]=ioda_read(ncfile)
 %              S.PreQC            observation quality control
 %
 
-% svn $Id: ioda_read.m 1162 2023-03-27 21:08:44Z arango $
+% svn $Id$
 %=========================================================================%
-%  Copyright (c) 2002-2023 The ROMS/TOMS Group                            %
+%  Copyright (c) 2002-2025 The ROMS Group                                 %
 %    Licensed under a MIT/X style license                                 %
-%    See License_ROMS.txt                           Hernan G. Arango      %
+%    See License_ROMS.md                            Hernan G. Arango      %
 %=========================================================================%
   
 % Initialize.
@@ -54,6 +54,7 @@ S = struct('ncfile'           , [],                                     ...
            'datetimeRef'      , [],                                     ...
            'iodaVarName'      , [],                                     ...
            'variables_name'   , [],                                     ...
+           'shortname'        , [],                                     ...
            'units'            , [],                                     ...
            'dateTime'         , [],                                     ...
            'date_time'        , [],                                     ...
@@ -105,7 +106,9 @@ S.variables_name = cellstr(ncread(ncfile, '/MetaData/variables_name'))';
 
 S.dateTime = double(ncread(ncfile, '/MetaData/dateTime'));
 
-S.date_time = ncread(ncfile, '/MetaData/date_time');
+if (any(strcmp({G.Variables.Name}, 'date_time')))
+  S.date_time = ncread(ncfile, '/MetaData/date_time');
+end
 
 % Set IODA NetCDF variables.
 
