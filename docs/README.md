@@ -11,7 +11,7 @@ running any **`ROMS-JEDI`** application, as well as the available data assimilat
 -  Check out the **`ROMS-JEDI`** interface repository.
 
    ```
-   git clone https://github.com/JCSDA-internal/roms-jedi.git
+   git clone https://github.com/myroms/roms-jedi.git
    ```
 
    During configuration, the latest version of **`ROMS`** source code is downloaded from
@@ -30,7 +30,7 @@ running any **`ROMS-JEDI`** application, as well as the available data assimilat
 
 -  Make sure that you computer have installed the **`jedi-stack`** software for either **gfortran**
    or **ifort** containing several packages need to run the **`ROMS-JEDI`** interface. For more
-   information, please check https://github.com/JCSDA-internal/jedi-stack.
+   information, please check https://github.com/JCSDA/jedi-stack.
 
    In our computers at Rutgers University, the **`jedi-stack`** can be loaded by executing either:
 
@@ -104,7 +104,7 @@ running any **`ROMS-JEDI`** application, as well as the available data assimilat
    configure **`ROMS-JEDI`** in your computer:
 
    ```
-   git clone https://github.com/JCSDA-internal/roms-jedi.git  !> if first time in your computer
+   git clone https://github.com/myroms/roms-jedi.git          !> if first time in your computer
 
    cd roms-jedi                                               !> ROMS-JEDI interface directory, <interface_dir>
    mkdir Bundle_wc13
