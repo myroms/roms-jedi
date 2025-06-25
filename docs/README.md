@@ -8,12 +8,6 @@
 
 # Instructions
 
-# Change Logs
-
-[ROMS-JEDI Change Logs](ROMS-JEDI_ChangeLog.md)
-
-# Instructions
-
 The following instructions should have the steps needed to implement an interface capable of
 running any **`ROMS-JEDI`** application, as well as the available data assimilation drivers.
 
