@@ -1,6 +1,6 @@
 # ROMS interface to JEDI
 
-![Jedi_wc12](https://github.com/JCSDA-internal/roms-jedi/assets/23062912/7542473b-df3a-4495-a226-4a3006a92e6d)
+![Jedi_wc12](https://github.com/user-attachments/assets/c5886719-b83f-4e37-882f-01d3916fa5b4)
 
 The following instructions should have the steps needed to implement an interface capable of
 running any **`ROMS-JEDI`** application, as well as the available data assimilation drivers.
