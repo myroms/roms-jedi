@@ -118,20 +118,20 @@ ecbuild_bundle_initialize()
 if( DEFINED ENV{jedi_cmake_ROOT} )
   include( $ENV{jedi_cmake_ROOT}/share/jedicmake/Functions/git_functions.cmake )
 else()
-  ecbuild_bundle( PROJECT jedicmake GIT "https://github.com/jcsda-internal/jedi-cmake.git" BRANCH develop UPDATE RECURSIVE )
+  ecbuild_bundle( PROJECT jedicmake GIT "https://github.com/jcsda/jedi-cmake.git" BRANCH develop UPDATE RECURSIVE )
   include( jedicmake/cmake/Functions/git_functions.cmake )
 endif()
 
 # Required repositories
 
- ecbuild_bundle( PROJECT roms       GIT "https://github.com/myroms/roms.git"                 BRANCH develop UPDATE )
- ecbuild_bundle( PROJECT oops       GIT "https://github.com/jcsda-internal/oops.git"         BRANCH develop UPDATE )
- ecbuild_bundle( PROJECT vader      GIT "https://github.com/jcsda-internal/vader.git"        BRANCH develop UPDATE )
- ecbuild_bundle( PROJECT saber      GIT "https://github.com/jcsda-internal/saber.git"        BRANCH develop UPDATE )
+ ecbuild_bundle( PROJECT roms       GIT "https://github.com/myroms/roms.git"        BRANCH develop UPDATE )
+ ecbuild_bundle( PROJECT oops       GIT "https://github.com/jcsda/oops.git"         BRANCH develop UPDATE )
+ ecbuild_bundle( PROJECT vader      GIT "https://github.com/jcsda/vader.git"        BRANCH develop UPDATE )
+ ecbuild_bundle( PROJECT saber      GIT "https://github.com/jcsda/saber.git"        BRANCH develop UPDATE )
 
- ecbuild_bundle( PROJECT gsw        GIT "https://github.com/jcsda-internal/GSW-Fortran.git"  BRANCH develop UPDATE )
- ecbuild_bundle( PROJECT ioda       GIT "https://github.com/jcsda-internal/ioda.git"         BRANCH develop UPDATE )
- ecbuild_bundle( PROJECT ufo        GIT "https://github.com/jcsda-internal/ufo.git"          BRANCH develop UPDATE )
+ ecbuild_bundle( PROJECT gsw        GIT "https://github.com/jcsda/GSW-Fortran.git"  BRANCH develop UPDATE )
+ ecbuild_bundle( PROJECT ioda       GIT "https://github.com/jcsda/ioda.git"         BRANCH develop UPDATE )
+ ecbuild_bundle( PROJECT ufo        GIT "https://github.com/jcsda/ufo.git"          BRANCH develop UPDATE )
 
  ecbuild_bundle( PROJECT roms-jedi  SOURCE ../ )
 
