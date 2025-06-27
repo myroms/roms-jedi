@@ -1228,7 +1228,7 @@ PIO_I2C_Preq = 65                 ! Maximum pending I2C requests
 
 ! Input ASCII parameter filenames.
 
-     APARNAM =  Data/wc13/input/rbl4dvar.in
+     APARNAM =  Data/wc13/rbl4dvar.in
      SPOSNAM =  stations.in
      FPOSNAM =  floats.in
      BPARNAM =  bioFasham.in
