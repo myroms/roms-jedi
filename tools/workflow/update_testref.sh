@@ -9,8 +9,9 @@
 #                                                                       :::
 # ROMS-JEDI Unit Test Reference file update BASH script:                ::: 
 #                                                                       :::
-# It updates the reference file for a specific ROMS-JEDI Unit Test.     :::
-# As the JEDI build blocks and the ROMS-JEDI interface evolve, the      :::
+# It updates the reference file for a specific ROMS-JEDI Unit Test,     :::
+# or a list of ROMS-JEDI Unit Tests from the LastTestsFailed.log file.  :::
+# As the JEDI building blocks and the ROMS-JEDI interface evolve, the   :::
 # regression data values for each test case may need to be updated.     :::
 # This script facilitates such a task, which must be executed from      :::
 # the "roms-jedi/build/roms-jedi/test" sub-directory.                   :::
@@ -18,6 +19,10 @@
 # Usage:                                                                :::
 #                                                                       :::
 #   update_testref.sh  yaml_file                                        :::
+#                                                                       :::
+# or                                                                    :::
+#                                                                       :::
+#   update_testref.sh                                                   :::
 #                                                                       :::
 # Options:                                                              :::
 #                                                                       :::
@@ -30,21 +35,51 @@
 #   update_testref.sh 4dvar_bump.yaml                                   :::
 # or                                                                    :::
 #   update_testref.sh 4dvar_bump                                        :::
+# or                                                                    :::
+#   update_testref.sh                                                   :::
 #                                                                       :::
 #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-prefix=`basename $1 .yaml`
+from_file=1
+file="../Testing/Temporary/LastTestsFailed.log"
+
+separator=`perl -e "print '<>' x 50;"`
+
+if [[ "$#" -eq 1 ]]; then
+  testname=`basename $1 .yaml`
+  tests=("${testname}")
+  from_file=0
+fi
 
 echo " "
 echo "Current directory: ${PWD}"
 echo " "
 
-out_file=testoutput/${prefix}.out
-ref_file=testref/${prefix}.ref
+# Fill the "tests" array if the faild tests log file exists.
 
-if [[ ! -f ${out_file} ]]; then
-  echo "Cannot find: $(PWD)/${out_file}"
-else
-  cp -fv ${out_file} ${ref_file}
+if [[ ${from_file} ]]; then
+  if [[ ! -f "${file}" ]]; then
+    echo "Failed test log file ${file} not found."
+    exit 1
+  fi
+
+  while IFS= read -r line || [[ -n "${line}" ]]
+  do
+   testname=$(sed 's/.*:test_romsjedi_//' <<< "${line}")
+   tests+=("${testname}")
+  done < "${file}"
 fi
 
+# Update the reference files listed in the tests array
+
+for prefix in "${tests[@]}"
+do
+  out_file=testoutput/${prefix}.out
+  ref_file=testref/${prefix}.ref
+  
+  if [[ ! -f ${out_file} ]]; then
+    echo "Cannot find: $(PWD)/${out_file}"
+  else
+    cp -fv ${out_file} ${ref_file}
+  fi
+done
