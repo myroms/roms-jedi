@@ -43,9 +43,12 @@
 #                                                                       :::
 #                          jedi_config.csh suffix -d                    :::
 #                                                                       :::
+#  -n NP                 Number of MPI processes, if using -a option    :::
+#                          NP = 12 by default                           :::
+#                                                                       :::
 # Example: (suffix = wc12)                                              :::
 #                                                                       :::
-#   jedi_config.csh wc12 -a WC12 /home/arango/ROMS/JediApps/wc12        :::
+#   jedi_config.csh wc12 -a WC12 /home/arango/ROMS/JediApps/wc12 -n 16  :::
 #                                                                       :::
 #   It creates the "build_wc12" and "Bundle_wc12" sub-directories and   :::
 #   the command line needed to start the configuration:                 :::
@@ -65,7 +68,7 @@ set separator = `perl -e "print '<>' x 50;"`
 
 set debug = 0
 set other_app = 0
-set NUMPROC = 12           # number of processors other application
+set NP = 12              # number of processors other application
 
 while ( ($#argv) > 0 )
   switch ($1)
@@ -80,6 +83,12 @@ while ( ($#argv) > 0 )
 
     case "-d"
       set debug = 1
+      shift
+    breaksw
+
+    case "-n"
+      shift
+      set NP = 1
       shift
     breaksw
 
@@ -139,7 +148,7 @@ if ( ${debug} == 1 ) then
     if ( ${ROMSAPP} == "WC13" ) then
       echo ecbuild -DMPIEXEC_EXECUTABLE=\$MPIRUN -DMPIEXEC_NUMPROC_FLAG=\"-n\" -DPython3_EXECUTABLE=\"\`which python3\`\" -DROMS_APP=${ROMSAPP} -DROMS_APP_DIR=${APP_DIR} -DCMAKE_BUILD_TYPE=Debug ../${Bundle}
     else
-      echo ecbuild -DMPIEXEC_EXECUTABLE=\$MPIRUN -DMPIEXEC_NUMPROC_FLAG=\"-n\" -DMPIEXEC_NUMPROC=12 -DPython3_EXECUTABLE=\"\`which python3\`\" -DROMS_APP=${ROMSAPP} -DROMS_APP_DIR=${APP_DIR} -DCMAKE_BUILD_TYPE=Debug ../${Bundle}
+      echo ecbuild -DMPIEXEC_EXECUTABLE=\$MPIRUN -DMPIEXEC_NUMPROC_FLAG=\"-n\" -DMPIEXEC_NUMPROC=${NP} -DPython3_EXECUTABLE=\"\`which python3\`\" -DROMS_APP=${ROMSAPP} -DROMS_APP_DIR=${APP_DIR} -DCMAKE_BUILD_TYPE=Debug ../${Bundle}
     endif
     echo "${separator}"
   else
@@ -156,7 +165,7 @@ else
     if ( ${ROMSAPP} == "WC13" ) then
       echo ecbuild -DMPIEXEC_EXECUTABLE=\$MPIRUN -DMPIEXEC_NUMPROC_FLAG=\"-n\" -DPython3_EXECUTABLE=\"\`which python3\`\" -DROMS_APP=${ROMSAPP} -DROMS_APP_DIR=${APP_DIR} -DCMAKE_BUILD_TYPE=Release ../${Bundle}
     else
-      echo ecbuild -DMPIEXEC_EXECUTABLE=\$MPIRUN -DMPIEXEC_NUMPROC_FLAG=\"-n\" -DMPIEXEC_NUMPROC=12 -DPython3_EXECUTABLE=\"\`which python3\`\" -DROMS_APP=${ROMSAPP} -DROMS_APP_DIR=${APP_DIR} -DCMAKE_BUILD_TYPE=Release ../${Bundle}
+      echo ecbuild -DMPIEXEC_EXECUTABLE=\$MPIRUN -DMPIEXEC_NUMPROC_FLAG=\"-n\" -DMPIEXEC_NUMPROC=${NP} -DPython3_EXECUTABLE=\"\`which python3\`\" -DROMS_APP=${ROMSAPP} -DROMS_APP_DIR=${APP_DIR} -DCMAKE_BUILD_TYPE=Release ../${Bundle}
     endif
     echo "${separator}"
   else
