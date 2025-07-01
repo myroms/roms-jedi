@@ -1,6 +1,6 @@
+CostJo   : Nonlinear Jo(InsituTS) = 4.8999797231392934e+00, nobs = 2, Jo/n = 2.4499898615696467e+00, err = 4.3293454646615259e-01
 Norm of input parameter StdDev: 7.7673304369178204e+03
 CostJb   : Nonlinear Jb = 0.0000000000000000e+00
-CostJo   : Nonlinear Jo(InsituTS) = 4.8999797231392934e+00, nobs = 2, Jo/n = 2.4499898615696467e+00, err = 4.3293454646615259e-01
 CostFunction: Nonlinear J = 4.8999797231392934e+00
 PLanczosMinimizer: reduction in residual norm = 1.2918510388562959e-01
 CostFunction::addIncrement: Analysis: 
@@ -14,6 +14,6 @@ sea_water_temperature                                         Min =  1.113304510
 sea_water_salinity                                            Min =  3.190610137897763e+01  Min =  3.468966426432459e+01  Mean =  3.394614743141011e+01
 model_level_depth_at_cell_center                              Min = -4.947840267560327e+03  Min = -2.457733757631713e-01  Mean = -1.072647945779636e+03
 
-CostJb   : Nonlinear Jb = 1.191769233516393e+00
 CostJo   : Nonlinear Jo(InsituTS) = 2.187464805680678e+00, nobs = 2, Jo/n = 1.093732402840339e+00, err = 4.329345464661526e-01
+CostJb   : Nonlinear Jb = 1.191769233516393e+00
 CostFunction: Nonlinear J = 3.379234039197071e+00

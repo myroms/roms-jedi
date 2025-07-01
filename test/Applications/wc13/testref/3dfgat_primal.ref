@@ -1,9 +1,9 @@
-Norm of input parameter StdDev: 7.7673304369178204e+03
-CostJb   : Nonlinear Jb = 0.0000000000000000e+00
 CostJo   : Nonlinear Jo(InsituTemperature) = 3.2531002229028863e+03, nobs = 168, Jo/n = 1.9363691802993372e+01, err = 2.5234512478170978e-01
 CostJo   : Nonlinear Jo(InsituSalinity) = 3.6340731796860118e+03, nobs = 125, Jo/n = 2.9072585437488094e+01, err = 5.1789821985162861e-02
 CostJo   : Nonlinear Jo(SST) = 3.0713196993832271e+03, nobs = 4952, Jo/n = 6.2021803299338185e-01, err = 4.0783752598605327e-01
 CostJo   : Nonlinear Jo(ADT) = 1.7863983188436116e+03, nobs = 1570, Jo/n = 1.1378333241042111e+00, err = 2.0313911453614535e-02
+Norm of input parameter StdDev: 7.7673304369178204e+03
+CostJb   : Nonlinear Jb = 0.0000000000000000e+00
 CostFunction: Nonlinear J = 1.1744891420815738e+04
 Eigenvalue 1 : 2.2770234855256117e+03
 Norm eigenvector = 2.8663942535316935e+00
@@ -27,9 +27,9 @@ sea_water_temperature                                         Min =  1.113304510
 sea_water_salinity                                            Min =  3.190610137897763e+01  Min =  3.468966426432459e+01  Mean =  3.394399398918360e+01
 model_level_depth_at_cell_center                              Min = -4.947835853436786e+03  Min = -3.461112887193400e-01  Mean = -1.072656533349462e+03
 
-CostJb   : Nonlinear Jb = 4.753580965091196e+01
 CostJo   : Nonlinear Jo(InsituTemperature) = 1.048836179107597e+03, nobs = 168, Jo/n = 6.243072494688076e+00, err = 2.523451247817098e-01
 CostJo   : Nonlinear Jo(InsituSalinity) = 7.329368762852238e+02, nobs = 125, Jo/n = 5.863495010281790e+00, err = 5.178982198516286e-02
 CostJo   : Nonlinear Jo(SST) = 2.952585982181346e+03, nobs = 4952, Jo/n = 5.962411111028566e-01, err = 4.078375259860533e-01
 CostJo   : Nonlinear Jo(ADT) = 1.705113667234191e+03, nobs = 1570, Jo/n = 1.086059660658720e+00, err = 2.031391145361454e-02
+CostJb   : Nonlinear Jb = 4.753580965091196e+01
 CostFunction: Nonlinear J = 6.487008514459269e+03

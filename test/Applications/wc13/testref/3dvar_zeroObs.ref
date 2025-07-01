@@ -1,6 +1,6 @@
+CostJo   : Nonlinear Jo(SST) = 0.0000000000000000e+00 --- No Observations
 Norm of input parameter StdDev: 7.7673304369178204e+03
 CostJb   : Nonlinear Jb = 0.0000000000000000e+00
-CostJo   : Nonlinear Jo(SST) = 0.0000000000000000e+00 --- No Observations
 CostFunction: Nonlinear J = 0.0000000000000000e+00
 CostFunction::addIncrement: Analysis: 
   Valid time: 2004-01-05T00:00:00Z
@@ -13,6 +13,6 @@ sea_water_temperature                                         Min =  1.113304510
 sea_water_salinity                                            Min =  3.190610137897763e+01  Min =  3.468966426432459e+01  Mean =  3.394596584466760e+01
 model_level_depth_at_cell_center                              Min = -4.947840267560327e+03  Min = -2.457733757631713e-01  Mean = -1.072647945779636e+03
 
-CostJb   : Nonlinear Jb = 0.000000000000000e+00
 CostJo   : Nonlinear Jo(SST) = 0.000000000000000e+00 --- No Observations
+CostJb   : Nonlinear Jb = 0.000000000000000e+00
 CostFunction: Nonlinear J = 0.000000000000000e+00

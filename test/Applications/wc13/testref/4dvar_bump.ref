@@ -1,9 +1,9 @@
-Norm of input parameter StdDev: 7.7673304369177549e+03
-CostJb   : Nonlinear Jb = 0.0000000000000000e+00
 CostJo   : Nonlinear Jo(InsituTemperature) = 3.2542564204366149e+03, nobs = 168, Jo/n = 1.9370573931170327e+01, err = 2.5234512478170978e-01
 CostJo   : Nonlinear Jo(InsituSalinity) = 3.6331175611876006e+03, nobs = 125, Jo/n = 2.9064940489500806e+01, err = 5.1789821985162882e-02
 CostJo   : Nonlinear Jo(SST) = 3.1010790732360970e+03, nobs = 4952, Jo/n = 6.2622759960341212e-01, err = 4.0783752598604595e-01
 CostJo   : Nonlinear Jo(ADT) = 1.7862880409494342e+03, nobs = 1570, Jo/n = 1.1377630834072829e+00, err = 2.0313911453614737e-02
+Norm of input parameter StdDev: 7.7673304369177549e+03
+CostJb   : Nonlinear Jb = 0.0000000000000000e+00
 CostFunction: Nonlinear J = 1.1774741095809746e+04
 RPCGMinimizer: reduction in residual norm = -nan
 CostFunction::addIncrement: Analysis: 
@@ -26,9 +26,9 @@ vertical_viscosity_coefficient_of_sea_water                   Min =  1.000000000
 vertical_diffusion_coefficient_of_temperature_in_sea_water    Min =  1.000000000000000e-05  Min =  6.519781139972389e-01  Mean =  3.204976323811520e-03
 vertical_diffusion_coefficient_of_salinity_in_sea_water       Min =  1.000000000000000e-05  Min =  6.519781139972389e-01  Mean =  3.204976323811520e-03
 
-CostJb   : Nonlinear Jb = 1.265824663121557e+01
 CostJo   : Nonlinear Jo(InsituTemperature) = 2.050745148126236e+03, nobs = 168, Jo/n = 1.220681635789426e+01, err = 2.523451247817098e-01
 CostJo   : Nonlinear Jo(InsituSalinity) = 2.406309207123802e+03, nobs = 125, Jo/n = 1.925047365699042e+01, err = 5.178982198516288e-02
 CostJo   : Nonlinear Jo(SST) = 3.198644341114957e+03, nobs = 4952, Jo/n = 6.459297942477700e-01, err = 4.078375259860459e-01
 CostJo   : Nonlinear Jo(ADT) = 1.381443959438300e+03, nobs = 1570, Jo/n = 8.799006111071977e-01, err = 2.031391145361474e-02
+CostJb   : Nonlinear Jb = 1.265824663121557e+01
 CostFunction: Nonlinear J = 9.049800902434512e+03
