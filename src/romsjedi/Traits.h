@@ -14,7 +14,9 @@
 #include "romsjedi/Geometry/Geometry.h"
 #include "romsjedi/GeometryIterator/GeometryIterator.h"
 #include "romsjedi/Increment/Increment.h"
+#include "romsjedi/LinearModel/LinearModel.h"
 #include "romsjedi/LinearVariableChange/LinearVariableChange.h"
+#include "romsjedi/Model/Model.h"
 #include "romsjedi/ModelBias/ModelBias.h"
 #include "romsjedi/ModelBias/ModelBiasCovariance.h"
 #include "romsjedi/ModelBias/ModelBiasIncrement.h"
@@ -36,7 +38,9 @@ namespace romsjedi {
     typedef romsjedi::Geometry             Geometry;
     typedef romsjedi::GeometryIterator     GeometryIterator;
     typedef romsjedi::Increment            Increment;
+    typedef romsjedi::LMroms               LinearModel;
     typedef romsjedi::LinearVariableChange LinearVariableChange;
+    typedef romsjedi::NLroms               Model;
     typedef romsjedi::ModelBias            ModelAuxControl;
     typedef romsjedi::ModelBiasCovariance  ModelAuxCovariance;
     typedef romsjedi::ModelBiasIncrement   ModelAuxIncrement;

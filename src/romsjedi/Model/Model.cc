@@ -22,7 +22,6 @@
 #include "oops/util/DateTime.h"
 #include "oops/util/Logger.h"
 
-#include "romsjedi/Traits.h"
 #include "romsjedi/Geometry/Geometry.h"
 #include "romsjedi/Model/Model.h"
 #include "romsjedi/Model/ModelFortran.h"
@@ -36,47 +35,43 @@ namespace romsjedi {
 
 // ----------------------------------------------------------------------------
 
-  static oops::interface::ModelMaker<Traits, Model> modelmaker_("ROMS");
-
-// ----------------------------------------------------------------------------
-
-  Model::Model(const Geometry & geom,
-               const eckit::Configuration & config)
+  NLroms::NLroms(const Geometry & geom,
+                 const eckit::Configuration & config)
     : geom_(geom),
       keyConfig_(0),
       tstep_(0),
       vars_(config, "model variables")
   {
-    Log::trace() << classname() << ":Model starting" << std::endl;
+    Log::trace() << classname() << ":NLroms starting" << std::endl;
 
     ModelParameters params;
     params.deserialize(config);
     tstep_ = util::Duration(config.getString("tstep"));
 
-    Log::debug() << classname() << ":Model variables: " << vars_ << std::endl;
-    Log::debug() << classname() << ":Model NL Time Step = "
+    Log::debug() << classname() << ":NLroms variables: " << vars_ << std::endl;
+    Log::debug() << classname() << ":NLroms Time Step = "
                                 << tstep_.toSeconds() << std::endl;
 
     roms_model_create_f90(config,
                           geom_.toFortran(),
                           keyConfig_);
 
-    oops::Log::trace() << classname() << ":Model done" << std::endl;
+    oops::Log::trace() << classname() << ":NLroms done" << std::endl;
   }
 
 // ----------------------------------------------------------------------------
 
-  Model::~Model() {
-  Log::trace() << classname() << ":~Model starting" << std::endl;
+  NLroms::~NLroms() {
+  Log::trace() << classname() << ":~NLroms starting" << std::endl;
 
   roms_model_delete_f90(keyConfig_);
 
-  Log::trace() << classname() << ":~Model done" << std::endl;
+  Log::trace() << classname() << ":~NLroms done" << std::endl;
   }
 
 // ----------------------------------------------------------------------------
 
-  void Model::initialize(State & xx) const {
+  void NLroms::initialize(State & xx) const {
   util::DateTime * dtp = &xx.validTime();
 
   Log::trace() << classname() << ":initialize starting" << std::endl;
@@ -91,7 +86,7 @@ namespace romsjedi {
 
 // ----------------------------------------------------------------------------
 
-  void Model::step(State & xx,
+  void NLroms::step(State & xx,
                    const ModelBias &) const {
     Log::trace() << classname() << ":step starting" << std::endl;
 
@@ -110,7 +105,7 @@ namespace romsjedi {
 
 // ----------------------------------------------------------------------------
 
-  void Model::finalize(State & xx) const {
+  void NLroms::finalize(State & xx) const {
     Log::trace() << classname() << ":finalize starting" << std::endl;
 
     roms_model_finalize_f90(keyConfig_, xx.toFortran());
@@ -120,8 +115,8 @@ namespace romsjedi {
 
 // ----------------------------------------------------------------------------
 
-  void Model::print(std::ostream & os) const {
-    os << "Model::print not implemented";
+  void NLroms::print(std::ostream & os) const {
+    os << "NLroms::print not implemented";
   }
 
 // ----------------------------------------------------------------------------

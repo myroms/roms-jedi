@@ -18,7 +18,6 @@
 #include "romsjedi/LinearVariableChange/Model2Analysis/LinVarChaModel2Analysis.h"
 #include "romsjedi/LinearVariableChange/Model2Analysis/LinVarChaModel2AnalysisFortran.h"
 #include "romsjedi/State/State.h"
-#include "romsjedi/Traits.h"
 
 namespace romsjedi {
 

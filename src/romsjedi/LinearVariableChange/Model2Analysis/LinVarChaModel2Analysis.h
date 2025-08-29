@@ -15,7 +15,6 @@
 #include "eckit/config/Configuration.h"
 
 #include "romsjedi/LinearVariableChange/Base/LinearVariableChangeBase.h"
-#include "romsjedi/Traits.h"
 
 namespace romsjedi {
   class Geometry;

@@ -11,7 +11,7 @@ forecast length: &ForecastLength PT96H         # 96 hours (4 days) window ending
                                                # or other smaller interval
 
 model:
-  name: ROMS
+  name: NLROMS
   tstep: PT1800S                               # WC13 has a 30 minutes timestep
 # tstep: PT6H                                  # WC13 has a 30 minutes timestep
   simulation length: *ForecastLength

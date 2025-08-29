@@ -5,7 +5,6 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "oops/generic/instantiateModelFactory.h"
 #include "oops/runs/Run.h"
 #include "oops/runs/Variational.h"
 #include "saber/oops/instantiateCovarFactory.h"
@@ -17,10 +16,9 @@
 
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);
-  oops::instantiateModelFactory<romsjedi::Traits>();
+  saber::instantiateCovarFactory<romsjedi::Traits>();
   ufo::instantiateObsErrorFactory();
   ufo::instantiateObsFilterFactory();
-  saber::instantiateCovarFactory<romsjedi::Traits>();
   oops::Variational<romsjedi::Traits, ufo::ObsTraits> var;
   return run.execute(var);
 }

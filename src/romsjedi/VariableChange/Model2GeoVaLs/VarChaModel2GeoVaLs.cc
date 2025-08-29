@@ -13,7 +13,6 @@
 
 #include "romsjedi/Geometry/Geometry.h"
 #include "romsjedi/State/State.h"
-#include "romsjedi/Traits.h"
 #include "romsjedi/VariableChange/Model2GeoVaLs/VarChaModel2GeoVaLs.h"
 #include "romsjedi/VariableChange/Model2GeoVaLs/VarChaModel2GeoVaLsFortran.h"
 

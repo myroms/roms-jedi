@@ -18,7 +18,6 @@
 #define ROMSJEDI_MODEL_MODELPARAMETERS_H_
 
 #include "oops/base/Variables.h"
-#include "oops/interface/ModelBase.h"
 #include "oops/util/Duration.h"
 #include "oops/util/parameters/Parameters.h"
 #include "oops/util/parameters/RequiredParameter.h"

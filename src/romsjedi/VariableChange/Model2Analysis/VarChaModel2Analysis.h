@@ -13,8 +13,8 @@
 #include <string>
 
 #include "eckit/config/Configuration.h"
+
 #include "romsjedi/Geometry/Geometry.h"
-#include "romsjedi/Traits.h"
 #include "romsjedi/VariableChange/Base/VariableChangeBase.h"
 
 namespace romsjedi {

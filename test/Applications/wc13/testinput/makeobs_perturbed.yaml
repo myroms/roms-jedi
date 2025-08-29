@@ -10,7 +10,7 @@ forecast length: &ForecastLength P4D           # 4-days window ending on 2004-01
                                                # or other smaller interval
 
 model:
-  name: ROMS
+  name: NLROMS
   tstep: PT1800S                               # WC13 has a 30 minutes timestep
   simulation length: *ForecastLength
 

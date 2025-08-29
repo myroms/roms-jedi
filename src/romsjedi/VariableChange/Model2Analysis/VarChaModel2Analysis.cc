@@ -14,7 +14,6 @@
 
 #include "romsjedi/Geometry/Geometry.h"
 #include "romsjedi/State/State.h"
-#include "romsjedi/Traits.h"
 #include "romsjedi/VariableChange/Model2Analysis/VarChaModel2Analysis.h"
 #include "romsjedi/VariableChange/Model2Analysis/VarChaModel2AnalysisFortran.h"
 

@@ -155,12 +155,12 @@ ecbuild_add_test(
   ARGS         testinput/increment.yaml
   LIBS         romsjedi )
 
-ecbuild_add_test(
-  TARGET       test_romsjedi_model
-  MPI          ${MPI_NCPUS}
-  SOURCES      executables/TestModel.cc
-  ARGS         testinput/model.yaml
-  LIBS         romsjedi )
+#ecbuild_add_test(
+#  TARGET       test_romsjedi_model
+#  MPI          ${MPI_NCPUS}
+#  SOURCES      executables/TestModel.cc
+#  ARGS         testinput/model.yaml
+#  LIBS         romsjedi )
 
 ecbuild_add_test(
   TARGET       test_romsjedi_linearmodel

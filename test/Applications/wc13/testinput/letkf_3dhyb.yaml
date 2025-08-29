@@ -51,7 +51,7 @@ cost function:
     ng: 1                                          # ROMS nested grid number
 
   model:
-    name: ROMS
+    name: NLROMS
     model variables: *roms_state
     simulation length: *ForecastLength
     tstep: *TimeStep

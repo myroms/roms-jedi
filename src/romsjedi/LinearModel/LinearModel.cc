@@ -22,7 +22,6 @@
 #include "oops/util/DateTime.h"
 #include "oops/util/Logger.h"
 
-#include "romsjedi/Traits.h"
 #include "romsjedi/Geometry/Geometry.h"
 #include "romsjedi/Increment/Increment.h"
 #include "romsjedi/LinearModel/LinearModel.h"
@@ -34,20 +33,15 @@ namespace romsjedi {
 
 // -----------------------------------------------------------------------------
 
-  static oops::interface::LinearModelMaker<Traits, LinearModel>
-                          linearModelmaker_("LMROMS");
-
-// -----------------------------------------------------------------------------
-
-  LinearModel::LinearModel(const Geometry & geom,
-                           const eckit::Configuration & config)
+  LMroms::LMroms(const Geometry & geom,
+                 const eckit::Configuration & config)
     : geom_(geom),
       keySelf_(0),
       tstep_(),
       steptraj_(),
       trajmap_()
   {
-  oops::Log::trace() << classname() << ":LinearModel starting" << std::endl;
+  oops::Log::trace() << classname() << ":LMroms starting" << std::endl;
 
   // Store time step
 
@@ -55,11 +49,11 @@ namespace romsjedi {
   steptraj_ = util::Duration(config.getString("trajectory.tstep",
                                               tstep_.toString()));
 
-  oops::Log::debug() << classname() << ":LinearModel TL/AD Time Step = "
+  oops::Log::debug() << classname() << ":LMroms TL/AD Time Step = "
                      << tstep_.toSeconds() << " seconds" << std::endl;
-  oops::Log::debug() << classname() << ":LinearModel Trajectory Step = "
+  oops::Log::debug() << classname() << ":LMroms Trajectory Step = "
                      << steptraj_.toSeconds() << " seconds" << std::endl;
-  oops::Log::debug() << classname() << ":LinearModel MOD(steptraj, tstep) = "
+  oops::Log::debug() << classname() << ":LMroms MOD(steptraj, tstep) = "
                      << steptraj_ % tstep_ << std::endl;
 
   ASSERT(steptraj_ % tstep_ == 0);
@@ -69,13 +63,13 @@ namespace romsjedi {
   roms_linearModel_create_f90(keySelf_,
                               geom_.toFortran(),
                               config);
-  oops::Log::trace() << classname() << ":LinearModel done" << std::endl;
+  oops::Log::trace() << classname() << ":LMroms done" << std::endl;
   }
 
 // -----------------------------------------------------------------------------
 
-  LinearModel::~LinearModel() {
-    oops::Log::trace() << classname() << ":~LinearModel starting" << std::endl;
+  LMroms::~LMroms() {
+    oops::Log::trace() << classname() << ":~LMroms starting" << std::endl;
 
   // Implementation
 
@@ -86,14 +80,14 @@ namespace romsjedi {
     for (trajIter jtra = trajmap_.begin(); jtra != trajmap_.end(); ++jtra) {
       roms_trajectory_destroy_f90(jtra->second);
     }
-    oops::Log::trace() << classname() << ":~LinearModel done" << std::endl;
+    oops::Log::trace() << classname() << ":~LMroms done" << std::endl;
   }
 
 // -----------------------------------------------------------------------------
 
-  void LinearModel::setTrajectory(const State & xx,
-                                  State & xlr,
-                                  const ModelBias & bias) {
+  void LMroms::setTrajectory(const State & xx,
+                             State & xlr,
+                             const ModelBias & bias) {
     oops::Log::trace() << classname() << ":setTrajectory starting" << std::endl;
 
   // Interpolate to resolution of the trajectory
@@ -117,8 +111,8 @@ namespace romsjedi {
 
 // -----------------------------------------------------------------------------
 
-  void LinearModel::initializeTL(Increment & dx) const {
-    oops::Log::trace() << "LinearModel::initializeTL starting" << std::endl;
+  void LMroms::initializeTL(Increment & dx) const {
+    oops::Log::trace() << "LMroms::initializeTL starting" << std::endl;
 
   // Get stored NL trajectory map indices. The trajectory may be stored
   // at every timestep (high-memory requirements) or at "trajectory.tstep"
@@ -164,7 +158,7 @@ namespace romsjedi {
 
 // -----------------------------------------------------------------------------
 
-  void LinearModel::stepTL(Increment & dx, const ModelBiasIncrement &) const {
+  void LMroms::stepTL(Increment & dx, const ModelBiasIncrement &) const {
     oops::Log::trace() << classname() << ":stepTL starting" << std::endl;
 
   // Get stored NL trajectory map indices. The trajectory may be stored
@@ -230,7 +224,7 @@ namespace romsjedi {
 
 // -----------------------------------------------------------------------------
 
-  void LinearModel::finalizeTL(Increment & dx) const {
+  void LMroms::finalizeTL(Increment & dx) const {
     oops::Log::trace() << classname() << ":finalizeTL starting" << std::endl;
 
   // Implementation
@@ -245,7 +239,7 @@ namespace romsjedi {
 
 // -----------------------------------------------------------------------------
 
-  void LinearModel::initializeAD(Increment & dx) const {
+  void LMroms::initializeAD(Increment & dx) const {
     oops::Log::trace() << classname() << ":initializeAD starting" << std::endl;
 
   // Get stored NL trajectory map indices. The trajectory may be stored
@@ -292,7 +286,7 @@ namespace romsjedi {
 
 // -----------------------------------------------------------------------------
 
-  void LinearModel::stepAD(Increment & dx, ModelBiasIncrement &) const {
+  void LMroms::stepAD(Increment & dx, ModelBiasIncrement &) const {
     oops::Log::trace() << classname() << ":stepAD starting" << std::endl;
 
   // Advance backward adjoint increment clock.
@@ -358,7 +352,7 @@ namespace romsjedi {
 
 // -----------------------------------------------------------------------------
 
-  void LinearModel::finalizeAD(Increment & dx) const {
+  void LMroms::finalizeAD(Increment & dx) const {
     oops::Log::trace() << classname() << ":finalizeAD starting" << std::endl;
 
   // Implementation
@@ -373,7 +367,7 @@ namespace romsjedi {
 
 // -----------------------------------------------------------------------------
 
-  void LinearModel::print(std::ostream & os) const {
+  void LMroms::print(std::ostream & os) const {
     oops::Log::trace() << classname() << ":print starting" << std::endl;
 
   // Print information about ROMS LinearModel object

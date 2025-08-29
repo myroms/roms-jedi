@@ -21,7 +21,7 @@ increment variables: &roms_analysis
 
 _obs distribution: &ObsSpaceDistribution
   name: Halo
-  halo size: 150.0e3
+  halo size: 3500.0e3
 
 _hor obs localization: &HorizontalObsLoc
   localization method: Horizontal Gaspari-Cohn

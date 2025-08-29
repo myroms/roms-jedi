@@ -17,7 +17,6 @@
 #include "romsjedi/LinearVariableChange/Model2GeoVaLs/LinVarChaModel2GeoVaLs.h"
 #include "romsjedi/LinearVariableChange/Model2GeoVaLs/LinVarChaModel2GeoVaLsFortran.h"
 #include "romsjedi/State/State.h"
-#include "romsjedi/Traits.h"
 
 namespace romsjedi {
 

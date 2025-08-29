@@ -20,35 +20,37 @@
 #include <memory>
 #include <ostream>
 #include <string>
+#include <vector>
 
 #include "oops/base/Variables.h"
-#include "oops/interface/ModelBase.h"
 #include "oops/util/Duration.h"
 #include "oops/util/ObjectCounter.h"
+
+#include "romsjedi/Geometry/Geometry.h"
 
 // Forward declarations
 
 namespace romsjedi {
-  class Geometry;
-  class ModelAuxControl;
-  struct Traits;
+  class ModelBias;
+  class State;
 }
 
 // ----------------------------------------------------------------------------
 
 namespace romsjedi {
 
-  // ROMS NLM Model Class
+  // ROMS Nonlinear Model Class
 
-  class Model : public oops::interface::ModelBase<Traits>,
-                private util::ObjectCounter<Model> {
+  class NLroms : public util::Printable,
+                 private util::ObjectCounter<NLroms> {
    public:
-    static const std::string classname() {return "romsjedi::Model";}
+    static const std::string classname() {return "romsjedi::NLROMS";}
+    static std::vector<std::string> names() {return {"NLROMS"};}
 
     // Constructors / Destructor
 
-    Model(const Geometry &, const eckit::Configuration &);
-    ~Model();
+    NLroms(const Geometry &, const eckit::Configuration &);
+    ~NLroms();
 
     // Model stages: Initialze, Step, and Finalize
 

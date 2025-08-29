@@ -14,7 +14,7 @@ time window:
   length: *ForecastLength
 
 model:
-  name: ROMS
+  name: NLROMS
   tstep: PT1800S                               # WC13 has a 30 minutes timestep
   simulation length: *ForecastLength
 

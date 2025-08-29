@@ -13,7 +13,6 @@
 #include <string>
 
 #include "romsjedi/LinearVariableChange/Base/LinearVariableChangeBase.h"
-#include "romsjedi/Traits.h"
 
 // Forward declarations
 
