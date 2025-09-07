@@ -13,13 +13,21 @@ function create_ioda_obs(S, file)
 %   group: MetaData {
 %     variables:
 %       int64 dateTime(Location) ;
-%       string date_time(Location) ;
+%       int64 dateTimeAverageBegin(timeWindow) ;
+%       int64 dateTimeAverageEnd(timeWindow) ;
 %       float depth(Location) ;
 %       float latitude(Location) ;
 %       float longitude(Location) ;
-%       int provenance(Location) ;  
+%       int provenance(Location) ;
 %       int sequenceNumber(Location) ;
+%       float spatialAverage ;
+%       int stateID(nvars);
+%       int surveyIndex(survey)  ;
+%       int64 surveyTime(survey)  ;
 %       string variables_name(nvars) ;
+%       float x_grid(Location) ;
+%       float y_grid(Location) ;
+%       float z_grid(Location) ;
 %   }
 %
 %   group: ObsError {
@@ -36,22 +44,36 @@ function create_ioda_obs(S, file)
 %     variables:
 %       float myObsVariableName(Location) ;
 %   }
-%  
+%
 % On Input:
 %
 %    S        Observations file creation parameters (struct):
 %
 %               S.ncfile            NetCDF file name (string)
-%               S.nlocs             number of observations
-%               S.nvars             number of variables
-%               S.addDateVar        switch to define 'date_time'
 %               S.ncvname(:)        IODA NetCDF4 variable name
-%               S.variable_names(:) IODA variable standard name
-%               S.units(:)          variables units
+%               S.nlocs             number of observations
+%               S.nsurvey           number of survey times
+%               S.nvars             number of variables
+%               S.timeWindow        mumber of time-aeraged windows
+%               S.dateTime          observation time
 %               S.depth             depth of observation
+%               S.latitude          observation latitude
+%               S.longitude         observation latitude
 %               S.provenance        observation provenance
-%               S.TimeIODA          IODA reference time YYYYMMDDHH
+%               S.sequenceNumber    observation sequence number
+%               S.areaAvgRadius     area-averaged radius
+%               S.timeAvgBegin      time-averaged window start
+%               S.timeAvgEnd        time-averaged window end
+%               S.stateId           state variable identifier
+%               S.surveyIndex       indices as it appear in dateTime
+%               S.surveyTime        observation survey times
+%               S.units(:)          variables units
+%               S.variable_names(:) IODA variable standard name
+%               S.x_grid            fractional x-grid location
+%               S.y_grid            fractional y-grid location
+%               S.z_grid            fractional z-grid location
 %               S.DateIODA          IODA reference date string
+%               S.TimeIODA          IODA reference time YYYYMMDDHH
 %
 %    file     Output observation file name (string, OPTIONAL). If provided,
 %               it creates this file instead the one in S.ncfile.
@@ -64,20 +86,16 @@ function create_ioda_obs(S, file)
 %
 % group: MetaData {
 %
-%   string date_time(Location) ;
-%          date_time:long_name = "ISO 8601 UTC date and time string" ;
 %   string variables_name(nvars) ;
 %          variables_name:long_name = "observation UFO/IODA standard name" ;
 %
-% data:  
-%
-%   date_time = "2004-01-03T14:21:00Z", "2004-01-03T14:21:00Z", ... ;
+% data:
 %
 %   variables_name = "absolute_dynamic_topography" ;
 % }
 %
 
-% svn $Id$
+% git $Id$
 %=========================================================================%
 %  Copyright (c) 2002-2025 The ROMS Group                                 %
 %    Licensed under a MIT/X style license                                 %
@@ -106,9 +124,10 @@ Vyear    = sscanf(Mversion, '%i');
 
 % Set indices for local dimension structure vector element.
 
-nlocs = 1;           % "Location" dimension index
-nvars = 2;           % "nvars"    dimension index
-nstr  = 5;           % "nstring"  dimension index
+nlocs   = 1;         % "Location"   dimension index
+nvars   = 2;         % "nvars"      dimension index
+nsurv   = 3;         % "survey"     dimension index
+nwindow = 4;         % "timeWindow" dimension index
 
 % Set indices for NetCDF/HDF5 Group local structure vector element.
 
@@ -131,21 +150,70 @@ if (isfield(S, 'depth'))
   if (~isempty(S.depth))
     do_depth = true;           % sub-surface observations
   end
-end  
-  
+end
+
+do_fractional = false;         % do not include fractional locations
+if (isfield(S, 'x_grid'))
+  if (~isempty(S.x_grid))
+    do_fractional = true;      % include fractional locations
+  end
+end
+
 do_provenance = false;         % do not include observation origin
 if (isfield(S, 'provenance'))
   if (~isempty(S.provenance))
     do_provenance = true;      % include observation origin
-  end 
+  end
 end
-  
+
+do_stateID = false;            % do not include state variable ID
+surface_obs = false;
+if (isfield(S, 'stateID'))
+  if (~isempty(S.stateID))
+    do_stateID = true;         % include state variable ID
+  end
+  for i = 1:S.nvars
+    Vname = char(S.ncvname(i));
+    if (contains(Vname, 'Surface'))
+      surface_obs = true;
+    end
+  end
+end
+
+do_areaAvg = false;
+if (isfield(S, 'areaAvgRadius'))
+  if (~isempty(S.areaAvgRadius))
+    do_areaAvg = true;
+  end
+end
+
+do_timeAvgBegin = false;
+if (isfield(S, 'timeAvgBegin'))
+  if (~isempty(S.timeAvgBegin))
+    do_timeAvgBegin = true;
+  end
+end
+
+do_timeAvgEnd = false;
+if (isfield(S, 'timeAvgEnd'))
+  if (~isempty(S.timeAvgEnd))
+    do_timeAvgEnd = true;
+  end
+end
+
 %--------------------------------------------------------------------------
 % Set NetCDF4 file dimensions.
 %--------------------------------------------------------------------------
 
-D(nlocs).name = 'Location';     D(nlocs).size = S.nlocs;
-D(nvars).name = 'nvars';        D(nvars).size = S.nvars;
+D(nlocs).name = 'Location';       D(nlocs).size = S.nlocs;
+D(nvars).name = 'nvars';          D(nvars).size = S.nvars;
+D(nsurv).name = 'survey';         D(nsurv).size = S.nsurvey;
+
+if (isfield(S, 'nwindow'))
+  if (~isempty(S.nwindow))
+    D(nwindow).name = 'timeWindow'; D(nwindow).size = S.nwindow;
+  end
+end
 
 %--------------------------------------------------------------------------
 % Create NetCDF4 observation file.
@@ -154,7 +222,7 @@ D(nvars).name = 'nvars';        D(nvars).size = S.nvars;
 disp(' ');
 disp(['*** Creating observations file:  ', ncfile]);
 
-mode = netcdf.getConstant('NETCDF4'); 
+mode = netcdf.getConstant('NETCDF4');
 mode = bitor(mode, netcdf.getConstant('NC_CLOBBER'));
 
 ncid = netcdf.create(ncfile, mode);
@@ -199,8 +267,16 @@ for i = 1:length(D)
     case 'Location'
       D(i).vid = netcdf.defVar(ncid, Vname, nc_int, D(i).did);
       netcdf.putAtt(ncid, D(i).vid, 'suggested_chunck_dim',             ...
-                    int32(D(i).size));
+                    int32(512));
     case 'nvars'
+      D(i).vid = netcdf.defVar(ncid, Vname, nc_int, D(i).did);
+      netcdf.putAtt(ncid, D(i).vid, 'suggested_chunck_dim',             ...
+                    int32(100));
+    case 'survey'
+      D(i).vid = netcdf.defVar(ncid, Vname, nc_int, D(i).did);
+      netcdf.putAtt(ncid, D(i).vid, 'suggested_chunck_dim',             ...
+                    int32(100));
+    case 'timeWindow'
       D(i).vid = netcdf.defVar(ncid, Vname, nc_int, D(i).did);
       netcdf.putAtt(ncid, D(i).vid, 'suggested_chunck_dim',             ...
                     int32(100));
@@ -222,16 +298,33 @@ G(PreQ).gid = netcdf.defGrp(ncid, 'PreQC');
 %--------------------------------------------------------------------------
 
 MetaVars = {'dateTime', 'latitude', 'longitude', 'sequenceNumber',      ...
-            'variables_name'};
-if (S.addDateVar)
-  MetaVars = [MetaVars, 'date_time'];
-end
+            'surveyTime' 'surveyIndex' 'variables_name'};
 if (do_depth)
   MetaVars = [MetaVars, 'depth'];
+end
+if (do_fractional)
+  MetaVars = [MetaVars, 'x_grid', 'y_grid'];
+  if (do_depth)
+    MetaVars = [MetaVars, 'z_grid'];
+  end
 end
 if (do_provenance)
   MetaVars = [MetaVars, 'provenance'];
 end
+if (do_stateID)
+  MetaVars = [MetaVars, 'stateID'];
+end
+if (do_areaAvg)
+  MetaVars = [MetaVars, 'spatialAverage'];
+end
+if (do_timeAvgBegin)
+  MetaVars = [MetaVars, 'dateTimeAverageBegin'];
+end
+if (do_timeAvgEnd)
+  MetaVars = [MetaVars, 'dateTimeAverageEnd'];
+end
+
+
 G(Meta).vars = sort(MetaVars);
 
 for i = 1:length(G(Meta).vars)
@@ -245,14 +338,22 @@ for i = 1:length(G(Meta).vars)
       epoch  = datenum(num2str(S.datetime_ref),'yyyymmddHH');
       string = ['seconds since ' datestr(epoch, 'yyyy-mm-ddTHH:MM:SSZ')];
       netcdf.putAtt(G(Meta).gid, G(Meta).vid(i), 'units', string);
-    case 'date_time'
-      G(Meta).vid(i) = netcdf.defVar(G(Meta).gid, Vname, nc_string,     ...
-                                     D(nlocs).did);
-      string = 'ISO 8601 UTC date and time string';
+    case 'dateTimeAverageBegin'
+      G(Meta).vid(i) = netcdf.defVar(G(Meta).gid, Vname, nc_int64,      ...
+                                     D(nwindow).did);
+      string = 'start of time averaging filter';
       netcdf.putAtt(G(Meta).gid, G(Meta).vid(i), 'long_name', string);
-      string = blanks(0);
-      netcdf.putAtt(G(Meta).gid, G(Meta).vid(i), '_FillValue', string,  ...
-                    nc_string);
+      epoch  = datenum(num2str(S.datetime_ref),'yyyymmddHH');
+      string = ['seconds since ' datestr(epoch, 'yyyy-mm-ddTHH:MM:SSZ')];
+      netcdf.putAtt(G(Meta).gid, G(Meta).vid(i), 'units', string);
+    case 'dateTimeAverageEnd'
+      G(Meta).vid(i) = netcdf.defVar(G(Meta).gid, Vname, nc_int64,      ...
+                                     D(nwindow).did);
+      string = 'end of time averaging filter';
+      netcdf.putAtt(G(Meta).gid, G(Meta).vid(i), 'long_name', string);
+      epoch  = datenum(num2str(S.datetime_ref),'yyyymmddHH');
+      string = ['seconds since ' datestr(epoch, 'yyyy-mm-ddTHH:MM:SSZ')];
+      netcdf.putAtt(G(Meta).gid, G(Meta).vid(i), 'units', string);
     case 'depth'
       G(Meta).vid(i) = netcdf.defVar(G(Meta).gid, Vname, nc_real,       ...
                                      D(nlocs).did);
@@ -277,16 +378,53 @@ for i = 1:length(G(Meta).vars)
                                      D(nlocs).did);
       string = 'observation origin identifier';
       netcdf.putAtt(G(Meta).gid, G(Meta).vid(i), 'long_name', string);
+      if (any(S.stateID == 1))
+        string = 'repetitive observation at different times and error';
+        netcdf.putAtt(G(Meta).gid, G(Meta).vid(i), 'negative', string);
+      end
       if (isfield(S, 'flag_values'))
         netcdf.putAtt(G(Meta).gid, G(Meta).vid(i), 'flag_values',       ...
-	              S.flag_values);
+                      S.flag_values);
         netcdf.putAtt(G(Meta).gid, G(Meta).vid(i), 'flag_meanings',     ...
-	              S.flag_meanings);
-      end	
+                      S.flag_meanings);
+      end
+    case 'stateID'
+      G(Meta).vid(i) = netcdf.defVar(G(Meta).gid, Vname, nc_int,        ...
+                                     D(nvars).did);
+      string = 'state variable index';
+      netcdf.putAtt(G(Meta).gid, G(Meta).vid(i), 'long_name', string);
+      if (surface_obs)
+        netcdf.putAtt(G(Meta).gid, G(Meta).vid(i), 'surface_level',     ...
+                    int32(S.N));
+      end
+%     values = 1:7;
+%     netcdf.putAtt(G(Meta).gid, G(Meta).vid(i), 'flag_values',         ...
+%                   int32(values));
+%     values = 'zeta ubar vbar u v temperature salinity';
+%     netcdf.putAtt(G(Meta).gid, G(Meta).vid(i), 'flag_meanings',       ...
+%                   values);
     case 'sequenceNumber'
       G(Meta).vid(i) = netcdf.defVar(G(Meta).gid, Vname, nc_int,        ...
                                      D(nlocs).did);
-      string = 'observations sequence number';
+      string = 'observation sequence number';
+      netcdf.putAtt(G(Meta).gid, G(Meta).vid(i), 'long_name', string);
+    case 'spatialAverage'
+      G(Meta).vid(i) = netcdf.defVar(G(Meta).gid, Vname, nc_real, []);
+      string = 'half-length of spatial averaging filter';
+      netcdf.putAtt(G(Meta).gid, G(Meta).vid(i), 'long_name', string);
+      netcdf.putAtt(G(Meta).gid, G(Meta).vid(i), 'units', 'meter');
+    case 'surveyTime'
+      G(Meta).vid(i) = netcdf.defVar(G(Meta).gid, Vname, nc_int64,      ...
+                                     D(nsurv).did);
+      string = 'observation survey time';
+      netcdf.putAtt(G(Meta).gid, G(Meta).vid(i), 'long_name', string);
+      epoch  = datenum(num2str(S.datetime_ref),'yyyymmddHH');
+      string = ['seconds since ' datestr(epoch, 'yyyy-mm-ddTHH:MM:SSZ')];
+      netcdf.putAtt(G(Meta).gid, G(Meta).vid(i), 'units', string);
+    case 'surveyIndex'
+      G(Meta).vid(i) = netcdf.defVar(G(Meta).gid, Vname, nc_int,        ...
+                                     D(nsurv).did);
+      string = 'observation survey time indices as they appear in dateTime';
       netcdf.putAtt(G(Meta).gid, G(Meta).vid(i), 'long_name', string);
     case 'variables_name'
       G(Meta).vid(i) = netcdf.defVar(G(Meta).gid, Vname, nc_string,     ...
@@ -296,6 +434,21 @@ for i = 1:length(G(Meta).vars)
       string = blanks(0);
       netcdf.putAtt(G(Meta).gid, G(Meta).vid(i), '_FillValue', string,  ...
                     nc_string);
+    case 'x_grid'
+      G(Meta).vid(i) = netcdf.defVar(G(Meta).gid, Vname, nc_real,       ...
+                                     D(nlocs).did);
+      string = 'observation fractional x-grid location';
+      netcdf.putAtt(G(Meta).gid, G(Meta).vid(i), 'long_name', string);
+    case 'y_grid'
+      G(Meta).vid(i) = netcdf.defVar(G(Meta).gid, Vname, nc_real,       ...
+                                     D(nlocs).did);
+      string = 'observation fractional y-grid location';
+      netcdf.putAtt(G(Meta).gid, G(Meta).vid(i), 'long_name', string);
+    case 'z_grid'
+      G(Meta).vid(i) = netcdf.defVar(G(Meta).gid, Vname, nc_real,       ...
+                                     D(nlocs).did);
+      string = 'observation fractional z-grid location';
+      netcdf.putAtt(G(Meta).gid, G(Meta).vid(i), 'long_name', string);
   end
 end
 

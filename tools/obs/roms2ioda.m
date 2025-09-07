@@ -1,17 +1,20 @@
-function roms2ioda(ObsData, HisName, prefix, suffix, varargin)
+function roms2ioda(ObsData, HisName, prefix, suffix, M)
 
 %
 % ROMS2IODA:  Converts ROMS observation NetCDF to IODA NetCDF4 files
 %
-% roms2ioda(ObsData, HisName, prefix, suffix, addDateVar)
+% roms2ioda(ObsData, HisName, prefix, suffix, M)
 %
 % This function converts a ROMS 4D-Var observation NetCDF file into several
-% IODA NetCDF files. One file per each observation type is usually the way
-% that the JEDI/UFO observation operator requires. Output files are of the
-% form:
+% IODA NetCDF files. One file per observation type is usually the way that
+% the JEDI/UFO observation operator requires. Output files are of the form:
+%  
 %                        prefix_obstype_suffix.nc4
 %
 % For example:           wc13_sst_20040103.nc4
+%
+% The area-averaged and time-averaged values will be used in ROMS H(x)
+% computations with area-averaged and/or time-averaged filters.
 %
 % On Input:
 %
@@ -21,11 +24,11 @@ function roms2ioda(ObsData, HisName, prefix, suffix, varargin)
 %    HisName     ROMS application history NetCDF filename (string)
 %
 %    prefix      Output file prefix associated with application (string)
-%   
+%
 %    suffix      Output file suffix associated with date and time, use
 %                  YYYYMMDD or YYYYMMDDhh (numeric or string).
 %
-%                  NOTICE that the time of the output observations are
+%                  NOTICE that the time of the output observations is
 %                  converted to 'seconds since' time of suffix.
 %
 %                  For example, if suffix =  20040103  or
@@ -34,49 +37,81 @@ function roms2ioda(ObsData, HisName, prefix, suffix, varargin)
 %                  int64 dateTime(Location);
 %                  dateTime:units = "seconds since 2004-01-03T00:00:00Z";
 %
-%                  Therefore, input and output time of the observations
+%                  Thus, the input and output times of the observations
 %                  may have different time references!
 %
-%    addDateVar  Switch to include date string variable (OPTIONAL)
-%                  default = false
+%    M           IODA enhanced NetCDF-4 file Metadata structure
+%                  (struct array) computed with "ioda_metadat.m"
 %
-%                  string date_time(Location) ;
+%                  M(:).name           variable short name
+%                  M(:).half_length    area-averaged half-length (km) scale
+%                  M(:).time_window    time-averaged window (hours)
+%                  M(:).ioda_vname     IODA NetCDF-4 variable name
+%                  M(:).standard_name  variable standard name
 %
-% Usage: Example to convert WC13 4D-Var observation file to create the
-%        following IODA-2 files:
-%                                  wc13_adt_20040103.nc4
-%                                  wc13_sst_20040103.nc4
-%                                  wc13_salt_20040103.nc4
-%                                  wc13_temp_20040103.nc4
+% USAGE:
+% ***** 
 %
-%   ObsData = 'WC13/Data/wc13_obs_20040103.nc';
-%   HisName = 'WC13/Forward/r06/wc13_roms_his_20040103.nc';
+%   Example to convert single WC13 native ROMS 4D-Var observation file
+%   into multiple IODA-type files that can be used in native ROMS
+%   and ROMS-JEDI data assimilation algorithms, like:
+%  
+%     wc13_adt_20040103.nc4
+%     wc13_sst_20040103.nc4
+%     wc13_salt_20040103.nc4
+%     wc13_temp_20040103.nc4
 %
-%   roms2ioda(ObsData, HisName, 'wc13', '20040103')
+%   (1) Set IODA NetCDF-4 file metadata structure, M:
+%
+%       M = ioda_metadata(true);
+%
+%   (2) If applicable, set area-averaged and time-averaged parameters
+%       for specialized H(x) operators. If not, you can skip this step.
+%
+%       M(strcmp({M.name}, 'SSH')).half_length = 30;             % km
+%       M(strcmp({M.name}, 'SSH')).time_window = 36;             % hours
+%
+%       M(strcmp({M.name}, 'uv_CODAR')).time_window = 24;        % hours
+%
+%   (3) Convert a single native file into multiple IODA-type files:
+%
+%       ObsData = 'WC13/Data/wc13_obs_20040103.nc';
+%       HisName = 'WC13/Forward/r06/wc13_roms_his_20040103.nc';
+%
+%       roms2ioda(ObsData, HisName, 'wc13', '20040103', M)
 %
 % Dependencies:
 %
 %                create_ioda_obs.m
 %                get_roms_grid.m
+%                ioda_metadata.m
 %                obs_k2z.m
 %                obs_read.m
 
-% svn $Id$
+% git $Id$
 %=========================================================================%
 %  Copyright (c) 2002-2025 The ROMS Group                                 %
 %    Licensed under a MIT/X style license                                 %
 %    See License_ROMS.md                            Hernan G. Arango      %
 %=========================================================================%
 
-% Initialize.
+% Initialize area-averaged and time-averaged parameters from Metdata
+% structure, M.  
 
-switch numel(varargin)
-  case 0
-    addDateVar = false;
-  case 1
-    addDateVar = varargin{1};
-end
-  
+SSHareaAvg = M(strcmp({M.name}, 'SSH')).half_length;
+SSHtimeAvg = M(strcmp({M.name}, 'SSH')).time_window;
+
+SSTareaAvg = M(strcmp({M.name}, 'SST')).half_length;
+SSTtimeAvg = M(strcmp({M.name}, 'SST')).time_window;
+
+SSSareaAvg = M(strcmp({M.name}, 'SSS')).half_length;
+SSStimeAvg = M(strcmp({M.name}, 'SSS')).time_window;
+
+UVareaAvg  = M(strcmp({M.name}, 'uv_CODAR')).half_length;
+UVtimeAvg  = M(strcmp({M.name}, 'uv_CODAR')).time_window;
+
+% Read native ROMS observation file and load to S structure.
+
 if (ischar(ObsData))
   S = obs_read(ObsData);
 else
@@ -120,6 +155,10 @@ end
 S.Zgrid = S.depth;
 S = obs_k2z(S, HisName);
 
+% Estimate data assimilation cycle time-window.
+
+days_window = floor((max(S.time)-min(S.time))+0.5);
+
 %--------------------------------------------------------------------------
 % Inquire observation structure about type meassurent types.
 %--------------------------------------------------------------------------
@@ -129,6 +168,7 @@ S = obs_k2z(S, HisName);
 types = unique(S.type);
 
 got_ssh  = any(types == 1);
+got_sss  = false;                 % ROMS doesn't assimilate SSS from SMAP
 got_uvel = any(types == 4);
 got_vvel = any(types == 5);
 got_temp = any(types == 6);
@@ -143,7 +183,7 @@ itemp = find(S.type == 6);
 isalt = find(S.type == 7);
 
 % Currently, one of the strategies to improve the impact of altimetry
-% track data is to repeat their observationsseveral times over the
+% track data is to repeat their observations several times over the
 % assimilation cycle, but with different errors.
 %
 % Identify such repetitive observations by setting their provenance
@@ -157,6 +197,10 @@ if (~isempty(issh))
       sshProv(IA(n))= -sshProv(IA(n));       % Turn positive unique values
     end
     S.provenance(issh) = sshProv;            % overwrite SSH provenance
+  end
+
+  if (~isempty(SSHareaAvg) || ~isempty(SShtimeAvg))
+    issh = find(S.provenance(issh) > 0);
   end
 end
 
@@ -205,15 +249,30 @@ if (got_ssh)
     has_depth  = false;
     Obs = extract_observations(S, issh, DateTimeIODA, has_depth);
     Obs.ncfile         = [prefix '_adt_' suffix '.nc4'];
+    Obs.N              = G.N;
     Obs.nvars          = 1;
-    Obs.addDateVar     = addDateVar;
     Obs.units          = {'meter'};
-    Obs.ncvname        = {'absoluteDynamicTopography'};
-    Obs.variables_name = {'absolute_dynamic_topography'};
+    Obs.ncvname        = {M(strcmp({M.name}, 'SSH')).ioda_vname};
+    Obs.stateID        = 1;
+    Obs.areaAvgRadius  = SSHareaAvg;
+    Obs.timeAvgWindow  = SSHtimeAvg;
+    Obs.variables_name = {M(strcmp({M.name}, 'SSH')).standard_name};
     Obs.datetime_ref   = DateTimeIODA;
     if (got_flagAtt)
       Obs.flag_values   = int32(P.flag_values(P.ssh));
       Obs.flag_meanings = string(join(P.flag_meanings(P.ssh)));
+    end
+    if (~isempty(SSHareaAvg))
+      Obs.areaAvgRadius = SSHareaAvg * 1000;        % to meters
+    end
+    if (~isempty(SSHtimeAvg))
+      delta  = SSHtimeAvg * 3600;                    % to secods
+      window = days_window * 86400;
+      Tstr = 0:delta:window-delta;
+      Tend = delta:delta:window;
+      Obs.timeAvgBegin = Tstr;
+      Obs.timeAvgEnd   = Tend;
+      Obs.nwindow      = length(Tstr);
     end
     create_ioda_obs(Obs);
     write_observations(Obs);
@@ -222,17 +281,20 @@ end
 
 % Process sea surface temperature.
 
-if (got_temp)     
+if (got_temp)
   isst = find(S.type == 6 & S.Zgrid == G.N);
   if (~isempty(isst))
     has_depth = false;
     Obs = extract_observations(S, isst, DateTimeIODA, has_depth);
     Obs.ncfile         = [prefix '_sst_' suffix '.nc4'];
+    Obs.N              = G.N;
     Obs.nvars          = 1;
-    Obs.addDateVar     = addDateVar;
     Obs.units          = {'C'};
-    Obs.ncvname        = {'seaSurfaceTemperature'};
-    Obs.variables_name = {'sea_surface_temperature'};
+    Obs.ncvname        = {M(strcmp({M.name}, 'SST')).ioda_vname};
+    Obs.stateID        = 6;
+    Obs.areaAvgRadius  = SSTareaAvg;
+    Obs.timeAvgWindow  = SSTtimeAvg;
+    Obs.variables_name = {M(strcmp({M.name}, 'SST')).standard_name};
     Obs.datetime_ref   = DateTimeIODA;
     if (got_flagAtt)
       sst_ind = contains(upper(P.flag_meanings), 'SST');
@@ -244,6 +306,62 @@ if (got_temp)
         Obs.flag_meanings = string(join(P.flag_meanings(P.temp)));
       end
     end
+    if (~isempty(SSTareaAvg))
+      Obs.areaAvgRadius = SSTareaAvg * 1000;        % to meters
+    end
+    if (~isempty(SSTtimeAvg))
+      delta  = SSTtimeAvg * 3600;                    % to secods
+      window = days_window * 86400;
+      Tstr = 0:delta:window-delta;
+      Tend = delta:delta:window;
+      Obs.timeAvgBegin = Tstr;
+      Obs.timeAvgEnd   = Tend;
+      Obs.nwindow      = length(Tstr);
+    end
+    create_ioda_obs(Obs);
+    write_observations(Obs);
+  end
+end
+
+% Process satellite sea surface salinity, like SMAP satellite data.
+
+if (got_sss)
+  isss = find(S.type == 7 & S.Zgrid == G.N);
+  if (~isempty(isss))
+    has_depth = false;
+    Obs = extract_observations(S, isss, DateTimeIODA, has_depth);
+    Obs.ncfile         = [prefix '_sss_' suffix '.nc4'];
+    Obs.N              = G.N;
+    Obs.nvars          = 1;
+    Obs.units          = {'dimensionless'};
+    Obs.ncvname        = {M(strcmp({M.name}, 'SSS')).ioda_vname};
+    Obs.stateID        = 6;
+    Obs.areaAvgRadius  = SSSareaAvg;
+    Obs.timeAvgWindow  = SSStimeAvg;
+    Obs.variables_name = {M(strcmp({M.name}, 'SSS')).standard_name};
+    Obs.datetime_ref   = DateTimeIODA;
+    if (got_flagAtt)
+      sst_ind = contains(upper(P.flag_meanings), 'SSS');
+      if (any(sss_ind))
+        Obs.flag_values   = int32(P.flag_values(sss_ind));
+        Obs.flag_meanings = string(join(P.flag_meanings(sss_ind)));
+      else
+        Obs.flag_values   = int32(P.flag_values(P.salt));
+        Obs.flag_meanings = string(join(P.flag_meanings(P.salt)));
+      end
+    end
+    if (~isempty(SSSareaAvg))
+      Obs.areaAvgRadius = SSSareaAvg * 1000;         % to meters
+    end
+    if (~isempty(SSStimeAvg))
+      delta  = SSStimeAvg * 3600;                    % to secods
+      window = days_window * 86400;
+      Tstr = 0:delta:window-delta;
+      Tend = delta:delta:window;
+      Obs.timeAvgBegin = Tstr;
+      Obs.timeAvgEnd   = Tend;
+      Obs.nwindow      = length(Tstr);
+    end
     create_ioda_obs(Obs);
     write_observations(Obs);
   end
@@ -251,28 +369,29 @@ end
 
 % Process sub-surface insitu temperature.
 
-if (got_temp)     
+if (got_temp)
   ktemp = find(S.type == 6 & S.Zgrid ~= G.N);
   if (~isempty(ktemp))
     has_depth = true;
     Obs = extract_observations(S, ktemp, DateTimeIODA, has_depth);
     Obs.ncfile         = [prefix '_temp_' suffix '.nc4'];
+    Obs.N              = G.N;
     Obs.nvars          = 1;
-    Obs.addDateVar     = addDateVar;
     Obs.units          = {'C'};
-    Obs.ncvname        = {'waterTemperature'};
-    Obs.variables_name = {'sea_water_temperature'};
+    Obs.stateID        = 6;
+    Obs.ncvname        = {M(strcmp({M.name}, 'temp')).ioda_vname};
+    Obs.variables_name = {M(strcmp({M.name}, 'temp')).standard_name};
     Obs.datetime_ref   = DateTimeIODA;
     if (got_flagAtt)
       sst_ind = contains(upper(P.flag_meanings(P.temp)), 'SST');
       if (any(sst_ind))                             % remove SST provenance
         P.temp(sst_ind)   = [];
-	Obs.flag_values   = int32(P.flag_values(P.temp));
+        Obs.flag_values   = int32(P.flag_values(P.temp));
         Obs.flag_meanings = string(join(P.flag_meanings(P.temp)));
-      else 
-	Obs.flag_values   = int32(P.flag_values(P.temp));
+      else
+        Obs.flag_values   = int32(P.flag_values(P.temp));
         Obs.flag_meanings = string(join(P.flag_meanings(P.temp)));
-      end      
+      end
     end
     create_ioda_obs(Obs);
     write_observations(Obs);
@@ -283,35 +402,36 @@ end
 % observations in the input NetCDF are insitu temperature. Below, they
 % are converted to potential temperature.
 
-if (got_temp)     
+if (got_temp)
   ktemp = find(S.type == 6 & S.Zgrid ~= G.N);
   if (~isempty(ktemp))
     has_depth = true;
     Obs = extract_observations(S, ktemp, DateTimeIODA, has_depth);
-    
+
     p = sw_pres(abs(Obs.depth), Obs.latitude);      % decibars
     s = ones(size(Obs.ObsValue)).*35.0;
     pr = zeros(size(Obs.ObsValue));
     ptemp = sw_ptmp(s, Obs.ObsValue, p, pr);
     Obs.ObsValue = ptemp;
-    
+
     Obs.ncfile         = [prefix '_ptemp_' suffix '.nc4'];
+    Obs.N              = G.N;
     Obs.nvars          = 1;
-    Obs.addDateVar     = addDateVar;
     Obs.units          = {'C'};
-    Obs.ncvname        = {'waterPotentialTemperature'};
-    Obs.variables_name = {'sea_water_potential_temperature'};
+    Obs.ncvname        = {M(strcmp({M.name}, 'ptemp')).ioda_vname};
+    Obs.stateID        = 6;
+    Obs.variables_name = {M(strcmp({M.name}, 'ptemp')).standard_name};
     Obs.datetime_ref   = DateTimeIODA;
     if (got_flagAtt)
       sst_ind = contains(upper(P.flag_meanings(P.temp)), 'SST');
       if (any(sst_ind))                             % remove SST provenance
         P.temp(sst_ind)   = [];
-	Obs.flag_values   = int32(P.flag_values(P.temp));
+        Obs.flag_values   = int32(P.flag_values(P.temp));
         Obs.flag_meanings = string(join(P.flag_meanings(P.temp)));
-      else 
-	Obs.flag_values   = int32(P.flag_values(P.temp));
+      else
+        Obs.flag_values   = int32(P.flag_values(P.temp));
         Obs.flag_meanings = string(join(P.flag_meanings(P.temp)));
-      end      
+      end
     end
     create_ioda_obs(Obs);
     write_observations(Obs);
@@ -320,16 +440,17 @@ end
 
 % Process salinity.
 
-if (got_salt)     
+if (got_salt)
   if (~isempty(isalt))
     has_depth = true;
     Obs = extract_observations(S, isalt, DateTimeIODA, has_depth);
     Obs.ncfile         = [prefix '_salt_' suffix '.nc4'];
+    Obs.N              = G.N;
     Obs.nvars          = 1;
-    Obs.addDateVar     = addDateVar;
     Obs.units          = {'dimensionless'};
-    Obs.ncvname        = {'salinity'};
-    Obs.variables_name = {'sea_water_salinity'};
+    Obs.ncvname        = {M(strcmp({M.name}, 'salt')).ioda_vname};
+    Obs.stateID        = 7;
+    Obs.variables_name = {M(strcmp({M.name}, 'salt')).standard_name};
     Obs.datetime_ref   = DateTimeIODA;
     if (got_flagAtt)
       Obs.flag_values   = int32(P.flag_values(P.salt));
@@ -340,40 +461,57 @@ if (got_salt)
   end
 end
 
-% Process gridded HF radar surface velocities. The velocity
-% components 
+% Process gridded HF radar near surface (z=-2 m) velocities. The
+% CODAR velocity components in the native ROMS observation file
+% are rotated to grid curvilinear coordinates, we need to rotate
+% back to geographycal EAST and NORTH directions before they are
+% written to the IODA-type file.
 
 if (got_uvel && got_vvel)
   if ~(isempty(iuvel) || isempty(iuvel))
-    has_depth = false;  
-    Uobs = extract_observations(S, iuvel, DateTimeIODA, has_depth);  
-    Vobs = extract_observations(S, ivvel, DateTimeIODA, has_depth);  
+    has_depth = true;
+    Uobs = extract_observations(S, iuvel, DateTimeIODA, has_depth);
+    Vobs = extract_observations(S, ivvel, DateTimeIODA, has_depth);
     Obs  = Uobs;
     Obs.ObsError       = [];
     Obs.ObsError{1}    = Uobs.ObsError;
     Obs.ObsError{2}    = Vobs.ObsError;
     Obs.ObsValue       = [];
     Obs.ObsValue{1}    = Uobs.ObsValue;
-    Obs.ObsValue{2}    = Vobs.ObsValue;  
+    Obs.ObsValue{2}    = Vobs.ObsValue;
     Obs.PreQC          = [];
     Obs.PreQC{1}       = Uobs.PreQC;
     Obs.PreQC{2}       = Uobs.PreQC;
-    Obs.ncfile         = [prefix '_uv_sur_' suffix '.nc4'];
+    Obs.ncfile         = [prefix '_uv_codar_' suffix '.nc4'];
+    Obs.N              = G.N;
     Obs.nvars          = 2;
-    Obs.addDateVar     = addDateVar;
     Obs.units          = {'m s-1', 'm s-1'};
-    Obs.ncvname        = {'waterSurfaceZonalVelocity',               ...
-		          'waterSurfaceMeridionalVelocity'};
-    Obs.variables_name = {'surface_eastward_sea_water_velocity',     ...
-                          'surface_meridional_sea_water_velocity'};
+    Obs.ncvname        = M(strcmp({M.name}, 'uv_CODAR')).ioda_vname;
+    Obs.stateID        = [4, 5];
+    Obs.areaAvgRadius  = UVareaAvg;
+    Obs.timeAvgWindow  = UVtimeAvg;
+    Obs.variables_name = M(strcmp({M.name}, 'uv_CODAR')).standard_name;
     Obs.datetime_ref   = DateTimeIODA;
     if (got_flagAtt)
       Obs.flag_values   = int32(P.flag_values(P.uvel));
       Obs.flag_meanings = string(join(P.flag_meanings(P.uvel)));
     end
+    if (~isempty(UVtimeAvg))
+      delta  = UVtimeAvg * 3600;                    % to secods
+      window = days_window * 86400;
+      Tstr = 0:delta:window-delta;
+      Tend = delta:delta:window;
+      Obs.timeAvgBegin = Tstr;
+      Obs.timeAvgEnd   = Tend;
+      Obs.nwindow      = length(Tstr);
+    end
+    if (~isempty(UVareaAvg))
+      Obs.areaAvgRadius = UVareaAvg * 1000;        % to meters
+    end
+    Obs = rotate_codar(Obs, G);
     create_ioda_obs(Obs);
     write_observations(Obs);
-  end  
+  end
 end
 
 return
@@ -387,25 +525,36 @@ function [Obs] = extract_observations(S, ind, DateTimeIODA, has_depth)
 
 Obs = struct('ncfile'        , [],                                      ...
              'source'        , [],                                      ...
+             'N'             , [],                                      ...
              'nlocs'         , [],                                      ...
              'nobs'          , [],                                      ...
+             'nsurvey'       , [],                                      ...
              'nvars'         , [],                                      ...
-             'addDateVar'    , false,                                   ...
+             'nwindow'       , [],                                      ...
              'units'         , [],                                      ...
              'ncvname'       , [],                                      ...
              'variable_names', [],                                      ...
              'TimeIODA'      , [],                                      ...
-	     'DateIODA'      , [],                                      ...
+             'DateIODA'      , [],                                      ...
              'dateTime'      , [],                                      ...
+             'surveyTime'    , [],                                      ...
+             'surveyIndex'   , [],                                      ...
              'date_time'     , [],                                      ...
              'depth'         , [],                                      ...
              'latitude'      , [],                                      ...
              'longitude'     , [],                                      ...
              'provenance'    , [],                                      ...
+             'stateID'       , [],                                      ...
              'sequenceNumber', [],                                      ...
+             'areaAvgRadius' , [],                                      ...
+             'timeAvgBegin'  , [],                                      ...
+             'timeAvgEnd'    , [],                                      ...
+             'x_grid'        , [],                                      ...
+             'y_grid'        , [],                                      ...
+             'z_grid'        , [],                                      ...
              'ObsError'      , [],                                      ...
-	     'ObsValue'      , [],                                      ...
-	     'PreQC'         , []);
+             'ObsValue'      , [],                                      ...
+             'PreQC'         , []);
 
 % Fill some values in the structure.
 
@@ -421,26 +570,69 @@ Obs.latitude       = S.lat(ind);
 Obs.longitude      = S.lon(ind);
 Obs.provenance     = S.provenance(ind);
 Obs.sequenceNumber = int32(1:Obs.nlocs);
+Obs.x_grid         = S.Xgrid(ind);
+Obs.y_grid         = S.Ygrid(ind);
+if (has_depth)
+  Obs.z_grid       = S.Zgrid(ind);
+end
 Obs.ObsError       = sqrt(S.error(ind));              % standard deviation
 Obs.ObsValue       = S.value(ind);
 Obs.PreQC          = int32(zeros(size(Obs.longitude)));
 
 % Compute dateTime seconds from IODA file reference time.
 
-ioda_epoch     = datenum(num2str(DateTimeIODA), 'yyyymmddHH');
+ioda_epoch      = datenum(num2str(DateTimeIODA), 'yyyymmddHH');
 
-time_days      = S.reference_time + S.time(ind);
-ioda_time_days = time_days - ioda_epoch;        
+time_days       = S.reference_time + S.time(ind);
+ioda_time_days  = time_days - ioda_epoch;
 
-Obs.dateTime   = int64(ioda_time_days * 86400);        % seconds
+Obs.dateTime    = int64(ioda_time_days * 86400);      % seconds
 
-Obs.date_time  = cellstr(datestr(ioda_epoch + ioda_time_days,          ...
+[survey,IA,IC]  = unique(Obs.dateTime, 'stable');
+Obs.surveyTime  = int64(survey);
+Obs.surveyIndex = int32(IA);
+Obs.nsurvey     = length(Obs.surveyTime);
+
+Obs.date_time   = cellstr(datestr(ioda_epoch + ioda_time_days,          ...
                                  'yyyy-mm-ddTHH:MM:SSZ'));
 
 % Set IODA file time reference global attributes.
 
 Obs.TimeIODA = DateTimeIODA;
 Obs.DateIODA = datestr(ioda_epoch, 'yyyy-mm-ddTHH:MM:SSZ');
+
+return
+
+%--------------------------------------------------------------------------
+% Extract requested observation type from structure.
+
+function [Obs] = rotate_codar (S, G)
+
+% Interpolate ROMS curvilinear angle to CODAR observation locations.
+% Use scatteredInterpolant since horizontal grid coordinates are not
+% plaid.
+
+F = scatteredInterpolant(G.lon_rho(:), G.lat_rho(:), G.angle(:));
+
+angle = F(S.longitude, S.latitude);
+
+% Rotate velocity component to geographical EAST and NORTH.
+
+Urot = S.ObsValue{1};
+Vrot = S.ObsValue{2};
+
+cos_angle = cos(angle);
+sin_angle = sin(angle);
+
+Ugeo = Urot .* cos_angle - Vrot .* sin_angle;
+Vgeo = Vrot .* cos_angle + Urot .* sin_angle;
+
+% Replace velocity components.
+
+Obs = S;
+
+Obs.ObsValue{1} = Ugeo;
+Obs.ObsValue{2} = Vgeo;
 
 return
 
@@ -454,8 +646,13 @@ disp(['*** Writing  observations file:  ', Obs.ncfile]);
 % Write out 'MetaData' Group variables.
 
 ncwrite(Obs.ncfile, 'MetaData/dateTime', int64(Obs.dateTime));
-if (Obs.addDateVar)
-  ncwrite(Obs.ncfile, 'MetaData/date_time', Obs.date_time);
+if (~isnan(Obs.timeAvgBegin))
+  ncwrite(Obs.ncfile, 'MetaData/dateTimeAverageBegin',                  ...
+          int64(Obs.timeAvgBegin));
+end
+if (~isnan(Obs.timeAvgEnd))
+  ncwrite(Obs.ncfile, 'MetaData/dateTimeAverageEnd',                    ...
+          int64(Obs.timeAvgEnd));
 end
 if (~isempty(Obs.depth))
   ncwrite(Obs.ncfile, 'MetaData/depth', Obs.depth);
@@ -465,8 +662,19 @@ ncwrite(Obs.ncfile, 'MetaData/longitude', Obs.longitude);
 if (~isempty(Obs.provenance))
   ncwrite(Obs.ncfile, 'MetaData/provenance', Obs.provenance);
 end
+ncwrite(Obs.ncfile, 'MetaData/stateID', int32(Obs.stateID));
 ncwrite(Obs.ncfile, 'MetaData/sequenceNumber', Obs.sequenceNumber);
+if (~isnan(Obs.areaAvgRadius))
+  ncwrite(Obs.ncfile, 'MetaData/spatialAverage', Obs.areaAvgRadius);
+end
+ncwrite(Obs.ncfile, 'MetaData/surveyIndex', int32(Obs.surveyIndex));
+ncwrite(Obs.ncfile, 'MetaData/surveyTime', int64(Obs.surveyTime));
 ncwrite(Obs.ncfile, 'MetaData/variables_name', Obs.variables_name);
+ncwrite(Obs.ncfile, 'MetaData/x_grid', Obs.x_grid);
+ncwrite(Obs.ncfile, 'MetaData/y_grid', Obs.y_grid);
+if (~isempty(Obs.z_grid))
+  ncwrite(Obs.ncfile, 'MetaData/z_grid', Obs.z_grid);
+end
 
 % Write out 'ObsError' Group variables.
 

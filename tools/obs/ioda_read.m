@@ -22,7 +22,7 @@ function [S]=ioda_read(ncfile)
 %              S.nvars            number of variables
 %              S.epoch            IODA time reference YYYYMMDDHH
 %              S.datenum          epoch date number
-%              S.dateTimeRef      IODA time reference string     
+%              S.dateTimeRef      IODA time reference string
 %              S.variable_names   UFO/IODA standard name
 %              S.dateTime         seconds since yyyy-mm-ddTHH:MM:SSZ
 %              S.date_time        date and time ISO 8601 UTC string
@@ -36,13 +36,13 @@ function [S]=ioda_read(ncfile)
 %              S.PreQC            observation quality control
 %
 
-% svn $Id$
+% git $Id$
 %=========================================================================%
 %  Copyright (c) 2002-2025 The ROMS Group                                 %
 %    Licensed under a MIT/X style license                                 %
 %    See License_ROMS.md                            Hernan G. Arango      %
 %=========================================================================%
-  
+
 % Initialize.
 
 S = struct('ncfile'           , [],                                     ...
