@@ -411,6 +411,23 @@ The table below displays the names of **native ROMS 4D-Var** and **ROMS-JEDI** o
 | sss, SSS    | 7, 70     | sea_surface_salinity           | **seaSurfaceSalinity** |
 | socn, salt  | 7         | sea_water_salinity             | **salinity** |
 
+Integrating sea surface height (**SSH**) into ocean models is complex due to the need for specialized **H(x)**
+operators. The **zeta** (**𝜁**) state variable in **ROMS** represents the free surface. This variable is a time-varying,
+physical boundary condition at the top of the numerical grid and is influenced by waves, tides, and currents.
+Conversely, **SSH** is an instantaneous measurement typically obtained from satellite altimeters. This measurement
+is relative to a reference ellipsoid and provides essential information about the Geoid, ocean dynamics, and
+seawater steric effects resulting from variations in temperature and salinity (density).
+
+The Geoid is an undulating surface that represents the level the ocean would reach if it were only influenced by
+Earth's gravity, without any effects from currents or winds. The **SSH** can also be calculated
+with respect to the Geoid, referred to as Absolute Dynamic Topography (**ADT**), as shown in the diagram below.
+This quantity is used in the **JEDI/UFO `H(x)`** operator in the data assimilation algorithms.
+
+<img width="901" height="374" alt="image" src="https://github.com/user-attachments/assets/e5a02bda-95cd-4dc7-8288-baf4b81dee2b" />
+
+Therefore, the evolution of **𝜁(x,y,t)** represents the instantaneous **SSH**, but several corrections to altimetry data are required
+to assimilate it correctly in a particular application.
+
 ## Native to IODA Conversion
 
 The Matlab scripts **create_ioda_obs.m**, **ioda_metadata.m**, and **roms2ioda.m**, among others in this directory,
