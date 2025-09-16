@@ -434,6 +434,13 @@ The Matlab scripts **create_ioda_obs.m**, **ioda_metadata.m**, and **roms2ioda.m
 can be used to convert a single **native ROMS 4D-Var** classic **NetCDF** observations file into multiple **IODA-type**
 enhanced **NetCDF-4** files.
 
+> [!IMPORTANT]
+> The Matlab script **roms2ioda** relies on several additional functions, including **get_roms_grid**, **obs_k2z**, and **obs_read**,
+> which are part of the official [ROMS MATLAB repository](https://github.com/myroms/roms_matlab). To avoid redundancy, these secondary
+> functions are not included in this directory. However, you can find all the necessary scripts in the subdirectory **ioda** within the
+> official repository, available [here](https://github.com/myroms/roms_matlab/tree/main/ioda). We recommend using the official **ROMS** Matlab
+> repository, as the functions needed for the conversion will be automatically included in your **MATLAB** path when you launch the application.
+ 
 To convert from **native** format to **IODA** files, follow these steps: 
 
 1. Use the Matlab script **`ioda_metadata.m`** to set up the **IODA** metadata structure, denoted as **M**. This
