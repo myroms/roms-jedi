@@ -43,6 +43,9 @@
 #                                                                       :::
 #                          jedi_config.sh suffix -d                     :::
 #                                                                       :::
+#  -n_min NP_min         Minimum Number of MPI processes for tests      :::
+#                          NP_min = 2 by default                        :::
+#                                                                       :::
 #  -n NP                 Number of MPI processes, if using -a option    :::
 #                          NP = 12 by default                           :::
 #                                                                       :::
@@ -68,6 +71,9 @@ separator=`perl -e "print '<>' x 50;"`
 
 debug=0
 other_app=0
+min_set=0
+max_set=0
+NP_min=2
 NP=12                    # default number of processors other application
 
 while [ $# -gt 0 ]
@@ -87,8 +93,16 @@ do
       shift
       ;;
 
+    -n_min )
+      shift
+      min_set=1
+      NP_min=$1
+      shift
+      ;;
+
     -n )
       shift
+      max_set=1
       NP=$1
       shift
       ;;
@@ -99,6 +113,14 @@ do
       ;;
   esac
 done
+
+procs_conf=""
+if [[ min_set -eq 1 ]]; then
+  procs_conf+=" -DMPIEXEC_NUMPROC_MIN=${NP_min}"
+fi
+if [[ max_set -eq 1 ]]; then
+  procs_conf+=" -DMPIEXEC_NUMPROC=${NP}"
+fi
 
 echo " "
 echo "Current directory: ${PWD}"
@@ -141,36 +163,32 @@ echo " "
 
 if [[ ${debug} -eq 1 ]]; then
   echo "${separator}"
-  echo "To configure 'ecbuild' with 'Debug' build you need to type:"
+  echo "To configure 'ecbuild' with 'Debug' build, you need to type:"
   echo " "
+  echo "cd ${build};"  
   if [[ ${other_app} -eq 1 ]]; then
-    echo "cd ${build};"  
     if [[ "${ROMSAPP}" == "WC13" ]]; then
-      echo ecbuild -DMPIEXEC_EXECUTABLE=\$MPIRUN -DMPIEXEC_NUMPROC_FLAG=\"-n\" -DPython3_EXECUTABLE=\"\`which python3\`\" -DROMS_APP=${ROMSAPP} -DROMS_APP_DIR=${APP_DIR} -DCMAKE_BUILD_TYPE=Debug ../${Bundle}
+      echo ecbuild -DMPIEXEC_EXECUTABLE=\$MPIRUN -DMPIEXEC_NUMPROC_FLAG=\"-n\" ${procs_conf} -DPython3_EXECUTABLE=\"\`which python3\`\" -DROMS_APP=${ROMSAPP} -DROMS_APP_DIR=${APP_DIR} -DCMAKE_BUILD_TYPE=Debug ../${Bundle}
     else
-      echo ecbuild -DMPIEXEC_EXECUTABLE=\$MPIRUN -DMPIEXEC_NUMPROC_FLAG=\"-n\" -DMPIEXEC_NUMPROC=${NP} -DPython3_EXECUTABLE=\"\`which python3\`\" -DROMS_APP=${ROMSAPP} -DROMS_APP_DIR=${APP_DIR} -DCMAKE_BUILD_TYPE=Debug ../${Bundle}
+      echo ecbuild -DMPIEXEC_EXECUTABLE=\$MPIRUN -DMPIEXEC_NUMPROC_FLAG=\"-n\" ${procs_conf} -DPython3_EXECUTABLE=\"\`which python3\`\" -DROMS_APP=${ROMSAPP} -DROMS_APP_DIR=${APP_DIR} -DCMAKE_BUILD_TYPE=Debug ../${Bundle}
     fi
-    echo "${separator}"
   else
-    echo "cd ${build};"  
-    echo ecbuild -DMPIEXEC_EXECUTABLE=\$MPIRUN -DMPIEXEC_NUMPROC_FLAG=\"-n\" -DPython3_EXECUTABLE=\"\`which python3\`\" -DCMAKE_BUILD_TYPE=Debug ../${Bundle}
-    echo "${separator}"
+    echo ecbuild -DMPIEXEC_EXECUTABLE=\$MPIRUN -DMPIEXEC_NUMPROC_FLAG=\"-n\" ${procs_conf} -DPython3_EXECUTABLE=\"\`which python3\`\" -DCMAKE_BUILD_TYPE=Debug ../${Bundle}
   fi
+  echo "${separator}"
 else
   echo "${separator}"
-  echo "To configure 'ecbuild' with 'Release' build you need to type:"
+  echo "To configure 'ecbuild' with 'Release' build, you need to type:"
   echo " "
+  echo "cd ${build};"
   if [[ ${other_app} -eq 1 ]]; then
-    echo "cd ${build};"
     if [[ "${ROMSAPP}" == "WC13" ]]; then
-      echo ecbuild -DMPIEXEC_EXECUTABLE=\$MPIRUN -DMPIEXEC_NUMPROC_FLAG=\"-n\" -DPython3_EXECUTABLE=\"\`which python3\`\" -DROMS_APP=${ROMSAPP} -DROMS_APP_DIR=${APP_DIR} -DCMAKE_BUILD_TYPE=Release ../${Bundle}
+      echo ecbuild -DMPIEXEC_EXECUTABLE=\$MPIRUN -DMPIEXEC_NUMPROC_FLAG=\"-n\" ${procs_conf} -DPython3_EXECUTABLE=\"\`which python3\`\" -DROMS_APP=${ROMSAPP} -DROMS_APP_DIR=${APP_DIR} -DCMAKE_BUILD_TYPE=Release ../${Bundle}
     else
-      echo ecbuild -DMPIEXEC_EXECUTABLE=\$MPIRUN -DMPIEXEC_NUMPROC_FLAG=\"-n\" -DMPIEXEC_NUMPROC=${NP} -DPython3_EXECUTABLE=\"\`which python3\`\" -DROMS_APP=${ROMSAPP} -DROMS_APP_DIR=${APP_DIR} -DCMAKE_BUILD_TYPE=Release ../${Bundle}
+      echo ecbuild -DMPIEXEC_EXECUTABLE=\$MPIRUN -DMPIEXEC_NUMPROC_FLAG=\"-n\" ${procs_conf} -DPython3_EXECUTABLE=\"\`which python3\`\" -DROMS_APP=${ROMSAPP} -DROMS_APP_DIR=${APP_DIR} -DCMAKE_BUILD_TYPE=Release ../${Bundle}
     fi
-    echo "${separator}"
   else
-    echo "cd ${build};"  
-    echo ecbuild -DMPIEXEC_EXECUTABLE=\$MPIRUN -DMPIEXEC_NUMPROC_FLAG=\"-n\" -DPython3_EXECUTABLE=\"\`which python3\`\" -DCMAKE_BUILD_TYPE=Release ../${Bundle}
-    echo "${separator}"
+    echo ecbuild -DMPIEXEC_EXECUTABLE=\$MPIRUN -DMPIEXEC_NUMPROC_FLAG=\"-n\" ${procs_conf} -DPython3_EXECUTABLE=\"\`which python3\`\" -DCMAKE_BUILD_TYPE=Release ../${Bundle}
   fi
+  echo "${separator}"
 fi

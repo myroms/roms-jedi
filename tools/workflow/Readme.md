@@ -1,4 +1,4 @@
-<img width="701" alt="image" src="https://github.com/user-attachments/assets/9d8a7a78-659d-4a33-8050-64796d9c68ba" />
+<img width="824" alt="image" src="https://github.com/user-attachments/assets/d15ec2a4-70e3-410f-a2ae-d09682a9f0f2">
 
 This subdirectory contains several scripts designed to facilitate the configuration of
 any **ROMS** application within the **ROMS-JEDI** data assimilation framework. By default,
@@ -40,6 +40,9 @@ Options:
 
   -d                       Configure ecbuild with 'Debug' build type
 
+  -n_min NP_min            Minimum Number of MPI processes for tests
+                              NP_min = 2 by default
+
   -n NP                    Number of MPI processes, if using -a option
                               NP = 12 by default
   ```
@@ -55,7 +58,7 @@ root where **ROMS-JEDI** was installed:
 
 ``` c
 > cd roms-jedi
-> jedi_config.sh usec3 -a USEC /home/arango/ROMS/JediApps/usec -n 16
+> jedi_config.sh usec3 -a USEC /home/arango/ROMS/JediApps/usec -n_min 4 -n 16
 
 Current directory: /home/arango/ocean/repository/git/roms-jedi
 
@@ -69,7 +72,7 @@ Created subdirectory: build_usec3
 To configure 'ecbuild' with 'Release' build, you need to type:
 
 cd build_usec3;
-ecbuild -DMPIEXEC_EXECUTABLE=$MPIRUN -DMPIEXEC_NUMPROC_FLAG="-n" -DMPIEXEC_NUMPROC=16 -DPython3_EXECUTABLE="`which python3`" -DROMS_APP=USEC -DROMS_APP_DIR=/home/arango/ROMS/JediApps/usec -DCMAKE_BUILD_TYPE=Release ../Bundle_usec3
+ecbuild -DMPIEXEC_EXECUTABLE=$MPIRUN -DMPIEXEC_NUMPROC_FLAG="-n" -DMPIEXEC_NUMPROC_MIN=4 -DMPIEXEC_NUMPROC=16 -DPython3_EXECUTABLE="`which python3`" -DROMS_APP=USEC -DROMS_APP_DIR=/home/arango/ROMS/JediApps/usec -DCMAKE_BUILD_TYPE=Release ../Bundle_usec3
 <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 ```
 As you can see, the **ecbuild** command is too long to type or remember from memory, which

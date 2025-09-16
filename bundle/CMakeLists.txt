@@ -62,14 +62,18 @@ message( STATUS "BUNDLE CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}" )
 # and computationally demanding algorithms (like 4D-Var Unit Tests), respectively.
 
 if ( NOT MPIEXEC_NUMPROC )
-  set( MPI_NCPUS 2 )
   set( MPI_NCPUS_MAX 12 )
-  math( EXPR MPI_3xNCPUS "${MPI_NCPUS} * 3")
 else()
-  set( MPI_NCPUS ${MPIEXEC_NUMPROC} )
   set( MPI_NCPUS_MAX ${MPIEXEC_NUMPROC} )
-  math( EXPR MPI_3xNCPUS "${MPI_NCPUS} * 3")
 endif()
+
+if ( NOT MPIEXEC_NUMPROC_MIN )
+  set( MPI_NCPUS 2 )
+else()
+  set( MPI_NCPUS ${MPIEXEC_NUMPROC_MIN} )
+endif()
+
+math( EXPR MPI_3xNCPUS "${MPI_NCPUS} * 3")
 
 # ROMS application (Default: WC13).
 #
@@ -118,7 +122,7 @@ ecbuild_bundle_initialize()
 if( DEFINED ENV{jedi_cmake_ROOT} )
   include( $ENV{jedi_cmake_ROOT}/share/jedicmake/Functions/git_functions.cmake )
 else()
-  ecbuild_bundle( PROJECT jedicmake GIT "https://github.com/jcsda-internal/jedi-cmake.git" BRANCH develop UPDATE RECURSIVE )
+  ecbuild_bundle( PROJECT jedicmake GIT "https://github.com/jcsda/jedi-cmake.git" BRANCH develop UPDATE RECURSIVE )
   include( jedicmake/cmake/Functions/git_functions.cmake )
 endif()
 
