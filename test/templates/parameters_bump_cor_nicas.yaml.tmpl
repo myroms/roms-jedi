@@ -86,7 +86,6 @@ background error:
           - sea_water_y_velocity
           value: __STATIC_B_HCORRELATION_UVOCN__
 
-
         - groups:
           - sea_water_temperature
           value: __STATIC_B_HCORRELATION_TOCN__
@@ -97,6 +96,10 @@ background error:
 
         vertical length-scale:
         - groups:
+          - sea_surface_height_above_geoid
+          value: __STATIC_B_VCORRELATION_SSH__
+
+        - groups:
           - eastward_sea_water_velocity
           - northward_sea_water_velocity
           value: __STATIC_B_VCORRELATION_UVOCN__
@@ -105,10 +108,6 @@ background error:
           - sea_water_x_velocity
           - sea_water_y_velocity
           value: __STATIC_B_VCORRELATION_UVOCN__
-
-        - groups:
-          - sea_surface_height_above_geoid
-          value: __STATIC_B_VCORRELATION_SSH__
 
         - groups:
           - sea_water_temperature

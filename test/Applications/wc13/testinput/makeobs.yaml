@@ -15,10 +15,10 @@ model:
 
   model variables:
   - sea_surface_height_above_geoid
-  - eastward_sea_water_velocity                                  # A-grid
-  - northward_sea_water_velocity                                 # A-grid
-  - sea_water_x_velocity                                         # C-grid
-  - sea_water_y_velocity                                         # C-grid
+  - eastward_sea_water_velocity                # A-grid
+  - northward_sea_water_velocity               # A-grid
+  - sea_water_x_velocity                       # C-grid
+  - sea_water_y_velocity                       # C-grid
   - sea_water_temperature
   - sea_water_salinity
 
@@ -30,10 +30,10 @@ initial condition:
 
   state variables:
   - sea_surface_height_above_geoid
-  - eastward_sea_water_velocity                                  # A-grid
-  - northward_sea_water_velocity                                 # A-grid
-  - sea_water_x_velocity                                         # C-grid
-  - sea_water_y_velocity                                         # C-grid
+  - eastward_sea_water_velocity                # A-grid
+  - northward_sea_water_velocity               # A-grid
+  - sea_water_x_velocity                       # C-grid
+  - sea_water_y_velocity                       # C-grid
   - sea_water_temperature
   - sea_water_salinity
   - model_level_depth_at_cell_center
@@ -61,7 +61,7 @@ observations:
       name: VertInterp
       vertical coordinate: model_level_depth_at_cell_center
       observation vertical coordinate: depth
-      observation alias file: testinput/obsop_name_map.yaml
+      observation alias file: Data/obsop_name_map.yaml
     obs error:
       covariance model: diagonal
 
@@ -81,7 +81,7 @@ observations:
       name: VertInterp
       vertical coordinate: model_level_depth_at_cell_center
       observation vertical coordinate: depth
-      observation alias file: testinput/obsop_name_map.yaml
+      observation alias file: Data/obsop_name_map.yaml
     obs error:
       covariance model: diagonal
 
@@ -101,7 +101,7 @@ observations:
       name: VertInterp
       vertical coordinate: model_level_depth_at_cell_center
       observation vertical coordinate: depth
-      observation alias file: testinput/obsop_name_map.yaml
+      observation alias file: Data/obsop_name_map.yaml
     obs error:
       covariance model: diagonal
 
@@ -119,7 +119,7 @@ observations:
       observed variables:  [seaSurfaceTemperature]
     obs operator:
       name: Identity
-      observation alias file: testinput/obsop_name_map.yaml
+      observation alias file: Data/obsop_name_map.yaml
     obs error:
       covariance model: diagonal
 
@@ -137,7 +137,7 @@ observations:
       observed variables:  [seaSurfaceSalinity]
     obs operator:
       name: Identity
-      observation alias file: testinput/obsop_name_map.yaml
+      observation alias file: Data/obsop_name_map.yaml
     obs error:
       covariance model: diagonal
 
@@ -159,58 +159,22 @@ observations:
       covariance model: diagonal
 
 # - obs space:
-#     name: SurfaceUV
+#     name: UVcodar
 #     obsdatain:
 #       engine:
 #         type: H5File
-#         obsfile: Data/wc13/obs/wc13_uv_sur_20040103.nc4
+#         obsfile: Data/wc13/obs/wc13_uv_codar_20040103.nc4
 #     obsdataout:
 #       engine:
 #         type: H5File
 #         obsfile: Data/makeobs/truth/wc13_uvsur_obs.nc4
-#     simulated variables: [waterSurfaceZonalVelocity,
-#                           waterSurfaceMeridionalVelocity]
-#     observed variables:  [waterSurfaceZonalVelocity,
-#                           waterSurfaceMeridionalVelocity]
+#     simulated variables: [waterZonalVelocity,
+#                           waterMeridionalVelocity]
+#     observed variables:  [waterZonalVelocity,
+#                           waterMeridionalVelocity]
 #   obs operator:
 #     name: Identity
-#     observation alias file: testinput/obsop_name_map.yaml
-#   obs error:
-#     covariance model: diagonal
-
-# - obs space:
-#     name: SurfaceU
-#     obsdatain:
-#       engine:
-#         type: H5File
-#         obsfile: Data/wc13/obs/wc13_usur_20040103.nc4
-#     obsdataout:
-#       engine:
-#         type: H5File
-#         obsfile: Data/makeobs/truth/wc13_usur_obs.nc4
-#     simulated variables: [waterSurfaceZonalVelocity]
-#     observed variables:  [waterSurfaceZonalVelocity]
-#   obs operator:
-#     name: Identity
-#     observation alias file: testinput/obsop_name_map.yaml
-#   obs error:
-#     covariance model: diagonal
-
-# - obs space:
-#     name: SurfaceV
-#     obsdatain:
-#       engine:
-#         type: H5File
-#         obsfile: Data/wc13/obs/wc13_vsur_20040103.nc4
-#     obsdataout:
-#       engine:
-#         type: H5File
-#         obsfile: Data/makeobs/truth/wc13_vsur_obs.nc4
-#     simulated variables: [waterSurfaceMeridionalVelocity]
-#     observed variables:  [waterSurfaceMeridionalVelocity]
-#   obs operator:
-#     name: Identity
-#     observation alias file: testinput/obsop_name_map.yaml
+#     observation alias file: Data/obsop_name_map.yaml
 #   obs error:
 #     covariance model: diagonal
 

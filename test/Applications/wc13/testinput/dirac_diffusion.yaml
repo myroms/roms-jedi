@@ -42,51 +42,48 @@ background error:
         vert_coord: vert_coord_2d
 
     read:
-#     model:
-#       level for 2d variables: last
-#       do not cross mask boundaries: true
-#     nicas:
-#       interpolation in global file: false
-
       groups:
       - variables:
         - sea_surface_height_above_geoid
+        multivariate strategy: univariate
         horizontal:
-#         filepath: Data/diffusion/wc13_diffusion_hcor_50
-#         filepath: Data/diffusion/wc13_diffusion_hcor_70
-          filepath: Data/diffusion/wc13_diffusion_hcor_80
-#         filepath: Data/diffusion/wc13_diffusion_hcor_100
-#         filepath: Data/diffusion/wc13_diffusion_hcor_120
+          filepath: Data/diffusion/wc13_diffusion_ssh_hcor
 
       - variables:
         - eastward_sea_water_velocity
+        multivariate strategy: univariate
+        horizontal:
+          filepath: Data/diffusion/wc13_diffusion_uvel_hcor
+        vertical:
+          levels: 30
+          filepath: Data/diffusion/wc13_diffusion_uvel_vcor
+
+      - variables:
         - northward_sea_water_velocity
         multivariate strategy: univariate
         horizontal:
-#         filepath: Data/diffusion/wc13_diffusion_hcor_50
-#         filepath: Data/diffusion/wc13_diffusion_hcor_70
-          filepath: Data/diffusion/wc13_diffusion_hcor_80
-#         filepath: Data/diffusion/wc13_diffusion_hcor_100
-#         filepath: Data/diffusion/wc13_diffusion_hcor_120
+          filepath: Data/diffusion/wc13_diffusion_vvel_hcor
         vertical:
           levels: 30
-#         filepath: Data/diffusion/wc13_diffusion_vcor_5
-          filepath: Data/diffusion/wc13_diffusion_vcor_8
+          filepath: Data/diffusion/wc13_diffusion_vvel_vcor
 
       - variables:
         - sea_water_temperature
+        multivariate strategy: univariate
+        horizontal:
+          filepath: Data/diffusion/wc13_diffusion_temp_hcor
+        vertical:
+          levels: 30
+          filepath: Data/diffusion/wc13_diffusion_temp_vcor
+
+      - variables:
         - sea_water_salinity
         multivariate strategy: univariate
         horizontal:
-#         filepath: Data/diffusion/wc13_diffusion_hcor_50
-#         filepath: Data/diffusion/wc13_diffusion_hcor_70
-          filepath: Data/diffusion/wc13_diffusion_hcor_80
-#         filepath: Data/diffusion/wc13_diffusion_hcor_100
-#         filepath: Data/diffusion/wc13_diffusion_hcor_120
+          filepath: Data/diffusion/wc13_diffusion_salt_hcor
         vertical:
           levels: 30
-#         filepath: Data/diffusion/wc13_diffusion_vcor_5
-          filepath: Data/diffusion/wc13_diffusion_vcor_8
+          filepath: Data/diffusion/wc13_diffusion_salt_vcor
 
 dirac:
   ifdir:                                       # State field to perturb

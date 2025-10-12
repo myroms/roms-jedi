@@ -21,13 +21,13 @@
 # (1) __SINGLE_OBSERVATION_DATA__ for single observation test cases     :::
 #                                 that may either include a T/S pair,   :::
 #     an SST datum, or a couple of ADT measurements. It uses the        :::
-#     "obs_singleObs.yaml.tmpl" as a template to build the observation  :::
-#     block in associated YAML files.                                   :::
+#     "roms-jedi/test/Utility/obs_singleObs.yaml.tmpl" as a template    :::
+#     to build the observation block in associated YAML files.          :::
 #                                                                       :::
 # (2) __OBSERVATION_DATA__ for whole set of observations of any of      :::
-#                          the following observer types: InsituTS,      :::
-#     InsituTemperature, InsituSalinity, SST, SSS, ADT, SurfaceUV,      :::
-#     SurfaceU, or SurfaceV. It uses "observations.yaml.tmpl" as a      :::
+#                          the following observer types: T, S, TS,      :::
+#     TS_GLIDER, SST, SSS, ADT, UV_CODAR, and maybe others.             :::
+#     It uses "roms-jedi/test/Utility/observations.yaml.tmpl" as a      :::
 #     template to build the observation block in the data assimilation  :::
 #     YAML files for available algorithms.                              :::
 #                                                                       :::
@@ -40,56 +40,74 @@
 #                                                                       :::
 # Usage:                                                                :::
 #                                                                       :::
-#   template2yaml.pl APP_FILE TEMPLATES_DIR                             :::
+#   template2yaml.pl APP_FILE SRC_DIR -notest                           :::
 #                                                                       :::
 # where                                                                 :::
 #                                                                       :::
 #         APP_FILE       ROMS application YAML parameters file (ASCII)  :::
-#         TEMPLATES_DIR  Path for ROMS-JEDI YAML files templates        :::
+#                                                                       :::
+#         SRC_DIR        Path ROMS-JEDI source code                     :::
+#                                                                       :::
+#         -notest        Disable regression testing of Unit Tests with  :::
+#                          reference files (optional)                   :::
 #                                                                       :::
 # Example:                                                              :::
 #                                                                       :::
-# template2yaml.pl wc13_yaml_parameters.dat roms-jedi/test/templates    :::
+# template2yaml.pl wc13_yaml_parameters.dat ROOT_DIR/roms-jedi          :::
 #                                                                       :::
 # For more information, please check the "roms-jedi/tools/workflow"     :::
 # sub-directory.                                                        :::
 #                                                                       :::
 #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-#no warnings 'experimental';
 use File::Basename;
-#use DateTime::Duration;
-#use DateTime::Format::Duration::ISO8601;
-#use DateTime::Format::Duration;
+use Cwd qw(cwd);
 use Time::Piece;
 use Time::Seconds;
 use strict;
+my $notest = 0;
+my $pwd = cwd;
 
 # $#ARGV is actually the number of arguments minus 1.
 
-if ($#ARGV != 1) {
+if ($#ARGV < 1  || $#ARGV > 2) {
   print "Usage:\n";
-  print "  tmpl_process.pl APP_DATA TEMPLATES_DIR\n";
+  print "  tmpl_process.pl APP_DATA SRC_DIR [-notest]\n";
   exit 1;
 }
 
 my $app_file = $ARGV[0];
 my $templates_dir;
+my $util_dir;
 my %params;
 my @ymd_params = ('__ROMS_INI_PRIOR__', '__ROMS_STDINP__', '__ROMS_STDINP_MAX__');
 my $key;
-
+print "\n";
 if (-d $ARGV[1]) {
-  $templates_dir = $ARGV[1];
+  $templates_dir = "$ARGV[1]/test/templates";
+  $util_dir = "$ARGV[1]/test/Utility";
+  print "Templates: $templates_dir\n";
+  print "Utility:   $util_dir\n\n";
 }
 else {
   print "directory $ARGV[1] not found\n";
   exit 1;
 }
 
+if ($#ARGV == 2 && $ARGV[2] != '-notest') {
+  print "Unrecognized option: $ARGV[2]\n";
+  print "Usage:\n";
+  print "  tmpl_process.pl APP_DATA SRC_DIR [-notest]\n";
+  exit 1;
+}
+elsif ($#ARGV == 2 && $ARGV[2] == '-notest') {
+  $notest = 1
+}
+
 open FILE, "${app_file}" or die "File ${app_file} must exist!\n";
-while( my $line = <FILE>) {
+while ( my $line = <FILE>) {
   chomp ($line);
+  # Skip comment and blank lines
   if ($line =~ /^\s*#/ || $line =~ /^\s*$/) { next; }
   my ($key, $val) = split(/\s+/, $line, 2);
   $params{$key} = $val;
@@ -110,7 +128,7 @@ elsif ($for_len =~ /^P(.*)D/) {
   $for_len = $for_len * 24;
 }
 else {
-  print "FORECAST_LENGTH format is not recognized."
+  print "FORECAST_LENGTH format is not recognized.\n"
 }
 
 # Calculate mid and final date.
@@ -162,6 +180,17 @@ delete @params{@timestamp_vals};
 
 #print map { "$_ => $params{$_}\n" } keys %params;
 
+# check whether observation file exists
+my @obs_keys = grep { $_ =~ /^__.*_OBS__$/ } keys %params;
+foreach ( @obs_keys ) {
+  my $tfile = $params{${_}};
+  $tfile =~ s/^.*\/obs\/(.*)$/obs\/$1/;
+  if ( $tfile =~ /^\s*$/ ){ next; }
+  if ( not -e $tfile ){
+    print "The '${_}' file '$tfile' is missing, so it is ignored.\n";
+  }
+}
+
 #--------------------------------------------------------------------------
 # Read the observations template file and store each variable block in
 # a hash (array) keyed on the variable name.
@@ -171,16 +200,16 @@ delete @params{@timestamp_vals};
 #--------------------------------------------------------------------------
 
 $/='>';
-my($obs_fname,$dirs,$suf) = fileparse("${templates_dir}/observations.yaml.tmpl", '.tmpl');
-open FILE, "${dirs}observations.yaml.tmpl" || die "Can't open file ${dirs} observations.yaml.tmpl";
+my ($obs_fname,$dirs,$suf) = fileparse("${util_dir}/observations.yaml.tmpl", '.tmpl');
+open FILE, "${dirs}observations.yaml.tmpl" || die "Can't open file ${dirs} observations.yaml.tmpl\n";
 my %obs;
 my $ob_name;
 # Read the file one entry at a time
-while(my $ob = <FILE>){
+while (my $ob = <FILE>) {
   # Remove the > (or whatever $/ is set to) from the end of the entry
   chomp $ob;
   # Avoid 2 entries for last variable
-  if($ob =~ /^\s*$/){
+  if ($ob =~ /^\s*$/) {
     last;
   }
   # remove the comments from the start of the file
@@ -198,7 +227,7 @@ close FILE;
 #--------------------------------------------------------------------------
 
 my $obs_block = '';
-foreach(@observations) {
+foreach (@observations) {
   # Trim the variable name just in case.
   ${_} =~ s/^\s+|\s+$//g;
   # Append to the block.
@@ -208,8 +237,8 @@ foreach(@observations) {
 # Read in entire file as one string.
 
 $/=undef;
-my($obs_fname,$dirs,$suf) = fileparse("${templates_dir}/obs_singlObs.yaml.tmpl", '.tmpl');
-open FILE, "${dirs}obs_singleObs.yaml.tmpl" || die "Can't open file ${dirs} obs_singleObs.yaml.tmpl";
+my ($obs_fname,$dirs,$suf) = fileparse("${util_dir}/obs_singlObs.yaml.tmpl", '.tmpl');
+open FILE, "${dirs}obs_singleObs.yaml.tmpl" || die "Can't open file ${dirs}obs_singleObs.yaml.tmpl\n";
 my $s_obs = <FILE>;
 close FILE;
 
@@ -221,7 +250,7 @@ $s_obs =~ s/^ *\n//m;
 # Create a list containing all the templates to process.
 
 my $dh;
-opendir($dh, "$templates_dir");
+opendir($dh, "${templates_dir}");
 my @tmpls = grep { /\.tmpl$/ } readdir($dh);
 my $string;
 
@@ -229,14 +258,14 @@ my $string;
 
 mkdir("testinput") unless(-d "testinput");
 
-foreach(@tmpls) {
+foreach (@tmpls) {
   # Here $suf and ".tmpl" together allow $out_fname to be set to the desired filename
-  my($out_fname,$dirs,$suf) = fileparse("${templates_dir}/${_}", '.tmpl');
+  my ($out_fname,$dirs,$suf) = fileparse("${templates_dir}/${_}", '.tmpl');
   open FILE, "${dirs}${_}" || die "Can't open file ${dirs}${_}";
   $string = <FILE>;
   close FILE;
 
-  if($string =~ /^( *)__OBSERVATION_DATA__/m || $string =~ /^( *)__SINGLE_OBSERVATION_DATA__/m){
+  if ($string =~ /^( *)__OBSERVATION_DATA__/m || $string =~ /^( *)__SINGLE_OBSERVATION_DATA__/m) {
     my $indent = ' ' x length($1);
     my $path = "Data";
     my @path_parse = split '_', $out_fname;
@@ -248,10 +277,11 @@ foreach(@tmpls) {
       $path = $path."/".$key;
     }
     $params{'__OBS_OUTPUT_PATH__'} = $path;
-    if($string =~ /^ *__OBSERVATION_DATA__/m) {
+    if ($string =~ /^ *__OBSERVATION_DATA__/m) {
       my $o_block = indent($indent, $obs_block);
       $string =~ s/^( *)__OBSERVATION_DATA__.*$/$o_block/m;
-    } else {
+    }
+    else {
       my $so_block = indent($indent, $s_obs);
       $string =~ s/^( *)__SINGLE_OBSERVATION_DATA__.*$/$so_block/m;
     }
@@ -263,6 +293,15 @@ foreach(@tmpls) {
     $string =~ s/$key/$params{$key}/g;
   }
 
+  if ( $notest == 1 ) {
+    # search for a liine begining with "test:" and capture to end of file
+    my $block_to_comment = qr{ (^test:.*\z) }xms;
+    # take the captured block and comment each line
+    my $block = '$block = $1;$block =~ s/^/#/smg;$block;';
+    # expand (first 'e') and evaluate (second 'e') $block
+    $string =~ s/$block_to_comment/$block/smgee;
+  }
+
   # open output yaml file for writing
 
   open FILE, ">testinput/$out_fname";
@@ -271,7 +310,7 @@ foreach(@tmpls) {
   $string = '';
 }
 
-sub indent{
+sub indent {
   my ($spaces, $str) = @_;
   # Insert indent spacing after the #
   $str =~ s/^#(.*)/#${spaces}${1}/mg;

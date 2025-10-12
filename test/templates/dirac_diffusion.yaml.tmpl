@@ -13,7 +13,7 @@ background:
   date: &date __INITIAL_DATE__
   fields_dir: __FIELDS_DIR__
   fields_filename: __ROMS_INI_PRIOR__
-  fields_record:  __INI_PRIOR_RECORD__
+  fields_record: __INI_PRIOR_RECORD__
 
   state variables: &roms_state
   - sea_surface_height_above_geoid
@@ -42,36 +42,48 @@ background error:
         vert_coord: vert_coord_2d
 
     read:
-#     model:
-#       level for 2d variables: last
-#       do not cross mask boundaries: true
-#     nicas:
-#       interpolation in global file: false
-
       groups:
       - variables:
         - sea_surface_height_above_geoid
+        multivariate strategy: univariate
         horizontal:
-#         filepath: __PATH_HCOR_50__
-#         filepath: __PATH_HCOR_70__
-          filepath: __PATH_HCOR_80__
-#         filepath: __PATH_HCOR_100__
-#         filepath: __PATH_HCOR_120__
+          filepath: __PATH_SSH_HCOR__
+
+      - variables:
+        - eastward_sea_water_velocity
+        multivariate strategy: univariate
+        horizontal:
+          filepath: __PATH_UVEL_HCOR__
+        vertical:
+          levels: __NLEVELS__
+          filepath: __PATH_UVEL_VCOR__
+
+      - variables:
+        - northward_sea_water_velocity
+        multivariate strategy: univariate
+        horizontal:
+          filepath: __PATH_VVEL_HCOR__
+        vertical:
+          levels: __NLEVELS__
+          filepath: __PATH_VVEL_VCOR__
 
       - variables:
         - sea_water_temperature
+        multivariate strategy: univariate
+        horizontal:
+          filepath: __PATH_TEMP_HCOR__
+        vertical:
+          levels: __NLEVELS__
+          filepath: __PATH_TEMP_VCOR__
+
+      - variables:
         - sea_water_salinity
         multivariate strategy: univariate
         horizontal:
-#         filepath: __PATH_HCOR_50__
-#         filepath: __PATH_HCOR_70__
-          filepath: __PATH_HCOR_80__
-#         filepath: __PATH_HCOR_100__
-#         filepath: __PATH_HCOR_120__
+          filepath: __PATH_SALT_HCOR__
         vertical:
           levels: __NLEVELS__
-#         filepath: __PATH_VCOR_5L__
-          filepath: __PATH_VCOR_8L__
+          filepath: __PATH_SALT_VCOR__
 
 dirac:
   ifdir:                                       # State field to perturb

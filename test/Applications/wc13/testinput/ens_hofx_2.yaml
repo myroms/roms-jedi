@@ -61,7 +61,7 @@ observations:
       name: VertInterp
       vertical coordinate: model_level_depth_at_cell_center
       observation vertical coordinate: depth
-      observation alias file: testinput/obsop_name_map.yaml
+      observation alias file: Data/obsop_name_map.yaml
 
   - obs space:
       name: InsituTemperature
@@ -78,7 +78,7 @@ observations:
       name: VertInterp
       vertical coordinate: model_level_depth_at_cell_center
       observation vertical coordinate: depth
-      observation alias file: testinput/obsop_name_map.yaml
+      observation alias file: Data/obsop_name_map.yaml
 
   - obs space:
       name: InsituSalinity
@@ -95,7 +95,7 @@ observations:
       name: VertInterp
       vertical coordinate: model_level_depth_at_cell_center
       observation vertical coordinate: depth
-      observation alias file: testinput/obsop_name_map.yaml
+      observation alias file: Data/obsop_name_map.yaml
 
   - obs space:
       name: SST
@@ -110,7 +110,7 @@ observations:
       simulated variables: [seaSurfaceTemperature]
     obs operator:
       name: Identity
-      observation alias file: testinput/obsop_name_map.yaml
+      observation alias file: Data/obsop_name_map.yaml
 
   - obs space:
       name: SSS
@@ -125,7 +125,7 @@ observations:
       simulated variables: [seaSurfaceSalinity]
     obs operator:
       name: Identity
-      observation alias file: testinput/obsop_name_map.yaml
+      observation alias file: Data/obsop_name_map.yaml
 
   - obs space:
       name: ADT

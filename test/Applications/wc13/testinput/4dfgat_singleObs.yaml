@@ -61,41 +61,6 @@ cost function:
     state variables: *roms_state
     date: *date
 
-#  background error:
-#    covariance model: SABER
-#    adjoint test: true
-#    saber central block:
-#      saber block name: diffusion
-#      active variables: *roms_analysis
-#      fields metadata:
-#        sea_surface_height_above_geoid:
-#          vert_coord: vert_coord_2d
-#      read:
-#        groups:
-#        - variables:
-#          - sea_water_temperature
-#          - sea_water_salinity
-#          multivariate strategy: univariate
-#          horizontal:
-#            filepath: Data/diffusion/wc13_diffusion_hcor_80
-#          vertical:
-#            levels: 30
-#            filepath: Data/diffusion/wc13_diffusion_vcor_8
-#        - variables:
-#          - sea_surface_height_above_geoid
-#          horizontal:
-#            filepath: Data/diffusion/wc13_diffusion_hcor_80
-#
-#    saber outer blocks:                        # standard deviation impulse scaling
-#    - saber block name: StdDev
-#      read:
-#        model file:
-#          fields_dir: Data/wc13/input
-#          fields_filename: wc13_roms_std_i.nc
-#          fields_record: 1
-#          state variables: *roms_analysis
-#          date: *date
-
   background error:
     covariance model: SABER
     saber central block:
@@ -157,7 +122,7 @@ cost function:
         name: VertInterp
         vertical coordinate: model_level_depth_at_cell_center
         observation vertical coordinate: depth
-        observation alias file: testinput/obsop_name_map.yaml
+        observation alias file: Data/obsop_name_map.yaml
       obs error:
         covariance model: diagonal
 
@@ -174,7 +139,7 @@ cost function:
 #        simulated variables: [seaSurfaceTemperature]
 #      obs operator:
 #        name: Identity
-#        observation alias file: testinput/obsop_name_map.yaml
+#        observation alias file: Data/obsop_name_map.yaml
 #      obs error:
 #        covariance model: diagonal
 

@@ -223,8 +223,8 @@ elif [ ${ALL_TEST} -eq 2 ]; then
 # mpirun -n 2  ../../bin/romsjedi_var.x testinput/3dfgat_dual.yaml
 # mpirun -n 2  ../../bin/romsjedi_var.x testinput/4dfgat_primal.yaml
 # mpirun -n 2  ../../bin/romsjedi_var.x testinput/4dfgat_dual.yaml
-# mpirun -n 12 ../../bin/romsjedi_var.x testinput/4dvar_bump_singleObs.yaml
-# mpirun -n 12 ../../bin/romsjedi_var.x testinput/4dvar_diffusion_singleObs.yaml
+# mpirun -n 12 ../../bin/romsjedi_var.x testinput/4dvar_singleObs_bump.yaml
+# mpirun -n 12 ../../bin/romsjedi_var.x testinput/4dvar_singleObs_diffusion.yaml
 # mpirun -n 12 ../../bin/romsjedi_var.x testinput/4dvar_bump.yaml
 # mpirun -n 12 ../../bin/romsjedi_var.x testinput/4dvar_diffusion.yaml
 # mpirun -n 2  ../../bin/romsjedi_var.x testinput/3denvar_nofgat_primal.yaml

@@ -75,7 +75,7 @@ observations:
       name: VertInterp
       vertical coordinate: model_level_depth_at_cell_center
       observation vertical coordinate: depth
-      observation alias file: testinput/obsop_name_map.yaml
+      observation alias file: Data/obsop_name_map.yaml
     obs error:
       covariance model: diagonal
     obs localizations:
@@ -98,7 +98,7 @@ observations:
       name: VertInterp
       vertical coordinate: model_level_depth_at_cell_center
       observation vertical coordinate: depth
-      observation alias file: testinput/obsop_name_map.yaml
+      observation alias file: Data/obsop_name_map.yaml
     obs error:
       covariance model: diagonal
     obs localizations:
@@ -119,7 +119,7 @@ observations:
       simulated variables: [seaSurfaceTemperature]
     obs operator:
       name: Identity
-      observation alias file: testinput/obsop_name_map.yaml
+      observation alias file: Data/obsop_name_map.yaml
     obs error:
       covariance model: diagonal
     obs localizations:
@@ -166,7 +166,7 @@ output:                                # posterior ensemble mean:
   single_record: true                  #   __ROMS_APP___roms_letfk_mem000_DATE.nc
   data_dir: Data/letkf/solver
   prefix: __ROMS_APP___roms
-  exp: letkf                           # posterior ensemble: 001-NNN
+  exp: letkf                           # posterior ensemble: 001-__NMEMBERS__
   type: mem                            #   __ROMS_APP___roms_letfk_mem%mem%_DATE.nc
   date: *date
 
@@ -202,9 +202,9 @@ output ensemble increments:            # posterior ensemble increments:
   type: mem
   date: *date
 
-output increment:                      # analysys mean increment:
+output increment:                      # analysis mean increment:
+  add_varchange: true                  #   Add fields from variable change
   single_record: true                  #   __ROMS_APP___roms_letkf_inc_DATE.nc
-  add_varchange: true                  # Add fields from variable change
   data_dir: Data/letkf/solver
   prefix: __ROMS_APP___roms
   exp: letkf

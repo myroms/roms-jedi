@@ -96,11 +96,15 @@ foreach(FILENAME ${testref})
     ${CMAKE_CURRENT_BINARY_DIR}/testref/${ref} )
 endforeach()
 
-# Specify ROMS-JEDI metadata.
+# Specify ROMS-JEDI fields metadata and observation operators.
 
 execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
-  ${CMAKE_CURRENT_SOURCE_DIR}/fields_metadata.yaml
+  ${CMAKE_CURRENT_SOURCE_DIR}/Utility/fields_metadata.yaml
   ${CMAKE_CURRENT_BINARY_DIR}/Data/fields_metadata.yaml )
+
+execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
+  ${CMAKE_CURRENT_SOURCE_DIR}/Utility/obsop_name_map.yaml
+  ${CMAKE_CURRENT_BINARY_DIR}/Data/obsop_name_map.yaml )
 
 # Make ROMS-JEDI application link.
 
@@ -119,7 +123,7 @@ set( romsjedi_bash_scripts
 
 foreach(FILENAME ${romsjedi_bash_scripts})
   execute_process(COMMAND ${CMAKE_COMMAND} -E copy
-    ${CMAKE_CURRENT_SOURCE_DIR}/${FILENAME}
+    ${CMAKE_CURRENT_SOURCE_DIR}/Utility/${FILENAME}
     ${CMAKE_CURRENT_BINARY_DIR}/${FILENAME} )
 endforeach()
 

@@ -16,8 +16,6 @@ roms analysis: &roms_analysis
 - sea_surface_height_above_geoid
 - eastward_sea_water_velocity                    # A-grid
 - northward_sea_water_velocity                   # A-grid
-- sea_water_x_velocity                           # C-grid
-- sea_water_y_velocity                           # C-grid
 - sea_water_temperature
 - sea_water_salinity
 
@@ -75,39 +73,49 @@ cost function:
       fields metadata:
         sea_surface_height_above_geoid:
           vert_coord: vert_coord_2d
-      read:
-#       drivers:
-#         read global nicas: false
-#       model:
-#         level for 2d variables: last
-#         do not cross mask boundaries: true
-#       nicas:
-#         interpolation in global file: false
 
+      read:
         groups:
         - variables:
           - sea_surface_height_above_geoid
           horizontal:
-#           filepath: __PATH_HCOR_50__
-#           filepath: __PATH_HCOR_70__
-            filepath: __PATH_HCOR_80__
-#           filepath: __PATH_HCOR_100__
-#           filepath: __PATH_HCOR_120__
+            filepath: __PATH_SSH_HCOR__
+
+        - variables:
+          - eastward_sea_water_velocity
+          multivariate strategy: univariate
+          horizontal:
+            filepath: __PATH_UVEL_HCOR__
+          vertical:
+            levels: __NLEVELS__
+            filepath: __PATH_UVEL_VCOR__
+
+        - variables:
+          - northward_sea_water_velocity
+          multivariate strategy: univariate
+          horizontal:
+            filepath: __PATH_VVEL_HCOR__
+          vertical:
+            levels: __NLEVELS__
+            filepath: __PATH_VVEL_VCOR__
 
         - variables:
           - sea_water_temperature
+          multivariate strategy: univariate
+          horizontal:
+            filepath: __PATH_TEMP_HCOR__
+          vertical:
+            levels: __NLEVELS__
+            filepath: __PATH_TEMP_VCOR__
+
+        - variables:
           - sea_water_salinity
           multivariate strategy: univariate
           horizontal:
-#           filepath: __PATH_HCOR_50__
-#           filepath: __PATH_HCOR_70__
-            filepath: __PATH_HCOR_80__
-#           filepath: __PATH_HCOR_100__
-#           filepath: __PATH_HCOR_120__
+            filepath: __PATH_SALT_HCOR__
           vertical:
             levels: __NLEVELS__
-#           filepath: __PATH_VCOR_5L__
-            filepath: __PATH_VCOR_8L__
+            filepath: __PATH_SALT_VCOR__
 
     saber outer blocks:
     - saber block name: StdDev
@@ -129,8 +137,8 @@ variational:
   minimizer:
     algorithm: RPCG                              # Dual formulation
   iterations:
-  - ninner: 1                                    # each item defined an outer loop
-    gradient norm reduction: 1E-10
+  - ninner: 2                                    # each item defined an outer loop
+    gradient norm reduction: 1E-8
     test: on
     online diagnostics:
       adj obs test: false
@@ -149,7 +157,7 @@ variational:
       trajectory:
         model variables: *roms_state
         tstep: __TRAJECTORY_TIMESTEP__
-      variable change: Identity
+      variable change: Model2Analysis
     diagnostics:                                 # Written into output IODA files
       departures: ombg                           # OBS - H(Xb)
     online diagnostics:

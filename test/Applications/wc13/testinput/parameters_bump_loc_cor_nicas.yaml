@@ -72,10 +72,10 @@ background error:
         horizontal length-scale:
         - groups:
           - common
-#         value: 146.06e3                             # L = 40e3 m
-#         value: 182.57e3                             # L = 50e3 m
-          value: 219.09e3                             # L = 60e3 m
-#         value: 292.12e3                             # L = 80e3 m
+#         value: 146.06e+3                            # L = 40e3 m
+#         value: 182.57e+3                            # L = 50e3 m
+          value: 219.09e+3                            # L = 60e3 m
+#         value: 292.12e+3                            # L = 80e3 m
         vertical length-scale:
         - groups:
           - common

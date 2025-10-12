@@ -15,10 +15,10 @@ model:
 
   model variables:
   - sea_surface_height_above_geoid
-  - eastward_sea_water_velocity                                  # A-grid
-  - northward_sea_water_velocity                                 # A-grid
-  - sea_water_x_velocity                                         # C-grid
-  - sea_water_y_velocity                                         # C-grid
+  - eastward_sea_water_velocity                # A-grid
+  - northward_sea_water_velocity               # A-grid
+  - sea_water_x_velocity                       # C-grid
+  - sea_water_y_velocity                       # C-grid
   - sea_water_temperature
   - sea_water_salinity
   - vertical_diffusion_coefficient_of_temperature_in_sea_water
@@ -33,10 +33,10 @@ initial condition:
 
   state variables:
   - sea_surface_height_above_geoid
-  - eastward_sea_water_velocity                                  # A-grid
-  - northward_sea_water_velocity                                 # A-grid
-  - sea_water_x_velocity                                         # C-grid
-  - sea_water_y_velocity                                         # C-grid
+  - eastward_sea_water_velocity                # A-grid
+  - northward_sea_water_velocity               # A-grid
+  - sea_water_x_velocity                       # C-grid
+  - sea_water_y_velocity                       # C-grid
   - sea_water_temperature
   - sea_water_salinity
   - model_level_depth_at_cell_center
@@ -63,7 +63,7 @@ observations:
       name: VertInterp
       vertical coordinate: model_level_depth_at_cell_center
       observation vertical coordinate: depth
-      observation alias file: testinput/obsop_name_map.yaml
+      observation alias file: Data/obsop_name_map.yaml
 
   - obs space:
       name: InsituTemperature
@@ -80,7 +80,7 @@ observations:
       name: VertInterp
       vertical coordinate: model_level_depth_at_cell_center
       observation vertical coordinate: depth
-      observation alias file: testinput/obsop_name_map.yaml
+      observation alias file: Data/obsop_name_map.yaml
 
   - obs space:
       name: InsituSalinity
@@ -97,7 +97,7 @@ observations:
       name: VertInterp
       vertical coordinate: model_level_depth_at_cell_center
       observation vertical coordinate: depth
-      observation alias file: testinput/obsop_name_map.yaml
+      observation alias file: Data/obsop_name_map.yaml
 
   - obs space:
       name: SST
@@ -112,7 +112,7 @@ observations:
       simulated variables: [seaSurfaceTemperature]
     obs operator:
       name: Identity
-      observation alias file: testinput/obsop_name_map.yaml
+      observation alias file: Data/obsop_name_map.yaml
 
   - obs space:
       name: SSS
@@ -127,7 +127,7 @@ observations:
       simulated variables: [seaSurfaceSalinity]
     obs operator:
       name: Identity
-      observation alias file: testinput/obsop_name_map.yaml
+      observation alias file: Data/obsop_name_map.yaml
 
   - obs space:
       name: ADT
@@ -144,50 +144,20 @@ observations:
       name: ADT
 
 # - obs space:
-#     name: SurfaceUV
+#     name: UVcodar
 #     obsdatain:
 #       engine:
 #         type: H5File
-#         obsfile: __UV_SUR_OBS__
+#         obsfile: __UV_CODAR_OBS__
 #     obsdataout:
 #       engine:
 #         type: H5File
 #         obsfile: Data/hofx/4d/__ROMS_APP___uv_sur_hofx.nc4
-#     simulated variables: [waterSurfaceZonalVelocity,
-#                           waterSurfaceMeridionalVelocity]
+#     simulated variables: [waterZonalVelocity,
+#                           waterMeridionalVelocity]
 #   obs operator:
 #     name: Identity
-#     observation alias file: testinput/obsop_name_map.yaml
-
-# - obs space:
-#     name: SurfaceU
-#     obsdatain:
-#       engine:
-#         type: H5File
-#         obsfile: __USUR_OBS__
-#     obsdataout:
-#       engine:
-#         type: H5File
-#         obsfile: Data/hofx/4d/__ROMS_APP___usur_hofx.nc4
-#     simulated variables: [waterSurfaceZonalVelocity]
-#   obs operator:
-#     name: Identity
-#     observation alias file: testinput/obsop_name_map.yaml
-
-# - obs space:
-#     name: SurfaceV
-#     obsdatain:
-#       engine:
-#         type: H5File
-#         obsfile: __VSUR_OBS__
-#     obsdataout:
-#       engine:
-#         type: H5File
-#         obsfile: Data/hofx/__ROMS_APP___vsur_hofx_4d.nc4
-#     simulated variables: [waterSurfaceMeridionalVelocity]
-#   obs operator:
-#     name: Identity
-#     observation alias file: testinput/obsop_name_map.yaml
+#     observation alias file: Data/obsop_name_map.yaml
 
 test:
   reference filename: testref/hofx_4d.ref

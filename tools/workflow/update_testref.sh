@@ -49,6 +49,7 @@ if [[ "$#" -eq 1 ]]; then
   testname=`basename $1 .yaml`
   tests=("${testname}")
   from_file=0
+  echo $tests
 fi
 
 echo " "
@@ -57,7 +58,7 @@ echo " "
 
 # Fill the "tests" array if the faild tests log file exists.
 
-if [[ ${from_file} ]]; then
+if [[ ${from_file} -eq 1 ]]; then
   if [[ ! -f "${file}" ]]; then
     echo "Failed test log file ${file} not found."
     exit 1
@@ -78,7 +79,7 @@ do
   ref_file=testref/${prefix}.ref
   
   if [[ ! -f ${out_file} ]]; then
-    echo "Cannot find: $(PWD)/${out_file}"
+    echo "Cannot find: ${PWD}/${out_file}"
   else
     cp -fv ${out_file} ${ref_file}
   fi

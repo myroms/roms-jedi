@@ -75,40 +75,40 @@ background error:
         horizontal length-scale:
         - groups:
           - sea_surface_height_above_geoid
-#         value: 146.06e3                             # L = 40e3 m
-#         value: 182.57e3                             # L = 50e3 m
-          value: 219.09e3                             # L = 60e3 m
-#         value: 292.12e3                             # L = 80e3 m
+#         value: 146.06e+3                            # L = 40e3 m
+#         value: 182.57e+3                            # L = 50e3 m
+          value: 219.09e+3                            # L = 60e3 m
+#         value: 292.12e+3                            # L = 80e3 m
 
         - groups:
           - eastward_sea_water_velocity
           - northward_sea_water_velocity
-#         value: 146.06e3                             # L = 40e3 m
-#         value: 182.57e3                             # L = 50e3 m
-          value: 219.09e3                             # L = 60e3 m
-#         value: 292.12e3                             # L = 80e3 m
+#         value: 146.06e+3                            # L = 40e3 m
+#         value: 182.57e+3                            # L = 50e3 m
+          value: 219.09e+3                            # L = 60e3 m
+#         value: 292.12e+3                            # L = 80e3 m
 
         - groups:
           - sea_water_x_velocity
           - sea_water_y_velocity
-#         value: 146.06e3                             # L = 40e3 m
-#         value: 182.57e3                             # L = 50e3 m
-          value: 219.09e3                             # L = 60e3 m
-#         value: 292.12e3                             # L = 80e3 m
+#         value: 146.06e+3                            # L = 40e3 m
+#         value: 182.57e+3                            # L = 50e3 m
+          value: 219.09e+3                            # L = 60e3 m
+#         value: 292.12e+3                            # L = 80e3 m
 
         - groups:
           - sea_water_temperature
-#         value: 146.06e3                             # L = 40e3 m
-#         value: 182.57e3                             # L = 50e3 m
-          value: 219.09e3                             # L = 60e3 m
-#         value: 292.12e3                             # L = 80e3 m
+#         value: 146.06e+3                            # L = 40e3 m
+#         value: 182.57e+3                            # L = 50e3 m
+          value: 219.09e+3                            # L = 60e3 m
+#         value: 292.12e+3                            # L = 80e3 m
 
         - groups:
           - sea_water_salinity
-#         value: 146.06e3                             # L = 40e3 m
-#         value: 182.57e3                             # L = 50e3 m
-          value: 219.09e3                             # L = 60e3 m
-#         value: 292.12e3                             # L = 80e3 m
+#         value: 146.06e+3                            # L = 40e3 m
+#         value: 182.57e+3                            # L = 50e3 m
+          value: 219.09e+3                            # L = 60e3 m
+#         value: 292.12e+3                            # L = 80e3 m
 
         vertical length-scale:
         - groups:

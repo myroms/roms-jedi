@@ -21,16 +21,16 @@ increment variables: &roms_analysis
 
 _obs distribution: &ObsSpaceDistribution
   name: Halo
-  halo size: 150.0e3
+  halo size: 3500.0e+3
 
 _hor obs localization: &HorizontalObsLoc
   localization method: Horizontal Gaspari-Cohn
 # localization method: Heaviside
-  lengthscale: 150.0e3
+  lengthscale: 292.12e3
 
 _conventional vertical localization: &DepthVertObsLoc
   localization method: Vertical localization
-  vertical lengthscale: 150
+  vertical lengthscale: 109.54
   ioda vertical coordinate: depth
   ioda vertical coordinate group: MetaData
   localization function: Gaspari Cohn
@@ -75,7 +75,7 @@ observations:
 #     name: VertInterp
 #     vertical coordinate: model_level_depth_at_cell_center
 #     observation vertical coordinate: depth
-#     observation alias file: testinput/obsop_name_map.yaml
+#     observation alias file: Data/obsop_name_map.yaml
 #   obs error:
 #     covariance model: diagonal
 #   obs localizations:
@@ -101,7 +101,7 @@ observations:
 #     name: VertInterp
 #     vertical coordinate: model_level_depth_at_cell_center
 #   observation vertical coordinate: depth
-#     observation alias file: testinput/obsop_name_map.yaml
+#     observation alias file: Data/obsop_name_map.yaml
 #   obs error:
 #     covariance model: diagonal
 #   obs localizations:
@@ -122,7 +122,7 @@ observations:
       simulated variables: [seaSurfaceTemperature]
     obs operator:
       name: Identity
-      observation alias file: testinput/obsop_name_map.yaml
+      observation alias file: Data/obsop_name_map.yaml
     obs error:
       covariance model: diagonal
     obs localizations:

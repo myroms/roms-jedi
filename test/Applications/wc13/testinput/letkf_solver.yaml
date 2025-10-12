@@ -21,12 +21,12 @@ increment variables: &roms_analysis
 
 _obs distribution: &ObsSpaceDistribution
   name: Halo
-  halo size: 3500.0e3
+  halo size: 3500.0e+3
 
 _hor obs localization: &HorizontalObsLoc
   localization method: Horizontal Gaspari-Cohn
 # localization method: Heaviside
-  lengthscale: 292.12e3
+  lengthscale: 219.09e+3
 
 _conventional vertical localization: &DepthVertObsLoc
   localization method: Vertical localization
@@ -76,7 +76,7 @@ observations:
       name: VertInterp
       vertical coordinate: model_level_depth_at_cell_center
       observation vertical coordinate: depth
-      observation alias file: testinput/obsop_name_map.yaml
+      observation alias file: Data/obsop_name_map.yaml
     obs error:
       covariance model: diagonal
     obs localizations:
@@ -99,7 +99,7 @@ observations:
       name: VertInterp
       vertical coordinate: model_level_depth_at_cell_center
       observation vertical coordinate: depth
-      observation alias file: testinput/obsop_name_map.yaml
+      observation alias file: Data/obsop_name_map.yaml
     obs error:
       covariance model: diagonal
     obs localizations:
@@ -120,7 +120,7 @@ observations:
       simulated variables: [seaSurfaceTemperature]
     obs operator:
       name: Identity
-      observation alias file: testinput/obsop_name_map.yaml
+      observation alias file: Data/obsop_name_map.yaml
     obs error:
       covariance model: diagonal
     obs localizations:
@@ -203,9 +203,9 @@ output ensemble increments:            # posterior ensemble increments:
   type: mem
   date: *date
 
-output increment:                      # analysys mean increment:
+output increment:                      # analysis mean increment:
+  add_varchange: true                  #   Add fields from variable change
   single_record: true                  #   wc13_roms_letkf_inc_DATE.nc
-  add_varchange: true                  # Add fields from variable change
   data_dir: Data/letkf/solver
   prefix: wc13_roms
   exp: letkf

@@ -135,11 +135,11 @@ Data/
 ### Creating ROMS-JEDI Input YAML Files: `template2yaml`
 
 Each algorithm in **JEDI** uses a **YAML** input file to run an executable.  For example, to run the
-4D-Var data assimilation individually, we will use:
+4D-Var data assimilation, individually, we will use:
 
 ``` c
 > cd roms-jedi
-> cd build_usec2/roms-jedi/test
+> cd build_usec3/roms-jedi/test
 > mpirun -n 12 ../../bin/romsjedi_var.x testinput/4dvar_bump.yaml > & log & ; tail log
 ```
 Alternatively, we may run the following **ctest** command:
@@ -151,22 +151,25 @@ Alternatively, we may run the following **ctest** command:
 > ctest -VV -R test_romsjedi_4dvar_bump
 ```
 
-Now, creating all the input **YAML** files needed to run the **ROMS-JEDI** requires expertise and
-knowledge of **JEDI** and data assimilation. The **Pearl** script **`template2yaml.pl`** is provided
+Creating all the input **YAML** files needed to run the **ROMS-JEDI** interface requires expertise and
+knowledge of **JEDI** and data assimilation. The **Perl** script **`template2yaml.pl`** is provided
 to facilitate the generation of all input **YAML** files from templates:
 
 ``` c
 template2yaml.pl [options]
 
-Options:
+Usage:
 
   app_file                 ROMS application YAML parameters file (ASCII)
   
-  templates_dir            Path for ROMS-JEDI YAML files template
+  src_dir                  Path for ROMS-JEDI source code
+
+  -notest                  Disable regression testing of Unit Tests with reference files
+                             (optional)                 
 
 Example:
 
-  template2yaml.pl  wc13_yaml_parameters.dat  roms-jedi/test/templates
+  template2yaml.pl  wc13_yaml_parameters.dat  /home/arango/ocean/repository/git/roms-jedi
 ```
 
 The **`template2yaml.pl`** Perl script reads the **ROMS** **`app_file`** parameters
@@ -175,12 +178,29 @@ including the values needed for the default **`WC13`** application).
 These pairs, combined with the **roms-jedi/test/templates** files (extension **`.yaml.tmpl`**),
 generate all the necessary  **YAML** configuration files for the **ROMS-JEDI** interface.
 
-Currently, the user must provide an **observation block** for each data assimilation cycle. That
+Users can activate the **`-notest`** option to suppress the regression testing method, which
+allows them to verify that newly introduced code changes, bug fixes, or updates do not negatively affect
+the previous results of a **ROMS-JEDI** application. Regression testing requires reference files located
+in the application subdirectory **testref**. It is important to frequently update these reference files when
+restructuring the **JEDI** source code, changing configuration parameters, using different compilers, or
+applying different parallel partitions. The users may deactivate regression testing when using a generic
+**ROMS** application. This **Perl** script with the **`-notest`** option will comment out the test block in the
+input **YAML** files, suppressing regression testing. For instance:
+
+```
+#test:
+#  reference filename: testref/4dvar_bump.ref
+#  float relative tolerance: 1.0e-3
+#  log output filename: testoutput/4dvar_bump.log
+#  test output filename: testoutput/4dvar_bump.out
+```
+
+The user must provide an **observation block** for each data assimilation cycle. That
 block is identified as **`__SINGLE_OBSERVATION_DATA__`** or **`__OBSERVATION_DATA__`** in the
 **YAML** templates:
 
-- The **`__SINGLE_OBSERVATION_DATA__`** identifier is used for single observation test cases
-  only that may either include a Temperature/Salinity pair, an SST datum, or a couple of ADT
+- The **`__SINGLE_OBSERVATION_DATA__`** identifier is used only for single observation test cases,
+  including a Temperature/Salinity pair, an SST datum, or a couple of ADT
   measurements. It uses the **`obs_singleObs.yaml.tmpl`** as a template to build the observation
   block in associated **YAML** files. For example, in **4dvar_singleObs_bump.yaml.tmpl** you
   would find:

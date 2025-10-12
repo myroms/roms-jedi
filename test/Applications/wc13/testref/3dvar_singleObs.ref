@@ -13,6 +13,9 @@ sea_water_y_velocity                                          Min = -5.530649874
 sea_water_temperature                                         Min =  1.113304510712624e+00  Min =  1.834444172990341e+01  Mean =  6.356208175763379e+00
 sea_water_salinity                                            Min =  3.190610137897763e+01  Min =  3.468966426432459e+01  Mean =  3.394614743141011e+01
 model_level_depth_at_cell_center                              Min = -4.947840267560327e+03  Min = -2.457733757631713e-01  Mean = -1.072647945779636e+03
+vertical_diffusion_coefficient_of_temperature_in_sea_water    Min =  1.000000000000000e-05  Min =  4.578502793985555e-01  Mean =  2.211230977621799e-03
+vertical_diffusion_coefficient_of_salinity_in_sea_water       Min =  1.000000000000000e-05  Min =  4.578502793985555e-01  Mean =  2.211230977621799e-03
+vertical_viscosity_coefficient_of_sea_water                   Min =  2.238121854249249e-05  Min =  3.372804076834582e-01  Mean =  1.711737724025528e-03
 
 CostJo   : Nonlinear Jo(InsituTS) = 2.187464805680678e+00, nobs = 2, Jo/n = 1.093732402840339e+00, err = 4.329345464661526e-01
 CostJb   : Nonlinear Jb = 1.191769233516393e+00

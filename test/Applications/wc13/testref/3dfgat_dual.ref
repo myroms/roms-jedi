@@ -1,25 +1,28 @@
-CostJo   : Nonlinear Jo(InsituTemperature) = 3.2531002229028863e+03, nobs = 168, Jo/n = 1.9363691802993372e+01, err = 2.5234512478170978e-01
-CostJo   : Nonlinear Jo(InsituSalinity) = 3.6340731796860118e+03, nobs = 125, Jo/n = 2.9072585437488094e+01, err = 5.1789821985162861e-02
-CostJo   : Nonlinear Jo(SST) = 3.0713196993832271e+03, nobs = 4952, Jo/n = 6.2021803299338185e-01, err = 4.0783752598605327e-01
-CostJo   : Nonlinear Jo(ADT) = 1.7863983188436116e+03, nobs = 1570, Jo/n = 1.1378333241042111e+00, err = 2.0313911453614535e-02
+CostJo   : Nonlinear Jo(InsituTemperature) = 3.2542565007149969e+03, nobs = 168, Jo/n = 1.9370574409017838e+01, err = 2.5234512478170978e-01
+CostJo   : Nonlinear Jo(InsituSalinity) = 3.6331103428899605e+03, nobs = 125, Jo/n = 2.9064882743119686e+01, err = 5.1789821985162861e-02
+CostJo   : Nonlinear Jo(SST) = 3.1010932309666387e+03, nobs = 4952, Jo/n = 6.2623045859584792e-01, err = 4.0783752598605327e-01
+CostJo   : Nonlinear Jo(ADT) = 1.7863098786521236e+03, nobs = 1570, Jo/n = 1.1377769927720534e+00, err = 2.0313911453614535e-02
 Norm of input parameter StdDev: 7.7673304369178204e+03
 CostJb   : Nonlinear Jb = 0.0000000000000000e+00
-CostFunction: Nonlinear J = 1.1744891420815738e+04
-RPCGMinimizer: reduction in residual norm = 2.7367505017273711e-02
+CostFunction: Nonlinear J = 1.1774769953223720e+04
+RPCGMinimizer: reduction in residual norm = 2.6830599385856479e-02
 CostFunction::addIncrement: Analysis: 
   Valid time: 2004-01-05T00:00:00Z
-sea_surface_height_above_geoid                                Min = -2.738150521874618e-01  Min =  2.348464692757494e-01  Mean = -1.285820665499111e-02
-eastward_sea_water_velocity                                   Min = -3.717082512354872e-01  Min =  4.388642314802360e-01  Mean =  3.385021754447166e-03
-northward_sea_water_velocity                                  Min = -5.824488431700935e-01  Min =  2.678450008700898e-01  Mean = -4.061385556049903e-03
-sea_water_x_velocity                                          Min = -3.834667314124299e-01  Min =  4.544003975264554e-01  Mean =  3.341442851485194e-03
-sea_water_y_velocity                                          Min = -5.858151191057047e-01  Min =  3.016914297614203e-01  Mean = -4.180157821078691e-03
-sea_water_temperature                                         Min =  1.113304510712624e+00  Min =  1.834444186049081e+01  Mean =  6.362255241037622e+00
-sea_water_salinity                                            Min =  3.190610137897763e+01  Min =  3.468966426432459e+01  Mean =  3.394374862618718e+01
-model_level_depth_at_cell_center                              Min = -4.947835853436786e+03  Min = -3.461112887193400e-01  Mean = -1.072656533349462e+03
+sea_surface_height_above_geoid                                Min = -2.737722255109863e-01  Min =  2.347935777481641e-01  Mean = -1.286781096394181e-02
+eastward_sea_water_velocity                                   Min = -3.722221526084289e-01  Min =  4.380336065747967e-01  Mean =  3.375416406384942e-03
+northward_sea_water_velocity                                  Min = -5.806318340562407e-01  Min =  2.693285710904287e-01  Mean = -4.067758322658329e-03
+sea_water_x_velocity                                          Min = -3.843930910710843e-01  Min =  4.544807518198971e-01  Mean =  3.331586884559753e-03
+sea_water_y_velocity                                          Min = -5.834851963592709e-01  Min =  3.052755606769618e-01  Mean = -4.186486350190022e-03
+sea_water_temperature                                         Min =  1.113304510712624e+00  Min =  1.834444186049081e+01  Mean =  6.362121335857502e+00
+sea_water_salinity                                            Min =  3.190610137897763e+01  Min =  3.468966426432459e+01  Mean =  3.394378228095274e+01
+model_level_depth_at_cell_center                              Min = -4.947835853268784e+03  Min = -3.461015768724468e-01  Mean = -1.072656533194401e+03
+vertical_diffusion_coefficient_of_temperature_in_sea_water    Min =  1.000000000000000e-05  Min =  1.000000000000000e-02  Mean =  7.357569182323460e-04
+vertical_diffusion_coefficient_of_salinity_in_sea_water       Min =  1.000000000000000e-05  Min =  1.000000000000000e-02  Mean =  7.357569182323460e-04
+vertical_viscosity_coefficient_of_sea_water                   Min =  2.238121854249249e-05  Min =  1.000000000000000e-02  Mean =  6.838346976877255e-04
 
-CostJo   : Nonlinear Jo(InsituTemperature) = 1.624513868241170e+03, nobs = 168, Jo/n = 9.669725406197442e+00, err = 2.523451247817098e-01
-CostJo   : Nonlinear Jo(InsituSalinity) = 1.918257114445483e+03, nobs = 125, Jo/n = 1.534605691556386e+01, err = 5.178982198516286e-02
-CostJo   : Nonlinear Jo(SST) = 3.056674058604938e+03, nobs = 4952, Jo/n = 6.172605126423543e-01, err = 4.078375259860533e-01
-CostJo   : Nonlinear Jo(ADT) = 1.893296707931953e+03, nobs = 1570, Jo/n = 1.205921470020352e+00, err = 2.031391145361454e-02
-CostJb   : Nonlinear Jb = 2.117565432131899e+01
-CostFunction: Nonlinear J = 8.513917403544863e+03
+CostJo   : Nonlinear Jo(InsituTemperature) = 1.632924736631253e+03, nobs = 168, Jo/n = 9.719790098995555e+00, err = 2.523451247817098e-01
+CostJo   : Nonlinear Jo(InsituSalinity) = 1.918460869756029e+03, nobs = 125, Jo/n = 1.534768695804823e+01, err = 5.178982198516286e-02
+CostJo   : Nonlinear Jo(SST) = 3.076978463999900e+03, nobs = 4952, Jo/n = 6.213607560581381e-01, err = 4.078375259860533e-01
+CostJo   : Nonlinear Jo(ADT) = 1.895990659928338e+03, nobs = 1570, Jo/n = 1.207637363011680e+00, err = 2.031391145361454e-02
+CostJb   : Nonlinear Jb = 2.104780814123871e+01
+CostFunction: Nonlinear J = 8.545402538456758e+03

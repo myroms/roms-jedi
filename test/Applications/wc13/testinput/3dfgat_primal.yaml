@@ -32,6 +32,9 @@ roms state: &roms_state
 - sea_water_temperature
 - sea_water_salinity
 - model_level_depth_at_cell_center
+- vertical_diffusion_coefficient_of_temperature_in_sea_water
+- vertical_diffusion_coefficient_of_salinity_in_sea_water
+- vertical_viscosity_coefficient_of_sea_water
 
 cost function:
   cost type: 3D-FGAT
@@ -120,7 +123,7 @@ cost function:
         name: VertInterp
         vertical coordinate: model_level_depth_at_cell_center
         observation vertical coordinate: depth
-        observation alias file: testinput/obsop_name_map.yaml
+        observation alias file: Data/obsop_name_map.yaml
       obs error:
         covariance model: diagonal
 
@@ -139,7 +142,7 @@ cost function:
         name: VertInterp
         vertical coordinate: model_level_depth_at_cell_center
         observation vertical coordinate: depth
-        observation alias file: testinput/obsop_name_map.yaml
+        observation alias file: Data/obsop_name_map.yaml
       obs error:
         covariance model: diagonal
 
@@ -156,7 +159,7 @@ cost function:
         simulated variables: [seaSurfaceTemperature]
       obs operator:
         name: Identity
-        observation alias file: testinput/obsop_name_map.yaml
+        observation alias file: Data/obsop_name_map.yaml
       obs error:
         covariance model: diagonal
 

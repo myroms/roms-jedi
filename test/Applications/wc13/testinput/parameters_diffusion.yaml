@@ -54,65 +54,76 @@ background error:
       groups:
       - horizontal:
           as gaussian: true
-          fixed value: 40.0e3
+          fixed value: 60.0e+3
           mask: "mask_rho"
+          model variable: sea_surface_height_above_geoid
         write:
-          filepath: Data/diffusion/wc13_diffusion_hcor_40
+          filepath: Data/diffusion/wc13_diffusion_ssh_hcor
 
       - horizontal:
           as gaussian: true
-          fixed value: 50.0e3
+          fixed value: 60.0e+3
           mask: "mask_rho"
+          model variable: eastward_sea_water_velocity
         write:
-          filepath: Data/diffusion/wc13_diffusion_hcor_50
+          filepath: Data/diffusion/wc13_diffusion_uvel_hcor
 
       - horizontal:
           as gaussian: true
-          fixed value: 60.0e3
+          fixed value: 60.0e+3
           mask: "mask_rho"
+          model variable: northward_sea_water_velocity
         write:
-          filepath: Data/diffusion/wc13_diffusion_hcor_60
+          filepath: Data/diffusion/wc13_diffusion_vvel_hcor
 
       - horizontal:
           as gaussian: true
-          fixed value: 80.0e3
+          fixed value: 60.0e+3
           mask: "mask_rho"
+          model variable: sea_water_temperature
         write:
-          filepath: Data/diffusion/wc13_diffusion_hcor_80
+          filepath: Data/diffusion/wc13_diffusion_temp_hcor
 
       - horizontal:
           as gaussian: true
-          fixed value: 100.0e3
+          fixed value: 60.0e+3
           mask: "mask_rho"
+          model variable: sea_water_salinity
         write:
-          filepath: Data/diffusion/wc13_diffusion_hcor_100
+          filepath: Data/diffusion/wc13_diffusion_salt_hcor
 
-      - horizontal:
+      - vertical:
           as gaussian: true
-          fixed value: 120.0e3
+          fixed value: 2.0                            # 2 levels
+          levels: 30
           mask: "mask_rho"
+          model variable: eastward_sea_water_velocity
         write:
-          filepath: Data/diffusion/wc13_diffusion_hcor_120
+          filepath: Data/diffusion/wc13_diffusion_uvel_vcor
 
-      - horizontal:
+      - vertical:
           as gaussian: true
-          fixed value: 160.0e3
+          fixed value: 2.0                            # 2 levels
+          levels: 30
           mask: "mask_rho"
+          model variable: northward_sea_water_velocity
         write:
-          filepath: Data/diffusion/wc13_diffusion_hcor_160
+          filepath: Data/diffusion/wc13_diffusion_vvel_vcor
 
       - vertical:
           as gaussian: true
           fixed value: 5.0                            # 5 levels
           levels: 30
           mask: "mask_rho"
+          model variable: sea_water_temperature
         write:
-          filepath: Data/diffusion/wc13_diffusion_vcor_5
+          filepath: Data/diffusion/wc13_diffusion_temp_vcor
 
       - vertical:
           as gaussian: true
-          fixed value: 8.0                            # 8 levels
+          fixed value: 5.0                            # 5 levels
           levels: 30
           mask: "mask_rho"
+          model variable: sea_water_salinity
         write:
-          filepath: Data/diffusion/wc13_diffusion_vcor_8
+          filepath: Data/diffusion/wc13_diffusion_salt_vcor

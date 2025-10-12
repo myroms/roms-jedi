@@ -18,13 +18,15 @@ middle date:  &mid_date __MIDDLE_DATE__
 
 roms analysis: &roms_analysis
 - sea_surface_height_above_geoid
-- sea_water_x_velocity                           # C-grid
-- sea_water_y_velocity                           # C-grid
+- eastward_sea_water_velocity                    # A-grid
+- northward_sea_water_velocity                   # A-grid
 - sea_water_temperature
 - sea_water_salinity
 
 roms state: &roms_state
 - sea_surface_height_above_geoid
+- eastward_sea_water_velocity                    # A-grid
+- northward_sea_water_velocity                   # A-grid
 - sea_water_x_velocity                           # C-grid
 - sea_water_y_velocity                           # C-grid
 - sea_water_temperature
@@ -87,6 +89,8 @@ cost function:
             - sea_surface_height_above_geoid
         - model:
             variables:
+            - eastward_sea_water_velocity
+            - northward_sea_water_velocity
             - sea_water_temperature
             - sea_water_salinity
 
@@ -117,7 +121,7 @@ cost function:
         simulated variables: [seaSurfaceTemperature]
       obs operator:
         name: Identity
-        observation alias file: testinput/obsop_name_map.yaml
+        observation alias file: Data/obsop_name_map.yaml
       obs error:
         covariance model: diagonal
       obs filters:
@@ -161,6 +165,7 @@ variational:
       write increment: true
       increment:                                 # DA increment output file
         state component:
+          add_varchange: true                    # Add fields from variable change
           single_record: true
           data_dir: Data/3dvar/zeroObs
           prefix: __ROMS_APP___roms
