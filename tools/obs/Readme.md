@@ -419,7 +419,7 @@ is relative to a reference ellipsoid and provides essential information about th
 seawater steric effects resulting from variations in temperature and salinity (density).
 
 The Geoid is an undulating surface that represents the level the ocean would reach if it were only influenced by
-Earth's gravity, without any effects from currents or winds. The **SSH** can also be calculated
+Earth's gravity and rotation, without any effects from currents or winds. The **SSH** can also be calculated
 with respect to the Geoid, referred to as Absolute Dynamic Topography (**ADT**), as shown in the diagram below.
 This quantity is used in the **JEDI/UFO `H(x)`** operator in the data assimilation algorithms.
 

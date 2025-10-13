@@ -13,7 +13,7 @@ the setup process, which requires **YAML** files to run any of the data assimila
 with a dynamic set of observations that are changing for each analysis cycle in operational
 applications.
 
-The current plan is to develop a web interface to automate the generation of input **YAML**
+The current plan is to develop an interface to automate the generation of input **YAML**
 files for operational data assimilation cycles. **JEDI** provides more sophisticated **Python**-based
 algorithms for the same purpose as **EWOK**, which requires specific data tanks that a regular
 user may not have access to.
@@ -49,7 +49,8 @@ Options:
 
 The option **-a** adds the **`-DMPIEXEC_NUMPROC`=npets**, **`-DROMS_APP`=app_name**, and
 **`-DROMS_APP_DIR`=app_dir** to the **ecbuild** command, and it indicates that the
-default **`WC13`** application for the **ROMS-JEDI** interface is not configured.
+default **`WC13`** application for the **ROMS-JEDI** interface is not configured. Thus,
+you can omit the **-a** argument when configuring the default **WC13** application.
 
 For example, to configure our Coupled Forecast Framework (**CFF**) configuration of the U.S. East Coast
 ([**USEC**](https://github.com/myroms/roms_test/blob/main/USEC/RBL4DVAR_mixres/Readme.md))
@@ -135,7 +136,7 @@ Data/
 ### Creating ROMS-JEDI Input YAML Files: `template2yaml`
 
 Each algorithm in **JEDI** uses a **YAML** input file to run an executable.  For example, to run the
-4D-Var data assimilation, individually, we will use:
+**4D-Var** data assimilation, individually, we will use:
 
 ``` c
 > cd roms-jedi
@@ -165,23 +166,34 @@ Usage:
   src_dir                  Path for ROMS-JEDI source code
 
   -notest                  Disable regression testing of Unit Tests with reference files
-                             (optional)                 
+                             (optional)
 
-Example:
+  -obs list                Use the comma-separated, case-insensitive list of observations
+                             instead of those listed in app_file. The User can choose which
+                             IODA observation types/files to include in the data assimilation
+                             algorithm (optional). For instance:
 
-  template2yaml.pl  wc13_yaml_parameters.dat  /home/arango/ocean/repository/git/roms-jedi
+                             - obs t,s,sst,adt,uv_codar                  
+
+Examples:
+
+  template2yam.pl app_file src_dir -notest -obs T,S,SST,ADT
+or
+  template2yaml.pl wc13_yaml_parameters.dat /home/arango/ocean/repository/git/roms-jedi
+or
+  template2yaml.pl myapp_yaml_parameters.dat ROOT_DIR/roms-jedi -notest -obs t,s,ts_glider,sst,sss,adt
 ```
 
 The **`template2yaml.pl`** Perl script reads the **ROMS** **`app_file`** parameters
-(ASCII file), which contains various key-value pairs (see file **wc13_yaml_parameters.dat**
-including the values needed for the default **`WC13`** application).
-These pairs, combined with the **roms-jedi/test/templates** files (extension **`.yaml.tmpl`**),
-generate all the necessary  **YAML** configuration files for the **ROMS-JEDI** interface.
+(ASCII file), which contains various key-value pairs (see file
+[**wc13_yaml_parameters.dat**](https://github.com/myroms/roms-jedi/blob/cb295f9eb9aa7da5b8f214d7c11b2ef07702b09a/test/Applications/wc13/wc13_yaml_parameters.dat) including the values needed for the default **`WC13`** application).
+These pairs, combined with the [**roms-jedi/test/templates**](https://github.com/myroms/roms-jedi/tree/develop/test/templates) files (extension **`.yaml.tmpl`**), generate all the necessary  **YAML** configuration files for the **ROMS-JEDI** interface.
 
 Users can activate the **`-notest`** option to suppress the regression testing method, which
 allows them to verify that newly introduced code changes, bug fixes, or updates do not negatively affect
 the previous results of a **ROMS-JEDI** application. Regression testing requires reference files located
-in the application subdirectory **testref**. It is important to frequently update these reference files when
+in the application subdirectory [**testref**](https://github.com/myroms/roms-jedi/tree/develop/test/Applications/wc13/testref).
+It is important to frequently update these reference files when
 restructuring the **JEDI** source code, changing configuration parameters, using different compilers, or
 applying different parallel partitions. The users may deactivate regression testing when using a generic
 **ROMS** application. This **Perl** script with the **`-notest`** option will comment out the test block in the
@@ -195,15 +207,44 @@ input **YAML** files, suppressing regression testing. For instance:
 #  test output filename: testoutput/4dvar_bump.out
 ```
 
+The user can utilize the **-obs** token to specify a list of comma-separated, case-insensitive observation types
+included in multiple **IODA** files for use in the **JEDI** data assimilation algorithms. **No blank spaces between
+list members are allowed** because **Perl** will identify them as separate tokens. There are two methods to define this list. 
+
+In the provided **app_file**, the observation types can be specified using the **`__OBSERVATIONS__`** token, as shown below:
+
+```d
+# ROMS-JEDI data assimilation NetCDF-4 (IODA Version 3) for the input observations.
+# The observations are separated by type and platform to facilitate processing by various UFO operators.
+
+__OBSERVATIONS__               T,S,SST,ADT
+```
+
+Users can override the default observation list using the optional **-obs** argument while running the **`template2yaml.pl` Perl** script.
+This list of unique keywords can be associated with **IODA** filenames and can be easily expanded to include other types of observations and files.
+Currently, we anticipate the following keywords:
+
+| Keyword       | Observation Type                 | IODA file Example |
+|---------------|----------------------------------|-------------------|
+| **ADT**       | SSH Altimetry                | **myapp**_adt_yyyymmdd.nc4  |
+| **S**         | Salinity                     | **myapp**_salt_yyyymmdd.nc4 |
+| **SSS**       | Satellite Salinity           | **myapp**_sss_yyyymmdd.nc4 |
+| **SST**       | Satellite Temperature        | **myapp**_sst_yyyymmdd.nc4 |
+| **T**         | Tempetature                  | **myapp**_temp_yyyymmdd.nc4 |
+| **TS**        | Temperature/Salinity profile | **myapp**_TS_yyyymmdd.nc4 |
+| **TS_GLIDER** | Temperature/Salinity glider  | **myapp**_TS_glider_yyyymmdd.nc4 |
+| **UV_CODAR**  | HF radar velocities          | **myapp**_uv_codar_yyyymmdd.nc4 |
+
 The user must provide an **observation block** for each data assimilation cycle. That
 block is identified as **`__SINGLE_OBSERVATION_DATA__`** or **`__OBSERVATION_DATA__`** in the
 **YAML** templates:
 
 - The **`__SINGLE_OBSERVATION_DATA__`** identifier is used only for single observation test cases,
-  including a Temperature/Salinity pair, an SST datum, or a couple of ADT
-  measurements. It uses the **`obs_singleObs.yaml.tmpl`** as a template to build the observation
-  block in associated **YAML** files. For example, in **4dvar_singleObs_bump.yaml.tmpl** you
-  would find:
+  including a **TS** pair, an **SST** datum, or a couple of **ADT** measurements. It uses the
+  [**obs_singleObs.yaml.tmpl**](https://github.com/myroms/roms-jedi/blob/develop/test/Utility/obs_singleObs.yaml.tmpl)
+  as a template to build the observation block in associated **YAML** files. For example, in
+  [**4dvar_singleObs_bump.yaml.tmpl**](https://github.com/myroms/roms-jedi/blob/develop/test/templates/4dvar_singleObs_bump.yaml.tmpl),
+  you would find:
 
   ``` yaml
   ...
@@ -320,11 +361,12 @@ block is identified as **`__SINGLE_OBSERVATION_DATA__`** or **`__OBSERVATION_DAT
   ```
 
  - The **`__OBSERVATION_DATA__`** identifier is used for the whole set of observations that
-   may contain any of the following observer types: InsituTS, InsituTemperature, InsituSalinity,
-   SST, SSS, ADT, SurfaceUV, SurfaceU, or SurfaceV. It uses **`observations.yaml.tmpl`** as a
-   template to build the observation block in the data assimilation  **YAML** files for available
-   algorithms. For example, in **4dvar_bump.yaml.tmpl** you would find a similar structure to the
-   above template in the observation block:
+   may contain any of the following observer spaces (**`obs space`**): InsituTS, InsituTemperature, InsituSalinity,
+   SST, SSS, ADT, and UVcodar. It uses
+   [**observations.yaml.tmpl**](https://github.com/myroms/roms-jedi/blob/develop/test/Utility/observations.yaml.tmpl) 
+   as a template to build the observation block in the data assimilation  **YAML** files for available
+   algorithms. For example, in [**4dvar_bump.yaml.tmpl**](https://github.com/myroms/roms-jedi/blob/develop/test/templates/4dvar_bump.yaml.tmpl), 
+   you would find a similar structure to the above template in the observation block:
 
    ``` yaml
    ...
@@ -349,10 +391,15 @@ block is identified as **`__SINGLE_OBSERVATION_DATA__`** or **`__OBSERVATION_DAT
 
 ### Updating Unit Test Reference Files: `update_testref`
 
-As the **JEDI** building blocks and the **ROMS-JEDI** interface evolve, the regression data
-values for each Unit Test may need to be updated. The script **`update_testref.sh`**
-facilitates this task and must be executed from the **`roms-jedi/build_*/roms-jedi/test`**
-subdirectory.
+As the **JEDI** building blocks and the **ROMS-JEDI** interface evolve, updating the regression data
+values for each **Unit Test** reference file in the 
+[**testref**](https://github.com/myroms/roms-jedi/tree/develop/test/Applications/wc13/testref)
+folder may be necessary. Regression testing serves as a safety mechanism that ensures any new code changes,
+bug fixes, or updates do not adversely impact the previous results of a **ROMS-JEDI** application.
+Typically, we need to update these reference files when there are changes to the **JEDI** source code structure,
+configuration parameters, compiler options, or the application of different parallel partitions.
+The script **`update_testref.sh`** facilitates this task and must be executed from the
+**`roms-jedi/build_*/roms-jedi/test`** subdirectory.
 
 ``` c
 update_testref.sh  yaml_file
@@ -369,8 +416,10 @@ or
 or
   update_testref.sh  4dvar_bump
   ```
-This script must be executed from the correct location for it to function correctly. Mostly,
-all the YAML files have a regression block at the bottom. For example, **4dvar_bump.yaml** has:
+This script must be executed from the correct location to function properly. Mostly,
+all the **YAML** files have a regression block at the bottom. For example,
+[**4dvar_bump.yaml**](https://github.com/myroms/roms-jedi/blob/develop/test/Applications/wc13/testinput/4dvar_bump.yaml)
+has:
 
 ``` yaml
 test:

@@ -51,9 +51,23 @@
 #         -notest        Disable regression testing of Unit Tests with  :::
 #                          reference files (optional)                   :::
 #                                                                       :::
-# Example:                                                              :::
+#         -obs list      Use the comma-separate, case-insensitive list  :::
+#                          of observations instead of those listed in   :::
+#                          APP_FILE. No blank spaces between list       :::
+#                          members are allowed. The User can choose     :::
+#                          which IODA observation types/files to        :::
+#                          include in the data assimilation algorithm   :::
+#                          (optional). For instance,                    :::
 #                                                                       :::
-# template2yaml.pl wc13_yaml_parameters.dat ROOT_DIR/roms-jedi          :::
+#                          -obs t,s,sst,sss,adt,uv_codar                :::
+#                                                                       :::
+# Examples:                                                             :::
+#                                                                       :::
+#  template2yaml.pl wc13_yaml_parameters.dat ROOT_DIR/roms-jedi         :::
+# or                                                                    :::
+#  template2yaml.pl wc13_yaml_parameters.dat ROOT_DIR/roms-jedi -notest :::
+# or                                                                    :::
+#  template2yam.l.pl APP_FILE SRC_DIR -notest -obs T,S,SST,ADT          :::
 #                                                                       :::
 # For more information, please check the "roms-jedi/tools/workflow"     :::
 # sub-directory.                                                        :::
@@ -66,42 +80,38 @@ use Time::Piece;
 use Time::Seconds;
 use strict;
 my $notest = 0;
+my $obs_set = 0;
 my $pwd = cwd;
+my @observations;
 
 # $#ARGV is actually the number of arguments minus 1.
 
-if ($#ARGV < 1  || $#ARGV > 2) {
+if ($#ARGV < 1) {
   print "Usage:\n";
-  print "  tmpl_process.pl APP_DATA SRC_DIR [-notest]\n";
+  print "  template2yaml.pl APP_DATA SRC_DIR [-notest] [-obs list]\n";
   exit 1;
 }
 
-my $app_file = $ARGV[0];
+# Get the first two arguments with 'shift'
+
+my $app_file = shift;
+my $src_dir = shift;
 my $templates_dir;
 my $util_dir;
 my %params;
 my @ymd_params = ('__ROMS_INI_PRIOR__', '__ROMS_STDINP__', '__ROMS_STDINP_MAX__');
 my $key;
+
 print "\n";
-if (-d $ARGV[1]) {
-  $templates_dir = "$ARGV[1]/test/templates";
-  $util_dir = "$ARGV[1]/test/Utility";
-  print "Templates: $templates_dir\n";
-  print "Utility:   $util_dir\n\n";
+if (-d ${src_dir}) {
+  $templates_dir = "${src_dir}/test/templates";
+  $util_dir = "${src_dir}/test/Utility";
+  print "Templates: ${templates_dir}\n";
+  print "Utility:   ${util_dir}\n\n";
 }
 else {
-  print "directory $ARGV[1] not found\n";
+  print "Directory ${src_dir} not found\n";
   exit 1;
-}
-
-if ($#ARGV == 2 && $ARGV[2] != '-notest') {
-  print "Unrecognized option: $ARGV[2]\n";
-  print "Usage:\n";
-  print "  tmpl_process.pl APP_DATA SRC_DIR [-notest]\n";
-  exit 1;
-}
-elsif ($#ARGV == 2 && $ARGV[2] == '-notest') {
-  $notest = 1
 }
 
 open FILE, "${app_file}" or die "File ${app_file} must exist!\n";
@@ -113,9 +123,29 @@ while ( my $line = <FILE>) {
   $params{$key} = $val;
 }
 
-# Put the comma separated list of observations into an array.
+while (my $arg = shift) {
+  if ($arg eq '-notest') {
+    $notest = 1;
+  }
+  elsif ($arg eq '-obs') {
+    my $tmp = shift;
+    @observations = split(',', $tmp);
+    $obs_set = 1;
+  }
+  else {
+    print "Unrecognized option: ${arg}\n";
+    print "Usage:\n";
+    print "  template2yaml.pl APP_DATA SRC_DIR [-notest] [-obs list]\n";
+    exit 1;
+  }
+}
 
-my @observations = split(',', $params{'__OBSERVATIONS__'});
+# If not overridden from the command line, put the comma separated list
+# of observations from APP_FILE into the @observations array.
+
+if ($obs_set == 0) {
+  @observations = split(',', $params{'__OBSERVATIONS__'});
+}
 
 # Get hours integer of forecast length.
 
@@ -181,6 +211,7 @@ delete @params{@timestamp_vals};
 #print map { "$_ => $params{$_}\n" } keys %params;
 
 # check whether observation file exists
+
 my @obs_keys = grep { $_ =~ /^__.*_OBS__$/ } keys %params;
 foreach ( @obs_keys ) {
   my $tfile = $params{${_}};
@@ -204,7 +235,9 @@ my ($obs_fname,$dirs,$suf) = fileparse("${util_dir}/observations.yaml.tmpl", '.t
 open FILE, "${dirs}observations.yaml.tmpl" || die "Can't open file ${dirs} observations.yaml.tmpl\n";
 my %obs;
 my $ob_name;
+
 # Read the file one entry at a time
+
 while (my $ob = <FILE>) {
   # Remove the > (or whatever $/ is set to) from the end of the entry
   chomp $ob;
@@ -230,6 +263,7 @@ my $obs_block = '';
 foreach (@observations) {
   # Trim the variable name just in case.
   ${_} =~ s/^\s+|\s+$//g;
+  ${_} = uc(${_});
   # Append to the block.
   $obs_block = $obs_block.$obs{${_}};
 }
