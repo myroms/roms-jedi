@@ -46,7 +46,11 @@
 #  -n_min NP_min         Minimum Number of MPI processes for tests      :::
 #                          NP_min = 2 by default                        :::
 #                                                                       :::
+<<<<<<< HEAD
 #  -n NP                 Number of MPI processes, if using -a option    :::
+=======
+#  -n NP                 Number of MPI processes for costly algorithms  :::
+>>>>>>> cb295f9 (Restored missing scripts)
 #                          NP = 12 by default                           :::
 #                                                                       :::
 # Example: (suffix = wc12)                                              :::
