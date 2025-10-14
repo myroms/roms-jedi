@@ -424,6 +424,7 @@ SUBROUTINE roms_fields_to_fieldset (self, geom, vars, afieldset)
 
       CALL afield%set_dirty (.TRUE.)         ! mark halos as being out-of-date
       CALL afield%final ()                   ! release pointer
+      CALL meta%final ()                     ! release pointer      
 
     END IF RHO_VARS
 
