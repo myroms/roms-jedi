@@ -421,6 +421,7 @@ SUBROUTINE roms_fields_to_fieldset (self, geom, vars, afieldset)
 
       meta = afield%metadata()
       CALL meta%set ('interp_type', TRIM(field%interp_type))
+      CALL meta%set ('nearest 3d level', 'top')
 
       CALL afield%set_dirty (.TRUE.)         ! mark halos as being out-of-date
       CALL afield%final ()                   ! release pointer

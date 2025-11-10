@@ -19,22 +19,6 @@ increment variables: &roms_analysis
 - sea_water_temperature
 - sea_water_salinity
 
-_obs distribution: &ObsSpaceDistribution
-  name: Halo
-  halo size: __OBS_DISTRIBUTION__
-
-_hor obs localization: &HorizontalObsLoc
-  localization method: Horizontal Gaspari-Cohn
-# localization method: Heaviside
-  lengthscale: __LOCALIZATION_HCORRELATION__
-
-_conventional vertical localization: &DepthVertObsLoc
-  localization method: Vertical localization
-  vertical lengthscale: __LOCALIZATION_VCORRELATION__
-  ioda vertical coordinate: depth
-  ioda vertical coordinate group: MetaData
-  localization function: Gaspari Cohn
-
 background:
   members from template:
     template:
@@ -61,7 +45,9 @@ observations:
 
   - obs space:
       name: InsituTemperature
-      distribution: *ObsSpaceDistribution
+      distribution:
+        name: Halo
+        halo size: __OBS_DISTRIBUTION__
       obsdatain:
         engine:
           type: H5File
@@ -79,12 +65,19 @@ observations:
     obs error:
       covariance model: diagonal
     obs localizations:
-    - <<: *HorizontalObsLoc
-    - <<: *DepthVertObsLoc
+      - localization method: Horizontal Gaspari-Cohn
+        lengthscale: __LOCALIZATION_HCORRELATION__
+      - localization method: Vertical localization
+        vertical lengthscale: __LOCALIZATION_VCORRELATION__
+        ioda vertical coordinate: depth
+        ioda vertical coordinate group: MetaData
+        localization function: Gaspari Cohn
 
   - obs space:
       name: InsituSalinity
-      distribution: *ObsSpaceDistribution
+      distribution:
+        name: Halo
+        halo size: __OBS_DISTRIBUTION__
       obsdatain:
         engine:
           type: H5File
@@ -102,12 +95,19 @@ observations:
     obs error:
       covariance model: diagonal
     obs localizations:
-    - <<: *HorizontalObsLoc
-    - <<: *DepthVertObsLoc
+      - localization method: Horizontal Gaspari-Cohn
+        lengthscale: __LOCALIZATION_HCORRELATION__
+      - localization method: Vertical localization
+        vertical lengthscale: __LOCALIZATION_VCORRELATION__
+        ioda vertical coordinate: depth
+        ioda vertical coordinate group: MetaData
+        localization function: Gaspari Cohn
 
   - obs space:
       name: SST
-      distribution: *ObsSpaceDistribution
+      distribution:
+        name: Halo
+        halo size: __OBS_DISTRIBUTION__
       obsdatain:
         engine:
           type: H5File
@@ -123,11 +123,14 @@ observations:
     obs error:
       covariance model: diagonal
     obs localizations:
-    - <<: *HorizontalObsLoc
+      - localization method: Horizontal Gaspari-Cohn
+        lengthscale: __LOCALIZATION_HCORRELATION__
 
   - obs space:
       name: ADT
-      distribution: *ObsSpaceDistribution
+      distribution:
+        name: Halo
+        halo size: __OBS_DISTRIBUTION__
       obsdatain:
         engine:
           type: H5File
@@ -142,7 +145,8 @@ observations:
     obs error:
       covariance model: diagonal
     obs localizations:
-    - <<: *HorizontalObsLoc
+      - localization method: Horizontal Gaspari-Cohn
+        lengthscale: __LOCALIZATION_HCORRELATION__
 
 driver:
   do test prints: true

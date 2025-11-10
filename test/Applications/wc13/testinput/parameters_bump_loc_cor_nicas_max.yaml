@@ -63,7 +63,6 @@ background error:
         write local nicas: true
       model:
         do not cross mask boundaries: true
-        level for 2d variables: last
       nicas:
         interpolation in global file: false
 #       resolution: 6.0                               # NICAS subgrid resolution

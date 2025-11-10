@@ -5,24 +5,24 @@ CostJo   : Nonlinear Jo(ADT) = 1.6444594270776101e+03, nobs = 1570, Jo/n = 1.047
 Norm of input parameter StdDev: 7.7673304369178204e+03
 CostJb   : Nonlinear Jb = 0.0000000000000000e+00
 CostFunction: Nonlinear J = 1.1464380278682978e+04
-RPCGMinimizer: reduction in residual norm = 2.6103729667054151e-02
+RPCGMinimizer: reduction in residual norm = 2.6106285929380378e-02
 CostFunction::addIncrement: Analysis: 
   Valid time: 2004-01-05T00:00:00Z
-sea_surface_height_above_geoid                                Min = -2.781802718067886e-01  Min =  2.347183857596870e-01  Mean = -1.241279074954722e-02
-eastward_sea_water_velocity                                   Min = -3.385314568911244e-01  Min =  4.392305116784546e-01  Mean =  3.509391094306166e-03
-northward_sea_water_velocity                                  Min = -5.504839497747323e-01  Min =  2.505100493595782e-01  Mean = -4.313212514541450e-03
+sea_surface_height_above_geoid                                Min = -2.784014328351299e-01  Min =  2.347160600350400e-01  Mean = -1.243398839809836e-02
+eastward_sea_water_velocity                                   Min = -3.385379615606331e-01  Min =  4.392376330809158e-01  Mean =  3.509368885164615e-03
+northward_sea_water_velocity                                  Min = -5.504859720836279e-01  Min =  2.505074471711085e-01  Mean = -4.313462866374220e-03
 sea_water_x_velocity                                          Min = -3.474590548921285e-01  Min =  4.611992032143490e-01  Mean =  3.451940229320469e-03
 sea_water_y_velocity                                          Min = -5.530649874598978e-01  Min =  2.835804477060388e-01  Mean = -4.348993096695166e-03
-sea_water_temperature                                         Min =  1.113304510712624e+00  Min =  1.834444186049081e+01  Mean =  6.358827936749281e+00
-sea_water_salinity                                            Min =  3.190610137897763e+01  Min =  3.468966426432459e+01  Mean =  3.394638967783056e+01
+sea_water_temperature                                         Min =  1.113304510712624e+00  Min =  1.834444186049081e+01  Mean =  6.358832704255837e+00
+sea_water_salinity                                            Min =  3.190610137897763e+01  Min =  3.468966426432459e+01  Mean =  3.394638931638958e+01
 model_level_depth_at_cell_center                              Min = -4.947840267560327e+03  Min = -2.457733757631713e-01  Mean = -1.072647945779636e+03
 vertical_diffusion_coefficient_of_temperature_in_sea_water    Min =  1.000000000000000e-05  Min =  4.578502793985555e-01  Mean =  2.211230977621799e-03
 vertical_diffusion_coefficient_of_salinity_in_sea_water       Min =  1.000000000000000e-05  Min =  4.578502793985555e-01  Mean =  2.211230977621799e-03
 vertical_viscosity_coefficient_of_sea_water                   Min =  2.238121854249249e-05  Min =  3.372804076834582e-01  Mean =  1.711737724025528e-03
 
-CostJo   : Nonlinear Jo(InsituTemperature) = 1.579618049792765e+03, nobs = 168, Jo/n = 9.402488391623601e+00, err = 2.523451247817098e-01
-CostJo   : Nonlinear Jo(InsituSalinity) = 1.716178058022053e+03, nobs = 125, Jo/n = 1.372942446417642e+01, err = 5.178982198516286e-02
-CostJo   : Nonlinear Jo(SST) = 3.102204551156600e+03, nobs = 4952, Jo/n = 6.264548770510098e-01, err = 4.078375259860533e-01
-CostJo   : Nonlinear Jo(ADT) = 9.658680651024466e+02, nobs = 1570, Jo/n = 6.152025892372271e-01, err = 2.031391145361454e-02
-CostJb   : Nonlinear Jb = 1.499982250666631e+01
-CostFunction: Nonlinear J = 7.378868546580531e+03
+CostJo   : Nonlinear Jo(InsituTemperature) = 1.579639675567693e+03, nobs = 168, Jo/n = 9.402617116474362e+00, err = 2.523451247817098e-01
+CostJo   : Nonlinear Jo(InsituSalinity) = 1.716264476098543e+03, nobs = 125, Jo/n = 1.373011580878834e+01, err = 5.178982198516286e-02
+CostJo   : Nonlinear Jo(SST) = 3.102039805060549e+03, nobs = 4952, Jo/n = 6.264216084532611e-01, err = 4.078375259860533e-01
+CostJo   : Nonlinear Jo(ADT) = 9.663849149850498e+02, nobs = 1570, Jo/n = 6.155317929841082e-01, err = 2.031391145361454e-02
+CostJb   : Nonlinear Jb = 1.500413047795446e+01
+CostFunction: Nonlinear J = 7.379333002189790e+03
