@@ -74,13 +74,18 @@ __NMEMBERS__                   10
 __NINNER__                     10
 __4DVAR_NINNER__               26
 
-# ROMS initial and middle filenames and associated time records
-# for the prior/background state vector.
+# ROMS initial filenames and associated time records for the
+# prior/background state vector. The uppercase "YYYYMMDD" key
+# identifies the initial date of the data assimilation cycle.
 
 __ROMS_INI_PRIOR__             wc13_roms_ini_YYYYMMDD.nc
 __INI_PRIOR_RECORD__           1
 
-__ROMS_MID_PRIOR__             wc13_roms_ini_YYYYMMDD.nc
+# ROMS middle filenames and associated time records for the
+# prior/background state vector. The lowercase "yyyymmdd" key
+# identifies the date at the middle of data assimilation cycle.
+
+__ROMS_MID_PRIOR__             wc13_roms_ini_yyyymmdd.nc
 __MID_PRIOR_RECORD__           25
 
 # ROMS standard deviation file for background error covariance
@@ -103,9 +108,13 @@ __TS_GLIDER_OBS__              Data/wc13/obs/wc13_TS_glider_YYYYMMDD.nc4
 __TS_OBS__                     Data/wc13/obs/wc13_TS_YYYYMMDD.nc4
 __UV_CODAR_OBS__               Data/wc13/obs/wc13_uv_codar_YYYYMMDD.nc4
 
-__ADT_SINGLE_OBS__             Data/wc13/obs/wc13_adt_single_obs_20040105.nc4
-__SST_SINGLE_OBS__             Data/wc13/obs/wc13_sst_single_obs_20040105.nc4
-__TS_SINGLE_OBS__              Data/wc13/obs/wc13_TS_single_obs_YYYYMMDD.nc4
+# ROMS-JEDI single obsercations data assimilation files NetCDF-4 used
+# for testing of the data assimilation algorithms. Notice that it uses
+# the lowercase "yyyymmdd" date for the middle data assimilation cycle.
+
+__ADT_SINGLE_OBS__             Data/wc13/obs/wc13_adt_single_obs_yyyymmdd.nc4
+__SST_SINGLE_OBS__             Data/wc13/obs/wc13_sst_single_obs_yyyymmdd.nc4
+__TS_SINGLE_OBS__              Data/wc13/obs/wc13_TS_single_obs_yyyymmdd.nc4
 
 # Static horizontal and vertical correlations (m) for background error
 # covariance modeling using BUMP/NICAS and hybrid weights.

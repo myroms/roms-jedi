@@ -27,7 +27,7 @@ state:
   - sea_water_y_velocity                       # C-grid
   - sea_water_temperature
   - sea_water_salinity
-  - unvarying_model_level_depth_at_cell_center
+  - model_level_depth_at_cell_center
 
 time window:
   begin: 2004-01-03T00:00:00Z
@@ -37,22 +37,22 @@ time window:
 observations:
   observers:
 
-  - obs space:
-      name: InsituTS
-      obsdatain:
-        engine:
-          type: H5File
-          obsfile: Data/wc13/obs/wc13_TS_20040103.nc4
-      obsdataout:
-        engine:
-          type: H5File
-          obsfile: Data/hofx/3d/wc13_TS_hofx.nc4
-      simulated variables: [salinity, waterTemperature]
-    obs operator:
-      name: VertInterp
-      vertical coordinate: unvarying_model_level_depth_at_cell_center
-      observation vertical coordinate: depth
-      observation alias file: Data/obsop_name_map.yaml
+# - obs space:
+#     name: InsituTS
+#     obsdatain:
+#       engine:
+#         type: H5File
+#         obsfile: Data/wc13/obs/wc13_TS_20040103.nc4
+#     obsdataout:
+#       engine:
+#         type: H5File
+#         obsfile: Data/hofx/3d/wc13_TS_hofx.nc4
+#     simulated variables: [salinity, waterTemperature]
+#   obs operator:
+#     name: VertInterp
+#     vertical coordinate: model_level_depth_at_cell_center
+#     observation vertical coordinate: depth
+#     observation alias file: Data/obsop_name_map.yaml
 
   - obs space:
       name: InsituTemperature
@@ -67,7 +67,7 @@ observations:
       simulated variables: [waterTemperature]
     obs operator:
       name: VertInterp
-      vertical coordinate: unvarying_model_level_depth_at_cell_center
+      vertical coordinate: model_level_depth_at_cell_center
       observation vertical coordinate: depth
       observation alias file: Data/obsop_name_map.yaml
 
@@ -84,7 +84,7 @@ observations:
       simulated variables: [salinity]
     obs operator:
       name: VertInterp
-      vertical coordinate: unvarying_model_level_depth_at_cell_center
+      vertical coordinate: model_level_depth_at_cell_center
       observation vertical coordinate: depth
       observation alias file: Data/obsop_name_map.yaml
 
@@ -103,20 +103,20 @@ observations:
       name: Identity
       observation alias file: Data/obsop_name_map.yaml
 
-  - obs space:
-      name: SSS
-      obsdatain:
-        engine:
-          type: H5File
-          obsfile: Data/wc13/obs/wc13_sss_20040103.nc4
-      obsdataout:
-        engine:
-          type: H5File
-          obsfile: Data/hofx/3d/wc13_sss_hofx.nc4
-      simulated variables: [seaSurfaceSalinity]
-    obs operator:
-      name: Identity
-      observation alias file: Data/obsop_name_map.yaml
+# - obs space:
+#     name: SSS
+#     obsdatain:
+#       engine:
+#         type: H5File
+#         obsfile: Data/wc13/obs/wc13_sss_20040103.nc4
+#     obsdataout:
+#       engine:
+#         type: H5File
+#         obsfile: Data/hofx/3d/wc13_sss_hofx.nc4
+#     simulated variables: [seaSurfaceSalinity]
+#   obs operator:
+#     name: Identity
+#     observation alias file: Data/obsop_name_map.yaml
 
   - obs space:
       name: ADT

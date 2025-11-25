@@ -153,7 +153,9 @@
     simulated variables: [waterZonalVelocity,
                           waterMeridionalVelocity]
   obs operator:
-    name: Identity
+    name: VertInterp
+    vertical coordinate: model_level_depth_at_cell_center
+    observation vertical coordinate: depth
     observation alias file: Data/obsop_name_map.yaml
   obs error:
     covariance model: diagonal

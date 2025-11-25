@@ -46,22 +46,22 @@ initial condition:
 observations:
   observers:
 
-  - obs space:
-      name: InsituTS
-      obsdatain:
-        engine:
-          type: H5File
-          obsfile: Data/wc13/obs/wc13_TS_20040103.nc4
-      obsdataout:
-        engine:
-          type: H5File
-          obsfile: Data/hofx/ensembles/wc13_TS_hofx_mem003.nc4
-      simulated variables: [salinity, waterTemperature]
-    obs operator:
-      name: VertInterp
-      vertical coordinate: model_level_depth_at_cell_center
-      observation vertical coordinate: depth
-      observation alias file: Data/obsop_name_map.yaml
+# - obs space:
+#     name: InsituTS
+#     obsdatain:
+#       engine:
+#         type: H5File
+#         obsfile: Data/wc13/obs/wc13_TS_20040103.nc4
+#     obsdataout:
+#       engine:
+#         type: H5File
+#         obsfile: Data/hofx/ensembles/wc13_TS_hofx_mem003.nc4
+#     simulated variables: [salinity, waterTemperature]
+#   obs operator:
+#     name: VertInterp
+#     vertical coordinate: model_level_depth_at_cell_center
+#     observation vertical coordinate: depth
+#     observation alias file: Data/obsop_name_map.yaml
 
   - obs space:
       name: InsituTemperature
@@ -112,20 +112,20 @@ observations:
       name: Identity
       observation alias file: Data/obsop_name_map.yaml
 
-  - obs space:
-      name: SSS
-      obsdatain:
-        engine:
-          type: H5File
-          obsfile: Data/wc13/obs/wc13_sss_20040103.nc4
-      obsdataout:
-        engine:
-          type: H5File
-          obsfile: Data/hofx/ensembles/wc13_sss_hofx_mem003.nc4
-      simulated variables: [seaSurfaceSalinity]
-    obs operator:
-      name: Identity
-      observation alias file: Data/obsop_name_map.yaml
+# - obs space:
+#     name: SSS
+#     obsdatain:
+#       engine:
+#         type: H5File
+#         obsfile: Data/wc13/obs/wc13_sss_20040103.nc4
+#     obsdataout:
+#       engine:
+#         type: H5File
+#         obsfile: Data/hofx/ensembles/wc13_sss_hofx_mem003.nc4
+#     simulated variables: [seaSurfaceSalinity]
+#   obs operator:
+#     name: Identity
+#     observation alias file: Data/obsop_name_map.yaml
 
   - obs space:
       name: ADT

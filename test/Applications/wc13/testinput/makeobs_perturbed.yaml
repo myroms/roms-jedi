@@ -37,7 +37,7 @@ initial condition:
   - sea_water_y_velocity                       # C-grid
   - sea_water_temperature
   - sea_water_salinity
-  - unvarying_model_level_depth_at_cell_center
+  - model_level_depth_at_cell_center
 
 time window:
   begin: 2004-01-03T00:00:00Z
@@ -48,25 +48,25 @@ observations:
 
   observers:
 
-  - obs space:
-      name: InsituTS
-      obsdatain:
-        engine:
-          type: H5File
-          obsfile: Data/wc13/obs/wc13_TS_20040103.nc4
-      obsdataout:
-        engine:
-          type: H5File
-          obsfile: Data/makeobs/perturbed/wc13_TS_obs.nc4
-      simulated variables: [salinity, waterTemperature]
-      observed variables:  [salinity, waterTemperature]
-    obs operator:
-      name: VertInterp
-      vertical coordinate: unvarying_model_level_depth_at_cell_center
-      observation vertical coordinate: depth
-      observation alias file: Data/obsop_name_map.yaml
-    obs error:
-      covariance model: diagonal
+# - obs space:
+#     name: InsituTS
+#     obsdatain:
+#       engine:
+#         type: H5File
+#         obsfile: Data/wc13/obs/wc13_TS_20040103.nc4
+#     obsdataout:
+#       engine:
+#         type: H5File
+#         obsfile: Data/makeobs/perturbed/wc13_TS_obs.nc4
+#     simulated variables: [salinity, waterTemperature]
+#     observed variables:  [salinity, waterTemperature]
+#   obs operator:
+#     name: VertInterp
+#     vertical coordinate: model_level_depth_at_cell_center
+#     observation vertical coordinate: depth
+#     observation alias file: Data/obsop_name_map.yaml
+#   obs error:
+#     covariance model: diagonal
 
   - obs space:
       name: InsituTemperature
@@ -82,7 +82,7 @@ observations:
       observed variables:  [waterTemperature]
     obs operator:
       name: VertInterp
-      vertical coordinate: unvarying_model_level_depth_at_cell_center
+      vertical coordinate: model_level_depth_at_cell_center
       observation vertical coordinate: depth
       observation alias file: Data/obsop_name_map.yaml
     obs error:
@@ -102,7 +102,7 @@ observations:
       observed variables:  [salinity]
     obs operator:
       name: VertInterp
-      vertical coordinate: unvarying_model_level_depth_at_cell_center
+      vertical coordinate: model_level_depth_at_cell_center
       observation vertical coordinate: depth
       observation alias file: Data/obsop_name_map.yaml
     obs error:
@@ -126,23 +126,23 @@ observations:
     obs error:
       covariance model: diagonal
 
-  - obs space:
-      name: SSS
-      obsdatain:
-        engine:
-          type: H5File
-          obsfile: Data/wc13/obs/wc13_sss_20040103.nc4
-      obsdataout:
-        engine:
-          type: H5File
-          obsfile: Data/makeobs/perturbed/wc13_sss_obs.nc4
-      simulated variables: [seaSurfaceSalinity]
-      observed variables:  [seaSurfaceSalinity]
-    obs operator:
-      name: Identity
-      observation alias file: Data/obsop_name_map.yaml
-    obs error:
-      covariance model: diagonal
+# - obs space:
+#     name: SSS
+#     obsdatain:
+#       engine:
+#         type: H5File
+#         obsfile: Data/wc13/obs/wc13_sss_20040103.nc4
+#     obsdataout:
+#       engine:
+#         type: H5File
+#         obsfile: Data/makeobs/perturbed/wc13_sss_obs.nc4
+#     simulated variables: [seaSurfaceSalinity]
+#     observed variables:  [seaSurfaceSalinity]
+#   obs operator:
+#     name: Identity
+#     observation alias file: Data/obsop_name_map.yaml
+#   obs error:
+#     covariance model: diagonal
 
   - obs space:
       name: ADT

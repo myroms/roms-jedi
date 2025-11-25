@@ -7,18 +7,14 @@ sea_water_x_velocity                                          Min = -4.469712922
 sea_water_y_velocity                                          Min = -5.513833310065539e-01  Min =  3.294093026527541e-01  Mean = -8.603990000598792e-03
 sea_water_temperature                                         Min =  1.113311665316177e+00  Min =  1.837445189704065e+01  Mean =  6.394165342246287e+00
 sea_water_salinity                                            Min =  3.191354466518530e+01  Min =  3.468966476458480e+01  Mean =  3.394137166112741e+01
-unvarying_model_level_depth_at_cell_center                    Min = -4.947840267560327e+03  Min = -2.457733757631713e-01  Mean = -1.072647945779636e+03
+model_level_depth_at_cell_center                              Min = -4.947840267560327e+03  Min = -2.457733757631713e-01  Mean = -1.072647945779636e+03
 
 H(x): 
-InsituTS nobs= 160 Min=2.095315267329780e+00, Max=3.458608525129835e+01, RMS=2.460209139740079e+01
-
 InsituTemperature nobs= 168 Min=1.997562098568527e+00, Max=1.550326812927885e+01, RMS=9.931774767797728e+00
 
 InsituSalinity nobs= 125 Min=3.236262335433299e+01, Max=3.458608522381107e+01, RMS=3.362855094548583e+01
 
 SST nobs= 4952 Min=8.469072382468688e+00, Max=1.781352110428541e+01, RMS=1.356336693082173e+01
-
-SSS nobs= 125 Min=3.236703274096445e+01, Max=3.329612846571024e+01, RMS=3.282550171726086e+01
 
 ADT nobs= 1570 Min=-2.539123584285358e-01, Max=2.472566789308257e-01, RMS=1.099173880863876e-01
 

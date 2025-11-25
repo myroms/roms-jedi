@@ -43,6 +43,9 @@ set( ROMS-JEDI_LINKER_LANGUAGE CXX)
 add_subdirectory( src )
 add_subdirectory( test )
 
+add_subdirectory( docs )
+add_subdirectory( tools )
+
 # print the summary of the configuration
 
 ecbuild_print_summary()
