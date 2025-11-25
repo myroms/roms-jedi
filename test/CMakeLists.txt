@@ -187,6 +187,20 @@ ecbuild_add_test(
 #   ARGS         testinput/linearVariableChange.yaml
 #   LIBS         romsjedi )
 
+#ecbuild_add_test(
+#  TARGET        test_romsjedi_obslocalization
+#  MPI           ${MPI_NCPUS}
+#  SOURCES       executables/TestObsLocalization.cc
+#  ARGS          testinput/obslocalization.yaml
+#  LIBS          romsjedi )
+
+#ecbuild_add_test(
+#  TARGET        test_romsjedi_obslocalizations
+#  MPI           ${MPI_NCPUS}
+#  SOURCES       executables/TestObsLocalizations.cc
+#  ARGS          testinput/obslocalizations.yaml
+#  LIBS          romsjedi )
+
 #================================================================================
 # Unit Tests using the main ROMS-JEDI applications
 #================================================================================

@@ -99,7 +99,6 @@ my $src_dir = shift;
 my $templates_dir;
 my $util_dir;
 my %params;
-my @ymd_params = ('__ROMS_INI_PRIOR__', '__ROMS_STDINP__', '__ROMS_STDINP_MAX__');
 my $key;
 
 print "\n";
@@ -175,16 +174,9 @@ my $ymd      = "$params{'YYYY'}$params{'MM'}$params{'DD'}";
 # Insert the appropriate date string for variables that need it.
 
 foreach $key (keys %params) {
-  if ($key =~ /^__.*_SINGLE_OBS__$/) {
-    $params{$key} =~ s/YYYYMMDD/$mid_ymd/;
-  }
-  elsif ($key =~ /^__.*_OBS__$/ || grep(/^$key$/, @ymd_params)) {
-    $params{$key} =~ s/YYYYMMDD/$ymd/;
-  }
-  elsif ($key eq '__ROMS_MID_PRIOR__') {
-    $params{$key} =~ s/YYYYMMDD/$mid_ymd/;
-  }
-  elsif ($key eq '__INITIAL_DATE__') {
+  $params{$key} =~ s/yyyymmdd/$mid_ymd/;
+  $params{$key} =~ s/YYYYMMDD/$ymd/;
+  if ($key eq '__INITIAL_DATE__') {
     $params{$key} = "$params{'YYYY'}-$params{'MM'}-$params{'DD'}T$params{'hh'}:$params{'mm'}:$params{'ss'}Z";
   }
   elsif ($key eq '__INI_DATETIME__') {

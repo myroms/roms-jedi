@@ -10,6 +10,9 @@
 
 #include <string>
 
+#include "oops/generic/UnstructuredInterpolator.h"
+#include "ufo/obslocalization/ObsLocalization.h"
+
 #include "romsjedi/ErrorCovariance/ErrorCovariance.h"
 #include "romsjedi/Geometry/Geometry.h"
 #include "romsjedi/GeometryIterator/GeometryIterator.h"
@@ -33,6 +36,9 @@ namespace romsjedi {
 
     // Interfaces that roms has to implement
     // ----------------------------------------------------------
+
+    typedef oops::UnstructuredInterpolator LocalInterpolator;
+    typedef ufo::ObsLocalization<GeometryIterator>   ObsLocalization;
 
     typedef romsjedi::ErrorCovariance      Covariance;
     typedef romsjedi::Geometry             Geometry;

@@ -1,0 +1,84 @@
+# ROMS-JEDI ObsLocalization Test (Not used currently)
+#
+# It tests if observation localization around specified reference points:
+#   (1) Number of local ibs matches reference ("reference local nobs")
+#   (2) Observation localization applied to a vector of ones computes
+#       reference value for rms
+#
+# Reference grid points are specified below as "observation localization
+# reference including (lons, lats, depth), rms, and nobs. They don't have
+# to be  exactily equal to the lon/lat of Geometry application, but
+# should be no further than 1E-5 distance away.
+#
+# It test over several observations spaces and localization methods.
+
+geometry:
+  project_dir: Data/wc13
+  roms_stdinp: roms_wc13_20040103.in
+  fields metadata: Data/fields_metadata.yaml
+  ng: 1                                        # ROMS nested grid number
+  iterator dimension: 2
+
+time window:
+  begin: 2004-01-03T00:00:00Z
+  length: P4D                                  # 4-day window ending on 2004-01-07T00:00:00Z
+
+observations:
+- obs space:
+    name: 'BoxCar'
+    distribution:
+      name: InefficientDistribution
+    simulated variables:
+    - seaSurfaceTemperature
+    obsdatain:
+      engine:
+        type: H5File
+        obsfile: Data/wc13/obs/wc13_sst_20040103.nc4
+  obs localizations:
+  - localization method: Horizontal Box car
+    lengthscale: 219.09e+3                     # L = 60e3 m
+    reference gridpoints:
+      lons: [-128.33333, -127.33333, -121.33333, -132.33333 ]
+      lats: [  37.66666,   38.66666,   34.33333,   42.33333 ]
+      depths: [-7.96005,  -106.4632, -211.74900, -150.24631 ]
+    reference local nobs: [1, 1, 1, 1]
+    reference rms: [1.0, 1.0, 1.0, 1.0]
+
+- obs space:
+    name: 'GC99'
+    distribution:
+      name: InefficientDistribution
+    simulated variables: ['seaSurfaceTemperature']
+    obsdatain:
+      engine:
+        type: H5File
+        obsfile: Data/wc13/obs/wc13_sst_20040103.nc4
+  obs localizations:
+  - localization method: Horizontal Gaspari-Cohn
+    lengthscale: 219.09e+3                     # L = 60e3 m
+    reference gridpoints:
+      lons: [-128.33333, -127.33333, -121.33333, -132.33333 ]
+      lats: [  37.66666,   38.66666,   34.33333,   42.33333 ]
+      depths: [-7.96005,  -106.4632, -211.74900, -150.24631 ]
+    reference local nobs: [1, 1, 1, 1]
+    reference rms: [0.5, 0.5, 0.5, 0.5]
+
+- obs space:
+    name: 'SOAR'
+    distribution:
+      name: InefficientDistribution
+    simulated variables: ['seaSurfaceTemperature']
+    obsdatain:
+      engine:
+        type: H5File
+        obsfile: Data/wc13/obs/wc13_sst_20040103.nc4
+  obs localizations:
+  - localization method: Horizontal SOAR
+    lengthscale: 3000e3
+    soar horizontal decay: 0.000005
+    reference gridpoints:
+      lons: [-128.33333, -127.33333, -121.33333, -132.33333 ]
+      lats: [  37.66666,   38.66666,   34.33333,   42.33333 ]
+      depths: [-7.96005,  -106.4632, -211.74900, -150.24631 ]
+    reference local nobs: [1, 1, 1, 1]
+    reference rms: [0.5, 0.5, 0.5, 0.5]
