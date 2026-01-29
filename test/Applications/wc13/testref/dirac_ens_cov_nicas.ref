@@ -18,30 +18,3 @@ northward_sea_water_velocity                                  Min = -1.212693888
 sea_water_temperature                                         Min = -5.843949524069342e-02  Min =  9.912228028305990e-02  Mean =  5.714504135481882e-05
 sea_water_salinity                                            Min = -4.014613677592854e-03  Min =  8.384309955510993e-03  Mean =  1.115068387164876e-05
 
-Covariance(hybrid1_ensemble) * Increment:
-  Valid time: 2004-01-03T00:00:00Z
-sea_surface_height_above_geoid                                Min = -6.724482862876094e-04  Min =  3.330959098199385e-03  Mean =  1.124619982799203e-05
-sea_water_x_velocity                                          Min =  0.000000000000000e+00  Min =  0.000000000000000e+00  Mean =  0.000000000000000e+00
-sea_water_y_velocity                                          Min =  0.000000000000000e+00  Min =  0.000000000000000e+00  Mean =  0.000000000000000e+00
-eastward_sea_water_velocity                                   Min = -6.171535510680875e-32  Min =  6.376968038082180e-32  Mean = -9.513765507413831e-36
-northward_sea_water_velocity                                  Min = -1.212693888315829e-31  Min =  9.442406532898531e-32  Mean =  2.095514824803022e-37
-sea_water_temperature                                         Min = -5.843949524069342e-02  Min =  9.912228028305990e-02  Mean =  5.714504135481882e-05
-sea_water_salinity                                            Min = -4.014613677592854e-03  Min =  8.384309955510993e-03  Mean =  1.115068387164876e-05
-
-Localization(hybrid1_ensemble_localization) diagnostics:
-- Localization at zero separation:
-  + Value for variable sea_surface_height_above_geoid, subwindow 0, at (longitude, latitude, vertical index) point (-125.66667, 36.66667, 1): 1.8406954073861754e+00
-  + Value for variable eastward_sea_water_velocity, subwindow 0, at (longitude, latitude, vertical index) point (-129.00000, 40.00000, 30): 1.1497478532677681e+00
-  + Value for variable northward_sea_water_velocity, subwindow 0, at (longitude, latitude, vertical index) point (-129.00000, 41.66667, 30): 1.1223261408272569e+00
-  + Value for variable sea_water_temperature, subwindow 0, at (longitude, latitude, vertical index) point (-124.00000, 33.33333, 30): 1.2217396215150291e+00
-  + Value for variable sea_water_salinity, subwindow 0, at (longitude, latitude, vertical index) point (-127.33333, 43.33333, 30): 1.8486864006737587e+00
-Localization(hybrid1_ensemble) * Increment:
-  Valid time: 2004-01-03T00:00:00Z
-sea_surface_height_above_geoid                                Min =  0.000000000000000e+00  Min =  1.848686400673759e+00  Mean =  9.022828172378464e-02
-sea_water_x_velocity                                          Min =  0.000000000000000e+00  Min =  0.000000000000000e+00  Mean =  0.000000000000000e+00
-sea_water_y_velocity                                          Min =  0.000000000000000e+00  Min =  0.000000000000000e+00  Mean =  0.000000000000000e+00
-eastward_sea_water_velocity                                   Min =  0.000000000000000e+00  Min =  1.848686400673759e+00  Mean =  1.101060458597924e-02
-northward_sea_water_velocity                                  Min =  0.000000000000000e+00  Min =  1.848686400673759e+00  Mean =  1.101060458597924e-02
-sea_water_temperature                                         Min =  0.000000000000000e+00  Min =  1.848686400673759e+00  Mean =  1.101060458597924e-02
-sea_water_salinity                                            Min =  0.000000000000000e+00  Min =  1.848686400673759e+00  Mean =  1.101060458597924e-02
-

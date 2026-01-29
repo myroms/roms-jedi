@@ -24,7 +24,7 @@
 
 namespace romsjedi {
 
-  static oops::AnalyticInitMaker<ufo::ObsTraits, AnalyticInit>
+  static ufo::AnalyticInitMaker<AnalyticInit>
          makerAnalytic_("ana_ocnfields");
 
 // -----------------------------------------------------------------------------

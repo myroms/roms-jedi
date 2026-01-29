@@ -8,7 +8,6 @@
 #include "oops/runs/Run.h"
 #include "oops/runs/Variational.h"
 #include "saber/oops/instantiateCovarFactory.h"
-#include "ufo/instantiateObsErrorFactory.h"
 #include "ufo/instantiateObsFilterFactory.h"
 #include "ufo/ObsTraits.h"
 
@@ -17,7 +16,6 @@
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);
   saber::instantiateCovarFactory<romsjedi::Traits>();
-  ufo::instantiateObsErrorFactory();
   ufo::instantiateObsFilterFactory();
   oops::Variational<romsjedi::Traits, ufo::ObsTraits> var;
   return run.execute(var);

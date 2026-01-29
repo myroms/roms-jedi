@@ -22,10 +22,9 @@
 #include <string>
 
 #include "eckit/config/LocalConfiguration.h"
-#include "oops/interface/AnalyticInitBase.h"
 #include "oops/util/parameters/Parameters.h"
 #include "oops/util/parameters/RequiredParameter.h"
-#include "ufo/ObsTraits.h"
+#include "ufo/AnalyticInitBase.h"
 
 namespace romsjedi {
 
@@ -56,7 +55,7 @@ namespace romsjedi {
 // -----------------------------------------------------------------------------
 
   class AnalyticInit :
-        public oops::interface::AnalyticInitBase<ufo::ObsTraits> {
+        public ufo::AnalyticInitBase {
    public:
     explicit AnalyticInit(const eckit::Configuration &);
 

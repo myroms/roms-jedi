@@ -10,6 +10,7 @@
 
 #include "oops/util/abor1_cpp.h"
 #include "oops/util/Logger.h"
+#include "oops/util/Timer.h"
 
 #include "romsjedi/Geometry/Geometry.h"
 #include "romsjedi/State/State.h"
