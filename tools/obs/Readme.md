@@ -63,10 +63,10 @@ group: MetaData {
   	int64 dateTime(Location) ;
   		dateTime:long_name = "elapsed observation time since reference" ;
   		dateTime:units = "seconds since 2019-08-27T00:00:00Z" ;
-  	int64 dateTimeAverageBegin(timeWindow) ;
+  	int64 dateTimeAverageBegin(Location) ;
   		dateTimeAverageBegin:long_name = "start of time averaging filter" ;
   		dateTimeAverageBegin:units = "seconds since 2019-08-27T00:00:00Z" ;
-  	int64 dateTimeAverageEnd(timeWindow) ;
+  	int64 dateTimeAverageEnd(Location) ;
   		dateTimeAverageEnd:long_name = "end of time averaging filter" ;
   		dateTimeAverageEnd:units = "seconds since 2019-08-27T00:00:00Z" ;
   	float depth(Location) ;
@@ -81,7 +81,7 @@ group: MetaData {
   		longitude:units = "degrees_east" ;
   	int provenance(Location) ;
   		provenance:long_name = "observation origin identifier" ;
-    float spatialAverage ;
+    float spatialAverage(nvars) ;
   		spatialAverage:long_name = "half-length of spatial averaging filter" ;
   		spatialAverage:units = "meter" ;
   	int sequenceNumber(Location) ;
@@ -177,7 +177,6 @@ dimensions:
 	Location = 1940 ;
 	nvars = 1 ;
 	survey = 17 ;
-	timeWindow = 2 ;
 variables:
 	int Location(Location) ;
 		Location:suggested_chunck_dim = 512 ;
@@ -185,8 +184,6 @@ variables:
 		nvars:suggested_chunck_dim = 100 ;
 	int survey(survey) ;
 		survey:suggested_chunck_dim = 100 ;
-	int timeWindow(timeWindow) ;
-		timeWindow:suggested_chunck_dim = 100 ;
 
 // global attributes:
 		:_ioda_layout = "ObsGroup" ;
@@ -204,10 +201,10 @@ group: MetaData {
   	int64 dateTime(Location) ;
   		dateTime:long_name = "elapsed observation time since reference" ;
   		dateTime:units = "seconds since 2019-08-27T00:00:00Z" ;
-  	int64 dateTimeAverageBegin(timeWindow) ;
+  	int64 dateTimeAverageBegin(Location) ;
   		dateTimeAverageBegin:long_name = "start of time averaging filter" ;
   		dateTimeAverageBegin:units = "seconds since 2019-08-27T00:00:00Z" ;
-  	int64 dateTimeAverageEnd(timeWindow) ;
+  	int64 dateTimeAverageEnd(Location) ;
   		dateTimeAverageEnd:long_name = "end of time averaging filter" ;
   		dateTimeAverageEnd:units = "seconds since 2019-08-27T00:00:00Z" ;
   	float latitude(Location) ;
@@ -221,7 +218,7 @@ group: MetaData {
   		provenance:negative = "repetitive observation at different times and error" ;
   	int sequenceNumber(Location) ;
   		sequenceNumber:long_name = "observation sequence number" ;
-  	float spatialAverage ;
+  	float spatialAverage(nvars) ;
   		spatialAverage:long_name = "half-length of spatial averaging filter" ;
   		spatialAverage:units = "meter" ;
   	int stateID(nvars) ;
@@ -239,10 +236,6 @@ group: MetaData {
   	float y_grid(Location) ;
   		y_grid:long_name = "observation fractional y-grid location" ;
   data:
-
-   dateTimeAverageBegin = "2019-08-27", "2019-08-28 12" ;
-
-   dateTimeAverageEnd = "2019-08-28 12", "2019-08-30" ;
 
    spatialAverage = 30000 ;
   } // group MetaData
@@ -428,6 +421,35 @@ This quantity is used in the **JEDI/UFO `H(x)`** operator in the data assimilati
 Therefore, the evolution of **𝜁(x,y,t)** represents the instantaneous **SSH**, but several corrections to altimetry data are required
 to assimilate it correctly in a particular application.
 
+In **native ROMS 4D-Var**, the Sea Level Anomaly (**SLA**) derived from altimetry represents the change in sea level after
+removing tidal effects. The Absolute Dynamic Topography (**ADT**) is calculated using **`ADT = MDT + SLA`**, where **MDT**
+stands for Mean Dynamic Topography. This value excludes tidal signals because it represents the average sea surface
+elevation above the Geoid.
+
+For regional applications, such as along the U.S. East Coast, **MDT** is computed using the method described by
+[Levin et al., 2018](https://doi.org/10.1016/j.ocemod.2018.05.003). During the data assimilation cycle in **ROMS**,
+tidal forcing is incorporated as lateral boundary conditions. Previously, **ADT** tracks were repeated to create
+an average representing a specific area and time, as illustrated below. However, this approach was suboptimal.
+It has since been improved by utilizing the **`spatialAverage`**, **`dateTimeAverageBegin`**, and
+**`dateTimeAverageEnd`** variables in the **IODA-type** observation file. This enhancement allows for the
+proper computation of the area-averaging and time-averaging operator **H(x)** for the data assimilation innovations.
+
+<img width="927" height="424" alt="image" src="https://github.com/user-attachments/assets/3a30fc47-0f5c-4f92-a649-a5f952251788" />
+
+In this application, a 60 km area-average and 36-hour time-average operator is selected when computing **H(x)** for
+each altimetry location. We may need to apply this operator 18 hours earlier and after the three-day data assimilation
+cycle to accurately account for the 36-hour averaging window, as illustrated in the above diagram. We are exploring
+efficient methods to handle these specific observations. A challenge arises when assessing the temporal footprint of
+these observations in the tangent linear and adjoint operators.
+
+Similar area- and time-averaging operators are needed when processing sea surface salinity from SMAP or SMOS satellites:
+
+<img width="911" height="397" alt="image" src="https://github.com/user-attachments/assets/494ae434-c3e3-4cc2-9e37-e90b974a3803" />
+
+or near-surface ocean velocities from **HF Radar** (CODAR):
+
+<img width="908" height="377" alt="image" src="https://github.com/user-attachments/assets/ff893254-f952-4c9a-ad43-209e80d5d331" />
+
 ## Native to IODA Conversion
 
 The Matlab scripts **create_ioda_obs.m**, **ioda_metadata.m**, and **roms2ioda.m**, among others in this directory,
@@ -500,7 +522,10 @@ IODA NetCDF-4 file Metadata Structure:
    **SSH** and time-averaging for **uv_CODAR**, use:
 ``` c
 >> M(strcmp({M.name}, 'SSH')).half_length = 30;         % 30 km scale, effective scale 60 km
->> M(strcmp({M.name}, 'SSH')).time_window = 36;         % 24 hours averaging
+>> M(strcmp({M.name}, 'SSH')).time_window = 36;         % 36 hours averaging
+
+>> M(strcmp({M.name}, 'SSS')).half_length = 40;         % 40 km scale, effective scale 80 km
+>> M(strcmp({M.name}, 'SSS')).time_window = 24;         % 24 hours averaging
 
 >> M(strcmp({M.name}, 'uv_CODAR')).time_window = 24;    % 24 hours averaging
 ```
@@ -525,25 +550,45 @@ IODA NetCDF-4 file Metadata Structure:
 >> ObsData = 'USEC/Data/OBS/usec3km_roms_obs_20190827.nc';     % single native classic NetCDF file 
 >> HisName = 'USEC/Forward/usec3km_roms_his_20190827.nc';      % ROMS history NetCDF for geometry information
 
->> roms2ioda(ObsData, HisName, 'usec3', '20190827', M);
+>> roms2ioda(ObsData, HisName, 'usec3km', '20190827', M);
+
+    <> ROMS-to-IODA, Data Assimlation Cycle from 27-Aug-2019 00:00:00 to 30-Aug-2019 00:00:00 <>
  
-*** Creating observations file:  usec3_adt_20190827.nc4
-*** Writing  observations file:  usec3_adt_20190827.nc4
+    * Processing SSH: usec3km_adt_20190827.nc4, (nlocs = 1451)
+      Area averaging half-length = 30000 m
+      Time averaging window = 36 hours
+        ( Min: 26-Aug-2019 08:10:45, Max: 30-Aug-2019 14:17:30 )
+      Creating observations file:  usec3km_adt_20190827.nc4
+      Writing  observations file:  usec3km_adt_20190827.nc4
  
-*** Creating observations file:  usec3_sst_20190827.nc4
-*** Writing  observations file:  usec3_sst_20190827.nc4
+    * Processing SST: usec3km_sst_20190827.nc4, (nlocs = 178586)
+      Creating observations file:  usec3km_sst_20190827.nc4
+      Writing  observations file:  usec3km_sst_20190827.nc4
  
-*** Creating observations file:  usec3_temp_20190827.nc4
-*** Writing  observations file:  usec3_temp_20190827.nc4
+    * Processing SSS: usec3km_sss_20190827.nc4, (nlocs = 6246)
+      Area averaging half-length = 40000 m
+      Time averaging window = 24 hours
+        ( Min: 26-Aug-2019 13:02:45, Max: 30-Aug-2019 10:32:19 )
+      Creating observations file:  usec3km_sss_20190827.nc4
+      Writing  observations file:  usec3km_sss_20190827.nc4
  
-*** Creating observations file:  usec3_ptemp_20190827.nc4
-*** Writing  observations file:  usec3_ptemp_20190827.nc4
+    * Processing sub-surface insitu temperature: usec3km_temp_20190827.nc4, (nlocs = 8274)
+      Creating observations file:  usec3km_temp_20190827.nc4
+      Writing  observations file:  usec3km_temp_20190827.nc4
  
-*** Creating observations file:  usec3_salt_20190827.nc4
-*** Writing  observations file:  usec3_salt_20190827.nc4
+    * Processing sub-surface potential temperature: usec3km_ptemp_20190827.nc4, (nlocs = 8274)
+      Creating observations file:  usec3km_ptemp_20190827.nc4
+      Writing  observations file:  usec3km_ptemp_20190827.nc4
  
-*** Creating observations file:  usec3_uv_codar_20190827.nc4
-*** Writing  observations file:  usec3_uv_codar_20190827.nc4
+    * Processing sub-surface salinity: usec3km_salt_20190827.nc4, (nlocs = 8342)
+      Creating observations file:  usec3km_salt_20190827.nc4
+      Writing  observations file:  usec3km_salt_20190827.nc4
+ 
+    * Processing HF Radar velocities (CODAR): usec3km_uv_codar_20190827.nc4, (nlocs = 10687)
+      Time averaging window = 24 hours
+        ( Min: 26-Aug-2019 12:00:00, Max: 30-Aug-2019 10:56:19 )
+      Creating observations file:  usec3km_uv_codar_20190827.nc4
+      Writing  observations file:  usec3km_uv_codar_20190827.nc4
 ```
 5. Check the output **IODA NetCDF-4** to ensure that averaging parameters, if any, are correct.
 ``` c
@@ -559,16 +604,22 @@ group: MetaData {
   		dateTimeAverageEnd:long_name = "end of time averaging filter" ;
   		dateTimeAverageEnd:units = "seconds since 2019-08-27T00:00:00Z" ;
     ...
-  	float spatialAverage ;
+  	float spatialAverage(nvars) ;
   		spatialAverage:long_name = "half-length of spatial averaging filter" ;
   		spatialAverage:units = "meter" ;
     ...
 
   data:
 
-   dateTimeAverageBegin = "2019-08-27", "2019-08-28 12" ;
+   dateTimeAverageBegin = "2019-08-26 08:10:45", "2019-08-26 08:10:45",
+      "2019-08-26 08:10:45", "2019-08-26 08:10:45", "2019-08-26 08:10:45",
+      "2019-08-26 08:10:45", "2019-08-26 08:10:45", "2019-08-26 08:10:45",
+      ...
 
-   dateTimeAverageEnd = "2019-08-28 12", "2019-08-30" ;
+   dateTimeAverageEnd = "2019-08-27 20:10:45", "2019-08-27 20:10:45",
+      "2019-08-27 20:10:45", "2019-08-27 20:10:45", "2019-08-27 20:10:45",
+      "2019-08-27 20:10:45", "2019-08-27 20:10:45", "2019-08-27 20:10:45",
+      ...
 
    spatialAverage = 30000 ;
 
@@ -583,18 +634,24 @@ group: MetaData {
 group: MetaData {
   variables:
     ...
-  	int64 dateTimeAverageBegin(timeWindow) ;
+  	int64 dateTimeAverageBegin(Location) ;
   		dateTimeAverageBegin:long_name = "start of time averaging filter" ;
   		dateTimeAverageBegin:units = "seconds since 2019-08-27T00:00:00Z" ;
-  	int64 dateTimeAverageEnd(timeWindow) ;
+  	int64 dateTimeAverageEnd(Location) ;
   		dateTimeAverageEnd:long_name = "end of time averaging filter" ;
   		dateTimeAverageEnd:units = "seconds since 2019-08-27T00:00:00Z" ;
   	 ...
   data:
 
-   dateTimeAverageBegin = "2019-08-27", "2019-08-28", "2019-08-29" ;
+   dateTimeAverageBegin = "2019-08-26 12", "2019-08-26 12", "2019-08-26 12",
+      "2019-08-26 12", "2019-08-26 12", "2019-08-26 12", "2019-08-26 12",
+      "2019-08-26 12", "2019-08-26 12", "2019-08-26 12", "2019-08-26 12",
+      ...
 
-   dateTimeAverageEnd = "2019-08-28", "2019-08-29", "2019-08-30" ;
+   dateTimeAverageEnd = "2019-08-27 12", "2019-08-27 12", "2019-08-27 12",
+      "2019-08-27 12", "2019-08-27 12", "2019-08-27 12", "2019-08-27 12",
+      "2019-08-27 12", "2019-08-27 12", "2019-08-27 12", "2019-08-27 12",
+      ...
 
  } // group MetaData
 ```
@@ -673,6 +730,9 @@ The documentation and instructions for the **`roms2ioda.m`** script is as follow
 %
 %       M(strcmp({M.name}, 'SSH')).half_length = 30;             % km
 %       M(strcmp({M.name}, 'SSH')).time_window = 36;             % hours
+%
+%       M(strcmp({M.name}, 'SSS')).half_length = 40;             % km
+%       M(strcmp({M.name}, 'SSS')).time_window = 24;             % hours
 %
 %       M(strcmp({M.name}, 'uv_CODAR')).time_window = 24;        % hours
 %
