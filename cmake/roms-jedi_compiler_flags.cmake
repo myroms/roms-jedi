@@ -15,6 +15,8 @@ endif( )
 
 if( CMAKE_Fortran_COMPILER_ID MATCHES "GNU" )
   include( compiler_flags_GNU_Fortran )
+elseif( CMAKE_Fortran_COMPILER_ID MATCHES "IntelLLVM" )
+  include( compiler_flags_IntelLLVM_Fortran )
 elseif( CMAKE_Fortran_COMPILER_ID MATCHES "Intel" )
   include( compiler_flags_Intel_Fortran )
 elseif( CMAKE_Fortran_COMPILER_ID MATCHES "XL" )
