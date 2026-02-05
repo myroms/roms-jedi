@@ -2,6 +2,12 @@
 
 ![Jedi_wc12](https://github.com/user-attachments/assets/c5886719-b83f-4e37-882f-01d3916fa5b4)
 
+# Change Logs
+
+[ROMS-JEDI Change Logs](ROMS-JEDI_ChangeLog.md)
+
+# Instructions
+
 The following instructions should have the steps needed to implement an interface capable of
 running any **`ROMS-JEDI`** application, as well as the available data assimilation drivers.
 
@@ -28,18 +34,18 @@ running any **`ROMS-JEDI`** application, as well as the available data assimilat
    configured by including in the **ecbuild** command the directives **`-DROMS_APP="MyAppCPP"`** and
    **`-DROMS_APP_DIR="MyAppDirPath"`**.
 
--  Make sure that you computer have installed the **`jedi-stack`** software for either **gfortran**
+-  Make sure that you computer have installed the **`spack-stack`** software for either **gfortran**
    or **ifort** containing several packages need to run the **`ROMS-JEDI`** interface. For more
-   information, please check https://github.com/JCSDA/jedi-stack.
+   information, please check https://github.com/JCSDA/spack-stack.
 
-   In our computers at Rutgers University, the **`jedi-stack`** can be loaded by executing either:
+   In our computers at Rutgers University, the **`spack-stack`** can be loaded by executing either:
 
    ```
    > module purge;  module load stack-gcc;    module list                     (gfortran compiler)
    > module purge;  module load stack-intel;  module list                     (ifort compiler)
    ```
 
-   Installing the **`jedi-stack`** is not trivial and requires computer software expertise.
+   Installing the **`spack-stack`** is not trivial and requires computer software expertise.
 
 -  We also like to define the **MPIRUN** environmental variable to specify the **MPI** executable in
    a particular computer (say, **srun**, **mpirun**, etc.). We need the full path for **ctest** to work.
