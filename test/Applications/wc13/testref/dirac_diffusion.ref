@@ -11,11 +11,11 @@ sea_water_salinity                                            Min =  0.000000000
 Adjoint test for block diffusion passed
 Covariance(SABER) * Increment:
   Valid time: 2004-01-03T00:00:00Z
-sea_surface_height_above_geoid                                Min =  0.000000000000000e+00  Min =  9.885295697178171e-01  Mean =  1.004418747987647e-02
-eastward_sea_water_velocity                                   Min =  0.000000000000000e+00  Min =  1.001399092902424e+00  Mean =  1.120110098983759e-03
-northward_sea_water_velocity                                  Min =  0.000000000000000e+00  Min =  1.003652929737907e+00  Mean =  1.152291302545252e-03
+sea_surface_height_above_geoid                                Min =  0.000000000000000e+00  Min =  9.885295697178170e-01  Mean =  1.004418747987645e-02
+eastward_sea_water_velocity                                   Min =  0.000000000000000e+00  Min =  1.001399092902425e+00  Mean =  1.230314203721772e-03
+northward_sea_water_velocity                                  Min =  0.000000000000000e+00  Min =  1.003652929737905e+00  Mean =  1.265661614543696e-03
 sea_water_x_velocity                                          Min =  0.000000000000000e+00  Min =  0.000000000000000e+00  Mean =  0.000000000000000e+00
 sea_water_y_velocity                                          Min =  0.000000000000000e+00  Min =  0.000000000000000e+00  Mean =  0.000000000000000e+00
-sea_water_temperature                                         Min =  0.000000000000000e+00  Min =  1.004028784469090e+00  Mean =  2.456340825455416e-03
-sea_water_salinity                                            Min =  0.000000000000000e+00  Min =  1.007926319453890e+00  Mean =  2.852998390969338e-03
+sea_water_temperature                                         Min =  0.000000000000000e+00  Min =  1.004028784469091e+00  Mean =  2.796141534163639e-03
+sea_water_salinity                                            Min =  0.000000000000000e+00  Min =  1.007926319453891e+00  Mean =  3.247671176255594e-03
 

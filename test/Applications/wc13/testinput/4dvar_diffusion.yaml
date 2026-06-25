@@ -88,6 +88,8 @@ cost function:
             filepath: Data/diffusion/wc13_diffusion_uvel_hcor
           vertical:
             levels: 30
+            method: implicit
+            iterations: 4
             filepath: Data/diffusion/wc13_diffusion_uvel_vcor
 
         - variables:
@@ -97,6 +99,8 @@ cost function:
             filepath: Data/diffusion/wc13_diffusion_vvel_hcor
           vertical:
             levels: 30
+            method: implicit
+            iterations: 4
             filepath: Data/diffusion/wc13_diffusion_vvel_vcor
 
         - variables:
@@ -106,6 +110,8 @@ cost function:
             filepath: Data/diffusion/wc13_diffusion_temp_hcor
           vertical:
             levels: 30
+            method: implicit
+            iterations: 4
             filepath: Data/diffusion/wc13_diffusion_temp_vcor
 
         - variables:
@@ -115,6 +121,8 @@ cost function:
             filepath: Data/diffusion/wc13_diffusion_salt_hcor
           vertical:
             levels: 30
+            method: implicit
+            iterations: 4
             filepath: Data/diffusion/wc13_diffusion_salt_vcor
 
     saber outer blocks:                          # standard deviation impulse scaling
