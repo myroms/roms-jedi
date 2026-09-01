@@ -120,7 +120,7 @@ SUBROUTINE roms_lvc_model2analysis_multiplyInverse_c (c_key_self,              &
   TYPE (roms_increment),          pointer :: dxana
   TYPE (roms_increment),          pointer :: dxmod
 
-  ! HGA: For some reason, I need to add to registry again to avoid 
+  ! HGA: For some reason, I need to add to registry again to avoid
   ! a segementation error in "linkedList_c.f" line 61 due to "Attempt
   ! to use pointer NEXT when it is not associated with a target". Weird!
 

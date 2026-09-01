@@ -72,7 +72,7 @@ __NMEMBERS__                   10
 # Number of variational data assimilation inner loops.
 
 __NINNER__                     10
-__4DVAR_NINNER__               26
+__4DVAR_NINNER__               25
 
 # ROMS initial filenames and associated time records for the
 # prior/background state vector. The uppercase "YYYYMMDD" key

@@ -1,8 +1,8 @@
 !
 ! (C) Copyright 2017-2025 UCAR
-! 
+!
 ! This software is licensed under the terms of the Apache Licence Version 2.0
-! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0. 
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 !
 !>
 !! \brief   Initialize **GeoVaLs** with an analytical state
@@ -89,7 +89,7 @@ SUBROUTINE roms_analytic_geovals (self, locs, method, T0, S0, U0, V0)
 
     DO ivar = 1, nvar
       DO iloc = 1, self%geovals(ivar)%nprofiles
-        DO ival = 1, self%geovals(ivar)%nval    
+        DO ival = 1, self%geovals(ivar)%nval
           value = ana_fields(TRIM(self%variables(ivar)),                       &
                              mask,                                             &
                              locs_lons(iloc),                                  &
@@ -144,7 +144,7 @@ SUBROUTINE roms_analytic_geovals (self, locs, method, T0, S0, U0, V0)
       END SELECT
 
       DO iloc = 1, self%geovals(ivar)%nprofiles
-        DO ival = 1, self%geovals(ivar)%nval    
+        DO ival = 1, self%geovals(ivar)%nval
           self%geovals(ivar)%vals(ival, iloc) = value
         END DO
       END DO

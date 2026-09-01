@@ -1,4 +1,4 @@
-! (C) Copyright 2020-2025 UCAR
+! (C) Copyright 2020-2026 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -69,29 +69,41 @@ SUBROUTINE roms_vc_model2geovals_changeVar (self, geom, xin, xout)
 
   character (len=512)                          :: field_name
 
+  ! Initialize.
+
+  field_in  => NULL()
+  field_out => NULL()
+  Uc        => NULL()
+  Vc        => NULL()
+
   ! Report variables to process.
 
   IF (LdebugModel2Geovals) THEN
     in_fields  = SIZE(xin%fields)
-    IF (geom%f_comm%rank() .eq. 0)                                             &
+    IF (geom%f_comm%rank() .eq. 0) THEN
       PRINT 10, 'ROMS_DEBUG roms_vc_model2geovals:changeVar >  Input',         &
                 ' XIN  Vars = ', (xin%fields(i)%name, i=1,in_fields)
+    END IF
     DO i = 1, in_fields
       CALL xin%fields(i)%stats (stats)
-      IF (geom%f_comm%rank() .eq. 0)                                           &
+      IF (geom%f_comm%rank() .eq. 0) THEN
         PRINT 20, xin%fields(i)%metadata%short_name, stats(1), stats(2),       &
                   INT(stats(4))
+      END IF
     END DO
 
     out_fields = SIZE(xout%fields)
-    IF (geom%f_comm%rank() .eq. 0)                                             &
+    IF (geom%f_comm%rank() .eq. 0) THEN
       PRINT 10, 'ROMS_DEBUG roms_vc_model2geovals:changeVar >  Input',         &
                 ' XOUT Vars = ', (xout%fields(i)%name, i=1,out_fields)
+    END IF
     DO i = 1, out_fields
       CALL xout%fields(i)%stats (stats)
-      IF (geom%f_comm%rank() .eq. 0)                                           &
+      IF (geom%f_comm%rank() .eq. 0) THEN
         PRINT 20, xout%fields(i)%name, stats(1), stats(2), INT(stats(4))
+      END IF
     END DO
+
  10 FORMAT (a, a, *(1x,a,','))
  20 FORMAT (2x,'- ',a,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,        &
             ',  CheckSum = ', i0)
@@ -214,10 +226,15 @@ SUBROUTINE roms_vc_model2geovals_changeVar (self, geom, xin, xout)
 
     END DO
 
-    IF ( allocated(Ua) ) deallocate (Ua)
-    IF ( allocated(Va) ) deallocate (Va)
+    IF ( allocated(Ua) )         deallocate (Ua)
+    IF ( allocated(Va) )         deallocate (Va)
 
-  END IF  
+    IF ( associated(field_in) )  nullify (field_in)
+    IF ( associated(field_out) ) nullify (field_out)
+    IF ( associated(Uc) )        nullify (Uc)
+    IF ( associated(Vc) )        nullify (Vc)
+
+  END IF
 
   ! Report debugging information.
 

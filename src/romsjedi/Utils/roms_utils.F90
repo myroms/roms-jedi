@@ -1,4 +1,4 @@
-! (C) Copyright 2017-2025 UCAR
+! (C) Copyright 2017-2026 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -199,8 +199,9 @@ SUBROUTINE vector_a_to_c_ad (G, ad_Ua, ad_Va, ad_Uc, ad_Vc)
   ! Report.
 
   IF (LdebugLinearModel) THEN
-    IF (G%f_comm%rank() .eq. 0)                                                  &
+    IF (G%f_comm%rank() .eq. 0) THEN
       PRINT '(a)', 'ROMS_DEBUG vector_a_to_c_ad: AD ROMS - jedi2roms input'
+    END IF
     grid_type = 'a'
     CALL vector_stats (G, ad_Ua, ad_Va, grid_type, stats)
     IF (G%f_comm%rank() .eq. 0) THEN
@@ -235,11 +236,11 @@ SUBROUTINE vector_a_to_c_ad (G, ad_Ua, ad_Va, ad_Uc, ad_Vc)
 
   !  Adjoint of perform halo exchange.
 
-!>   CALL mp_exchange3d (G%ng, G%tile, G%model, 2,                             &
-!>                       G%LBi, G%UBi, G%LBj, G%UBj, 1, N,                     &
-!>                       G%NghostPoints,                                       &
-!>                       G%EWperiodic, G%NSperiodic,                           &
-!>                       Uc, Vc)
+!>  CALL mp_exchange3d (G%ng, G%tile, G%model, 2,                              &
+!>                      G%LBi, G%UBi, G%LBj, G%UBj, 1, N,                      &
+!>                      G%NghostPoints,                                        &
+!>                      G%EWperiodic, G%NSperiodic,                            &
+!>                      Uc, Vc)
 !>
   CALL ad_mp_exchange3d (G%ng, G%tile, G%model, 2,                             &
                          G%LBi, G%UBi, G%LBj, G%UBj, 1, N,                     &
@@ -341,27 +342,28 @@ SUBROUTINE vector_a_to_c_ad (G, ad_Ua, ad_Va, ad_Uc, ad_Vc)
   ! Report.
 
   IF (LdebugLinearModel) THEN
-    IF (G%f_comm%rank() .eq. 0)                                                  &
+    IF (G%f_comm%rank() .eq. 0) THEN
       PRINT '(a)', 'ROMS_DEBUG vector_a_to_c_ad: AD ROMS - jedi2roms output'
+    END IF
     grid_type = 'a'
     CALL vector_stats (G, ad_Ua, ad_Va, grid_type, stats)
     IF (G%f_comm%rank() .eq. 0) THEN
-      PRINT 10, 'uaocn', 'eastward_sea_water_velocity',                          &
+      PRINT 10, 'uaocn', 'eastward_sea_water_velocity',                        &
                 stats(1,1), stats(2,1), INT(stats(4,1),KIND=8)
-      PRINT 10, 'vaocn', 'northward_sea_water_velocity',                         &
+      PRINT 10, 'vaocn', 'northward_sea_water_velocity',                       &
                 stats(1,2), stats(2,2), INT(stats(4,2),KIND=8)
     END IF
     grid_type = 'c'
     CALL vector_stats (G, ad_Uc, ad_Vc, 'c', stats)
     IF (G%f_comm%rank() .eq. 0) THEN
-      PRINT 10, 'uocn', 'sea_water_x_velocity',                                  &
+      PRINT 10, 'uocn', 'sea_water_x_velocity',                                &
                 stats(1,1), stats(2,1), INT(stats(4,1),KIND=8)
-      PRINT 10, 'vocn', 'sea_water_y_velocity',                                  &
+      PRINT 10, 'vocn', 'sea_water_y_velocity',                                &
                 stats(1,2), stats(2,2), INT(stats(4,2),KIND=8)
     END IF
   END IF
 
-  10 FORMAT (19x,'- ',a,': ',a,/,22x,'(Min = ',1p,e15.8,' Max = ',1p,e15.8,')',  &
+  10 FORMAT (19x,'- ',a,': ',a,/,22x,'(Min = ',1p,e15.8,' Max = ',1p,e15.8,')',&
              t93,'Checksum = ',i0)
 
 END SUBROUTINE vector_a_to_c_ad
@@ -488,14 +490,15 @@ SUBROUTINE vector_c_to_a_ad (G, ad_Uc, ad_Vc, ad_Ua, ad_Va)
   ! Report.
 
   IF (LdebugLinearModel) THEN
-    IF (G%f_comm%rank() .eq. 0)                                                  &
-      PRINT '(a)', 'ROMS_DEBUG vector_c_to_a_ad: AD ROMS - roms2jedi input' 
+    IF (G%f_comm%rank() .eq. 0) THEN
+      PRINT '(a)', 'ROMS_DEBUG vector_c_to_a_ad: AD ROMS - roms2jedi input'
+    END IF
     grid_type = 'c'
     CALL vector_stats (G, ad_Uc, ad_Vc, grid_type, stats)
     IF (G%f_comm%rank() .eq. 0) THEN
-      PRINT 10, 'uocn', 'sea_water_x_velocity',                                  &
+      PRINT 10, 'uocn', 'sea_water_x_velocity',                                &
                 stats(1,1), stats(2,1), INT(stats(4,1),KIND=8)
-      PRINT 10, 'vocn', 'sea_water_y_velocity',                                  &
+      PRINT 10, 'vocn', 'sea_water_y_velocity',                                &
                 stats(1,2), stats(2,2), INT(stats(4,2),KIND=8)
     END IF
   END IF
@@ -642,8 +645,9 @@ SUBROUTINE vector_c_to_a_ad (G, ad_Uc, ad_Vc, ad_Ua, ad_Va)
   ! Report.
 
   IF (LdebugLinearModel) THEN
-    IF (G%f_comm%rank() .eq. 0)                                                  &
+    IF (G%f_comm%rank() .eq. 0) THEN
       PRINT '(a)', 'ROMS_DEBUG vector_c_to_a_ad: AD ROMS - roms2jedi output'
+    END IF
     grid_type = 'c'
     CALL vector_stats (G, ad_Uc, ad_Vc, grid_type, stats)
     IF (G%f_comm%rank() .eq. 0) THEN

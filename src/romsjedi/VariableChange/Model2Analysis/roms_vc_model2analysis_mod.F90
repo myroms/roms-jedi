@@ -1,4 +1,4 @@
-! (C) Copyright 2020-2025 UCAR
+! (C) Copyright 2020-2026 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -43,9 +43,9 @@ CONTAINS
 !-------------------------------------------------------------------------------
 
 !-------------------------------------------------------------------------------
-!> Perform required variable changes for Model to Analysis fields in the 
+!> Perform required variable changes for Model to Analysis fields in the
 !! control state vector. If the Model2Analysis has a one-to-one relationship,
-!! the field has an identity transform. 
+!! the field has an identity transform.
 
 SUBROUTINE roms_vc_model2analysis_changeVar (self, geom, xmod, xana)
 
@@ -70,28 +70,39 @@ SUBROUTINE roms_vc_model2analysis_changeVar (self, geom, xmod, xana)
 
   character (len=512)                           :: field_name
 
+  ! Initialize.
+
+  field => NULL()
+  Uc    => NULL()
+  Vc    => NULL()
+
   ! Report variables to process.
 
   IF (LdebugModel2Analysis) THEN
     inp_fields  = SIZE(xmod%fields)
-    IF (geom%f_comm%rank() .eq. 0)                                             &
+    IF (geom%f_comm%rank() .eq. 0) THEN
       PRINT 10, 'ROMS_DEBUG roms_vc_model2analysis::changeVar:  Input',        &
                 ' XMOD Vars = ', (xmod%fields(i)%name, i=1,inp_fields)
+    END IF
     DO i = 1, inp_fields
       CALL xmod%fields(i)%stats (stats)
-      IF (geom%f_comm%rank() .eq. 0)                                           &
+      IF (geom%f_comm%rank() .eq. 0) THEN
         PRINT 20, xmod%fields(i)%name, stats(1), stats(2), INT(stats(4))
+      END IF
     END DO
 
     out_fields = SIZE(xana%fields)
-    IF (geom%f_comm%rank() .eq. 0)                                             &
+    IF (geom%f_comm%rank() .eq. 0) THEN
       PRINT 10, 'ROMS_DEBUG roms_vc_model2analysis::changeVar:  Input',        &
                 ' XANA Vars = ', (xana%fields(i)%name, i=1,out_fields)
+    END IF
     DO i = 1, out_fields
       CALL xana%fields(i)%stats (stats)
-      IF (geom%f_comm%rank() .eq. 0)                                           &
+      IF (geom%f_comm%rank() .eq. 0) THEN
         PRINT 20, xana%fields(i)%name, stats(1), stats(2), INT(stats(4))
+      END IF
     END DO
+
  10 FORMAT (a, a, *(1x,a,','))
  20 FORMAT (2x,'- ',a35,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,      &
             ',  CheckSum = ', i0)
@@ -144,7 +155,7 @@ SUBROUTINE roms_vc_model2analysis_changeVar (self, geom, xmod, xana)
       have_vaocn = .TRUE.
     END IF
 
-    ! Load the required variable changes.  
+    ! Load the required variable changes.
 
     DO i = 1, counter
 
@@ -178,7 +189,11 @@ SUBROUTINE roms_vc_model2analysis_changeVar (self, geom, xmod, xana)
     IF ( allocated(Ua) )      deallocate (Ua)
     IF ( allocated(Va) )      deallocate (Va)
 
-  END IF  
+    IF ( associated(field) )  nullify (field)
+    IF ( associated(Uc) )     nullify (Uc)
+    IF ( associated(Vc) )     nullify (Vc)
+
+  END IF
 
   ! Report debugging information.
 
@@ -196,9 +211,9 @@ SUBROUTINE roms_vc_model2analysis_changeVar (self, geom, xmod, xana)
 END SUBROUTINE roms_vc_model2analysis_changeVar
 
 !-------------------------------------------------------------------------------
-!> Perform required variable changes for Analysis to Model fields in the 
+!> Perform required variable changes for Analysis to Model fields in the
 !! control state vector. If the Model2Analysis has a one-to-one relationship,
-!! the field has an identity transform. 
+!! the field has an identity transform.
 !! It is the reverse transformation of "roms_vc_model2analysis_changeVar".
 
 SUBROUTINE roms_vc_model2analysis_changeVarInverse (self, geom, xmod, xana)
@@ -224,28 +239,39 @@ SUBROUTINE roms_vc_model2analysis_changeVarInverse (self, geom, xmod, xana)
 
   character (len=512)                           :: field_name
 
+  ! Initialize.
+
+  field => NULL()
+  Ua    => NULL()
+  Va    => NULL()
+
   ! Report variables to process.
 
   IF (LdebugModel2Analysis) THEN
     inp_fields  = SIZE(xana%fields)
-    IF (geom%f_comm%rank() .eq. 0)                                             &
+    IF (geom%f_comm%rank() .eq. 0) THEN
       PRINT 10, 'ROMS_DEBUG roms_vc_model2analysis::changeVarInverse:  Input', &
                 ' XANA Vars = ', (xana%fields(i)%name, i=1,inp_fields)
+    END IF
     DO i = 1, inp_fields
       CALL xana%fields(i)%stats (stats)
-      IF (geom%f_comm%rank() .eq. 0)                                           &
+      IF (geom%f_comm%rank() .eq. 0) THEN
         PRINT 20, xana%fields(i)%name, stats(1), stats(2), INT(stats(4))
+      END IF
     END DO
 
     out_fields = SIZE(xmod%fields)
-    IF (geom%f_comm%rank() .eq. 0)                                             &
+    IF (geom%f_comm%rank() .eq. 0) THEN
       PRINT 10, 'ROMS_DEBUG roms_vc_model2analysis::changeVarInverse:  Input', &
                 ' XMOD Vars = ', (xmod%fields(i)%name, i=1,out_fields)
+    END IF
     DO i = 1, out_fields
       CALL xmod%fields(i)%stats (stats)
-      IF (geom%f_comm%rank() .eq. 0)                                           &
+      IF (geom%f_comm%rank() .eq. 0) THEN
         PRINT 20, xmod%fields(i)%name, stats(1), stats(2), INT(stats(4))
+      END IF
     END DO
+
  10 FORMAT (a, a, *(1x,a,','))
  20 FORMAT (2x,'- ',a35,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,      &
             ',  CheckSum = ', i0)
@@ -299,7 +325,7 @@ SUBROUTINE roms_vc_model2analysis_changeVarInverse (self, geom, xmod, xana)
       have_vocn = .TRUE.
     END IF
 
-    ! Load the required variable changes.  
+    ! Load the required variable changes.
 
     DO i = 1, counter
 
@@ -330,10 +356,14 @@ SUBROUTINE roms_vc_model2analysis_changeVarInverse (self, geom, xmod, xana)
 
     END DO
 
-    IF ( allocated(Uc) )  deallocate (Uc)
-    IF ( allocated(Vc) )  deallocate (Vc)
+    IF ( allocated(Uc) )      deallocate (Uc)
+    IF ( allocated(Vc) )      deallocate (Vc)
 
-  END IF  
+    IF ( associated(field) )  nullify (field)
+    IF ( associated(Ua) )     nullify (Ua)
+    IF ( associated(Va) )     nullify (Va)
+
+  END IF
 
   ! Report debugging information.
 

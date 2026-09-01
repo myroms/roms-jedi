@@ -222,6 +222,7 @@ SUBROUTINE roms_geom_init_atlas_c (c_key_self, c_functionspace, c_fieldset)    &
 
   self%fieldset = atlas_fieldset(c_fieldset)
   CALL self%init_fieldset ()
+  CALL self%fieldset%final ()
 
 END SUBROUTINE roms_geom_init_atlas_c
 
@@ -381,7 +382,7 @@ SUBROUTINE roms_geom_gen_mesh_c (c_key_self, c_nodes, c_lon, c_lat, c_ghosts,  &
     jc = (j-Joff)*Isize
     DO i = IstrH, IendH
       IF (((JstrD.le.j).and.(j.le.JendC+1)).and.                               &
-          ((IstrD.le.i).and.(i.le.IendC+1))) THEN          
+          ((IstrD.le.i).and.(i.le.IendC+1))) THEN
         ic = ic + 1
         global_index(i,j) = REAL(i+Ioff+jc, kind_real)
         local_index (i,j) = REAL(ic, kind_real)
@@ -437,7 +438,7 @@ SUBROUTINE roms_geom_gen_mesh_c (c_key_self, c_nodes, c_lon, c_lat, c_ghosts,  &
   ! Fill in the quadrilateral cell node list (vertices).
 
   nq = 1
-                 
+
   DO j = JstrD, JendC
     DO i = IstrD, IendC
       c_quad_node_list(nq  ) = INT(global_index(i  ,j  ))

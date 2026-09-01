@@ -4,7 +4,7 @@
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 !
 !>
-!! \brief    **Increment Class** ROMS-JEDI interface Registry 
+!! \brief    **Increment Class** ROMS-JEDI interface Registry
 !!
 !! \author   Hernan G. Arango (Rutgers University)
 !! \date     October 2021

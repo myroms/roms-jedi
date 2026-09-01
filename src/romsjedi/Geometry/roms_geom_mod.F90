@@ -1,4 +1,4 @@
-! (C) Copyright 2017-2025 UCAR
+! (C) Copyright 2017-2026 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -53,12 +53,12 @@ TYPE, PUBLIC :: roms_tile
 
   ! Starting and ending Computational indices in the I- and J-directions.
 
-  integer :: IstrC, IendC, JstrC, JendC 
+  integer :: IstrC, IendC, JstrC, JendC
 
   ! Starting and ending Data indices in the I- and J-directions used for I/O.
   ! It includes computational plus lateral physical boundary points.
 
-  integer :: IstrD, IendD, JstrD, JendD 
+  integer :: IstrD, IendD, JstrD, JendD
 
   ! Starting and ending Halo indices in the I- and J-directions used for
   ! parallel exchanges. It includes computational, lateral physical boundary,
@@ -66,7 +66,7 @@ TYPE, PUBLIC :: roms_tile
   ! with 2 or 3 halo points.
 
   integer :: IstrH, IendH, JstrH, JendH
- 
+
 END TYPE roms_tile
 
 ! ------------------------------------------------------------------------------
@@ -225,7 +225,7 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
   IF (.not.f_conf%get("project_dir", project_dir)) THEN
     CALL abor1_ftn ("geom_init: Cannot find ROMS project directory")
   END IF
- 
+
   lstr = LEN_TRIM(project_dir)
   IF (.not.allocated(self%project_dir)) THEN
     allocate (character(LEN=lstr) :: self%project_dir)
@@ -255,8 +255,9 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
 
   ! Get iterator dimension from configuration YAML file.
 
-  IF (.not.f_conf%get("iterator dimension", self%iterator_dimension))          &
+  IF (.not.f_conf%get("iterator dimension", self%iterator_dimension)) THEN
     self%iterator_dimension = 2
+  END IF
 
   ! Retrieve ROMS-JEDI debugging switch from system environmental variables.
 
@@ -308,7 +309,7 @@ SUBROUTINE roms_geom_init (self, f_conf, f_comm)
   !            Arakawa C-grid          p,r,u,v:  bottom (k=1) to top (k=N)
   !                                          w:  bottom (k=0) to top (k=N)
   !                                              [levelsAreTopDown()=false]
- 
+
   DO cgrid = 1, 4
 
     SELECT CASE (cgrid)
@@ -542,48 +543,81 @@ SUBROUTINE roms_geom_end (self)
 
   CLASS (roms_geom), intent(out)  :: self                 !< Geometry object
 
-  IF (allocated(self%f_r))        deallocate (self%f_r)
-  IF (allocated(self%f_u))        deallocate (self%f_u)
-  IF (allocated(self%f_v))        deallocate (self%f_v)
+  ! Grid cell center (RHO-points) properties:
 
-  IF (allocated(self%h_r))        deallocate (self%h_r)
-  IF (allocated(self%h_u))        deallocate (self%h_u)
-  IF (allocated(self%h_v))        deallocate (self%h_v)
+  IF (allocated(self%angler))         deallocate (self%angler)
+  IF (allocated(self%CosAngler))      deallocate (self%CosAngler)
+  IF (allocated(self%SinAngler))      deallocate (self%SinAngler)
 
-  IF (allocated(self%pm))         deallocate (self%pm)
-  IF (allocated(self%pn))         deallocate (self%pn)
+  IF (allocated(self%pm))             deallocate (self%pm)
+  IF (allocated(self%pn))             deallocate (self%pn)
+  IF (allocated(self%cell_area))      deallocate (self%cell_area)
 
-  IF (allocated(self%lonr))       deallocate (self%lonr)
-  IF (allocated(self%latr))       deallocate (self%latr)
-  IF (allocated(self%lonu))       deallocate (self%lonu)
-  IF (allocated(self%latu))       deallocate (self%latu)
-  IF (allocated(self%lonv))       deallocate (self%lonv)
-  IF (allocated(self%latv))       deallocate (self%latv)
+  IF (allocated(self%f_r))            deallocate (self%f_r)
+  IF (allocated(self%h_r))            deallocate (self%h_r)
 
-  IF (allocated(self%angler))     deallocate (self%angler)
-  IF (allocated(self%angleu))     deallocate (self%angleu)
-  IF (allocated(self%anglev))     deallocate (self%anglev)
+  IF (allocated(self%lonr))           deallocate (self%lonr)
+  IF (allocated(self%latr))           deallocate (self%latr)
 
-  IF (allocated(self%cell_area))  deallocate (self%cell_area)
+  IF (allocated(self%rmask))          deallocate (self%rmask)
 
-  IF (allocated(self%CosAngler))  deallocate (self%CosAngler)
-  IF (allocated(self%SinAngler))  deallocate (self%SinAngler)
+  ! Grid left and right cell faces (U-points) properties:
 
-  IF (allocated(self%rmask))      deallocate (self%rmask)
-  IF (allocated(self%umask))      deallocate (self%umask)
-  IF (allocated(self%vmask))      deallocate (self%vmask)
+  IF (allocated(self%angleu))         deallocate (self%angleu)
 
-  IF (allocated(self%Hz))         deallocate (self%Hz)
+  IF (allocated(self%f_u))            deallocate (self%f_u)
+  IF (allocated(self%h_u))            deallocate (self%h_u)
 
-  IF (allocated(self%z_r))        deallocate (self%z_r)
-  IF (allocated(self%z_u))        deallocate (self%z_u)
-  IF (allocated(self%z_v))        deallocate (self%z_v)
-  IF (allocated(self%z_w))        deallocate (self%z_w)
+  IF (allocated(self%lonu))           deallocate (self%lonu)
+  IF (allocated(self%latu))           deallocate (self%latu)
 
-  IF (allocated(self%z0_r))       deallocate (self%z0_r)
-  IF (allocated(self%z0_w))       deallocate (self%z0_w)
+  IF (allocated(self%umask))          deallocate (self%umask)
+
+  ! Grid lower and upper cell faces (V-points) properties:
+
+  IF (allocated(self%anglev))         deallocate (self%anglev)
+
+  IF (allocated(self%f_v))            deallocate (self%f_v)
+  IF (allocated(self%h_v))            deallocate (self%f_v)
+
+  IF (allocated(self%lonv))           deallocate (self%lonv)
+  IF (allocated(self%latv))           deallocate (self%latv)
+
+  IF (allocated(self%vmask))          deallocate (self%vmask)
+
+  IF (allocated(self%h_r))            deallocate (self%h_r)
+  IF (allocated(self%h_u))            deallocate (self%h_u)
+  IF (allocated(self%h_v))            deallocate (self%h_v)
+
+  ! Grid level thickness (m), cell center:
+
+  IF (allocated(self%Hz))             deallocate (self%Hz)
+
+  ! Grid negative depths (m) are staggered RHO-, U- and V-points (cell center
+  ! and W-points (top and bottom cell faces).
+
+  IF (allocated(self%z_r))            deallocate (self%z_r)
+  IF (allocated(self%z_u))            deallocate (self%z_u)
+  IF (allocated(self%z_v))            deallocate (self%z_v)
+  IF (allocated(self%z_w))            deallocate (self%z_w)
+
+  IF (allocated(self%z0_r))           deallocate (self%z0_r)
+  IF (allocated(self%z0_w))           deallocate (self%z0_w)
+
+  ! ATLAS:
 
   CALL self%functionspace%final ()
+  CALL self%fieldset%final ()
+
+  IF (allocated(self%atlas_ij2node))  deallocate (self%atlas_ij2node)
+
+  ! Fortran and C/C++ interoperability toolkit: MPI coomunicator object.
+
+  CALL self%f_comm%final ()
+
+  ! ROMS-JEDI state variables metadata.
+
+  CALL self%FieldsInfo%delete ()
 
 END SUBROUTINE roms_geom_end
 
@@ -720,7 +754,7 @@ SUBROUTINE roms_geom_clone (self, other)
               ', JstrC = ', self%bounds(2)%JstrC,                              &
               ', JendC = ', self%bounds(2)%JendC
  10 FORMAT (a,i3, a,i0, a,3(i0,1x),/,t28,6(a,i4),/,t28,4(a,i4))
-    CALL self%f_comm%barrier() 
+    CALL self%f_comm%barrier()
   END IF
 
 END SUBROUTINE roms_geom_clone
@@ -798,7 +832,6 @@ SUBROUTINE roms_geom_init_fieldset (self)
 
   TYPE (atlas_field)                   :: Area, Gmask, Owned, Rmask
   TYPE (atlas_field)                   :: VertCoord2d, VertCoord3d
-  integer                              :: IstrC, IendC, JstrC, JendC
   integer                              :: IstrD, IendD, JstrD, JendD
   integer                              :: N, cgrid, i, j, k, nc
   integer, pointer                     :: Gmask_ptr(:,:), Owned_ptr(:,:)
@@ -825,9 +858,9 @@ SUBROUTINE roms_geom_init_fieldset (self)
                                          levels=1)
   CALL self%fieldset%add (Area)
   CALL area%data (Area_ptr)
-  CALL area%set_dirty (.TRUE.)           ! mark halos as being out-of-date    
+  CALL area%set_dirty (.TRUE.)           ! mark halos as being out-of-date
 
-  ! Add 2D vertical coordinate for depth-independent state variable. 
+  ! Add 2D vertical coordinate for depth-independent state variable.
   ! (Use top level enumeration N as a value for BUMP)
 
   VertCoord2d = self%functionspace%create_field(name='vert_coord_2d',          &
@@ -836,7 +869,7 @@ SUBROUTINE roms_geom_init_fieldset (self)
   CALL self%fieldset%add (VertCoord2d)
   CALL VertCoord2d%data (VertCoord2d_ptr)
 
-  ! Add 3D vertical coordinate: time-independent depths (m) at RHO-points 
+  ! Add 3D vertical coordinate: time-independent depths (m) at RHO-points
   !                             (negative, levelsAreTopDown = .FALSE.)
 
   VertCoord3d = self%functionspace%create_field(name='vert_coord',             &
@@ -865,7 +898,7 @@ SUBROUTINE roms_geom_init_fieldset (self)
 
   ! Add owned 2D mask: An integer array with one at owned points and zero at
   ! ghost grid points. Here, owned indicates possessed by a single process
-  ! associated with the tile partition. It does not require a halo exchange. 
+  ! associated with the tile partition. It does not require a halo exchange.
 
   Owned = self%functionspace%create_field(name='owned',                        &
                                           kind=atlas_integer(KIND(0)),         &
@@ -923,8 +956,8 @@ SUBROUTINE roms_geom_init_fieldset (self)
   CALL Gmask%final ()
   CALL Owned%final ()
   CALL Rmask%final ()
-  CALL VertCoord2d%final ()  
-  CALL VertCoord3d%final ()  
+  CALL VertCoord2d%final ()
+  CALL VertCoord3d%final ()
 
 END SUBROUTINE roms_geom_init_fieldset
 

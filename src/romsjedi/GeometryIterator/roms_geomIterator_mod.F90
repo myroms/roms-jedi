@@ -246,7 +246,7 @@ SUBROUTINE roms_geomIterator_next (self)
       END IF                                                ! K-loop
     CASE DEFAULT
       CALL abor1_ftn ('roms_geomIterator::next: ' //                           &
-                      'Unknown geom%iterator_dimension')      
+                      'Unknown geom%iterator_dimension')
   END SELECT
 
   self%Iindex = Iindex

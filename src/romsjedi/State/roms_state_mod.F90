@@ -1,4 +1,4 @@
-! (C) Copyright 2020-2025 UCAR
+! (C) Copyright 2020-2026 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -52,7 +52,7 @@ CONTAINS
 !-------------------------------------------------------------------------------
 
 ! ------------------------------------------------------------------------------
-!> Rotate horizontal vector components to geographical or curvilinear 
+!> Rotate horizontal vector components to geographical or curvilinear
 !! coordinates.
 
 SUBROUTINE roms_state_rotate (self, coordinate, uvars, vvars)
@@ -66,6 +66,9 @@ SUBROUTINE roms_state_rotate (self, coordinate, uvars, vvars)
   TYPE (roms_field), pointer           :: uocn, vocn
   real(kind=kind_real), allocatable    :: un(:,:,:), vn(:,:,:)
   character (len=64)                   :: u_names, v_names
+
+  uocn => NULL()
+  vocn => NULL()
 
   DO i=1, uvars%nvars()
 
@@ -117,7 +120,8 @@ SUBROUTINE roms_state_rotate (self, coordinate, uvars, vvars)
         END DO
     END SELECT
 
-    deallocate (un, vn)
+    IF ( allocated(un) ) deallocate (un)
+    IF ( allocated(vn) ) deallocate (vn)
 
     ! Update halos
 
@@ -125,6 +129,9 @@ SUBROUTINE roms_state_rotate (self, coordinate, uvars, vvars)
     CALL vocn%update_halo (self%geom)
 
   END DO
+
+  IF ( associated(uocn) ) nullify (uocn)
+  IF ( associated(vocn) ) nullify (vocn)
 
 END SUBROUTINE roms_state_rotate
 
@@ -150,11 +157,17 @@ SUBROUTINE roms_state_add_incr (self, rhs)
 
   ! For each field that exists in "incr", add to "self".
 
+  fld   => NULL()
+  fld_r => NULL()
+
   DO i = 1, SIZE(incr%fields)
     fld_r => incr%fields(i)
     CALL self%get (fld_r%name, fld)
     fld%val = fld%val + fld_r%val
   END DO
+
+  IF ( associated(fld) )    nullify (fld)
+  IF ( associated(fld_r) )  nullify (fld_r)
 
 END SUBROUTINE roms_state_add_incr
 
@@ -177,11 +190,17 @@ SUBROUTINE roms_state_diff_incr (x1, x2, inc)
 
   ! Subtract.
 
+  f1 => NULL()
+  f2 => NULL()
+
   DO i = 1, SIZE(inc%fields)
     CALL x1%get (inc%fields(i)%name, f1)
     CALL x2%get (inc%fields(i)%name, f2)
     inc%fields(i)%val = f1%val - f2%val
   END DO
+
+  IF ( associated(f1) ) nullify (f1)
+  IF ( associated(f2) ) nullify (f2)
 
 END SUBROUTINE roms_state_diff_incr
 
@@ -224,9 +243,11 @@ SUBROUTINE roms_state_logexpon (self, transfunc, trvars)
 
   TYPE (roms_field), pointer           :: trocn
   integer                              :: i
-  real(kind=kind_real)                 :: min_val = 1e-6_kind_real
+  real(kind=kind_real), parameter      :: min_val = 1e-6_kind_real
   real(kind=kind_real), allocatable    :: trn(:,:,:)
   character(len=64)                    :: tr_names
+
+  trocn => NULL()
 
   DO i=1, trvars%nvars()
 
@@ -258,9 +279,11 @@ SUBROUTINE roms_state_logexpon (self, transfunc, trvars)
 
     ! Deallocate "trn" for next variable
 
-    deallocate (trn)
+    IF ( allocated(trn) ) deallocate (trn)
 
   END DO
+
+  IF ( associated(trocn) ) nullify (trocn)
 
 END SUBROUTINE roms_state_logexpon
 

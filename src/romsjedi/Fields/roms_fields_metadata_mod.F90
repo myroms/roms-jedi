@@ -1,4 +1,4 @@
-! (C) Copyright 2021-2025 UCAR
+! (C) Copyright 2021-2026 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -40,6 +40,7 @@ TYPE, PUBLIC :: roms_field_metadata
   character (len=:), allocatable :: name         !< field standard name
   character (len=:), allocatable :: surface_name !< field surface name
   character (len=:), allocatable :: short_name   !< field short name
+  character (len=:), allocatable :: interp_type  !< interpolation schema
   character (len=:), allocatable :: io_name      !< NetCDF variable name
   character (len=:), allocatable :: io_file      !< component kernel: 'ocn'
   character (len=:), allocatable :: property     !< 'none' | 'positive_definite'
@@ -61,6 +62,7 @@ TYPE, PUBLIC :: roms_fields_metadata
 
   PROCEDURE :: create => roms_fields_metadata_create
   PROCEDURE :: clone  => roms_fields_metadata_clone
+  PROCEDURE :: delete => roms_fields_metadata_delete
   PROCEDURE :: get    => roms_fields_metadata_get
 
 END TYPE roms_fields_metadata
@@ -73,16 +75,16 @@ CONTAINS
 
 SUBROUTINE roms_fields_metadata_create (self, filename)
 
-  CLASS (roms_fields_metadata), intent(inout) :: self
-  character (len=:), allocatable              :: filename
+  CLASS (roms_fields_metadata),   intent(inout) :: self
+  character (len=:), allocatable, intent(in   ) :: filename
 
-  TYPE (fckit_configuration)                  :: conf
-  TYPE (fckit_Configuration), allocatable     :: conf_list(:)
+  TYPE (fckit_configuration)                    :: conf
+  TYPE (fckit_Configuration), allocatable       :: conf_list(:)
 
-  logical                                     :: bool, is3d
-  integer                                     :: Cgrid, Nfields
-  integer                                     :: i, j, lstr
-  character (len=:), allocatable              :: str
+  logical                                       :: bool, is3d
+  integer                                       :: Cgrid, Nfields
+  integer                                       :: i, j, lstr
+  character (len=:), allocatable                :: str
 
   ! Parse all the metadata from a YAML configuration file.
 
@@ -109,7 +111,7 @@ SUBROUTINE roms_fields_metadata_create (self, filename)
       lstr = LEN_TRIM(self%metadata(i)%name)
       allocate ( character(LEN=lstr) :: self%metadata(i)%short_name )
       self%metadata(i)%short_name = str
-    ELSE 
+    ELSE
       lstr = LEN_TRIM(str)
       allocate ( character(LEN=lstr) :: self%metadata(i)%short_name )
       self%metadata(i)%short_name = str
@@ -141,6 +143,15 @@ SUBROUTINE roms_fields_metadata_create (self, filename)
       deallocate (str)
     END IF
 
+    IF (.not.conf_list(i)%get("interp_type", str)) THEN
+      self%metadata(i)%interp_type = "default"
+    ELSE
+      lstr = LEN_TRIM(str)
+      allocate ( character(LEN=lstr) :: self%metadata(i)%interp_type )
+      self%metadata(i)%interp_type = str
+      deallocate (str)
+    END IF
+
     IF (.not.conf_list(i)%get("masked", bool)) THEN
       self%metadata(i)%masked = .TRUE.
     ELSE
@@ -169,7 +180,7 @@ SUBROUTINE roms_fields_metadata_create (self, filename)
 
   END DO
 
-  ! Determine ROMS C-grid classification flag. It facilitates compact I/O 
+  ! Determine ROMS C-grid classification flag. It facilitates compact I/O
   ! processing in NetCDF files.
 
   DO i = 1, Nfields
@@ -188,10 +199,10 @@ SUBROUTINE roms_fields_metadata_create (self, filename)
         Cgrid = r2dvar
         IF (is3d) Cgrid = r3dvar
       CASE ('u')                                    ! U-points variable
-        Cgrid = u2dvar 
+        Cgrid = u2dvar
         IF (is3d) Cgrid = u3dvar
       CASE ('v')                                    ! V-points variable
-        Cgrid = v2dvar 
+        Cgrid = v2dvar
         IF (is3d) Cgrid = v3dvar
       CASE ('w')                                    ! W-poits variable
         Cgrid = w3dvar
@@ -246,15 +257,31 @@ SUBROUTINE roms_fields_metadata_clone (self, other)
 END SUBROUTINE roms_fields_metadata_clone
 
 ! ------------------------------------------------------------------------------
+!>  Field metadata destructor: deallocate all variables.
+
+SUBROUTINE roms_fields_metadata_delete (self)
+
+  CLASS (roms_fields_metadata), intent(out) :: self
+
+  ! Deallocate object variables. Note that nowadays, deallocating the
+  ! vector "self%metadata" automatically deallocates all subojects.
+
+  IF ( allocated(self%metadata) ) THEN
+    deallocate (self%metadata)
+  END IF
+
+END SUBROUTINE roms_fields_metadata_delete
+
+! ------------------------------------------------------------------------------
 !> Get Field metadata object from any of its configured names.
 
 FUNCTION roms_fields_metadata_get(self, name) RESULT (metadata)
 
-  CLASS (roms_fields_metadata), intent(in) :: self
-  character (len=:), allocatable           :: name
+  CLASS (roms_fields_metadata), intent(in)   :: self
+  character (len=:), allocatable, intent(in) :: name
 
-  integer                                  :: i
-  TYPE (roms_field_metadata)               :: metadata
+  integer                                    :: i
+  TYPE (roms_field_metadata)                 :: metadata
 
   ! Find the field by any of its internal or GetVaLs names.
 
@@ -274,4 +301,4 @@ END FUNCTION roms_fields_metadata_get
 
 ! ------------------------------------------------------------------------------
 
-END MODULE
+END MODULE roms_fields_metadata_mod

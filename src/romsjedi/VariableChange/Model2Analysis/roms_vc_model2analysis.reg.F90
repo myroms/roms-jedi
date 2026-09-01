@@ -4,7 +4,7 @@
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 !
 !>
-!! \brief    **Model2Analysis Variable Change Class** Registry 
+!! \brief    **Model2Analysis Variable Change Class** Registry
 !!
 !! \author   Hernan G. Arango (Rutgers University)
 !! \date     November 2024

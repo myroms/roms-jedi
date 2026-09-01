@@ -1,4 +1,4 @@
-! (C) Copyright 2017-2025 UCAR
+! (C) Copyright 2017-2026 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -102,9 +102,9 @@ SUBROUTINE roms_trajectory_construct (self, state)
   ! the tangent linear and adjoint kernels.
 
   Nvars = SIZE(state%fields)
-  
+
   allocate ( self%fields(Nvars) )
-  
+
   ! Assign properties from the State object and allocate trajectory fields.
 
   DO i = 1, Nvars
@@ -210,6 +210,8 @@ SUBROUTINE roms_trajectory_set (self, state, vdate)
 
   ng = state%geom%ng
 
+  field => NULL()
+
   ! Allocate and zero intialize trajectory arrays.
 
   CALL self%construct (state)
@@ -222,10 +224,11 @@ SUBROUTINE roms_trajectory_set (self, state, vdate)
 
   ! Copy trajectory fields from state object.
 
-  IF (LdebugTrajectory .and. (my_comm%rank() .eq. 0))                          &
+  IF (LdebugTrajectory .and. (my_comm%rank() .eq. 0)) THEN
     PRINT 10, 'ROMS_DEBUG roms_trajectory::set: Processing fields',            &
               jic(ng)-1, knew(ng), nnew(ng), TRIM(self%DateTimeStr),           &
               self%romsTime/86400.0_kind_real
+  END IF
 
   DO i = 1, SIZE(self%fields)
     IF (state%has(self%fields(i)%name)) THEN
@@ -236,12 +239,15 @@ SUBROUTINE roms_trajectory_set (self, state, vdate)
       self%fields(i)%MinValue = stats(1)
       self%fields(i)%MaxValue = stats(2)
       self%fields(i)%Checksum = stats(4)
-      IF (LdebugTrajectory .and. (my_comm%rank() .eq. 0))                      &
+      IF (LdebugTrajectory .and. (my_comm%rank() .eq. 0)) THEN
         PRINT 20, self%fields(i)%metadata%short_name,                          &
                   self%fields(i)%metadata%io_name,                             &
                   stats(1), stats(2), INT(stats(4),KIND=8)
+      END IF
     END IF
   END DO
+
+  IF ( associated(field) ) nullify (field)
 
   !> Write out trajectory snapshots.
 
@@ -252,7 +258,7 @@ SUBROUTINE roms_trajectory_set (self, state, vdate)
     ELSE
       CALL self%write_debug (ncname, vdate,                                    &
                              Append = .TRUE.)            ! append records
-    END IF            
+    END IF
   END IF
 
   10 FORMAT (2x,a,', timestep = ',i5.5,', timelevel = (',i0,',',i0,')',        &

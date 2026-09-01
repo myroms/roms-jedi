@@ -11,32 +11,32 @@ model_level_depth_at_cell_center                              Min = -4.947840267
 
 Final state: 
   Valid time: 2004-01-07T00:00:00Z
-sea_surface_height_above_geoid                                Min = -2.566403846820658e-01  Min =  2.416397128748153e-01  Mean = -3.037941323634048e-03
-eastward_sea_water_velocity                                   Min = -4.218046699941090e-01  Min =  5.375847285722537e-01  Mean =  8.358657835991840e-03
-northward_sea_water_velocity                                  Min = -3.984257928524905e-01  Min =  8.823352397988068e-01  Mean =  3.432234166137646e-03
-sea_water_x_velocity                                          Min = -4.311691001981079e-01  Min =  5.434545988273851e-01  Mean =  8.451070289919985e-03
-sea_water_y_velocity                                          Min = -4.251125112654652e-01  Min =  9.828322943706460e-01  Mean =  3.425830376460535e-03
-sea_water_temperature                                         Min =  1.113297358155251e+00  Min =  1.831443182471020e+01  Mean =  6.352316089945877e+00
-sea_water_salinity                                            Min =  3.189865809164412e+01  Min =  3.468966376403642e+01  Mean =  3.394008902387035e+01
-model_level_depth_at_cell_center                              Min = -4.947837613262130e+03  Min = -2.176698649045966e-01  Mean = -1.072649960720385e+03
+sea_surface_height_above_geoid                                Min = -2.566403846823119e-01  Min =  2.416397128748487e-01  Mean = -3.037941323636344e-03
+eastward_sea_water_velocity                                   Min = -4.218046699939698e-01  Min =  5.375847285730379e-01  Mean =  8.358657835992855e-03
+northward_sea_water_velocity                                  Min = -3.984257928530235e-01  Min =  8.823352397992096e-01  Mean =  3.432234166133779e-03
+sea_water_x_velocity                                          Min = -4.311691001987066e-01  Min =  5.434545988273047e-01  Mean =  8.451070289921021e-03
+sea_water_y_velocity                                          Min = -4.251125112658311e-01  Min =  9.828322943737319e-01  Mean =  3.425830376457521e-03
+sea_water_temperature                                         Min =  1.113297358155251e+00  Min =  1.831443182471020e+01  Mean =  6.352316089945941e+00
+sea_water_salinity                                            Min =  3.189865809164412e+01  Min =  3.468966376403642e+01  Mean =  3.394008902387036e+01
+model_level_depth_at_cell_center                              Min = -4.947837613262129e+03  Min = -2.176698649012977e-01  Mean = -1.072649960720385e+03
 
 H(x): 
-InsituTemperature nobs= 168 Min=1.993019555053130e+00, Max=1.494592100673974e+01, RMS=9.835789360969159e+00
+InsituTemperature nobs= 168 Min=1.992335962723154e+00, Max=1.491502310434814e+01, RMS=9.813374455684885e+00
 
-InsituSalinity nobs= 125 Min=3.235337704796558e+01, Max=3.458628027051534e+01, RMS=3.363143763957053e+01
+InsituSalinity nobs= 125 Min=3.235744796923642e+01, Max=3.458611256892507e+01, RMS=3.363490665142857e+01
 
-SST nobs= 4952 Min=7.977870676017180e+00, Max=1.778648961314581e+01, RMS=1.334098466286344e+01
+SST nobs= 4952 Min=8.094902798940350e+00, Max=1.771511000694406e+01, RMS=1.334308410143976e+01
 
-ADT nobs= 1570 Min=-2.416795852397460e-01, Max=2.392929536166293e-01, RMS=1.034107125009144e-01
+ADT nobs= 1570 Min=-2.399711931917691e-01, Max=2.389266666969635e-01, RMS=1.030716713550841e-01
 
 End H(x)
 Perturbed H(x): 
-InsituTemperature nobs= 168 Min=2.044013203326850e+00, Max=1.498571007012905e+01, RMS=9.819920217598638e+00
+InsituTemperature nobs= 168 Min=2.042232348747769e+00, Max=1.491833726251545e+01, RMS=9.798178923005407e+00
 
-InsituSalinity nobs= 125 Min=3.234928054366461e+01, Max=3.458594409455437e+01, RMS=3.362074703232425e+01
+InsituSalinity nobs= 125 Min=3.235335146493545e+01, Max=3.458612968541616e+01, RMS=3.362421548133968e+01
 
-SST nobs= 4952 Min=7.535911174630107e+00, Max=1.851507859882600e+01, RMS=1.334980328447815e+01
+SST nobs= 4952 Min=7.489407983195009e+00, Max=1.843177114476219e+01, RMS=1.335190907933584e+01
 
-ADT nobs= 1570 Min=-2.591212556655685e-01, Max=2.689616851068152e-01, RMS=1.049705935408392e-01
+ADT nobs= 1570 Min=-2.580607975726154e-01, Max=2.689335761008512e-01, RMS=1.046504338702129e-01
 
 End Perturbed H(x)

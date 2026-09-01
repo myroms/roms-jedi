@@ -73,6 +73,8 @@
 #define SPHERICAL
 #define MASKING
 
+#define OMEGA_IMPLICIT
+
 #ifdef NLM_DRIVER
 # define AVERAGES         /* define if writing out time-averaged data */
 #endif
@@ -130,9 +132,6 @@
 
 #ifdef JEDI
 # define FORWARD_FLUXES
-# define FORWARD_JEDI
-# define FORWARD_MIXING
-# define FORWARD_WRITE
 # define GENERIC_DSTART
 # define INITIALIZE_AUTOMATIC
 # define OUT_DOUBLE

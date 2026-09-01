@@ -1,4 +1,4 @@
-! (C) Copyright 2017-2025 UCAR
+! (C) Copyright 2017-2026 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://Qwww.apache.org/licenses/LICENSE-2.0.
@@ -61,7 +61,7 @@ TYPE, PUBLIC :: roms_field
   real (kind=kind_real)              :: MaxValue             !< field max value
 
   real (kind=kind_real)              :: spval = 1.0E+37_kind_real
- 
+
   real (kind=kind_real),     pointer :: angle(:,:) => null() !< field grid angle
   real (kind=kind_real),     pointer :: lon(:,:)   => null() !< field lon
   real (kind=kind_real),     pointer :: lat(:,:)   => null() !< field lat
@@ -73,15 +73,13 @@ TYPE, PUBLIC :: roms_field
   character (len=:),     allocatable :: DateTimeString       !< field ISO8601
   character (len=:),     allocatable :: InpNCname            !< input NetCDF
   character (len=:),     allocatable :: OutNCname            !< output NetCDF
-  
-  character (len=20)                 :: interp_type = "nearest"
 
   TYPE (roms_tile)                   :: bounds               !< tile indices
 
   TYPE (roms_field_metadata)         :: metadata             !< metadata from
                                                              !< YAML config file
   CONTAINS
-  
+
   PROCEDURE :: clone             => roms_field_clone
   PROCEDURE :: copy              => roms_field_copy
   PROCEDURE :: delete            => roms_field_delete
@@ -347,31 +345,57 @@ SUBROUTINE roms_field_delete (self)
   nullify (self%lat)
   nullify (self%mask)
 
-  IF (allocated(self%val))                                                     &
+  IF (allocated(self%val)) THEN
     deallocate (self%val)
-  IF (allocated(self%name))                                                    &
-    deallocate (self%name) 
-  IF (allocated(self%DateTimeString))                                          &
-    deallocate (self%DateTimeString)
-  IF (allocated(self%InpNCname))                                               &
-    deallocate (self%InpNCname)
-  IF (allocated(self%OutNCname))                                               &
-    deallocate (self%OutNCname)
+  END IF
 
-  IF (allocated(self%metadata%levels))                                         &
-    deallocate (self%metadata%levels)
-  IF (allocated(self%metadata%name))                                           &
+  IF (allocated(self%name)) THEN
+    deallocate (self%name)
+  END IF
+
+  IF (allocated(self%DateTimeString)) THEN
+    deallocate (self%DateTimeString)
+  END IF
+
+  IF (allocated(self%InpNCname)) THEN
+    deallocate (self%InpNCname)
+  END IF
+
+  IF (allocated(self%OutNCname)) THEN
+    deallocate (self%OutNCname)
+  END IF
+
+  IF (allocated(self%metadata%name)) THEN
     deallocate (self%metadata%name)
-  IF (allocated(self%metadata%short_name))                                     &
-    deallocate (self%metadata%short_name)
-  IF (allocated(self%metadata%surface_name))                                   &
+  END IF
+
+  IF (allocated(self%metadata%surface_name)) THEN
     deallocate (self%metadata%surface_name)
-  IF (allocated(self%metadata%io_file))                                        &
-    deallocate (self%metadata%io_file)
-  IF (allocated(self%metadata%io_name))                                        &
+  END IF
+
+  IF (allocated(self%metadata%short_name)) THEN
+    deallocate (self%metadata%short_name)
+  END IF
+
+  IF (allocated(self%metadata%interp_type)) THEN
+    deallocate (self%metadata%interp_type)
+  END IF
+
+  IF (allocated(self%metadata%io_name)) THEN
     deallocate (self%metadata%io_name)
-  IF (allocated(self%metadata%property))                                       &
+  END IF
+
+  IF (allocated(self%metadata%io_file)) THEN
+    deallocate (self%metadata%io_file)
+  END IF
+
+  IF (allocated(self%metadata%property)) THEN
     deallocate (self%metadata%property)
+  END IF
+
+  IF (allocated(self%metadata%levels)) THEN
+    deallocate (self%metadata%levels)
+  END IF
 
 END SUBROUTINE roms_field_delete
 
@@ -511,7 +535,7 @@ SUBROUTINE roms_field_update_halo (self, geom)
     self%UpdatedHalo = .TRUE.
 
   END IF
-    
+
 END SUBROUTINE roms_field_update_halo
 
 ! ------------------------------------------------------------------------------
@@ -654,12 +678,12 @@ END SUBROUTINE roms_field_interp_initialize
 !! assumes that either 'netcdf_inq_var' or 'pio_netcdf_inq_var' has been called
 !! previously. If found, it checks variable dimensions for consistency with
 !! geometry.
- 
+
 FUNCTION roms_field_io_has_var (field, geom, vindex) RESULT (foundit)
 
   USE mod_netcdf,  ONLY : dim_size, n_var, var_dim, var_name
 
-  CLASS (roms_field), intent(in ) :: field         !< Field object  
+  CLASS (roms_field), intent(in ) :: field         !< Field object
   TYPE (roms_geom),   intent(in ) :: geom          !< Geometry object
   integer,            intent(out) :: vindex        !< variable index
 
@@ -700,7 +724,7 @@ FUNCTION roms_field_io_has_var (field, geom, vindex) RESULT (foundit)
         LBk = 0
         UBk = geom%N
         is3d = .TRUE.
-      CASE ('1', 'surface')                  
+      CASE ('1', 'surface')
         LBk = 1                                     ! 3D field, single level
         UBk = 1
     END SELECT
@@ -752,7 +776,7 @@ FUNCTION roms_field_io_has_var (field, geom, vindex) RESULT (foundit)
           CALL fckit_log%error (TRIM(text))
           WRITE (text,'(a,2(1x,i0))')                                          &
                       'roms_field::io_has_var: expected    dimensions for '//  &
-                      TRIM(field%metadata%io_name)//':', nx, ny 
+                      TRIM(field%metadata%io_name)//':', nx, ny
           CALL fckit_log%error (TRIM(text))
         END IF
       END IF
@@ -777,7 +801,7 @@ END FUNCTION roms_field_io_has_var
 
 SUBROUTINE roms_field_stats (self, fstats)
 
-  CLASS (roms_field),     intent(in ) :: self         !< Field object  
+  CLASS (roms_field),     intent(in ) :: self         !< Field object
   real (kind=kind_real),  intent(out) :: fstats(4)    !< Field statistics
 
   integer                             :: IstrD, IendD, JstrD, JendD, LBk, UBk
@@ -836,7 +860,7 @@ SUBROUTINE roms_field_stats (self, fstats)
   IF (.not.allocated(Cwrk)) allocate ( Cwrk(Npts) )
   Cwrk = PACK(self%val(IstrD:IendD, JstrD:JendD, LBk:UBk), .TRUE.)
   CALL get_hash (Cwrk, Npts, checksum, .TRUE.)
-  IF (allocated(Cwrk)) deallocate (Cwrk)  
+  IF (allocated(Cwrk)) deallocate (Cwrk)
 
   fstats(4) = REAL(checksum, KIND=kind_real)
 

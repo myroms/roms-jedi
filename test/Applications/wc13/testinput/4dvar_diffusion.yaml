@@ -217,7 +217,7 @@ variational:
     algorithm: RPCG                              # Dual   formulation
 #   algorithm: RPLanczos                         # Dual   formulation
   iterations:
-  - ninner: 26                                   # each item defined an outer loop
+  - ninner: 25                                   # each item defined an outer loop
     gradient norm reduction: 1E-10
     test: on
     online diagnostics:

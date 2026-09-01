@@ -4,11 +4,12 @@
 # name:                 Variable standard name from convection dictionary
 # gtype:                C-grid location: 'r', 'u', or 'v' (Default: 'r')
 # masked:               Use land/sea mask if true (Default: true)
+# interp_type:          Spatial interpolation: 'default' or 'nearest'
 # levels:               'surface' or 'full_ocn' levelsAreTopDown=false (Default: 'surface')
 # short_name:           Variable short name for internal use
 # surface_name:         Variable surface name for extraction
-# io_file:              Component file domain 'ocn'
-# io_name:              I/O NetCDF file variable name
+# io file:              Component file domain 'ocn'
+# io name:              I/O NetCDF file variable name
 # units:                Variable units
 # property;             Variable properties
 # --------------------------------------------------------------------------------------------------
@@ -23,6 +24,7 @@
   io name:      'temp'
   io file:      'ocn'
   gtype:        'r'
+  interp_type:  'default'
   levels:       'full_ocn'
   units:        'Celsius'
 
@@ -32,6 +34,7 @@
   io name:      'salt'
   io file:      'ocn'
   gtype:        'r'
+  interp_type:  'default'
   levels:       'full_ocn'
   units:        'nondimensional'
   property:     'positive definite'
@@ -42,6 +45,7 @@
   io name:      'u'
   io file:      'ocn'
   gtype:        'u'                                          # C-grid
+  interp_type:  'default'
   units:        'meter second-1'
   levels:       'full_ocn'
 
@@ -51,6 +55,7 @@
   io name:      'v'
   io file:      'ocn'
   gtype:        'v'                                          # C-grid
+  interp_type:  'default'
   units:        'meter second-1'
   levels:       'full_ocn'
 
@@ -60,6 +65,7 @@
   io name:      'u_eastward'
   io file:      'ocn'
   gtype:        'r'                                          # A-grid
+  interp_type:  'default'
   units:        'meter second-1'
   levels:       'full_ocn'
 
@@ -69,6 +75,7 @@
   io name:      'v_northward'
   io file:      'ocn'
   gtype:        'r'                                          # A-grid
+  interp_type:  'default'
   units:        'meter second-1'
   levels:       'full_ocn'
 
@@ -78,6 +85,7 @@
   io name:      'zeta'
   io file:      'ocn'
   gtype:        'r'
+  interp_type:  'default'
   units:        'meter'
 
 # --------------------------------------------------------------------------------------------------
@@ -89,6 +97,7 @@
   io name:      'z_rho'
   io file:      'ocn'
   gtype:        'r'
+  interp_type:  'default'
   units:        'meter'
   masked:       'false'
   levels:       'full_ocn'
@@ -99,6 +108,7 @@
   io name:      'z_w'
   io file:      'ocn'
   gtype:        'r'
+  interp_type:  'default'
   units:        'meter'
   masked:       'false'
   levels:       'wfull_ocn'
@@ -109,6 +119,7 @@
   io name:      'z_rho'
   io file:      'ocn'
   gtype:        'r'
+  interp_type:  'default'
   units:        'meter'
   masked:       'false'
   levels:       'full_ocn'
@@ -119,6 +130,7 @@
   io name:      'z_w'
   io file:      'ocn'
   gtype:        'w'
+  interp_type:  'default'
   units:        'meter'
   masked:       'false'
   levels:       'wfull_ocn'
@@ -128,6 +140,7 @@
   io name:      'Hz'
   io file:      'ocn'
   gtype:        'r'
+  interp_type:  'default'
   units:        'meter'
   masked:       'false'
   levels:       'full_ocn'
@@ -138,6 +151,7 @@
   io name:      'h'
   io file:      'ocn'
   gtype:        'r'
+  interp_type:  'default'
   units:        'meter'
   masked:       'false'
   property:     'positive'

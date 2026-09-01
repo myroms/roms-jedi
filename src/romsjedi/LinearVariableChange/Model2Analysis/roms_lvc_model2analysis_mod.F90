@@ -1,4 +1,4 @@
-! (C) Copyright 2020-2025 UCAR
+! (C) Copyright 2020-2026 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -76,28 +76,39 @@ SUBROUTINE roms_lvc_model2analysis_multiply (self, geom, dxmod, dxana)
 
   character (len=512)                            :: field_name
 
+  ! Initialize.
+
+  field => NULL()
+  Uc    => NULL()
+  Vc    => NULL()
+
   ! Report variables to process.
 
   IF (LdebugLinearModel2Analysis) THEN
     inp_fields = SIZE(dxmod%fields)
-    IF (geom%f_comm%rank() .eq. 0)                                             &
+    IF (geom%f_comm%rank() .eq. 0) THEN
       PRINT 10, 'ROMS_DEBUG roms_lvc_model2analysis::multiply:  Input',        &
               ' DXMOD Vars = ', (dxmod%fields(i)%metadata%name, i=1,inp_fields)
+    END IF
     DO i = 1, inp_fields
       CALL dxmod%fields(i)%stats (stats)
-      IF (geom%f_comm%rank() .eq. 0)                                           &
-      PRINT 20, dxmod%fields(i)%name, stats(1), stats(2), INT(stats(4))
+      IF (geom%f_comm%rank() .eq. 0) THEN
+        PRINT 20, dxmod%fields(i)%name, stats(1), stats(2), INT(stats(4))
+      END IF
     END DO
 
     out_fields = SIZE(dxana%fields)
-    IF (geom%f_comm%rank() .eq. 0)                                             &
+    IF (geom%f_comm%rank() .eq. 0) THEN
       PRINT 10, 'ROMS_DEBUG roms_lvc_model2analysis::multiply:  Input',        &
               ' DXANA Vars = ', (dxana%fields(i)%metadata%name, i=1,out_fields)
+    END IF
     DO i = 1, out_fields
       CALL dxana%fields(i)%stats (stats)
-      IF (geom%f_comm%rank() .eq. 0)                                           &
+      IF (geom%f_comm%rank() .eq. 0) THEN
         PRINT 20, dxana%fields(i)%name, stats(1), stats(2), INT(stats(4))
+      END IF
     END DO
+
  10 FORMAT (a, a, *(1x,a,','))
  20 FORMAT (2x,'- ',a35,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,      &
             ',  CheckSum = ', i0)
@@ -147,7 +158,7 @@ SUBROUTINE roms_lvc_model2analysis_multiply (self, geom, dxmod, dxana)
       have_vaocn = .TRUE.
     END IF
 
-    ! Load the required linear variable changes. 
+    ! Load the required linear variable changes.
 
     DO i = 1, counter
 
@@ -178,10 +189,14 @@ SUBROUTINE roms_lvc_model2analysis_multiply (self, geom, dxmod, dxana)
 
     END DO
 
-    IF ( allocated(Ua) )  deallocate (Ua)
-    IF ( allocated(Va) )  deallocate (Va)
+    IF ( allocated(Ua) )      deallocate (Ua)
+    IF ( allocated(Va) )      deallocate (Va)
 
-  END IF  
+    IF ( associated(field) )  nullify (field)
+    IF ( associated(Uc) )     nullify (Uc)
+    IF ( associated(Vc) )     nullify (Vc)
+
+  END IF
 
   ! Report debugging information.
 
@@ -225,28 +240,39 @@ SUBROUTINE roms_lvc_model2analysis_multiplyAD (self, geom, dxana, dxmod)
 
   character (len=512)                            :: field_name
 
+  ! Initialize.
+
+  field => NULL()
+  Ua    => NULL()
+  Va    => NULL()
+
   ! Report variables to process.
 
   IF (LdebugLinearModel2Analysis .and. (geom%f_comm%rank() .eq. 0)) THEN
     inp_fields = SIZE(dxana%fields)
-    IF (geom%f_comm%rank() .eq. 0)                                             &
+    IF (geom%f_comm%rank() .eq. 0) THEN
       PRINT 10, 'ROMS_DEBUG roms_lvc_model2analysis::multiplyAD:  Input',      &
               ' DXANA Vars = ', (dxana%fields(i)%metadata%name, i=1,inp_fields)
+    END IF
     DO i = 1, inp_fields
       CALL dxana%fields(i)%stats (stats)
-      IF (geom%f_comm%rank() .eq. 0)                                           &
+      IF (geom%f_comm%rank() .eq. 0) THEN
         PRINT 20, dxana%fields(i)%name, stats(1), stats(2), INT(stats(4))
+      END IF
     END DO
 
     out_fields = SIZE(dxmod%fields)
-    IF (geom%f_comm%rank() .eq. 0)                                             &
+    IF (geom%f_comm%rank() .eq. 0) THEN
       PRINT 10, 'ROMS_DEBUG roms_lvc_model2analysis::multiplyAD:  Input',      &
               ' DXMOD Vars = ', (dxmod%fields(i)%metadata%name, i=1,out_fields)
+    END IF
     DO i = 1, out_fields
       CALL dxmod%fields(i)%stats (stats)
-      IF (geom%f_comm%rank() .eq. 0)                                           &
+      IF (geom%f_comm%rank() .eq. 0) THEN
         PRINT 20, dxmod%fields(i)%name, stats(1), stats(2), INT(stats(4))
+      END IF
     END DO
+
  10 FORMAT (a, a, *(1x,a,','))
  20 FORMAT (2x,'- ',a35,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,      &
             ',  CheckSum = ', i0)
@@ -301,7 +327,7 @@ SUBROUTINE roms_lvc_model2analysis_multiplyAD (self, geom, dxana, dxmod)
       have_vocn = .TRUE.
     END IF
 
-    ! Load the required linear variable changes. 
+    ! Load the required linear variable changes.
 
     DO i = 1, counter
 
@@ -332,8 +358,12 @@ SUBROUTINE roms_lvc_model2analysis_multiplyAD (self, geom, dxana, dxmod)
 
     END DO
 
-    IF ( allocated(Uc) )  deallocate (Uc)
-    IF ( allocated(Vc) )  deallocate (Vc)
+    IF ( allocated(Uc) )      deallocate (Uc)
+    IF ( allocated(Vc) )      deallocate (Vc)
+
+    IF ( associated(field) )  nullify (field)
+    IF ( associated(Ua) )     nullify (Ua)
+    IF ( associated(Va) )     nullify (Va)
 
   END IF
 
@@ -374,24 +404,29 @@ SUBROUTINE roms_lvc_model2analysis_multiplyInverse (self, geom, dxana, dxmod)
 
   IF (LdebugLinearModel2Analysis .and. (geom%f_comm%rank() .eq. 0)) THEN
     inp_fields = SIZE(dxana%fields)
-    IF (geom%f_comm%rank() .eq. 0)                                             &
+    IF (geom%f_comm%rank() .eq. 0) THEN
       PRINT 10, 'ROMS_DEBUG roms_lvc_model2analysis::multiplyInverse:  Input', &
               ' DXANA Vars = ', (dxana%fields(i)%metadata%name, i=1,inp_fields)
+    END IF
     DO i = 1, inp_fields
       CALL dxana%fields(i)%stats (stats)
-      IF (geom%f_comm%rank() .eq. 0)                                           &
+      IF (geom%f_comm%rank() .eq. 0) THEN
         PRINT 20, dxana%fields(i)%name, stats(1), stats(2), INT(stats(4))
+      END IF
     END DO
 
     out_fields = SIZE(dxmod%fields)
-    IF (geom%f_comm%rank() .eq. 0)                                             &
+    IF (geom%f_comm%rank() .eq. 0) THEN
       PRINT 10, 'ROMS_DEBUG roms_lvc_model2analysis::multiplyInverse:  Input', &
               ' DXMOD Vars = ', (dxmod%fields(i)%metadata%name, i=1,out_fields)
+    END IF
     DO i = 1, out_fields
       CALL dxmod%fields(i)%stats (stats)
-      IF (geom%f_comm%rank() .eq. 0)                                           &
+      IF (geom%f_comm%rank() .eq. 0) THEN
         PRINT 20, dxmod%fields(i)%name, stats(1), stats(2), INT(stats(4))
+      END IF
     END DO
+
  10 FORMAT (a, a, *(1x,a,','))
  20 FORMAT (2x,'- ',a35,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,      &
             ',  CheckSum = ', i0)
@@ -449,23 +484,29 @@ SUBROUTINE roms_lvc_model2analysis_multiplyInverseAD (self, geom, dxmod, dxana)
 
   IF (LdebugLinearModel2Analysis .and. (geom%f_comm%rank() .eq. 0)) THEN
     inp_fields = SIZE(dxmod%fields)
-    IF (geom%f_comm%rank() .eq. 0)                                             &
+    IF (geom%f_comm%rank() .eq. 0) THEN
       PRINT 10,'ROMS_DEBUG roms_lvc_model2analysis::multiplyInverseAD:  Input',&
               ' DXMOD Vars = ', (dxmod%fields(i)%metadata%name, i=1,inp_fields)
+    END IF
     DO i = 1, inp_fields
       CALL dxmod%fields(i)%stats (stats)
-      PRINT 20, dxmod%fields(i)%name, stats(1), stats(2), INT(stats(4))
+      IF (geom%f_comm%rank() .eq. 0) THEN
+        PRINT 20, dxmod%fields(i)%name, stats(1), stats(2), INT(stats(4))
+      END IF
     END DO
 
     out_fields = SIZE(dxana%fields)
-    IF (geom%f_comm%rank() .eq. 0)                                             &
+    IF (geom%f_comm%rank() .eq. 0) THEN
       PRINT 10,'ROMS_DEBUG roms_lvc_model2analysis::multiplyInverseAD:  Input',&
               ' DXANA Vars = ', (dxana%fields(i)%metadata%name, i=1,out_fields)
+    END IF
     DO i = 1, out_fields
       CALL dxana%fields(i)%stats (stats)
-      IF (geom%f_comm%rank() .eq. 0)                                           &
+      IF (geom%f_comm%rank() .eq. 0) THEN
         PRINT 20, dxana%fields(i)%name, stats(1), stats(2), INT(stats(4))
+      END IF
     END DO
+
  10 FORMAT (a, a, *(1x,a,','))
  20 FORMAT (2x,'- ',a35,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,      &
             ',  CheckSum = ', i0)

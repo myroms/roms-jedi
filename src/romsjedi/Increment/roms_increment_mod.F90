@@ -1,10 +1,10 @@
-! (C) Copyright 2020-2025 UCAR
+! (C) Copyright 2020-2026 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 !
 !>
-!! \brief    **Increment** Class Fortran ROMS-JEDI interface 
+!! \brief    **Increment** Class Fortran ROMS-JEDI interface
 !!
 !! \details  It implements several methods in each field of the **Increment**
 !!           object, such as mathematical and algebraic operations, reading,
@@ -95,6 +95,8 @@ SUBROUTINE roms_increment_random (self)
 
   ! Set random values for Computational or Data points.
 
+  field => NULL()
+
   DO i = 1, SIZE(self%fields)
     field => self%fields(i)
 
@@ -111,7 +113,7 @@ SUBROUTINE roms_increment_random (self)
       Jstr = field%bounds%JstrD
       Jend = field%bounds%JendD
     END IF
-      
+
     CALL normal_distribution (field%val(Istr:Iend, Jstr:Jend, :),              &
                               rmean, rstd, rseed)
   END DO
@@ -125,6 +127,8 @@ SUBROUTINE roms_increment_random (self)
       field%val(:,:,k) = field%val(:,:,k) * field%mask(:,:)
     END DO
   END DO
+
+  IF ( associated(field) ) nullify (field)
 
 END SUBROUTINE roms_increment_random
 
@@ -157,12 +161,14 @@ SUBROUTINE roms_increment_getpoint (self, geoiter, values)
 
   CLASS (roms_increment), target, intent(in   ) :: self      !< Increment object
   TYPE (roms_geomIterator),       intent(in   ) :: geoiter   !< GeometryIterator
-  real (kind=kind_real),          intent(inout) :: values(:)   
+  real (kind=kind_real),          intent(inout) :: values(:)
 
   TYPE (roms_field), pointer                    :: field
   integer                                       :: ic, nf, nk
 
   ! Get values
+
+  field => NULL()
 
   ic = 0
   DO nf = 1, SIZE(self%fields)
@@ -172,7 +178,7 @@ SUBROUTINE roms_increment_getpoint (self, geoiter, values)
             'sea_surface_height_above_geoid',                                  &
             'uocn',                                                            &
             'sea_water_x_velocity',                                            &
-            'vocn',                                                            &  
+            'vocn',                                                            &
             'sea_water_y_velocity',                                            &
             'uaocn',                                                           &
             'eastward_sea_water_velocity',                                     &
@@ -188,6 +194,8 @@ SUBROUTINE roms_increment_getpoint (self, geoiter, values)
         ic = ic + nk
     END SELECT
   END DO
+
+  IF ( associated(field) ) nullify (field)
 
 END SUBROUTINE roms_increment_getpoint
 
@@ -205,6 +213,8 @@ SUBROUTINE roms_increment_setpoint (self, geoiter, values)
 
   ! Set values
 
+  field => NULL()
+
   ic = 0
   DO nf = 1, SIZE(self%fields)
     field => self%fields(nf)
@@ -213,7 +223,7 @@ SUBROUTINE roms_increment_setpoint (self, geoiter, values)
             'sea_surface_height_above_geoid',                                  &
             'uocn',                                                            &
             'sea_water_x_velocity',                                            &
-            'vocn',                                                            &  
+            'vocn',                                                            &
             'sea_water_y_velocity',                                            &
             'uaocn',                                                           &
             'eastward_sea_water_velocity',                                     &
@@ -229,6 +239,8 @@ SUBROUTINE roms_increment_setpoint (self, geoiter, values)
         ic = ic + nk
     END SELECT
   END DO
+
+  IF ( associated(field) ) nullify (field)
 
 END SUBROUTINE roms_increment_setpoint
 
@@ -249,8 +261,9 @@ SUBROUTINE roms_increment_dirac (self, f_conf)
   character (len=80),                  allocatable :: ifdir(:)
   character (len=:),                   allocatable :: fieldname(:)
 
-
   ! Get Diracs size.
+
+  field => NULL()
 
   ndir = f_conf%get_size("ixdir")
 
@@ -316,6 +329,8 @@ SUBROUTINE roms_increment_dirac (self, f_conf)
     field%val(ixdir(n),iydir(n),izdir(n)) = 1.0_kind_real
 
   END DO
+
+  IF ( associated(field) ) nullify (field)
 
 END SUBROUTINE roms_increment_dirac
 

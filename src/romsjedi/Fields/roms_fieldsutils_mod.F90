@@ -1,4 +1,4 @@
-! (C) Copyright 2017-2025 UCAR
+! (C) Copyright 2017-2026 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -98,7 +98,7 @@ FUNCTION ana_fields (name, mask, lon, lat, z, h, Tb, Sb, Ub, Vb)               &
   USE erf_mod, ONLY : erf                      !< ROMS Error Function, ERF(x)
 
   real (kind=kind_real), intent(in) :: mask    !< land=0, ocean=1
-  real (kind=kind_real), intent(in) :: lon     !< longitude (degree_east)  
+  real (kind=kind_real), intent(in) :: lon     !< longitude (degree_east)
   real (kind=kind_real), intent(in) :: lat     !< latitude (degree_north)
   real (kind=kind_real), intent(in) :: z       !< depth (m; negative)
   real (kind=kind_real), intent(in) :: h       !< bathymetry (m; positive)
@@ -112,7 +112,7 @@ FUNCTION ana_fields (name, mask, lon, lat, z, h, Tb, Sb, Ub, Vb)               &
 
   real (kind=kind_real)            :: value    !< returned anlytical value
 
-  real (kind=kind_real), parameter :: pi = 3.14159265358979323846   
+  real (kind=kind_real), parameter :: pi = 3.14159265358979323846
   real (kind=kind_real), parameter :: deg2rad = pi/180.0_kind_real
 
   real (kind=kind_real)            :: T0, S0, U0, V0, Tcoef, Scoef
@@ -135,7 +135,7 @@ FUNCTION ana_fields (name, mask, lon, lat, z, h, Tb, Sb, Ub, Vb)               &
   IF (PRESENT(Vb)) V0 = Vb
 
   ! Initialize
- 
+
   Tcoef  = 1.0E-4           ! thermal expansion coefficient (1/C)
   Scoef  = 7.6E-4           ! saline contraction coefficient
   omega  = 7.2921E-5        ! Earth rotation (rad/s)
@@ -189,7 +189,7 @@ FUNCTION ana_fields (name, mask, lon, lat, z, h, Tb, Sb, Ub, Vb)               &
           'sea_surface_height_above_geopotential_datum')
       fac1=COS(lon*deg2rad)*SIN(lat*deg2rad)/dscale
       fac2=-U0*dscale*f*SQRT(pi)/(12.0_kind_real*g)
-      fac3=1.0E+5*fac2*erf(fac1);
+      fac3=1.0E+5*fac2*erf(fac1)
       value=fac3*mask
     CASE ('hocn',                                                              &
           'bathymetry',                                                        &
@@ -218,7 +218,7 @@ SUBROUTINE date2string (vdate, DateString, ISO)
   logical, optional, intent(in ) :: ISO         !< ISO8601 format
 
   integer                        :: is
- 
+
   ! Convert date/time object to ISO8601 string.
 
   CALL datetime_to_string (vdate, DateString)
@@ -297,7 +297,7 @@ SUBROUTINE field_info2d (fld, mask, info)
   IF (.not.allocated(Cwrk)) allocate ( Cwrk(Npts) )
   Cwrk = PACK(fld(LBi:UBi, LBj:UBj), .TRUE.)
   CALL get_hash (Cwrk, Npts, checksum, .TRUE.)
-  info(4) = REAL  (checksum, KIND=kind_real) 
+  info(4) = REAL  (checksum, KIND=kind_real)
 
   IF (allocated(Cwrk)) deallocate (Cwrk)
 
@@ -350,7 +350,7 @@ SUBROUTINE field_info3d (fld, mask, info)
   IF (.not.allocated(Cwrk)) allocate ( Cwrk(Npts) )
   Cwrk = PACK(fld(LBi:UBi, LBj:UBj, LBk:UBk), .TRUE.)
   CALL get_hash (Cwrk, Npts, checksum, .TRUE.)
-  info(4) = REAL  (checksum, KIND=kind_real) 
+  info(4) = REAL  (checksum, KIND=kind_real)
 
   IF (allocated(Cwrk)) deallocate (Cwrk)
 
@@ -373,7 +373,7 @@ SUBROUTINE nc_err (status, NoErr, iotype, line, routine)
 
   integer,           intent(in) :: status    !< returned error code
   integer,           intent(in) :: NoErr     !< Netcdf value for no error
-  integer,           intent(in) :: iotype    !< IO library type 
+  integer,           intent(in) :: iotype    !< IO library type
   integer,           intent(in) :: line      !< calling routine line number
   character (len=*), intent(in) :: routine   !< calling routine
 
@@ -425,7 +425,7 @@ SUBROUTINE roms_date2time (LocalPET, vdate, romsTime, romsDateNumber)
   CALL datetime_to_string (vdate, CurrentDateString)
   CALL datetime_to_yyyymmddhhmmss (vdate,                                      &
                                    year, month, day, hour, minute, iseconds)
-  seconds = REAL(iseconds, kind_real)  
+  seconds = REAL(iseconds, kind_real)
   CALL datenum (myDateNumber, year, month, day, hour, minute, seconds)
 
   ! Compute ROMS time as elapsed seconds from reference date.
@@ -435,7 +435,7 @@ SUBROUTINE roms_date2time (LocalPET, vdate, romsTime, romsDateNumber)
   ! ROMS allows both Proleptic Julian Calendar (origin Nov 24, 4713 BC) and
   ! Gregorian (Proleptic or not) Calendar adjuted to Matlab origin of
   ! 0000-00-00 00:00:00, datenum(0,0,0)=0, for consistence.
-   
+
   IF (INT(time_ref).eq.-2) THEN                           ! Julian Calendar
     romsDateNumber = myDateNumber(1)- 1721059.0_kind_real
   ELSE
@@ -478,7 +478,7 @@ FUNCTION roms_gen_filename (f_conf, max_length, vdate, file_type)              &
   integer                                 :: ensemble_number, lstr
   character (len=3)                       :: Enumber
   character (len=19)                      :: filedate
-  character (len=max_length)              :: filename 
+  character (len=max_length)              :: filename
   character (len=max_length)              :: MyPrefix, StepString, ValidityDate
   character (len=:), allocatable          :: Fdir, Fexp, Fprefix, Ftype, iniDate
 
@@ -553,7 +553,7 @@ FUNCTION roms_gen_filename (f_conf, max_length, vdate, file_type)              &
 
   filename = TRIM(MyPrefix) // '_' // TRIM(filedate) // '.nc'
 
-  IF (LdebugFieldsUtils) THEN  
+  IF (LdebugFieldsUtils) THEN
     PRINT '(a)',   '------------------'
     PRINT '(a,a)', 'Initial Date   = ', TRIM(iniDate)
     PRINT '(a,a)', 'Validity Date  = ', TRIM(ValidityDate)
@@ -644,7 +644,7 @@ FUNCTION roms_metadata_index (name) RESULT (var_index)
       var_index = idUfx2
     CASE ('DV_avg2',                                                           &
           'sea_water_correct_barotropic_y_velocity_flux_for_coupling')
-      var_index = idVfx2  
+      var_index = idVfx2
     CASE ('uocn',                                                              &
           'sea_water_x_velocity')
       var_index = idUvel
@@ -794,7 +794,7 @@ SUBROUTINE roms_close_ncfile (ng, model, S)
 
 #if defined PIO_LIB
     CASE (io_pio)
-      IF (associated(S(ng)%pioFile%iosystem) THEN
+      IF (associated(S(ng)%pioFile%iosystem)) THEN
         IF (S(ng)%File%fh .ne. ClosedState) THEN
           CALL pio_netcdf_close (ng, model, S(ng)%pioFile, S(ng)%name, Lupdate)
         END IF
@@ -887,8 +887,9 @@ SUBROUTINE roms_create_ncfile_nf90 (ng, model, LocalPET, S, metadata)
   ! Create NetCDF file.
 
   CALL netcdf_create (ng, model, TRIM(ncname), S(ng)%ncid)
-  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message)) THEN
     CALL abor1_ftn (TRIM(Message))
+  END IF
 
   ! Define file dimensions.
 
@@ -948,7 +949,7 @@ SUBROUTINE roms_create_ncfile_nf90 (ng, model, LocalPET, S, metadata)
   v2dgrd = (/ DimIDs(3), DimIDs(7), DimIDs(12) /)
 
   r3dgrd = (/ DimIDs(1), DimIDs(5), DimIDs(9),  DimIDs(12) /)
-  u3dgrd = (/ DimIDs(2), DimIDs(6), DimIDs(9),  DimIDs(12) /) 
+  u3dgrd = (/ DimIDs(2), DimIDs(6), DimIDs(9),  DimIDs(12) /)
   v3dgrd = (/ DimIDs(3), DimIDs(7), DimIDs(9),  DimIDs(12) /)
   w3dgrd = (/ DimIDs(1), DimIDs(5), DimIDs(10), DimIDs(12) /)
 
@@ -1250,7 +1251,7 @@ SUBROUTINE roms_create_ncfile_nf90 (ng, model, LocalPET, S, metadata)
                      nf90_noerr, io_nf90, __LINE__, MyFile)
 
       CASE DEFAULT
-  
+
         WRITE (Message,'(4a)')                                                 &
               'roms_create_ncfile::nf90: Cannot find an option to define = ',  &
               metadata(i)%name, " - ", metadata(i)%name
@@ -1263,8 +1264,9 @@ SUBROUTINE roms_create_ncfile_nf90 (ng, model, LocalPET, S, metadata)
   ! Leave definition mode.
 
   CALL netcdf_enddef (ng, model, ncname, S(ng)%ncid)
-  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message)) THEN
     CALL abor1_ftn (TRIM(Message))
+  END IF
 
   ! Write out time-recordless, information variables.
 
@@ -1642,88 +1644,101 @@ SUBROUTINE roms_wrt_info_nf90 (ng, model, ncid, ncname)
   !  Inquire about the variables.
 
   CALL netcdf_inq_var (ng, model, ncname, ncid)
-  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message)) THEN
     CALL abor1_ftn (TRIM(Message))
+  END IF
 
   ! Write out grid variables.
 
   CALL netcdf_put_lvar (ng, model, ncname, 'spherical',                        &
                         spherical, (/0/), (/0/),                               &
                         ncid = ncid)
-  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message)) THEN
     CALL abor1_ftn (TRIM(Message))
+  END IF
 
   ! S-coordinate parameters.
 
   CALL netcdf_put_ivar (ng, model, ncname, 'Vtransform',                       &
                         Vtransform(ng), (/0/), (/0/),                          &
                         ncid = ncid)
-  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message)) THEN
     CALL abor1_ftn (TRIM(Message))
+  END IF
 
   CALL netcdf_put_ivar (ng, model, ncname, 'Vstretching',                      &
                         Vstretching(ng), (/0/), (/0/),                         &
                         ncid = ncid)
-  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message)) THEN
     CALL abor1_ftn (TRIM(Message))
+  END IF
 
   CALL netcdf_put_fvar (ng, model, ncname, 'theta_s',                          &
                         theta_s(ng), (/0/), (/0/),                             &
                         ncid = ncid)
-  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message)) THEN
     CALL abor1_ftn (TRIM(Message))
+  END IF
 
   CALL netcdf_put_fvar (ng, model, ncname, 'theta_b',                          &
                         theta_b(ng), (/0/), (/0/),                             &
                         ncid = ncid)
-  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message)) THEN
     CALL abor1_ftn (TRIM(Message))
+  END IF
 
   CALL netcdf_put_fvar (ng, model, ncname, 'Tcline',                           &
                         Tcline(ng), (/0/), (/0/),                              &
                         ncid = ncid)
-  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message)) THEN
     CALL abor1_ftn (TRIM(Message))
+  END IF
 
   CALL netcdf_put_fvar (ng, model, ncname, 'hc',                               &
                         hc(ng), (/0/), (/0/),                                  &
                         ncid = ncid)
-  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message)) THEN
     CALL abor1_ftn (TRIM(Message))
+  END IF
 
   CALL netcdf_put_ivar (ng, model, ncname, 'grid',                             &
                         (/1/), (/0/), (/0/),                                   &
                         ncid = ncid)
-  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message)) THEN
     CALL abor1_ftn (TRIM(Message))
+  END IF
 
   ! S-coordinate non-dimensional independent variables.
 
   CALL netcdf_put_fvar (ng, model, ncname, 's_rho',                            &
                         SCALARS(ng)%sc_r(:), (/1/), (/N(ng)/),                 &
                         ncid = ncid)
-  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message)) THEN
     CALL abor1_ftn (TRIM(Message))
+  END IF
 
   CALL netcdf_put_fvar (ng, model, ncname, 's_w',                              &
                         SCALARS(ng)%sc_w(0:), (/1/), (/N(ng)+1/),              &
                         ncid = ncid)
-  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message)) THEN
     CALL abor1_ftn (TRIM(Message))
+  END IF
 
   ! S-coordinate non-dimensional stretching curves.
 
   CALL netcdf_put_fvar (ng, model, ncname, 'Cs_r',                             &
                         SCALARS(ng)%Cs_r(:), (/1/), (/N(ng)/),                 &
                         ncid = ncid)
-  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message)) THEN
     CALL abor1_ftn (TRIM(Message))
+  END IF
 
   CALL netcdf_put_fvar (ng, model, ncname, 'Cs_w',                             &
                         SCALARS(ng)%Cs_w(0:), (/1/), (/N(ng)+1/),              &
                         ncid = ncid)
-  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message)) THEN
     CALL abor1_ftn (TRIM(Message))
+  END IF
 
   ! Bathymetry.
 
@@ -1897,8 +1912,9 @@ SUBROUTINE roms_create_ncfile_pio (ng, model, LocalPET, S, metadata)
   ! Create NetCDF file.
 
   CALL pio_netcdf_create (ng, model, TRIM(ncname), S(ng)%pioFile)
-  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message)) THEN
     CALL abor1_ftn (TRIM(Message))
+  END IF
 
   ! Define file dimensions.
 
@@ -1958,7 +1974,7 @@ SUBROUTINE roms_create_ncfile_pio (ng, model, LocalPET, S, metadata)
   v2dgrd = (/ DimIDs(3), DimIDs(7), DimIDs(12) /)
 
   r3dgrd = (/ DimIDs(1), DimIDs(5), DimIDs(9), DimIDs(12) /)
-  u3dgrd = (/ DimIDs(2), DimIDs(6), DimIDs(9), DimIDs(12) /) 
+  u3dgrd = (/ DimIDs(2), DimIDs(6), DimIDs(9), DimIDs(12) /)
   v3dgrd = (/ DimIDs(3), DimIDs(7), DimIDs(9), DimIDs(12) /)
 
   ! Define time-recordless information variables.
@@ -2315,7 +2331,7 @@ SUBROUTINE roms_create_ncfile_pio (ng, model, LocalPET, S, metadata)
                      PIO_noerr, io_pio, __LINE__, MyFile)
 
       CASE DEFAULT
-  
+
         WRITE (Message,'(4a)')                                                 &
               'roms_create_ncfile::pio: Cannot find an option to define = ',   &
               metadata(i)%name, " - ", metadata(i)%name
@@ -2328,8 +2344,9 @@ SUBROUTINE roms_create_ncfile_pio (ng, model, LocalPET, S, metadata)
   ! Leave definition mode.
 
   CALL pio_netcdf_enddef (ng, model, ncname, S(ng)%pioFile)
-  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message)) THEN
     CALL abor1_ftn (TRIM(Message))
+  END IF
 
   ! Write out time-recordless, information variables.
 
@@ -2379,7 +2396,7 @@ SUBROUTINE roms_def_info_pio (ng, model, LocalPET, pioFile, DimIDs, ncname)
   v2dgrd = (/ DimIds(3), DimIDs(7) /)      !< V-points
 
   ! Define global attributes. They are defined in a parallel I/O
-  ! environment and PIO will take care of writing into file. 
+  ! environment and PIO will take care of writing into file.
 
   CALL nc_err (PIO_put_att(pioFile, PIO_global, 'file',                        &
                            TRIM(ncname)),                                      &
@@ -2661,7 +2678,7 @@ SUBROUTINE roms_def_info_pio (ng, model, LocalPET, pioFile, DimIDs, ncname)
   Vinfo(22)='coordinates'
   Aval(5)=REAL(Iinfo(1,idmskU,ng),r8)
   CALL nc_err (def_var(ng, model, pioFile, pioVar, PIO_TYPE,                   &
-                       2, u2dgrd, Aval, Vinfo, ncname).                        &
+                       2, u2dgrd, Aval, Vinfo, ncname),                        &
                PIO_noerr, io_pio, __LINE__, MyFile)
 
   Vinfo( 1)=Vname(1,idmskV)
@@ -2716,88 +2733,101 @@ SUBROUTINE roms_wrt_info_pio (ng, model, pioFile, ncname)
   !  Inquire about the variables.
 
   CALL netcdf_inq_var (ng, model, ncname, pioFile)
-  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message)) THEN
     CALL abor1_ftn (TRIM(Message))
+  END IF
 
   ! Write out grid variables.
 
   CALL pio_netcdf_put_lvar (ng, model, ncname, 'spherical',                    &
                             spherical, (/0/), (/0/),                           &
                             pioFile = pioFile)
-  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message)) THEN
     CALL abor1_ftn (TRIM(Message))
+  END IF
 
   ! S-coordinate parameters.
 
   CALL pio_netcdf_put_ivar (ng, model, ncname, 'Vtransform',                   &
                             Vtransform(ng), (/0/), (/0/),                      &
                             pioFile = pioFile)
-  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message)) THEN
     CALL abor1_ftn (TRIM(Message))
+  END IF
 
   CALL pio_netcdf_put_ivar (ng, model, ncname, 'Vstretching',                  &
                             Vstretching(ng), (/0/), (/0/),                     &
                             pioFile = pioFile)
-  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message)) THEN
     CALL abor1_ftn (TRIM(Message))
+  END IF
 
   CALL pio_netcdf_put_fvar (ng, model, ncname, 'theta_s',                      &
                             theta_s(ng), (/0/), (/0/),                         &
                             pioFile = pioFile)
-  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message)) THEN
     CALL abor1_ftn (TRIM(Message))
+  END IF
 
   CALL pio_netcdf_put_fvar (ng, model, ncname, 'theta_b',                      &
                             theta_b(ng), (/0/), (/0/),                         &
                             pioFile = pioFile)
-  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message)) THEN
     CALL abor1_ftn (TRIM(Message))
+  END IF
 
   CALL pio_netcdf_put_fvar (ng, model, ncname, 'Tcline',                       &
                             Tcline(ng), (/0/), (/0/),                          &
                             pioFile = pioFile)
-  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message)) THEN
     CALL abor1_ftn (TRIM(Message))
+  END IF
 
   CALL pio_netcdf_put_fvar (ng, model, ncname, 'hc',                           &
                             hc(ng), (/0/), (/0/),                              &
                             pioFile = pioFile)
-  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message)) THEN
     CALL abor1_ftn (TRIM(Message))
+  END IF
 
   CALL pio_netcdf_put_ivar (ng, model, ncname, 'grid',                         &
                             (/1/), (/0/), (/0/),                               &
                             pioFile = pioFile)
-  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message)) THEN
     CALL abor1_ftn (TRIM(Message))
+  END IF
 
   ! S-coordinate non-dimensional independent variables.
 
   CALL pio_netcdf_put_fvar (ng, model, ncname, 's_rho',                        &
                             SCALARS(ng)%sc_r(:), (/1/), (/N(ng)/),             &
                             pioFile = pioFile)
-  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message)) THEN
     CALL abor1_ftn (TRIM(Message))
+  END IF
 
   CALL pio_netcdf_put_fvar (ng, model, ncname, 's_w',                          &
                             SCALARS(ng)%sc_w(0:), (/1/), (/N(ng)+1/),          &
                             pioFile = pioFile)
-  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message)) THEN
     CALL abor1_ftn (TRIM(Message))
+  END IF
 
   ! S-coordinate non-dimensional stretching curves.
 
   CALL pio_netcdf_put_fvar (ng, model, ncname, 'Cs_r',                         &
                             SCALARS(ng)%Cs_r(:), (/1/), (/N(ng)/),             &
                             pioFile = pioFile)
-  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message)) THEN
     CALL abor1_ftn (TRIM(Message))
+  END IF
 
   CALL pio_netcdf_put_fvar (ng, model, ncname, 'Cs_w',                         &
                             SCALARS(ng)%Cs_w(0:), (/1/), (/N(ng)+1/),          &
                             pioFile = pioFile)
-  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message))              &
+  IF (DetectError(exit_flag, NoError, __LINE__, MyFile, Message)) THEN
     CALL abor1_ftn (TRIM(Message))
+  END IF
 
   ! Bathymetry.
 

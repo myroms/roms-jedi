@@ -1,4 +1,4 @@
-! (C) Copyright 2020-2025 UCAR
+! (C) Copyright 2020-2026 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -88,10 +88,10 @@ SUBROUTINE roms_lvc_model2geovals_multiply (self, geom, dxm, dxg)
   TYPE (roms_increment),          intent(in   ) :: dxm   !< Model Increment
   TYPE (roms_increment),          intent(inout) :: dxg   !< GeoVaLs Increment
 
-  TYPE (roms_field),                    pointer :: field_in  => null()
-  TYPE (roms_field),                    pointer :: field_out => null()
-  TYPE (roms_field),                    pointer :: Ua        => null()
-  TYPE (roms_field),                    pointer :: Va        => null()
+  TYPE (roms_field),                    pointer :: field_in
+  TYPE (roms_field),                    pointer :: field_out
+  TYPE (roms_field),                    pointer :: Ua
+  TYPE (roms_field),                    pointer :: Va
 
   logical                                       :: have_uaocn,  have_vaocn
 
@@ -105,30 +105,42 @@ SUBROUTINE roms_lvc_model2geovals_multiply (self, geom, dxm, dxg)
 
   character (len=512)                           :: field_name
 
+  ! Initialize.
+
+  field_in  => NULL()
+  field_out => NULL()
+  Ua        => NULL()
+  Va        => NULL()
+
   ! Report variables to process.
 
   IF (LdebugLinearModel2Geovals) THEN
     inp_fields = SIZE(dxm%fields)
-    IF (geom%f_comm%rank() .eq. 0)                                             &
+    IF (geom%f_comm%rank() .eq. 0) THEN
       PRINT 10, 'ROMS_DEBUG roms_lvc_model2geovals:multiply >  Input',         &
                 ' DXM Vars = ', (dxm%fields(i)%name, i=1,inp_fields)
+    END IF
     DO i = 1, inp_fields
       CALL dxm%fields(i)%stats (stats)
-      IF (geom%f_comm%rank() .eq. 0)                                           &
+      IF (geom%f_comm%rank() .eq. 0) THEN
         PRINT 20, dxm%fields(i)%name, stats(1), stats(2), INT(stats(4))
+      END IF
     END DO
 
     out_fields = SIZE(dxg%fields)
-    IF (geom%f_comm%rank() .eq. 0)                                             &
+    IF (geom%f_comm%rank() .eq. 0) THEN
       PRINT 10, 'ROMS_DEBUG roms_lvc_model2geovals:multiply >  Input',         &
                 ' DXG Vars = ', (dxg%fields(i)%name, i=1,out_fields)
+    END IF
     DO i = 1, out_fields
       CALL dxg%fields(i)%stats (stats)
-      IF (geom%f_comm%rank() .eq. 0)                                           &
+      IF (geom%f_comm%rank() .eq. 0) THEN
         PRINT 20, dxg%fields(i)%name, stats(1), stats(2), INT(stats(4))
+      END IF
     END DO
+
  10 FORMAT (a, a, *(1x,a,','))
- 20 FORMAT (2x,'- ',a,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,      &
+ 20 FORMAT (2x,'- ',a,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,        &
             ',  CheckSum = ', i0)
   END IF
 
@@ -241,7 +253,12 @@ SUBROUTINE roms_lvc_model2geovals_multiply (self, geom, dxm, dxg)
 
     END DO
 
-  END IF  
+    IF ( associated(field_in) )  nullify (field_in)
+    IF ( associated(field_out) ) nullify (field_out)
+    IF ( associated(Ua) )        nullify (Ua)
+    IF ( associated(Va) )        nullify (Va)
+
+  END IF
 
   ! Report debugging information.
 
@@ -269,10 +286,10 @@ SUBROUTINE roms_lvc_model2geovals_multiplyAD (self, geom, dxg, dxm)
   TYPE (roms_increment),          intent(in   ) :: dxg   !< GeoVaLs Increment
   TYPE (roms_increment),          intent(inout) :: dxm   !< Model Increment
 
-  TYPE (roms_field),                    pointer :: field_in  => null()
-  TYPE (roms_field),                    pointer :: field_out => null()
-  TYPE (roms_field),                    pointer :: Ua        => null()
-  TYPE (roms_field),                    pointer :: Va        => null()
+  TYPE (roms_field),                    pointer :: field_in
+  TYPE (roms_field),                    pointer :: field_out
+  TYPE (roms_field),                    pointer :: Ua
+  TYPE (roms_field),                    pointer :: Va
 
   logical                                       :: have_uaocn,  have_vaocn
 
@@ -286,28 +303,40 @@ SUBROUTINE roms_lvc_model2geovals_multiplyAD (self, geom, dxg, dxm)
 
   character (len=512)                           :: field_name
 
+  ! Initialize.
+
+  field_in  => NULL()
+  field_out => NULL()
+  Ua        => NULL()
+  Va        => NULL()
+
   ! Report variables to process.
 
   IF (LdebugLinearModel2Geovals) THEN
     inp_fields = SIZE(dxg%fields)
-    IF (geom%f_comm%rank() .eq. 0)                                             &
+    IF (geom%f_comm%rank() .eq. 0) THEN
       PRINT 10, 'ROMS_DEBUG roms_lvc_model2geovals:multiplyAD >  Input',       &
                 ' DXG Vars = ', (dxg%fields(i)%name, i=1,inp_fields)
+    END IF
     DO i = 1, inp_fields
       CALL dxg%fields(i)%stats (stats)
-      IF (geom%f_comm%rank() .eq. 0)                                           &
+      IF (geom%f_comm%rank() .eq. 0) THEN
         PRINT 20, dxg%fields(i)%name, stats(1), stats(2), INT(stats(4))
+      END IF
     END DO
 
     out_fields = SIZE(dxm%fields)
-    IF (geom%f_comm%rank() .eq. 0)                                             &
+    IF (geom%f_comm%rank() .eq. 0) THEN
       PRINT 10, 'ROMS_DEBUG roms_lvc_model2geovals:multiplyAD >  Input',       &
                 ' DXM Vars = ', (dxm%fields(i)%name, i=1,out_fields)
+    END IF
     DO i = 1, out_fields
       CALL dxm%fields(i)%stats (stats)
-      IF (geom%f_comm%rank() .eq. 0)                                           &
+      IF (geom%f_comm%rank() .eq. 0) THEN
         PRINT 20, dxm%fields(i)%name, stats(1), stats(2), INT(stats(4))
+      END IF
     END DO
+
  10 FORMAT (a, a, *(1x,a,','))
  20 FORMAT (2x,'- ',a,':',t43,'Min = ',1p,e22.15,',  Max = ',1p,e22.15,        &
             ',  CheckSum = ', i0)
@@ -428,6 +457,11 @@ SUBROUTINE roms_lvc_model2geovals_multiplyAD (self, geom, dxg, dxm)
       END SELECT
 
     END DO
+
+    IF ( associated(field_in) )  nullify (field_in)
+    IF ( associated(field_out) ) nullify (field_out)
+    IF ( associated(Ua) )        nullify (Ua)
+    IF ( associated(Va) )        nullify (Va)
 
   END IF
 

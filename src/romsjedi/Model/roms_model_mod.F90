@@ -1,8 +1,8 @@
 #undef UV_CHANGE
-! (C) Copyright 2017-2025 UCAR
-! 
+! (C) Copyright 2017-2026 UCAR
+!
 ! This software is licensed under the terms of the Apache Licence Version 2.0
-! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0. 
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 ! ------------------------------------------------------------------------------
 !
 !>
@@ -50,7 +50,7 @@ USE roms_kernel_mod
 USE roms_geom_mod,              ONLY : roms_geom,                              &
                                        roms_tile
 USE roms_field_mod,             ONLY : roms_field
-USE roms_fieldsutils_mod,       ONLY : date2string,                            & 
+USE roms_fieldsutils_mod,       ONLY : date2string,                            &
                                        LdebugModel,                            &
                                        LwroteIncrement,                        &
                                        roms_date2time,                         &
@@ -139,7 +139,7 @@ SUBROUTINE roms_model_create (self, geom, f_conf)
 
   !> Get time step duration from YAML file and convert to seconds.  It can be
   !> a single ROMS timestep, dt(ng), as specified in ROMS standard input
-  !> script or and integer factor of dt(ng).  
+  !> script or and integer factor of dt(ng).
 
   CALL f_conf%get_or_die ("tstep", string)
   dtYAML = TRIM(string)
@@ -270,9 +270,10 @@ SUBROUTINE roms_model_initialize (self, state, geom, vdate)
   my_ntimes = INT(self%SimulationPeriod/dt(ng))
 
   IF (my_ntimes .ne. ntimes(ng)) THEN
-    IF (LocalPET .eq. 0)                                                       &
+    IF (LocalPET .eq. 0) THEN
       PRINT '(2(a,i0))', ' roms_model::initialize: Reset input parameter,'//   &
                          ' NTIMES = ', ntimes(ng), ' to ', my_ntimes
+    END IF
     ntimes(ng) = my_ntimes
   END IF
 
@@ -387,8 +388,8 @@ SUBROUTINE roms_model_step (self, state, geom, vdate)
 
   !> If last timestep, run the last-half step to finich all ROMS native delayed
   !> output, which does not affect the ROMS-JEDI inteface.
-  
-  IF (iic(ng).eq.ntend(ng)+1) THEN 
+
+  IF (iic(ng).eq.ntend(ng)+1) THEN
     CALL ROMS_run (self%RunInterval, kernel=iNLM)
     IF (exit_flag .ne. NoError) THEN
       IF ((LEN_TRIM(blowup_string).gt.0).and.(geom%f_comm%rank().eq.0)) THEN
@@ -409,8 +410,8 @@ END SUBROUTINE roms_model_step
 
 SUBROUTINE roms_model_finalize (self, state)
 
-  CLASS (roms_model), target :: self
-  CLASS (roms_state)         :: state
+  CLASS (roms_model), target, intent(inout) :: self
+  CLASS (roms_state),         intent(inout) :: state
 
   !> Stops ROMS clocks, reports memory requirements, and close input/output
   !> NetCDF files. If blowing-up, it saves latests NLM state into RESTART file.
@@ -448,10 +449,9 @@ SUBROUTINE jedi2roms_state (ng, kernel, Tindex2d, Tindex3d, state, geom,       &
   TYPE (roms_geom),          intent(inout) :: geom       !< geometry object
   character (len=*),         intent(in   ) :: DateString !< State valid DateTime
 
-  TYPE (roms_field),               pointer :: field => null()
+  TYPE (roms_field),               pointer :: field
 #ifdef UV_CHANGE
-  TYPE (roms_field),               pointer :: Ua    => null()
-  TYPE (roms_field),               pointer :: Va    => null()
+  TYPE (roms_field),               pointer :: Ua, Va
   real (kind=kind_real),       allocatable :: Uc(:,:,:), Vc(:,:,:)
 
   logical                                  :: have_Uc, have_Vc
@@ -461,6 +461,14 @@ SUBROUTINE jedi2roms_state (ng, kernel, Tindex2d, Tindex3d, state, geom,       &
   integer                                  :: i, itrc
   real (kind=kind_real)                    :: stats(4)
   character (len=22)                       :: DateTimeStr
+
+  ! Initialize.
+
+  field => NULL()
+#ifdef UV_CHANGE
+  Ua    => NULL()
+  Va    => NULL()
+#endif
 
   ! Set ROMS date/time string.
 
@@ -500,10 +508,11 @@ SUBROUTINE jedi2roms_state (ng, kernel, Tindex2d, Tindex3d, state, geom,       &
 
   ! Set ROMS DateTimeString
 
-    IF (LdebugModel .and. (my_comm%rank() .eq. 0))                             &
+    IF (LdebugModel .and. (my_comm%rank() .eq. 0)) THEN
       PRINT 10, 'ROMS_DEBUG jedi2roms_state: Loading JEDI statefield into '//  &
                 'NL ROMS', SIZE(state%fields), jic(ng), Tindex2d,              &
                 Tindex3d, TRIM(DateTimeStr)
+    END IF
 
     DO i=1, SIZE(state%fields)
 
@@ -511,9 +520,10 @@ SUBROUTINE jedi2roms_state (ng, kernel, Tindex2d, Tindex3d, state, geom,       &
 
       IF (LdebugModel) THEN
         CALL field%stats (stats)
-        IF (my_comm%rank() .eq. 0)                                             &
+        IF (my_comm%rank() .eq. 0) THEN
           PRINT 20, field%metadata%short_name, field%metadata%io_name,         &
                     stats(1), stats(2), INT(stats(4),KIND=8)
+        END IF
       END IF
 
       SELECT CASE (field%name)
@@ -572,6 +582,17 @@ SUBROUTINE jedi2roms_state (ng, kernel, Tindex2d, Tindex3d, state, geom,       &
 
   END IF ROMS_KERNEL
 
+! Deallocate/nullify local variables.
+
+  IF ( associated(field) )  nullify (field)
+#ifdef UV_CHANGE
+  IF ( associated(Ua) )     nullify (Ua)
+  IF ( associated(Va) )     nullify (Va)
+
+  IF ( allocated(Uc) )      deallocate (Uc)
+  IF ( allocated(Vc) )      deallocate (Vc)
+#endif
+!
   10 FORMAT (2x,a,', Nfields = ',i2,', timestep = ',i5.5,', timelevel = (',i0, &
              ',',i0,'), date: ',a)
   20 FORMAT (19x,'- ',a,': ',a,/,22x,'(Min = ',1p,e15.8,' Max = ',1p,e15.8,    &
@@ -593,10 +614,9 @@ SUBROUTINE roms2jedi_state (ng, kernel, Tindex2d, Tindex3d, state, geom,       &
   TYPE (roms_geom),          intent(inout) :: geom       !< geometry object
   character (len=*),         intent(in   ) :: DateString !< State valid DateTime
 
-  TYPE (roms_field),               pointer :: field => null()
+  TYPE (roms_field),               pointer :: field
 #ifdef UV_CHANGE
-  TYPE (roms_field),               pointer :: Ua    => null()
-  TYPE (roms_field),               pointer :: Va    => null()
+  TYPE (roms_field),               pointer :: Ua, Va
   real (kind=kind_real),       allocatable :: Uc(:,:,:), Vc(:,:,:)
 
   logical                                  :: have_Ua, have_Va
@@ -606,6 +626,14 @@ SUBROUTINE roms2jedi_state (ng, kernel, Tindex2d, Tindex3d, state, geom,       &
   integer                                  :: i, itrc, j, k
   real (kind=kind_real)                    :: stats(4)
   character (len=22)                       :: DateTimeStr
+
+  ! Initialize.
+
+  field => NULL()
+#ifdef UV_CHANGE
+  Ua    => NULL()
+  Va    => NULL()
+#endif
 
   ! Set ROMS DateTimeString
 
@@ -643,10 +671,11 @@ SUBROUTINE roms2jedi_state (ng, kernel, Tindex2d, Tindex3d, state, geom,       &
 
   ROMS_KERNEL : IF (kernel .eq. iNLM) THEN
 
-    IF (LdebugModel .and. (my_comm%rank() .eq. 0))                             &
+    IF (LdebugModel .and. (my_comm%rank() .eq. 0)) THEN
       PRINT 10, 'ROMS_DEBUG roms2jedi_state: Loading NL ROMS prediction '//    &
                 'into JEDI', SIZE(state%fields), jic(ng)-1, Tindex2d,          &
                 Tindex3d, TRIM(DateTimeStr)
+    END IF
 
     DO i=1, SIZE(state%fields)
 
@@ -749,9 +778,10 @@ SUBROUTINE roms2jedi_state (ng, kernel, Tindex2d, Tindex3d, state, geom,       &
 
       IF (LdebugModel) THEN
         CALL field%stats (stats)
-        IF (my_comm%rank() .eq. 0)                                             &
+        IF (my_comm%rank() .eq. 0) THEN
           PRINT 20, field%metadata%short_name, field%metadata%io_name,         &
                     stats(1), stats(2), INT(stats(4), KIND=8)
+        END IF
       END IF
 
     END DO
@@ -777,11 +807,16 @@ SUBROUTINE roms2jedi_state (ng, kernel, Tindex2d, Tindex3d, state, geom,       &
     END DO
   END DO
 
-#ifdef UV_CHANGE
-! Deallocate local variables.
 
-  IF (allocated(Uc)) deallocate (Uc)
-  IF (allocated(Vc)) deallocate (Vc)
+! Deallocate/nullify local variables.
+
+  IF ( associated(field) )  nullify (field)
+#ifdef UV_CHANGE
+  IF ( associated(Ua) )     nullify (Ua)
+  IF ( associated(Va) )     nullify (Va)
+
+  IF ( allocated(Uc) )      deallocate (Uc)
+  IF ( allocated(Vc) )      deallocate (Vc)
 #endif
 !
   10 FORMAT (2x,a,', Nfields = ',i2,', timestep = ',i5.5,', timelevel = (',i0, &

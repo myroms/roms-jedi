@@ -1,6 +1,6 @@
 #undef ZERO_TRAJECTORY
 
-! (C) Copyright 2017-2025 UCAR
+! (C) Copyright 2017-2026 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -153,7 +153,7 @@ SUBROUTINE roms_linearModel_create (self, geom, f_conf)
 
   !> Get time step duration from YAML file and convert to seconds.  It can be
   !> a single ROMS timestep, dt(ng), as specified in ROMS standard input
-  !> script or and integer factor of dt(ng).  
+  !> script or and integer factor of dt(ng).
 
   CALL f_conf%get_or_die ("tstep", string)
   dtYAML = TRIM(string)
@@ -270,7 +270,7 @@ SUBROUTINE roms_linearModel_initialize_ad (self, geom, Incr, Traj1, Traj2,     &
                     "Error in ROMS_initializeP1")
   END IF
 
-  !> Set ROMS initial conditions time (s).  It is need to set-up ROMS 
+  !> Set ROMS initial conditions time (s).  It is need to set-up ROMS
   !> timestepping counters correctly.
 
   INItime(ng) = self%INItime
@@ -281,9 +281,10 @@ SUBROUTINE roms_linearModel_initialize_ad (self, geom, Incr, Traj1, Traj2,     &
   my_ntimes = INT(self%SimulationPeriod/dt(ng))
 
   IF (my_ntimes .ne. ntimes(ng)) THEN
-    IF (LocalPET .eq. 0)                                                       &
+    IF (LocalPET .eq. 0) THEN
       PRINT '(2(a,i0))', ' roms_linearModel::initialize_ad: Reset input '//    &
                          'parameter, NTIMES = ', ntimes(ng), ' to ', my_ntimes
+    END IF
     ntimes(ng) = my_ntimes
   END IF
 
@@ -415,7 +416,7 @@ SUBROUTINE roms_linearModel_initialize_tl (self, geom, Incr, Traj1, Traj2,     &
                     "Error in ROMS_initializeP1")
   END IF
 
-  !> Set ROMS initial conditions time (s).  It is needed to set-up ROMS 
+  !> Set ROMS initial conditions time (s).  It is needed to set-up ROMS
   !> timestepping counters correctly.
 
   INItime(ng) = self%INItime
@@ -426,9 +427,10 @@ SUBROUTINE roms_linearModel_initialize_tl (self, geom, Incr, Traj1, Traj2,     &
   my_ntimes = INT(self%SimulationPeriod/dt(ng))
 
   IF (my_ntimes .ne. ntimes(ng)) THEN
-    IF (LocalPET .eq. 0)                                                       &
+    IF (LocalPET .eq. 0) THEN
       PRINT '(2(a,i0))', ' roms_linearModel::initialize_tl: Reset input '//    &
                          'parameter, NTIMES = ', ntimes(ng), ' to ', my_ntimes
+    END IF
     ntimes(ng) = my_ntimes
   END IF
 
@@ -635,7 +637,7 @@ SUBROUTINE roms_linearModel_step_tl (self, geom, Incr,  Traj1, Traj2,          &
 
   ! Advance TLROMS by the specified RunInterval (often a single timestep) in
   ! seconds. Recall that ROMS kernels have a predictor/corrector time-stepping
-  ! scheme with multiple time indices. 
+  ! scheme with multiple time indices.
 
   CALL ROMS_run (self%RunInterval, kernel=iTLM)
   IF (exit_flag .ne. NoError) THEN
@@ -646,7 +648,7 @@ SUBROUTINE roms_linearModel_step_tl (self, geom, Incr,  Traj1, Traj2,          &
     CALL abor1_ftn ("roms_linearModel::step_tl Error while calling ROMS_run")
   END IF
 
-  ! Update increment fields with current TLROMS solution. 
+  ! Update increment fields with current TLROMS solution.
   !
   ! ROMS updates the time-level rolling indices at the beginning of the
   ! time-stepping TLM kernel, "tl_main3d".. Thus, "nnew" is the correct time
@@ -669,8 +671,8 @@ SUBROUTINE roms_linearModel_step_tl (self, geom, Incr,  Traj1, Traj2,          &
 
   ! If last timestep, run the last-half step to finich all ROMS native delayed
   ! output, which does not affect the ROMS-JEDI inteface.
-  
-  IF (iic(ng).eq.ntend(ng)+1) THEN 
+
+  IF (iic(ng).eq.ntend(ng)+1) THEN
     CALL ROMS_run (self%RunInterval, kernel=iTLM)
     IF (exit_flag .ne. NoError) THEN
       IF ((LEN_TRIM(blowup_string).gt.0).and.(my_comm%rank().eq.0)) THEN
@@ -757,13 +759,19 @@ SUBROUTINE jedi2roms_traj (ng, Traj1, Traj2, fac1, fac2)
   TYPE (roms_field), pointer                 :: field1, field2
   integer                                    :: i, itrc, k
 
+  ! Initialize.
+
+  field1 => NULL()
+  field2 => NULL()
+
   ! The nonlinear trajectory fields are time interpolated from JEDI snapshots
   ! and repeated for each ROMS time level.
 
-  IF (LdebugLinearModel.and.(my_comm%rank().eq.0))                             &
+  IF (LdebugLinearModel.and.(my_comm%rank().eq.0)) THEN
     PRINT 10, 'ROMS_DEBUG jedi2roms_traj: Interpolating trajectory for ROMS',  &
               SIZE(Traj1%fields), jic(ng), TRIM(Traj1%DateTimeStr), fac1,      &
               TRIM(Traj2%DateTimeStr), fac2
+  END IF
 
   DO i=1, SIZE(Traj1%fields)
     field1 => Traj1%fields(i)
@@ -931,6 +939,9 @@ SUBROUTINE jedi2roms_traj (ng, Traj1, Traj2, fac1, fac2)
     END SELECT
   END DO
 
+  IF ( associated(field1) ) nullify (field1)
+  IF ( associated(field2) ) nullify (field2)
+
   10 FORMAT (a,', Nfields = ',i2,', timestep = ',i5.5,', date1: ',a,           &
              ', fac1 = ',1p,e11.4,', date2: ',a,', fac2 = ',1p,e11.4)
   20 FORMAT (19x,'- ',a,': ',a,t113,a,/,22x,'(Min = ',1p,e15.8,                &
@@ -953,9 +964,9 @@ SUBROUTINE jedi2roms_incr (ng, kernel, Tindex2d, Tindex3d, geom, Incr,         &
   CLASS (roms_increment), target, intent(inout) :: Incr        !< Increment
   character (len=*),              intent(in   ) :: DateString  !< DateTime
 
-  TYPE (roms_field),                    pointer :: field => null()
-  TYPE (roms_field),                    pointer :: Ua    => null()
-  TYPE (roms_field),                    pointer :: Va    => null()
+  TYPE (roms_field),                    pointer :: field
+  TYPE (roms_field),                    pointer :: Ua
+  TYPE (roms_field),                    pointer :: Va
 
   logical                                       :: have_Uc, have_Vc
   logical                                       :: need_Uc, need_Vc
@@ -963,6 +974,12 @@ SUBROUTINE jedi2roms_incr (ng, kernel, Tindex2d, Tindex3d, geom, Incr,         &
   real (kind=kind_real)                         :: stats(4)
   real (kind=kind_real),            allocatable :: Uc(:,:,:), Vc(:,:,:)
   character (len=22)                            :: DateTimeStr
+
+  ! Initialize.
+
+  field => NULL()
+  Ua    => NULL()
+  Va    => NULL()
 
   ! Set ROMS date/time string.
 
@@ -1005,10 +1022,11 @@ SUBROUTINE jedi2roms_incr (ng, kernel, Tindex2d, Tindex3d, geom, Incr,         &
 
   ROMS_KERNEL : IF (kernel .eq. iTLM) THEN
 
-    IF (LdebugLinearModel.and.(my_comm%rank().eq.0))                           &
+    IF (LdebugLinearModel.and.(my_comm%rank().eq.0)) THEN
       PRINT 10, 'ROMS_DEBUG jedi2roms_incr: TL ROMS - ', TL_inner,             &
                 SIZE(Incr%fields), jic(ng), Tindex2d, Tindex3d,                &
                 TRIM(DateString)
+    END IF
 
     DO i=1, SIZE(Incr%fields)
 
@@ -1016,9 +1034,10 @@ SUBROUTINE jedi2roms_incr (ng, kernel, Tindex2d, Tindex3d, geom, Incr,         &
 
       IF (LdebugLinearModel) THEN
         CALL field%stats (stats)
-        IF (my_comm%rank().eq.0)                                               &
+        IF (my_comm%rank().eq.0) THEN
           PRINT 20, field%metadata%short_name, field%metadata%io_name,         &
                     stats(1), stats(2), INT(stats(4),KIND=8)
+        END IF
       END IF
 
       SELECT CASE (field%name)
@@ -1060,11 +1079,11 @@ SUBROUTINE jedi2roms_incr (ng, kernel, Tindex2d, Tindex3d, geom, Incr,         &
 
   ELSE IF (kernel .eq. iADM) THEN               !> Adjoint of TL logic above
 
-
-    IF (LdebugLinearModel.and.(my_comm%rank().eq.0))                           &
+    IF (LdebugLinearModel.and.(my_comm%rank().eq.0)) THEN
       PRINT 10, 'ROMS_DEBUG jedi2roms_incr: AD ROMS - ', AD_inner,             &
                 SIZE(Incr%fields), jic(ng), Tindex2d, Tindex3d,                &
                 TRIM(DateString)
+    END IF
 
     DO i=1, SIZE(Incr%fields)
 
@@ -1072,9 +1091,10 @@ SUBROUTINE jedi2roms_incr (ng, kernel, Tindex2d, Tindex3d, geom, Incr,         &
 
       IF (LdebugLinearModel) THEN
         CALL field%stats (stats)
-        IF (my_comm%rank().eq.0)                                               &
+        IF (my_comm%rank().eq.0) THEN
           PRINT 20, field%metadata%short_name, field%metadata%io_name,         &
                     stats(1), stats(2), INT(stats(4),KIND=8)
+        END IF
       END IF
 
       SELECT CASE (field%name)
@@ -1134,10 +1154,14 @@ SUBROUTINE jedi2roms_incr (ng, kernel, Tindex2d, Tindex3d, geom, Incr,         &
 
   END IF ROMS_KERNEL
 
-! Deallocate local variables.
+! Deallocate/nullify local variables.
 
-  IF (allocated(Uc)) deallocate (Uc)
-  IF (allocated(Vc)) deallocate (Vc)
+  IF ( allocated(Uc) )      deallocate (Uc)
+  IF ( allocated(Vc) )      deallocate (Vc)
+
+  IF ( associated(field) )  nullify (field)
+  IF ( associated(Ua) )     nullify (Ua)
+  IF ( associated(Va) )     nullify (Va)
 !
   10 FORMAT (a,'inner = ',i3.3,', Nfields = ',i2,', timestep = ',i5.5,         &
              ', timelevel = (',i0, ', ',i0,'), date: ',a)
@@ -1161,15 +1185,21 @@ SUBROUTINE roms2jedi_incr (ng, kernel, Tindex2d, Tindex3d, geom, Incr,         &
   CLASS (roms_increment), target, intent(inout) :: Incr        !< Increment
   character (len=*),              intent(in   ) :: DateString  !< DateTime
 
-  TYPE (roms_field),                    pointer :: field => null()
-  TYPE (roms_field),                    pointer :: Ua    => null()
-  TYPE (roms_field),                    pointer :: Va    => null()
+  TYPE (roms_field),                    pointer :: field
+  TYPE (roms_field),                    pointer :: Ua
+  TYPE (roms_field),                    pointer :: Va
   logical                                       :: have_Ua, have_Va
   logical                                       :: need_Ua, need_Va
   integer                                       :: i, itrc
   real (kind=kind_real)                         :: stats(4)
   real (kind=kind_real),            allocatable :: Uc(:,:,:), Vc(:,:,:)
   character (len=22)                            :: DateTimeStr
+
+  ! Initialize.
+
+  field => NULL()
+  Ua    => NULL()
+  Va    => NULL()
 
   ! Set ROMS date/time string.
 
@@ -1212,10 +1242,11 @@ SUBROUTINE roms2jedi_incr (ng, kernel, Tindex2d, Tindex3d, geom, Incr,         &
 
   ROMS_KERNEL : IF (kernel .eq. iTLM) THEN
 
-    IF (LdebugLinearModel.and.(my_comm%rank().eq.0))                           &
+    IF (LdebugLinearModel.and.(my_comm%rank().eq.0)) THEN
       PRINT 10, 'ROMS_DEBUG roms2jedi_incr: TL ROMS - ', TL_inner,             &
                 SIZE(Incr%fields), jic(ng), Tindex2d, Tindex3d,                &
                 TRIM(DateString)
+    END IF
 
     DO i=1, SIZE(Incr%fields)
 
@@ -1267,19 +1298,21 @@ SUBROUTINE roms2jedi_incr (ng, kernel, Tindex2d, Tindex3d, geom, Incr,         &
 
       IF (LdebugLinearModel) THEN
         CALL field%stats (stats)
-        IF (my_comm%rank().eq.0)                                               &
+        IF (my_comm%rank().eq.0) THEN
           PRINT 20, field%metadata%short_name, field%metadata%io_name,         &
                     stats(1), stats(2), INT(stats(4),KIND=8)
+        END IF
       END IF
 
     END DO
 
   ELSE IF (kernel .eq. iADM) THEN               !> Adjoint of TL logic above
 
-    IF (LdebugLinearModel.and.(my_comm%rank().eq.0))                           &
+    IF (LdebugLinearModel.and.(my_comm%rank().eq.0)) THEN
       PRINT 10, 'ROMS_DEBUG roms2jedi_incr: AD ROMS - ', AD_inner,             &
                 SIZE(Incr%fields), jic(ng), Tindex2d, Tindex3d,   &
                 TRIM(DateString)
+    END IF
 
     DO i=1, SIZE(Incr%fields)
 
@@ -1342,19 +1375,24 @@ SUBROUTINE roms2jedi_incr (ng, kernel, Tindex2d, Tindex3d, geom, Incr,         &
 
       IF (LdebugLinearModel) THEN
         CALL field%stats (stats)
-        IF (my_comm%rank().eq.0)                                               &
+        IF (my_comm%rank().eq.0) THEN
           PRINT 20, field%metadata%short_name, field%metadata%io_name,         &
                     stats(1), stats(2), INT(stats(4),KIND=8)
+        END IF
       END IF
 
     END DO
 
   END IF ROMS_KERNEL
 
-! Deallocate local variables.
+! Deallocate/nullify local variables.
 
-  IF (allocated(Uc)) deallocate (Uc)
-  IF (allocated(Vc)) deallocate (Vc)
+  IF ( allocated(Uc) )      deallocate (Uc)
+  IF ( allocated(Vc) )      deallocate (Vc)
+
+  IF ( associated(field) )  nullify (field)
+  IF ( associated(Ua) )     nullify (Ua)
+  IF ( associated(Va) )     nullify (Va)
 !
   10 FORMAT (a,'inner = ',i3.3,', Nfields = ',i2,', timestep = ',i5.5,         &
              ', timelevel = (',i0, ', ',i0,'), date: ',a)

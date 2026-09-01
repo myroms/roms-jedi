@@ -1,4 +1,4 @@
-! (C) Copyright 2020-2025 UCAR
+! (C) Copyright 2020-2026 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -376,14 +376,14 @@ SUBROUTINE roms_state_change_resol_c (c_key_fld, c_key_rhs)                    &
   CALL roms_state_registry%get (c_key_rhs, rhs)
 
   ! TODO: implement == in geometry or something to that effect.
-  
+
   IF ((SIZE(fld%geom%lonr,1) .eq. SIZE(rhs%geom%lonr,1)) .and. &
       (SIZE(fld%geom%latr,2) .eq. SIZE(rhs%geom%latr,2)) .and. &
       (fld%geom%N .eq. rhs%geom%N)) THEN
     CALL fld%copy (rhs)
   ELSE
     CALL fld%convert (rhs)
-  ENDIF
+  END IF
 
 END SUBROUTINE roms_state_change_resol_c
 
@@ -542,6 +542,7 @@ SUBROUTINE roms_state_to_fieldset_c (c_key_self, c_key_geom, c_vars,           &
   afieldset = atlas_fieldset(c_afieldset)
 
   CALL self%to_fieldset (geom, vars, afieldset)
+  CALL afieldset%final ()
 
 END SUBROUTINE roms_state_to_fieldset_c
 
@@ -569,6 +570,7 @@ SUBROUTINE roms_state_from_fieldset_c (c_key_self, c_key_geom, c_vars,         &
   afieldset = atlas_fieldset(c_afieldset)
 
   CALL self%from_fieldset (geom, vars, afieldset)
+  CALL afieldset%final ()
 
 END SUBROUTINE roms_state_from_fieldset_c
 

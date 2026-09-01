@@ -33,7 +33,7 @@ PRIVATE
 ! ------------------------------------------------------------------------------
 CONTAINS
 ! ------------------------------------------------------------------------------
-  
+
 ! ------------------------------------------------------------------------------
 !> Setup geometry iterator
 
@@ -168,7 +168,7 @@ SUBROUTINE roms_geomIterator_next_c (c_key_self)                               &
 END SUBROUTINE roms_geomIterator_next_c
 
 ! ------------------------------------------------------------------------------
-!> Sets the dimension of the iterator: 2D or 3D. 
+!> Sets the dimension of the iterator: 2D or 3D.
 
 SUBROUTINE roms_geomIterator_dimension_c (c_key_geom, c_val)                   &
                              BIND (c, name='roms_geomIterator_dimension_f90')
@@ -180,7 +180,7 @@ SUBROUTINE roms_geomIterator_dimension_c (c_key_geom, c_val)                   &
 
   CALL roms_geom_registry%get (c_key_geom, geom)
 
-  c_val = geom%iterator_dimension               ! [2] = 2D,  [3] = 3D 
+  c_val = geom%iterator_dimension               ! [2] = 2D,  [3] = 3D
 
 END SUBROUTINE roms_geomIterator_dimension_c
 

@@ -291,8 +291,8 @@ END SUBROUTINE roms_increment_axpy_c
 SUBROUTINE roms_increment_dot_prod_c (c_key_fld1, c_key_fld2, c_prod)          &
                                 BIND (c, name='roms_increment_dot_prod_f90')
 
-  integer (c_int), intent(in   ) :: c_key_fld1      !< Field 1 object pointer 
-  integer (c_int), intent(in   ) :: c_key_fld2      !< Field 2 object pointer 
+  integer (c_int), intent(in   ) :: c_key_fld1      !< Field 1 object pointer
+  integer (c_int), intent(in   ) :: c_key_fld2      !< Field 2 object pointer
   real (c_double), intent(inout) :: c_prod          !< dot product value pointer
 
   TYPE (roms_increment), pointer :: fld1, fld2
@@ -377,6 +377,7 @@ SUBROUTINE roms_increment_to_fieldset_c (c_key_self, c_key_geom, c_vars,       &
   afieldset = atlas_fieldset(c_afieldset)
 
   CALL self%to_fieldset (geom, vars, afieldset)
+  CALL afieldset%final ()
 
 END SUBROUTINE roms_increment_to_fieldset_c
 
@@ -404,6 +405,7 @@ SUBROUTINE roms_increment_from_fieldset_c (c_key_self, c_key_geom, c_vars,     &
   afieldset = atlas_fieldset(c_afieldset)
 
   CALL self%from_fieldset (geom, vars, afieldset)
+  CALL afieldset%final ()
 
 END SUBROUTINE roms_increment_from_fieldset_c
 
@@ -538,7 +540,7 @@ SUBROUTINE roms_increment_setpoint_c (c_key_fld, c_key_iter, values,           &
 END SUBROUTINE roms_increment_setpoint_c
 
 ! ------------------------------------------------------------------------------
-!  Computes the increment object spatial dimensions and number of fields. 
+!  Computes the increment object spatial dimensions and number of fields.
 
 SUBROUTINE roms_incrementnum_c (c_key_fld, nx, ny, nz, nf)                     &
                           BIND (c, name='roms_increment_sizes_f90')
